@@ -5,8 +5,8 @@ import {
   TYPE_KEY_OPTIONAL_QUERY,
 } from "./constants";
 import { createRelativeImportPath } from "./fileUtils";
+import { HttpMethods } from "./types";
 import { createImport, createRecodeType, createObjectType } from "./typeUtils";
-import { HttpMethods } from "./typs";
 
 // 連番付与
 const cntObj = {} as Record<string, number>;

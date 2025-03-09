@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "commander": "^13.1.0",
+    "next": "15.1.7",
     "rpc4next": "file:"
   },
   "devDependencies": {

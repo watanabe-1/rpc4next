@@ -9,8 +9,8 @@ import {
   END_POINT_FILE_NAMES,
 } from "./constants";
 import { scanQuery, scanRoute } from "./scanUtils";
+import { EndPointFileNames, ROUTE_TYPE } from "./types";
 import { createObjectType, createRecodeType } from "./typeUtils";
-import { EndPointFileNames, ROUTE_TYPE } from "./typs";
 import {
   OPTIONAL_CATCH_ALL_PREFIX,
   CATCH_ALL_PREFIX,
