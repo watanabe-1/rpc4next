@@ -1,6 +1,6 @@
 import type { NextResponse, NextRequest } from "next/server";
 
-export type ContentType =
+type KnownContentType =
   | "application/json"
   | "text/html"
   | "text/plain"
@@ -12,8 +12,9 @@ export type ContentType =
   | "application/pdf"
   | "application/octet-stream"
   | "multipart/form-data"
-  | "application/x-www-form-urlencoded"
-  | string;
+  | "application/x-www-form-urlencoded";
+
+export type ContentType = KnownContentType | (string & {});
 
 /**
  * Informational responses (100–199)
