@@ -27,5 +27,5 @@ export const generatePages = (outputPath: string, baseDir: string) => {
     TYPE_KEY_QUERY,
   ].filter((type) => pathStructure.includes(type));
 
-  return `${`import { ${keyTypes.join(" ,")} } from "rpc4next/client"${STATEMENT_TERMINATOR}${NEWLINE}${importsStr}`}${NEWLINE}${NEWLINE}${pathStructureType}`;
+  return `${`import type { ${keyTypes.join(" ,")} } from "rpc4next/client"${STATEMENT_TERMINATOR}${NEWLINE}${importsStr}`}${NEWLINE}${NEWLINE}${pathStructureType}`;
 };
