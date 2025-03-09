@@ -1,4 +1,10 @@
 import { STATEMENT_TERMINATOR, NEWLINE } from "./constants";
+import {
+  TYPE_KEY_PARAMS,
+  TYPE_END_POINT,
+  TYPE_KEY_QUERY,
+  TYPE_KEY_OPTIONAL_QUERY,
+} from "./constants";
 import { scanAppDir } from "./routeScanner";
 
 export const generatePages = (outputPath: string, baseDir: string) => {
@@ -14,5 +20,12 @@ export const generatePages = (outputPath: string, baseDir: string) => {
         .join(NEWLINE)}`
     : "";
 
-  return `${importsStr}${NEWLINE}${NEWLINE}${pathStructureType}`;
+  const keyTypes = [
+    TYPE_END_POINT,
+    TYPE_KEY_OPTIONAL_QUERY,
+    TYPE_KEY_PARAMS,
+    TYPE_KEY_QUERY,
+  ].filter((type) => pathStructure.includes(type));
+
+  return `${`import { ${keyTypes.join(" ,")} } from "rpc4next/client"${STATEMENT_TERMINATOR}${NEWLINE}${importsStr}`}${NEWLINE}${NEWLINE}${pathStructureType}`;
 };
