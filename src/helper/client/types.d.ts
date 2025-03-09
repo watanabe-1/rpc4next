@@ -9,13 +9,13 @@ import type { NextResponse } from "next/server";
 import type { NextFetchRequestConfig } from "next/types/global";
 
 declare const __proxy: unique symbol;
-type Endpoint = { [__proxy]?: true };
+export type Endpoint = { [__proxy]?: true };
 
-type ParamsKey = "__params";
+export type ParamsKey = "__params";
 type IsParams = Record<ParamsKey, unknown>;
-type QueryKey = "__query";
+export type QueryKey = "__query";
 type IsQuery = Record<QueryKey, unknown>;
-type OptionalQueryKey = "__op_query";
+export type OptionalQueryKey = "__op_query";
 type IsOptionalQuery = Record<OptionalQueryKey, unknown>;
 
 export type HttpMethodKey = (typeof HTTP_METHOD_KEYS)[number];

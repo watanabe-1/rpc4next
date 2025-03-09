@@ -7,6 +7,20 @@
   "bin": {
     "rpc4next": "dist/cli/cli.js"
   },
+  "exports": {
+    "./client": {
+      "import": {
+        "types": "./dist/helper/client/index.d.ts",
+        "default": "./dist/helper/client/index.js"
+      }
+    },
+    "./server": {
+      "import": {
+        "types": "./dist/helper/server/index.d.ts",
+        "default": "./dist/helper/server/index.js"
+      }
+    }
+  },
   "scripts": {
     "build": "npm run clean && tsc",
     "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
