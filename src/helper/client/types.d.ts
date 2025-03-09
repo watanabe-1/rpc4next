@@ -6,6 +6,7 @@ import type {
 } from "../../lib/constants";
 import type { TypedNextResponse, HttpStatusCode } from "../server/types";
 import type { NextResponse } from "next/server";
+import type { NextFetchRequestConfig } from "next/types/global";
 
 declare const __proxy: unique symbol;
 type Endpoint = { [__proxy]?: true };
