@@ -4,7 +4,11 @@ import type {
   CATCH_ALL_PREFIX,
   DYNAMIC_PREFIX,
 } from "../../lib/constants";
-import type { TypedNextResponse, HttpStatusCode } from "../server/types";
+import type {
+  TypedNextResponse,
+  HttpStatusCode,
+  ContentType,
+} from "../server/types";
 import type { NextResponse } from "next/server";
 
 declare const __proxy: unique symbol;
@@ -77,7 +81,7 @@ type InferTypedNextResponseType<T> = T extends (
   ...args: any[]
 ) => Promise<TypedNextResponse>
   ? Awaited<ReturnType<T>>
-  : TypedNextResponse<InferNextResponseType<T>, HttpStatusCode, string>;
+  : TypedNextResponse<InferNextResponseType<T>, HttpStatusCode, ContentType>;
 
 type PathProxyAsProperty<T> = { $match: (path: string) => Params<T> | null };
 
