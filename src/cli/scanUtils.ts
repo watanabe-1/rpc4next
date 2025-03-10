@@ -73,7 +73,7 @@ export const scanRoute = (
     (fileContents) => {
       return [httpMethod].find((method) =>
         new RegExp(
-          `export (async )?(function ${method} ?\\(|const ${method} ?=|\\{[^}]*\\b${method}\\b[^}]*\\} from)`
+          `export (async )?(function ${method} ?\\(|const ${method} ?=|\\{[^}]*\\b${method}\\b[^}]*\\} ?=|const \\{[^}]*\\b${method}\\b[^}]*\\} ?=|\\{[^}]*\\b${method}\\b[^}]*\\} from)`
         ).test(fileContents)
       );
     },
