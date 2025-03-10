@@ -1,21 +1,22 @@
 import fs from "fs";
 import path from "path";
+
 import {
   INDENT,
-  HTTP_METHODS,
   TYPE_END_POINT,
   TYPE_KEY_PARAMS,
   NEWLINE,
   END_POINT_FILE_NAMES,
 } from "./constants";
 import { scanQuery, scanRoute } from "./scanUtils";
-import { EndPointFileNames, ROUTE_TYPE } from "./types";
 import { createObjectType, createRecodeType } from "./typeUtils";
 import {
   OPTIONAL_CATCH_ALL_PREFIX,
   CATCH_ALL_PREFIX,
   DYNAMIC_PREFIX,
+  HTTP_METHODS_EXCLUDE_OPTIONS,
 } from "../lib/constants";
+import type { EndPointFileNames } from "./types";
 
 const endPointFileNames = new Set(END_POINT_FILE_NAMES);
 const visitedDirs = new Map<string, boolean>();
@@ -57,7 +58,16 @@ export const scanAppDir = (
   output: string,
   input: string,
   indent = "",
-  parentParams: { paramName: string; routeType: ROUTE_TYPE }[] = []
+  parentParams: {
+    paramName: string;
+    routeType: {
+      isDynamic: boolean;
+      isCatchAll: boolean;
+      isOptionalCatchAll: boolean;
+      isGroup: boolean;
+      isParallel: boolean;
+    };
+  }[] = []
 ) => {
   indent += INDENT;
   const pathStructures: string[] = [];
@@ -108,14 +118,6 @@ export const scanAppDir = (
       const isDynamic =
         nameWithoutExt.startsWith("[") && nameWithoutExt.endsWith("]");
 
-      const routeType = {
-        isGroup,
-        isParallel,
-        isOptionalCatchAll,
-        isCatchAll,
-        isDynamic,
-      };
-
       const { paramName, keyName } = (() => {
         let param = nameWithoutExt;
         // [] を削除
@@ -139,6 +141,14 @@ export const scanAppDir = (
       })();
 
       if (isDynamic || isCatchAll || isOptionalCatchAll) {
+        const routeType = {
+          isGroup,
+          isParallel,
+          isOptionalCatchAll,
+          isCatchAll,
+          isDynamic,
+        };
+
         params.push({ paramName, routeType });
       }
 
@@ -170,7 +180,7 @@ export const scanAppDir = (
         types.push(type);
       }
 
-      HTTP_METHODS.forEach((method) => {
+      HTTP_METHODS_EXCLUDE_OPTIONS.forEach((method) => {
         const routeDef = scanRoute(output, fullPath, method);
         if (routeDef) {
           const {

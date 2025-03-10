@@ -5,8 +5,8 @@ import {
   TYPE_KEY_OPTIONAL_QUERY,
 } from "./constants";
 import { createRelativeImportPath } from "./fileUtils";
-import { HttpMethods } from "./types";
 import { createImport, createRecodeType, createObjectType } from "./typeUtils";
+import type { HTTP_METHOD } from "next/dist/server/web/http";
 
 // 連番付与
 const cntObj = {} as Record<string, number>;
@@ -65,7 +65,7 @@ export const scanQuery = (outputFile: string, inputFile: string) => {
 export const scanRoute = (
   outputFile: string,
   inputFile: string,
-  httpMethod: HttpMethods
+  httpMethod: HTTP_METHOD
 ) => {
   return scanFile(
     outputFile,

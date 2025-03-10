@@ -1,11 +1,11 @@
-import { HTTP_METHOD_KEYS } from "./constants";
 import {
   DYNAMIC_PREFIX,
   CATCH_ALL_PREFIX,
   OPTIONAL_CATCH_ALL_PREFIX,
+  HTTP_METHOD_FUNC_KEYS,
 } from "../../lib/constants";
 import type {
-  HttpMethodKey,
+  HttpMethodFuncKey,
   UrlOptions,
   FuncParams,
   UrlResult,
@@ -17,10 +17,10 @@ const isDynamic = (key: string) => key.startsWith(DYNAMIC_PREFIX);
 const isCatchAllOrOptional = (key: string) =>
   key.startsWith(CATCH_ALL_PREFIX) || key.startsWith(OPTIONAL_CATCH_ALL_PREFIX);
 
-const httpMethods: Set<HttpMethodKey> = new Set(HTTP_METHOD_KEYS);
+const httpMethods: Set<HttpMethodFuncKey> = new Set(HTTP_METHOD_FUNC_KEYS);
 
-const isHttpMethod = (value: string): value is HttpMethodKey =>
-  httpMethods.has(value as HttpMethodKey);
+const isHttpMethod = (value: string): value is HttpMethodFuncKey =>
+  httpMethods.has(value as HttpMethodFuncKey);
 
 const buildUrlSuffix = (url?: UrlOptions) => {
   if (!url) return "";

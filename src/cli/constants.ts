@@ -1,13 +1,5 @@
 export const END_POINT_FILE_NAMES = ["page.tsx", "route.ts"] as const;
 export const QUERY_TYPES = ["Query", "OptionalQuery"] as const;
-export const HTTP_METHODS = [
-  "GET",
-  "POST",
-  "PUT",
-  "PATCH",
-  "DELETE",
-  "HEAD",
-] as const;
 
 export const INDENT = "  ";
 export const NEWLINE = "\n";

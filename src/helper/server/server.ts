@@ -9,6 +9,7 @@ import type {
   Context,
   Params,
 } from "./types";
+import type { HTTP_METHOD } from "next/dist/server/web/http";
 
 const createHandler = <
   TParams extends Params,
@@ -90,21 +91,27 @@ export const createRouteHandler = <
     query?: Query;
   },
 >() => {
-  const createMethod = <
-    T extends TypedNextResponse | Promise<TypedNextResponse>,
-    THandler extends (
-      context: Context<TBindings["params"], TBindings["query"]>
-    ) => T,
-  >(
-    handler: THandler
-  ) => createHandler(handler);
+  type Handler<T> = (
+    context: Context<TBindings["params"], TBindings["query"]>
+  ) => T;
+  type ResponseType = TypedNextResponse | Promise<TypedNextResponse>;
+
+  const createMethod = <T extends ResponseType>(handler: Handler<T>) =>
+    createHandler(handler);
+
+  const createRoute =
+    (method: HTTP_METHOD) =>
+    <T extends ResponseType>(handler: Handler<T>) => ({
+      [method]: createMethod(handler),
+    });
 
   return {
-    get: createMethod,
-    post: createMethod,
-    put: createMethod,
-    delete: createMethod,
-    patch: createMethod,
-    head: createMethod,
+    get: createRoute("GET"),
+    post: createRoute("POST"),
+    put: createRoute("PUT"),
+    delete: createRoute("DELETE"),
+    patch: createRoute("PATCH"),
+    head: createRoute("HEAD"),
+    options: createRoute("OPTIONS"),
   };
 };

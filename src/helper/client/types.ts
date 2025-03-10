@@ -1,8 +1,8 @@
-import type { HTTP_METHOD_KEYS } from "./constants";
 import type {
   OPTIONAL_CATCH_ALL_PREFIX,
   CATCH_ALL_PREFIX,
   DYNAMIC_PREFIX,
+  HTTP_METHOD_FUNC_KEYS,
 } from "../../lib/constants";
 import type {
   TypedNextResponse,
@@ -21,9 +21,9 @@ type IsQuery = Record<QueryKey, unknown>;
 export type OptionalQueryKey = "__op_query";
 type IsOptionalQuery = Record<OptionalQueryKey, unknown>;
 
-export type HttpMethodKey = (typeof HTTP_METHOD_KEYS)[number];
+export type HttpMethodFuncKey = (typeof HTTP_METHOD_FUNC_KEYS)[number];
 type IsHttpMethod = {
-  [K in HttpMethodKey]?: unknown;
+  [K in HttpMethodFuncKey]?: unknown;
 };
 
 type IsOptionalCatchAll = `${typeof OPTIONAL_CATCH_ALL_PREFIX}${string}`;
@@ -64,7 +64,7 @@ type UrlArg<T> = T extends IsQuery
 
 type HttpMethodsArg<T> = [...UrlArg<T>, option?: FetcherOptions];
 type InferHttpMethods<T extends IsHttpMethod> = {
-  [K in keyof T as K extends HttpMethodKey ? K : never]: (
+  [K in keyof T as K extends HttpMethodFuncKey ? K : never]: (
     ...args: HttpMethodsArg<T>
   ) => Promise<InferTypedNextResponseType<T[K]>>;
 };
