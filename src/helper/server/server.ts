@@ -96,14 +96,15 @@ export const createRouteHandler = <
   ) => T;
   type ResponseType = TypedNextResponse | Promise<TypedNextResponse>;
 
-  const createMethod = <T extends ResponseType>(handler: Handler<T>) =>
-    createHandler(handler);
-
   const createRoute =
-    (method: HTTP_METHOD) =>
-    <T extends ResponseType>(handler: Handler<T>) => ({
-      [method]: createMethod(handler),
-    });
+    <THttpMethod extends HTTP_METHOD>(method: THttpMethod) =>
+    <T extends ResponseType>(handler: Handler<T>) => {
+      const methodFunc = createHandler(handler);
+
+      return {
+        [method]: methodFunc,
+      } as Record<THttpMethod, typeof methodFunc>;
+    };
 
   return {
     get: createRoute("GET"),
