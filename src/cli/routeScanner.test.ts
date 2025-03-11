@@ -114,8 +114,14 @@ describe("scanAppDir", () => {
   }
 }`;
 
-    const { pathStructure } = scanAppDir("/output", "/testApp");
+    const { pathStructure, imports } = scanAppDir("/output", "/testApp");
     expect(pathStructure).equals(expectPathStructure);
+
+    const { statement, path } = imports[0];
+    expect(statement).equals(
+      "import type { GET as GET_0 } from './testApp/api/users/[id]/route';"
+    );
+    expect(path).equals("./testApp/api/users/[id]/route");
   });
 
   it("should scan page directory and generate path structure with dynamic segmente", () => {
