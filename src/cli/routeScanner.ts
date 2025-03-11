@@ -21,19 +21,31 @@ import type { EndPointFileNames } from "./types";
 const endPointFileNames = new Set(END_POINT_FILE_NAMES);
 const visitedDirs = new Map<string, boolean>();
 
-const hasTargetFiles = (dirPath: string): boolean => {
+export const hasTargetFiles = (dirPath: string): boolean => {
   // キャッシュがあればそのまま返す
   if (visitedDirs.has(dirPath)) return visitedDirs.get(dirPath)!;
 
   const entries = fs.readdirSync(dirPath, { withFileTypes: true });
 
   for (const entry of entries) {
-    const entryPath = path.join(dirPath, entry.name);
+    const { name } = entry;
+    const entryPath = path.join(dirPath, name);
 
     if (
-      entry.isFile() &&
-      endPointFileNames.has(entry.name as EndPointFileNames)
+      name === "node_modules" ||
+      // privete
+      name.startsWith("_") ||
+      // intercepts
+      name.startsWith("(.)") ||
+      name.startsWith("(..)") ||
+      name.startsWith("(...)")
     ) {
+      visitedDirs.set(dirPath, true);
+
+      return false;
+    }
+
+    if (entry.isFile() && endPointFileNames.has(name as EndPointFileNames)) {
       visitedDirs.set(dirPath, true);
 
       return true;
@@ -79,18 +91,6 @@ export const scanAppDir = (
     .readdirSync(input, { withFileTypes: true })
     .filter((entry) => {
       const { name } = entry;
-      if (
-        name === "node_modules" ||
-        // privete
-        name.startsWith("_") ||
-        // intercepts
-        name.startsWith("(.)") ||
-        name.startsWith("(..)") ||
-        name.startsWith("(...)")
-      ) {
-        return false;
-      }
-
       if (entry.isDirectory()) {
         const dirPath = path.join(input, name);
 
