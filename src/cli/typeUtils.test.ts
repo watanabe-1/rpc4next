@@ -49,13 +49,13 @@ describe("createObjectType", () => {
 describe("createImport", () => {
   it("should create a valid import statement with alias", () => {
     expect(createImport("User", "./types", "UserType")).toBe(
-      `import type { User as UserType } from './types'${STATEMENT_TERMINATOR}`
+      `import type { User as UserType } from "./types"${STATEMENT_TERMINATOR}`
     );
   });
 
   it("should create a valid import statement without alias", () => {
     expect(createImport("User", "./types")).toBe(
-      `import type { User } from './types'${STATEMENT_TERMINATOR}`
+      `import type { User } from "./types"${STATEMENT_TERMINATOR}`
     );
   });
 
@@ -67,11 +67,11 @@ describe("createImport", () => {
 
   it("should handle different module paths", () => {
     expect(createImport("Data", "../models/data", "DataType")).toBe(
-      `import type { Data as DataType } from '../models/data'${STATEMENT_TERMINATOR}`
+      `import type { Data as DataType } from "../models/data"${STATEMENT_TERMINATOR}`
     );
 
     expect(createImport("Data", "../models/data")).toBe(
-      `import type { Data } from '../models/data'${STATEMENT_TERMINATOR}`
+      `import type { Data } from "../models/data"${STATEMENT_TERMINATOR}`
     );
   });
 });

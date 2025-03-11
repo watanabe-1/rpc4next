@@ -119,7 +119,7 @@ describe("scanAppDir", () => {
 
     const { statement, path } = imports[0];
     expect(statement).equals(
-      "import type { GET as GET_0 } from './testApp/api/users/[id]/route';"
+      'import type { GET as GET_0 } from "./testApp/api/users/[id]/route";'
     );
     expect(path).equals("./testApp/api/users/[id]/route");
   });

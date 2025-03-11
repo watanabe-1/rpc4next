@@ -1,11 +1,6 @@
-import { STATEMENT_TERMINATOR, NEWLINE } from "./constants";
-import {
-  TYPE_KEY_PARAMS,
-  TYPE_END_POINT,
-  TYPE_KEY_QUERY,
-  TYPE_KEY_OPTIONAL_QUERY,
-} from "./constants";
+import { STATEMENT_TERMINATOR, NEWLINE, TYPE_KEYS } from "./constants";
 import { scanAppDir } from "./routeScanner";
+import { createImport } from "./typeUtils";
 
 export const generatePages = (outputPath: string, baseDir: string) => {
   const { pathStructure, imports } = scanAppDir(outputPath, baseDir);
@@ -20,12 +15,11 @@ export const generatePages = (outputPath: string, baseDir: string) => {
         .join(NEWLINE)}`
     : "";
 
-  const keyTypes = [
-    TYPE_END_POINT,
-    TYPE_KEY_OPTIONAL_QUERY,
-    TYPE_KEY_PARAMS,
-    TYPE_KEY_QUERY,
-  ].filter((type) => pathStructure.includes(type));
+  const keyTypes = TYPE_KEYS.filter((type) => pathStructure.includes(type));
+  const keyTypesImportStr = createImport(
+    keyTypes.join(" ,"),
+    "rpc4next/client"
+  );
 
-  return `${`import type { ${keyTypes.join(" ,")} } from "rpc4next/client"${STATEMENT_TERMINATOR}${NEWLINE}${importsStr}`}${NEWLINE}${NEWLINE}${pathStructureType}`;
+  return `${keyTypesImportStr}${NEWLINE}${importsStr}${NEWLINE}${NEWLINE}${pathStructureType}`;
 };

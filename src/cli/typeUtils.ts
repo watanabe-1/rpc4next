@@ -23,6 +23,6 @@ export const createImport = (
   if (!type || !path) return "";
 
   return importAlias
-    ? `import type { ${type} as ${importAlias} } from '${path}'${STATEMENT_TERMINATOR}`
-    : `import type { ${type} } from '${path}'${STATEMENT_TERMINATOR}`;
+    ? `import type { ${type} as ${importAlias} } from "${path}"${STATEMENT_TERMINATOR}`
+    : `import type { ${type} } from "${path}"${STATEMENT_TERMINATOR}`;
 };
