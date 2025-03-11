@@ -4,7 +4,7 @@ import {
   TYPE_KEY_QUERY,
   TYPE_KEY_OPTIONAL_QUERY,
 } from "./constants";
-import { createRelativeImportPath } from "./fileUtils";
+import { createRelativeImportPath } from "./pathUtils";
 import { createImport, createRecodeType, createObjectType } from "./typeUtils";
 import type { HTTP_METHOD } from "next/dist/server/web/http";
 
