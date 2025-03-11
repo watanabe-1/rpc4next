@@ -4,7 +4,7 @@ import { scanQuery, scanRoute } from "./scanUtils";
 
 vi.mock("./typeUtils", () => ({
   createImport: vi.fn(
-    (type, alias, path) => `import type { ${type} as ${alias} } from '${path}';`
+    (type, path, alias) => `import type { ${type} as ${alias} } from '${path}';`
   ),
   createRecodeType: vi.fn((key, alias) => `Record<${key}, ${alias}>`),
   createObjectType: vi.fn(

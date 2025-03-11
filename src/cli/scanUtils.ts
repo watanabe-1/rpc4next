@@ -37,7 +37,7 @@ export const scanFile = <T extends string | undefined>(
   return {
     importName: importAlias,
     importPath: relativeImportPath,
-    importStatement: createImport(type, importAlias, relativeImportPath),
+    importStatement: createImport(type, relativeImportPath, importAlias),
     type: typeCallBack(type, importAlias),
   };
 };
