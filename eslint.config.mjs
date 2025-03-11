@@ -2,6 +2,7 @@ import js from "@eslint/js";
 import eslintConfigPrettier from "eslint-config-prettier";
 import eslintPluginImport from "eslint-plugin-import";
 import eslintPluginUnusedImports from "eslint-plugin-unused-imports";
+import eslintPluginVitest from "eslint-plugin-vitest";
 import tseslint from "typescript-eslint";
 
 /** @type {import("eslint").Linter.Config[]} */
@@ -65,6 +66,25 @@ const config = [
         "error",
         { blankLine: "always", prev: "*", next: "return" },
       ],
+    },
+  },
+  {
+    files: ["src/**/*.test.ts"],
+    plugins: {
+      vitest: eslintPluginVitest,
+    },
+    rules: {
+      ...eslintPluginVitest.configs.recommended.rules,
+    },
+    settings: {
+      vitest: {
+        typecheck: true,
+      },
+    },
+    languageOptions: {
+      globals: {
+        ...eslintPluginVitest.environments.env.globals,
+      },
     },
   },
 ];
