@@ -170,3 +170,14 @@ export interface Context<TParams = Params, TQuery = Query> {
     status?: TStatus
   ) => TypedNextResponse<null, TStatus, "text/html">;
 }
+
+export type RouteResponse = TypedNextResponse | Promise<TypedNextResponse>;
+
+export type Bindings = {
+  params?: Params | Promise<Params>;
+  query?: Query;
+};
+
+export type Handler<T extends RouteResponse, TBindings extends Bindings> = (
+  context: Context<TBindings["params"], TBindings["query"]>
+) => T;

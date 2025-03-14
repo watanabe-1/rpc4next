@@ -8,6 +8,9 @@ import type {
   ContentType,
   Context,
   Params,
+  Bindings,
+  Handler,
+  RouteResponse,
 } from "./types";
 import type { HTTP_METHOD } from "next/dist/server/web/http";
 
@@ -85,20 +88,10 @@ const createHandler = <
   };
 };
 
-export const createRouteHandler = <
-  TBindings extends {
-    params?: Params | Promise<Params>;
-    query?: Query;
-  },
->() => {
-  type Handler<T> = (
-    context: Context<TBindings["params"], TBindings["query"]>
-  ) => T;
-  type ResponseType = TypedNextResponse | Promise<TypedNextResponse>;
-
+export const createRouteHandler = <TBindings extends Bindings>() => {
   const createRoute =
     <THttpMethod extends HTTP_METHOD>(method: THttpMethod) =>
-    <T extends ResponseType>(handler: Handler<T>) => {
+    <T extends RouteResponse>(handler: Handler<T, TBindings>) => {
       const methodFunc = createHandler(handler);
 
       return {
