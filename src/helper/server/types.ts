@@ -130,6 +130,7 @@ export interface TypedNextResponse<
       ? () => Promise<T>
       : () => Promise<never>
     : () => Promise<string>;
+
   readonly ok: HttpStatus<TStatus>["ok"];
   readonly status: HttpStatus<TStatus>["status"];
 }
@@ -137,10 +138,25 @@ export interface TypedNextResponse<
 export type Params = Record<string, string | string[]>;
 export type Query = Record<string, string | string[]>;
 
-export interface Context<TParams = Params, TQuery = Query> {
+export type ValidationResults = {
+  params?: Params;
+  query?: Query;
+};
+
+export type ValidationTarget = keyof ValidationResults;
+
+export interface Context<
+  TParams = Params,
+  TQuery = Query,
+  TValidators extends Validator[] = Validator[],
+> {
   req: NextRequest & {
     query: () => TQuery;
     params: () => Promise<TParams>;
+    valid: <TValidationTarget extends ValidationTarget>(
+      target: TValidationTarget
+    ) => ExtractValidation<TValidators>[TValidationTarget];
+    addValidatedData: (target: ValidationTarget, value: object) => void;
   };
   res: NextResponse;
 
@@ -178,6 +194,26 @@ export type Bindings = {
   query?: Query;
 };
 
-export type Handler<T extends RouteResponse, TBindings extends Bindings> = (
-  context: Context<TBindings["params"], TBindings["query"]>
-) => T;
+export type RouteResponseType =
+  | TypedNextResponse
+  | Promise<TypedNextResponse | void>;
+
+export type Validator<
+  K extends ValidationTarget = ValidationTarget,
+  T = object,
+> = {
+  key: K;
+  schema: T;
+};
+
+export type ExtractValidation<T extends Validator[]> = {
+  [K in T[number] as K["key"]]: K["schema"];
+};
+
+export type RouteHandler<
+  TRouteResponseType extends RouteResponseType,
+  TBindings extends Bindings,
+  TValidators extends Validator[] = Validator[],
+> = (
+  context: Context<TBindings["params"], TBindings["query"], TValidators>
+) => TRouteResponseType;

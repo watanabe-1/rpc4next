@@ -38,7 +38,8 @@
   "dependencies": {
     "commander": "^13.1.0",
     "next": "15.1.7",
-    "rpc4next": "file:"
+    "rpc4next": "file:",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",

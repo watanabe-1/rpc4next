@@ -15,14 +15,24 @@
 export const createQueryParamsProxy = <
   T extends Record<string, string | string[] | undefined>,
 >(
-  searchParams: URLSearchParams,
+  searchParams: URLSearchParams
 ): T => {
   return new Proxy({} as T, {
     get: (_, prop: string) => {
-      // Returns the decoded value for the given prop, or undefined if not present
-      const value = searchParams.get(prop);
+      // すべての値を取得
+      const values = searchParams.getAll(prop);
 
-      return value !== null ? decodeURIComponent(value) : undefined;
+      if (values.length === 0) {
+        return undefined;
+      }
+
+      if (values.length === 1) {
+        // 1つしかない場合は通常の string
+        return decodeURIComponent(values[0]);
+      }
+
+      // 複数ある場合は string[]
+      return values.map(decodeURIComponent);
     },
   });
 };
