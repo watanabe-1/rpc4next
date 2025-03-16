@@ -1,11 +1,23 @@
-import { ZodValidaters, ZodValidatorArgs } from "./types";
-import { Context } from "../../types";
+import { ExtractZodValidaters, ZodValidaters, ZodValidatorArgs } from "./types";
+import { Context, IsNever, ObjectPropertiesToString } from "../../types";
 
-export const zValidator = <TValidators extends ZodValidatorArgs>(
+export const zValidator = <
+  TValidators extends ZodValidatorArgs,
+  TZodValidaters extends ZodValidaters<TValidators>,
+  TParams extends ExtractZodValidaters<TZodValidaters, "params">["input"],
+  TQuery extends ExtractZodValidaters<TZodValidaters, "query">["input"],
+>(
   ...validators: TValidators
 ) => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return async (c: Context<any, any, ZodValidaters<TValidators>>) => {
+  return async (
+    c: Context<
+      IsNever<TParams> extends true
+        ? unknown
+        : ObjectPropertiesToString<TParams>,
+      IsNever<TQuery> extends true ? unknown : ObjectPropertiesToString<TQuery>,
+      TZodValidaters
+    >
+  ) => {
     for (const { target, schema } of validators) {
       // 入力値を取り出す
       const value = await (async () => {

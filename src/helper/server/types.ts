@@ -199,11 +199,13 @@ export type Bindings = {
 };
 
 export type Validated<
-  K extends ValidationTarget = ValidationTarget,
-  T = unknown,
+  TTarget extends ValidationTarget = ValidationTarget,
+  TInput = unknown,
+  TOutput = unknown,
 > = {
-  key: K;
-  safeObject: T;
+  key: TTarget;
+  input: TInput;
+  output: TOutput;
 };
 
 export type RouteHandler<
@@ -220,10 +222,17 @@ type UnionToIntersection<U> = (
   ? I
   : never;
 
-type ExtractValidation<
-  T extends { key: ValidationTarget; safeObject: unknown }[],
-> = {
-  [K in T[number]["key"]]: UnionToIntersection<
-    Extract<T[number], { key: K }>["safeObject"]
-  >;
+type ExtractValidation<T extends { key: ValidationTarget; output: unknown }[]> =
+  {
+    [K in T[number]["key"]]: UnionToIntersection<
+      Extract<T[number], { key: K }>["output"]
+    >;
+  };
+
+export type IsNever<T> = [T] extends [never] ? true : false;
+
+type ArrayElementsToString<T> = T extends unknown[] ? string[] : string;
+
+export type ObjectPropertiesToString<T> = {
+  [K in keyof T]: T[K] extends unknown[] ? ArrayElementsToString<T[K]> : string;
 };
