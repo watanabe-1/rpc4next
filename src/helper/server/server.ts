@@ -1,7 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { notFound } from "next/navigation";
 import { NextRequest, NextResponse } from "next/server";
-import { ZodSchema, z } from "zod";
 import { createQueryParamsProxy } from "./createQueryParamsProxy";
 import type {
   Query,
@@ -15,60 +13,13 @@ import type {
   Bindings,
   Validated,
   RouteHandler,
-  ZodValidate,
 } from "./types";
 import type { HTTP_METHOD } from "next/dist/server/web/http";
-
-export const zValidator = <
-  TValidators extends { target: ValidationTarget; schema: ZodSchema<any> }[],
->(
-  ...validators: TValidators
-) => {
-  return async (
-    c: Context<
-      TValidators[number]["target"] extends "params"
-        ? z.input<TValidators[number]["schema"]>
-        : any,
-      TValidators[number]["target"] extends "query"
-        ? z.input<TValidators[number]["schema"]>
-        : any,
-      ZodValidate<
-        TValidators[number]["target"],
-        TValidators[number]["schema"]
-      >[]
-    >
-  ) => {
-    for (const { target, schema } of validators) {
-      // 入力値を取り出す
-      const value = await (async () => {
-        if (target === "params") {
-          return await c.req.params();
-        }
-        if (target === "query") {
-          return c.req.query();
-        }
-      })();
-
-      const result = await schema.safeParseAsync(value);
-
-      if (!result.success) {
-        // バリデーション失敗
-        return c.json(result, { status: 400 }) as never;
-      }
-
-      // バリデーション成功時は validatedData として登録
-      c.req.addValidatedData(target, result.data);
-    }
-
-    // すべてのバリデーションを通過したら `undefined` を返す
-    return undefined as never;
-  };
-};
 
 const createHandler = <
   TParams extends Params,
   TQuery extends Query,
-  TValidateds extends Validated[], // ★ ここを変更
+  TValidateds extends Validated[],
   THandler extends (context: Context<TParams, TQuery, TValidateds>) => unknown,
 >(
   handlers: THandler[]
@@ -92,12 +43,9 @@ const createHandler = <
         params: async () => await segmentData.params,
         valid: (target: ValidationTarget) => {
           // バリデーション結果を取り出す
-          return validationResults[target] as any;
+          return validationResults[target] as never;
         },
-        addValidatedData: (
-          target: ValidationTarget,
-          value: Record<string, any>
-        ) => {
+        addValidatedData: (target: ValidationTarget, value: object) => {
           validationResults[target] = value;
         },
       }),
