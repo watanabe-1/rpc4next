@@ -1,3 +1,4 @@
+import { ZodSchema, z } from "zod";
 import type { NextResponse, NextRequest } from "next/server";
 
 type KnownContentType =
@@ -148,7 +149,7 @@ export type ValidationTarget = keyof ValidationResults;
 export interface Context<
   TParams = Params,
   TQuery = Query,
-  TValidators extends Validator[] = Validator[],
+  TValidators extends Validated[] = Validated[],
 > {
   req: NextRequest & {
     query: () => TQuery;
@@ -198,22 +199,31 @@ export type RouteResponseType =
   | TypedNextResponse
   | Promise<TypedNextResponse | void>;
 
-export type Validator<
+export type ZodValidate<
+  TTarget extends ValidationTarget,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  TSchema extends ZodSchema<any>,
+> = {
+  key: TTarget;
+  safeObject: z.infer<TSchema>;
+};
+
+export type Validated<
   K extends ValidationTarget = ValidationTarget,
   T = object,
 > = {
   key: K;
-  schema: T;
+  safeObject: T;
 };
 
-export type ExtractValidation<T extends Validator[]> = {
-  [K in T[number] as K["key"]]: K["schema"];
+export type ExtractValidation<T extends Validated[]> = {
+  [K in T[number] as K["key"]]: K["safeObject"];
 };
 
 export type RouteHandler<
   TRouteResponseType extends RouteResponseType,
   TBindings extends Bindings,
-  TValidators extends Validator[] = Validator[],
+  TValidateds extends Validated[] = Validated[],
 > = (
-  context: Context<TBindings["params"], TBindings["query"], TValidators>
+  context: Context<TBindings["params"], TBindings["query"], TValidateds>
 ) => TRouteResponseType;

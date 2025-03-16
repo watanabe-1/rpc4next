@@ -13,64 +13,63 @@ import type {
   ValidationTarget,
   RouteResponseType,
   Bindings,
-  Validator,
+  Validated,
   RouteHandler,
+  ZodValidate,
 } from "./types";
 import type { HTTP_METHOD } from "next/dist/server/web/http";
 
-type ArrayElementsToString<T> = T extends unknown[] ? string[] : string;
-type ObjectPropertiesToString<T> = {
-  [K in keyof T]: T[K] extends any[] ? ArrayElementsToString<T[K]> : string;
-};
-
-// ★ zValidator 側はそのままでもOKですが、
-//   「バリデータは1つだけ返す」想定なら下記のように TValidator を組み立てて
-//   `Context<..., [TValidator]>` のように「配列」として返す実装でもOKです。
 export const zValidator = <
-  TZodSchema extends ZodSchema<any>,
-  TValidationTarget extends ValidationTarget,
+  TValidators extends { target: ValidationTarget; schema: ZodSchema<any> }[],
 >(
-  target: TValidationTarget,
-  schema: TZodSchema
+  ...validators: TValidators
 ) => {
-  // バリデーション結果の型
-  type TValidator = {
-    key: TValidationTarget;
-    schema: z.infer<TZodSchema>;
-  };
+  return async (
+    c: Context<
+      TValidators[number]["target"] extends "params"
+        ? z.input<TValidators[number]["schema"]>
+        : any,
+      TValidators[number]["target"] extends "query"
+        ? z.input<TValidators[number]["schema"]>
+        : any,
+      ZodValidate<
+        TValidators[number]["target"],
+        TValidators[number]["schema"]
+      >[]
+    >
+  ) => {
+    for (const { target, schema } of validators) {
+      // 入力値を取り出す
+      const value = await (async () => {
+        if (target === "params") {
+          return await c.req.params();
+        }
+        if (target === "query") {
+          return c.req.query();
+        }
+      })();
 
-  return async (c: Context<any, any, [TValidator]>) => {
-    // 入力値を取り出す
-    const value = (async () => {
-      if (target === "params") {
-        return await c.req.params();
+      const result = await schema.safeParseAsync(value);
+
+      if (!result.success) {
+        // バリデーション失敗
+        return c.json(result, { status: 400 }) as never;
       }
-      if (target === "query") {
-        return c.req.query();
-      }
-    })();
 
-    const result = await schema.safeParseAsync(await value);
-
-    if (!result.success) {
-      // バリデーション失敗
-      return c.json(result, { status: 400 }) as never;
+      // バリデーション成功時は validatedData として登録
+      c.req.addValidatedData(target, result.data);
     }
 
-    // バリデーション成功時は validatedData として登録
-    c.req.addValidatedData(target, result.data);
-
-    // このハンドラは次に渡すだけなので、Response は返さない
+    // すべてのバリデーションを通過したら `undefined` を返す
     return undefined as never;
   };
 };
 
-// ★ 修正ポイント: createHandler, createRoute 内の TValidator -> TValidators extends Validator[] に変更
 const createHandler = <
   TParams extends Params,
   TQuery extends Query,
-  TValidators extends Validator[], // ★ ここを変更
-  THandler extends (context: Context<TParams, TQuery, TValidators>) => unknown,
+  TValidateds extends Validated[], // ★ ここを変更
+  THandler extends (context: Context<TParams, TQuery, TValidateds>) => unknown,
 >(
   handlers: THandler[]
 ) => {
@@ -87,7 +86,7 @@ const createHandler = <
     // バリデーション結果を保持しておくためのオブジェクト
     const validationResults = {} as Record<ValidationTarget, unknown>;
 
-    const context: Context<TParams, TQuery, TValidators> = {
+    const context: Context<TParams, TQuery, TValidateds> = {
       req: Object.assign(req, {
         query: () => createQueryParamsProxy<TQuery>(req.nextUrl.searchParams),
         params: async () => await segmentData.params,
@@ -167,9 +166,9 @@ export const createRouteHandler = <TBindings extends Bindings>() => {
     <THttpMethod extends HTTP_METHOD>(method: THttpMethod) =>
     <
       TRouteResponseType extends RouteResponseType,
-      TValidators extends Validator[], // ★ ここも変更
+      TValidateds extends Validated[],
     >(
-      ...handlers: RouteHandler<TRouteResponseType, TBindings, TValidators>[]
+      ...handlers: RouteHandler<TRouteResponseType, TBindings, TValidateds>[]
     ) => {
       const methodFunc = createHandler(handlers);
 
