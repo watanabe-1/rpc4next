@@ -1,26 +1,11 @@
-import { ZodSchema, z } from "zod";
-import { ValidationTarget, ZodValidate, Context } from "../../types";
+import { ZodValidaters, ZodValidatorArgs } from "./types";
+import { Context } from "../../types";
 
-export const zValidator = <
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  TValidators extends { target: ValidationTarget; schema: ZodSchema<any> }[],
->(
+export const zValidator = <TValidators extends ZodValidatorArgs>(
   ...validators: TValidators
 ) => {
-  return async (
-    c: Context<
-      TValidators[number]["target"] extends "params"
-        ? z.infer<TValidators[number]["schema"]>
-        : unknown,
-      TValidators[number]["target"] extends "query"
-        ? z.infer<TValidators[number]["schema"]>
-        : unknown,
-      ZodValidate<
-        TValidators[number]["target"],
-        TValidators[number]["schema"]
-      >[]
-    >
-  ) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return async (c: Context<any, any, ZodValidaters<TValidators>>) => {
     for (const { target, schema } of validators) {
       // 入力値を取り出す
       const value = await (async () => {

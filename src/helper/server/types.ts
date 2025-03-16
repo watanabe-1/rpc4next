@@ -1,4 +1,3 @@
-import { ZodSchema, z } from "zod";
 import type { NextResponse, NextRequest } from "next/server";
 
 type KnownContentType =
@@ -190,34 +189,21 @@ export interface Context<
 
 export type RouteResponse = TypedNextResponse | Promise<TypedNextResponse>;
 
+export type RouteResponseType =
+  | TypedNextResponse
+  | Promise<TypedNextResponse | void>;
+
 export type Bindings = {
   params?: Params | Promise<Params>;
   query?: Query;
 };
 
-export type RouteResponseType =
-  | TypedNextResponse
-  | Promise<TypedNextResponse | void>;
-
-export type ZodValidate<
-  TTarget extends ValidationTarget,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  TSchema extends ZodSchema<any>,
-> = {
-  key: TTarget;
-  safeObject: z.infer<TSchema>;
-};
-
 export type Validated<
   K extends ValidationTarget = ValidationTarget,
-  T = object,
+  T = unknown,
 > = {
   key: K;
   safeObject: T;
-};
-
-export type ExtractValidation<T extends Validated[]> = {
-  [K in T[number] as K["key"]]: K["safeObject"];
 };
 
 export type RouteHandler<
@@ -227,3 +213,17 @@ export type RouteHandler<
 > = (
   context: Context<TBindings["params"], TBindings["query"], TValidateds>
 ) => TRouteResponseType;
+
+type UnionToIntersection<U> = (
+  U extends unknown ? (k: U) => void : never
+) extends (k: infer I) => void
+  ? I
+  : never;
+
+type ExtractValidation<
+  T extends { key: ValidationTarget; safeObject: unknown }[],
+> = {
+  [K in T[number]["key"]]: UnionToIntersection<
+    Extract<T[number], { key: K }>["safeObject"]
+  >;
+};
