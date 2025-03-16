@@ -19,7 +19,6 @@ export const zValidator = <
     >
   ) => {
     for (const { target, schema } of validators) {
-      // 入力値を取り出す
       const value = await (async () => {
         if (target === "params") {
           return await c.req.params();
@@ -32,15 +31,15 @@ export const zValidator = <
       const result = await schema.safeParseAsync(value);
 
       if (!result.success) {
-        // バリデーション失敗
+        // Validation failed
         return c.json(result, { status: 400 }) as never;
       }
 
-      // バリデーション成功時は validatedData として登録
+      // If validation succeeds, register it as validatedData
       c.req.addValidatedData(target, result.data);
     }
 
-    // すべてのバリデーションを通過したら `undefined` を返す
+    // Return `undefined` if all validations pass
     return undefined as never;
   };
 };

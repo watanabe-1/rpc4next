@@ -24,6 +24,12 @@
         "types": "./dist/helper/server/index.d.ts",
         "default": "./dist/helper/server/index.js"
       }
+    },
+    "./server/validators/zod": {
+      "import": {
+        "types": "./dist/helper/server/validators/zod/index.d.ts",
+        "default": "./dist/helper/server/validators/zod/index.js"
+      }
     }
   },
   "scripts": {
