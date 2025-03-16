@@ -38,10 +38,8 @@ export const zValidator = <
 
       if (hook) {
         const hookResult = await hook(result, c);
-        if (hookResult) {
-          if (hookResult instanceof Response) {
-            return hookResult as never;
-          }
+        if (hookResult instanceof Response) {
+          return hookResult as never;
         }
       }
 
