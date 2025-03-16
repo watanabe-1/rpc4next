@@ -1,5 +1,11 @@
 import { ExtractZodValidaters, ZodValidaters, ZodValidatorArgs } from "./types";
-import { Context, IsNever, ObjectPropertiesToString } from "../../types";
+import {
+  Context,
+  IsNever,
+  ObjectPropertiesToString,
+  Params,
+  Query,
+} from "../../types";
 
 export const zValidator = <
   TValidators extends ZodValidatorArgs,
@@ -12,13 +18,13 @@ export const zValidator = <
   return async (
     c: Context<
       IsNever<TParams> extends true
-        ? unknown
+        ? Params
         : ObjectPropertiesToString<TParams>,
-      IsNever<TQuery> extends true ? unknown : ObjectPropertiesToString<TQuery>,
+      IsNever<TQuery> extends true ? Query : ObjectPropertiesToString<TQuery>,
       TZodValidaters
     >
   ) => {
-    for (const { target, schema } of validators) {
+    for (const { target, schema, hook } of validators) {
       const value = await (async () => {
         if (target === "params") {
           return await c.req.params();
@@ -29,6 +35,15 @@ export const zValidator = <
       })();
 
       const result = await schema.safeParseAsync(value);
+
+      if (hook) {
+        const hookResult = await hook(result, c);
+        if (hookResult) {
+          if (hookResult instanceof Response) {
+            return hookResult as never;
+          }
+        }
+      }
 
       if (!result.success) {
         // Validation failed
