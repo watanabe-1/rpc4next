@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { NextRequest, NextResponse } from "next/server";
-import { createQueryParamsProxy } from "./createQueryParamsProxy";
+import { searchParamsToObject } from "./searchParamsToObject";
 import type {
   Query,
   TypedNextResponse,
@@ -39,7 +39,7 @@ const createHandler = <
 
     const context: Context<TParams, TQuery, TValidateds> = {
       req: Object.assign(req, {
-        query: () => createQueryParamsProxy<TQuery>(req.nextUrl.searchParams),
+        query: () => searchParamsToObject<TQuery>(req.nextUrl.searchParams),
         params: async () => await segmentData.params,
         valid: (target: ValidationTarget) => {
           // バリデーション結果を取り出す
