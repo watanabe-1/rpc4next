@@ -9,17 +9,11 @@ import type {
   Context,
   Params,
   ValidationTarget,
-  RouteResponseType,
   Bindings,
   Validated,
+  Handler,
 } from "./types";
 import type { HTTP_METHOD } from "next/dist/server/web/http";
-
-type Handler<
-  TParams = Params,
-  TQuery = Query,
-  TValidateds extends Validated[] = Validated[],
-> = (context: Context<TParams, TQuery, TValidateds>) => RouteResponseType;
 
 const createHandler = <
   TParams extends Params,

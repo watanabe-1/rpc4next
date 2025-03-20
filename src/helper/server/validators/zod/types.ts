@@ -3,7 +3,7 @@ import {
   ValidationTarget,
   Validated,
   Context,
-  RouteResponseType,
+  RouteResponse,
 } from "../../types";
 
 export type ZodValidater<
@@ -26,7 +26,7 @@ type ZodValidatorArg<TSchema extends ZodSchema<any> = ZodSchema<any>> = {
   hook?: (
     result: z.SafeParseReturnType<z.input<TSchema>, z.output<TSchema>>,
     context: Context
-  ) => void | RouteResponseType;
+  ) => RouteResponse;
 };
 
 export type ZodValidatorArgs = ZodValidatorArg[];

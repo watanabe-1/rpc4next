@@ -187,9 +187,7 @@ export interface Context<
   ) => TypedNextResponse<null, TStatus, "text/html">;
 }
 
-export type RouteResponse = TypedNextResponse | Promise<TypedNextResponse>;
-
-export type RouteResponseType =
+export type RouteResponse =
   | TypedNextResponse
   | Promise<TypedNextResponse | void>;
 
@@ -228,3 +226,9 @@ type ArrayElementsToString<T> = T extends unknown[] ? string[] : string;
 export type ObjectPropertiesToString<T> = {
   [K in keyof T]: T[K] extends unknown[] ? ArrayElementsToString<T[K]> : string;
 };
+
+export type Handler<
+  TParams = Params,
+  TQuery = Query,
+  TValidateds extends Validated[] = Validated[],
+> = (context: Context<TParams, TQuery, TValidateds>) => RouteResponse;
