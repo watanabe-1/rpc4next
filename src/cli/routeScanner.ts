@@ -153,24 +153,25 @@ export const scanAppDir = (
 
       const isSkipDir = isGroup || isParallel;
 
-      const { pathStructure: child, imports: childQueries } = scanAppDir(
-        output,
-        fullPath,
-        isSkipDir ? indent.replace(INDENT, "") : indent,
-        [...params]
-      );
+      const { pathStructure: childPathStructure, imports: childImports } =
+        scanAppDir(
+          output,
+          fullPath,
+          isSkipDir ? indent.replace(INDENT, "") : indent,
+          [...params]
+        );
 
-      imports.push(...childQueries);
+      imports.push(...childImports);
 
       if (isSkipDir) {
         // Extract the contents inside {}
-        const match = child.match(/^\s*\{([\s\S]*)\}\s*$/);
+        const match = childPathStructure.match(/^\s*\{([\s\S]*)\}\s*$/);
         const childStr = match ? match[1].trim() : null;
         if (childStr) {
           pathStructures.push(`${indent}${childStr}`);
         }
       } else {
-        pathStructures.push(`${indent}"${keyName}": ${child}`);
+        pathStructures.push(`${indent}"${keyName}": ${childPathStructure}`);
       }
     } else {
       const queryDef = scanQuery(output, fullPath);
