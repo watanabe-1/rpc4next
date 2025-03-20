@@ -12,29 +12,29 @@ import type {
   RouteResponseType,
   Bindings,
   Validated,
-  RouteHandler,
 } from "./types";
 import type { HTTP_METHOD } from "next/dist/server/web/http";
+
+type Handler<
+  TParams = Params,
+  TQuery = Query,
+  TValidateds extends Validated[] = Validated[],
+> = (context: Context<TParams, TQuery, TValidateds>) => RouteResponseType;
 
 const createHandler = <
   TParams extends Params,
   TQuery extends Query,
   TValidateds extends Validated[],
-  THandler extends (context: Context<TParams, TQuery, TValidateds>) => unknown,
+  THandlers extends Handler<TParams, TQuery, TValidateds>[],
 >(
-  handlers: THandler[]
+  handlers: THandlers
 ) => {
-  type HandlerReturn = ReturnType<THandler>;
-  type ResolvedHandlerResult =
-    HandlerReturn extends Promise<TypedNextResponse>
-      ? Awaited<HandlerReturn>
-      : HandlerReturn;
+  type HandlerReturn = Awaited<ReturnType<THandlers[number]>>;
 
   return async (
     req: NextRequest,
     segmentData: { params: Promise<TParams> }
-  ) => {
-    // バリデーション結果を保持しておくためのオブジェクト
+  ): Promise<HandlerReturn> => {
     const validationResults = {} as Record<ValidationTarget, unknown>;
 
     const context: Context<TParams, TQuery, TValidateds> = {
@@ -42,7 +42,6 @@ const createHandler = <
         query: () => searchParamsToObject<TQuery>(req.nextUrl.searchParams),
         params: async () => await segmentData.params,
         valid: (target: ValidationTarget) => {
-          // バリデーション結果を取り出す
           return validationResults[target] as never;
         },
         addValidatedData: (target: ValidationTarget, value: object) => {
@@ -100,7 +99,7 @@ const createHandler = <
     for (const handler of handlers) {
       const result = await handler(context);
       if (result instanceof Response) {
-        return result as ResolvedHandlerResult;
+        return result as HandlerReturn;
       }
     }
 
@@ -113,10 +112,14 @@ export const createRouteHandler = <TBindings extends Bindings>() => {
   const createRoute =
     <THttpMethod extends HTTP_METHOD>(method: THttpMethod) =>
     <
-      TRouteResponseType extends RouteResponseType,
       TValidateds extends Validated[],
+      THandlers extends Handler<
+        TBindings["params"],
+        TBindings["query"],
+        TValidateds
+      >[],
     >(
-      ...handlers: RouteHandler<TRouteResponseType, TBindings, TValidateds>[]
+      ...handlers: THandlers
     ) => {
       const methodFunc = createHandler(handlers);
 

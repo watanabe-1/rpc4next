@@ -208,14 +208,6 @@ export type Validated<
   output: TOutput;
 };
 
-export type RouteHandler<
-  TRouteResponseType extends RouteResponseType,
-  TBindings extends Bindings,
-  TValidateds extends Validated[] = Validated[],
-> = (
-  context: Context<TBindings["params"], TBindings["query"], TValidateds>
-) => TRouteResponseType;
-
 type UnionToIntersection<U> = (
   U extends unknown ? (k: U) => void : never
 ) extends (k: infer I) => void
