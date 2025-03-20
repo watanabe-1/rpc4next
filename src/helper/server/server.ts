@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { searchParamsToObject } from "./searchParamsToObject";
 import type {
   Query,
@@ -14,6 +14,7 @@ import type {
   Handler,
 } from "./types";
 import type { HTTP_METHOD } from "next/dist/server/web/http";
+import type { NextRequest } from "next/server";
 
 const createHandler = <
   TParams extends Params,

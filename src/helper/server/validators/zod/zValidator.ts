@@ -1,5 +1,9 @@
-import { ExtractZodValidaters, ZodValidaters, ZodValidatorArgs } from "./types";
-import {
+import type {
+  ExtractZodValidaters,
+  ZodValidaters,
+  ZodValidatorArgs,
+} from "./types";
+import type {
   Context,
   IsNever,
   ObjectPropertiesToString,

@@ -1,10 +1,10 @@
-import { ZodSchema, z } from "zod";
-import {
+import type {
   ValidationTarget,
   Validated,
   Context,
   RouteResponse,
 } from "../../types";
+import type { ZodSchema, z } from "zod";
 
 export type ZodValidater<
   TTarget extends ValidationTarget,
