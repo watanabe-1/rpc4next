@@ -1,10 +1,10 @@
+import { createHandler } from "../../createHandler";
 import type {
   ExtractZodValidaters,
   ZodValidaters,
   ZodValidatorArgs,
 } from "./types";
 import type {
-  Context,
   IsNever,
   ObjectPropertiesToString,
   Params,
@@ -19,15 +19,11 @@ export const zValidator = <
 >(
   ...validators: TValidators
 ) => {
-  return async (
-    c: Context<
-      IsNever<TParams> extends true
-        ? Params
-        : ObjectPropertiesToString<TParams>,
-      IsNever<TQuery> extends true ? Query : ObjectPropertiesToString<TQuery>,
-      TZodValidaters
-    >
-  ) => {
+  return createHandler<
+    IsNever<TParams> extends true ? Params : ObjectPropertiesToString<TParams>,
+    IsNever<TQuery> extends true ? Query : ObjectPropertiesToString<TQuery>,
+    TZodValidaters
+  >()(async (c) => {
     for (const { target, schema, hook } of validators) {
       const value = await (async () => {
         if (target === "params") {
@@ -49,7 +45,7 @@ export const zValidator = <
 
       if (!result.success) {
         // Validation failed
-        return c.json(result, { status: 400 }) as never;
+        return c.json(result, { status: 400 });
       }
 
       // If validation succeeds, register it as validatedData
@@ -58,5 +54,5 @@ export const zValidator = <
 
     // Return `undefined` if all validations pass
     return undefined as never;
-  };
+  });
 };

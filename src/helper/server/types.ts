@@ -231,4 +231,5 @@ export type Handler<
   TParams = Params,
   TQuery = Query,
   TValidateds extends Validated[] = Validated[],
-> = (context: Context<TParams, TQuery, TValidateds>) => RouteResponse;
+  TRouteResponse extends RouteResponse = RouteResponse,
+> = (context: Context<TParams, TQuery, TValidateds>) => TRouteResponse;

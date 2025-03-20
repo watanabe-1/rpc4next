@@ -16,7 +16,7 @@ import type {
 import type { HTTP_METHOD } from "next/dist/server/web/http";
 import type { NextRequest } from "next/server";
 
-const createHandler = <
+const composeHandlers = <
   TParams extends Params,
   TQuery extends Query,
   TValidateds extends Validated[],
@@ -116,7 +116,7 @@ export const createRouteHandler = <TBindings extends Bindings>() => {
     >(
       ...handlers: THandlers
     ) => {
-      const methodFunc = createHandler(handlers);
+      const methodFunc = composeHandlers(handlers);
 
       return {
         [method]: methodFunc,
