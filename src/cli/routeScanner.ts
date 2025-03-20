@@ -22,7 +22,7 @@ const endPointFileNames = new Set(END_POINT_FILE_NAMES);
 const visitedDirs = new Map<string, boolean>();
 
 export const hasTargetFiles = (dirPath: string): boolean => {
-  // キャッシュがあればそのまま返す
+  // Return cached result if available
   if (visitedDirs.has(dirPath)) return visitedDirs.get(dirPath)!;
 
   const entries = fs.readdirSync(dirPath, { withFileTypes: true });
@@ -40,7 +40,7 @@ export const hasTargetFiles = (dirPath: string): boolean => {
       name.startsWith("(..)") ||
       name.startsWith("(...)")
     ) {
-      visitedDirs.set(dirPath, true);
+      visitedDirs.set(dirPath, false);
 
       return false;
     }
@@ -65,7 +65,6 @@ export const hasTargetFiles = (dirPath: string): boolean => {
   return false;
 };
 
-// ディレクトリ解析処理
 export const scanAppDir = (
   output: string,
   input: string,
@@ -120,11 +119,11 @@ export const scanAppDir = (
 
       const { paramName, keyName } = (() => {
         let param = nameWithoutExt;
-        // [] を削除
+        // Remove []
         if (isDynamic) {
           param = param.replace(/^\[+|\]+$/g, "");
         }
-        // ...を削除
+        // Remove ...
         if (isCatchAll || isOptionalCatchAll) {
           param = param.replace(/^\.{3}/, "");
         }
@@ -164,6 +163,7 @@ export const scanAppDir = (
       imports.push(...childQueries);
 
       if (isSkipDir) {
+        // Extract the contents inside {}
         const match = child.match(/^\s*\{([\s\S]*)\}\s*$/);
         const childStr = match ? match[1].trim() : null;
         if (childStr) {
