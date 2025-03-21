@@ -1,3 +1,4 @@
+// 実装ファイル
 import { notFound } from "next/navigation";
 import { NextResponse } from "next/server";
 import { searchParamsToObject } from "./searchParamsToObject";
@@ -12,6 +13,7 @@ import type {
   Bindings,
   Validated,
   Handler,
+  CreateRoute,
 } from "./types";
 import type { HTTP_METHOD } from "next/dist/server/web/http";
 import type { NextRequest } from "next/server";
@@ -19,8 +21,8 @@ import type { NextRequest } from "next/server";
 const composeHandlers = <
   TParams extends Params,
   TQuery extends Query,
-  TValidateds extends Validated[],
-  THandlers extends Handler<TParams, TQuery, TValidateds>[],
+  TValidated extends Validated,
+  THandlers extends Handler<TParams, TQuery, TValidated>[],
 >(
   handlers: THandlers
 ) => {
@@ -32,7 +34,7 @@ const composeHandlers = <
   ): Promise<HandlerReturn> => {
     const validationResults = {} as Record<ValidationTarget, unknown>;
 
-    const context: Context<TParams, TQuery, TValidateds> = {
+    const context: Context<TParams, TQuery, TValidated> = {
       req: Object.assign(req, {
         query: () => searchParamsToObject<TQuery>(req.nextUrl.searchParams),
         params: async () => await segmentData.params,
@@ -57,7 +59,6 @@ const composeHandlers = <
           TStatus,
           TContentType
         >,
-
       json: <TData, TStatus extends HttpStatusCode = 200>(
         data: TData,
         init?: ResponseInit & { status?: TStatus }
@@ -67,7 +68,6 @@ const composeHandlers = <
           TStatus,
           "application/json"
         >,
-
       text: <TData extends string, TStatus extends HttpStatusCode = 200>(
         data: TData,
         init?: ResponseInit & { status?: TStatus }
@@ -76,9 +76,7 @@ const composeHandlers = <
           ...init,
           headers: { "Content-Type": "text/plain", ...init?.headers },
         }) as TypedNextResponse<TData, TStatus, "text/plain">,
-
       notFound: () => notFound() as TypedNextResponse<null, 404, "text/html">,
-
       redirect: <TStatus extends HttpStatusCode = 302>(
         url: string,
         status?: TStatus
@@ -104,24 +102,16 @@ const composeHandlers = <
 };
 
 export const createRouteHandler = <TBindings extends Bindings>() => {
-  const createRoute =
-    <THttpMethod extends HTTP_METHOD>(method: THttpMethod) =>
-    <
-      TValidateds extends Validated[],
-      THandlers extends Handler<
-        TBindings["params"],
-        TBindings["query"],
-        TValidateds
-      >[],
-    >(
-      ...handlers: THandlers
-    ) => {
+  function createRoute<THttpMethod extends HTTP_METHOD>(
+    method: THttpMethod
+  ): CreateRoute<TBindings, THttpMethod> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return ((...handlers: any[]) => {
       const methodFunc = composeHandlers(handlers);
 
-      return {
-        [method]: methodFunc,
-      } as Record<THttpMethod, typeof methodFunc>;
-    };
+      return { [method]: methodFunc } as Record<THttpMethod, typeof methodFunc>;
+    }) as CreateRoute<TBindings, THttpMethod>;
+  }
 
   return {
     get: createRoute("GET"),

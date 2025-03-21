@@ -1,56 +1,67 @@
+import { z, ZodSchema } from "zod";
 import { createHandler } from "../../createHandler";
 import type {
-  ExtractZodValidaters,
-  ZodValidaters,
-  ZodValidatorArgs,
-} from "./types";
-import type {
-  IsNever,
-  ObjectPropertiesToString,
+  Context,
   Params,
   Query,
+  RouteResponse,
+  Validated,
+  ValidatedOutputToString,
+  ValidationTarget,
 } from "../../types";
 
 export const zValidator = <
-  TValidators extends ZodValidatorArgs,
-  TZodValidaters extends ZodValidaters<TValidators>,
-  TParams extends ExtractZodValidaters<TZodValidaters, "params">["input"],
-  TQuery extends ExtractZodValidaters<TZodValidaters, "query">["input"],
+  TValidationTarget extends ValidationTarget,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  TSchema extends ZodSchema<any>,
+  TInput = z.input<TSchema>,
+  TOutput = z.output<TSchema>,
+  TValidated extends Validated = {
+    input: Record<TValidationTarget, TInput>;
+    output: Record<TValidationTarget, TOutput>;
+  },
 >(
-  ...validators: TValidators
+  target: TValidationTarget,
+  schema: TSchema,
+  hook?: (
+    result: z.SafeParseReturnType<TInput, TOutput>,
+    context: Context
+  ) => RouteResponse
 ) => {
   return createHandler<
-    IsNever<TParams> extends true ? Params : ObjectPropertiesToString<TParams>,
-    IsNever<TQuery> extends true ? Query : ObjectPropertiesToString<TQuery>,
-    TZodValidaters
+    TValidationTarget extends "params"
+      ? ValidatedOutputToString<TValidationTarget, TValidated>
+      : Params,
+    TValidationTarget extends "query"
+      ? ValidatedOutputToString<TValidationTarget, TValidated>
+      : Query,
+    TValidated
   >()(async (c) => {
-    for (const { target, schema, hook } of validators) {
-      const value = await (async () => {
-        if (target === "params") {
-          return await c.req.params();
-        }
-        if (target === "query") {
-          return c.req.query();
-        }
-      })();
-
-      const result = await schema.safeParseAsync(value);
-
-      if (hook) {
-        const hookResult = await hook(result, c);
-        if (hookResult instanceof Response) {
-          return hookResult as never;
-        }
+    const value = await (async () => {
+      if (target === "params") {
+        return await c.req.params();
       }
-
-      if (!result.success) {
-        // Validation failed
-        return c.json(result, { status: 400 });
+      if (target === "query") {
+        return c.req.query();
       }
+    })();
 
-      // If validation succeeds, register it as validatedData
-      c.req.addValidatedData(target, result.data);
+    const result = await schema.safeParseAsync(value);
+
+    if (hook) {
+      const hookResult = await hook(result, c as never);
+      if (hookResult instanceof Response) {
+        return hookResult as never;
+      }
     }
+
+    if (!result.success) {
+      // Validation failed
+      return c.json(result, { status: 400 });
+    }
+
+    // If validation succeeds, register it as validatedData
+    c.req.addValidatedData(target, result.data);
 
     // Return `undefined` if all validations pass
     return undefined as never;

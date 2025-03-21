@@ -148,14 +148,15 @@ export type ValidationTarget = keyof ValidationResults;
 export interface Context<
   TParams = Params,
   TQuery = Query,
-  TValidators extends Validated[] = Validated[],
+  TValidated extends Validated = Validated,
 > {
   req: NextRequest & {
     query: () => TQuery;
     params: () => Promise<TParams>;
     valid: <TValidationTarget extends ValidationTarget>(
       target: TValidationTarget
-    ) => ExtractValidation<TValidators>[TValidationTarget];
+    ) => ValidatedOutput<TValidationTarget, TValidated>;
+
     addValidatedData: (target: ValidationTarget, value: object) => void;
   };
   res: NextResponse;
@@ -196,40 +197,103 @@ export type Bindings = {
   query?: Query;
 };
 
-export type Validated<
-  TTarget extends ValidationTarget = ValidationTarget,
-  TInput = unknown,
-  TOutput = unknown,
-> = {
-  key: TTarget;
-  input: TInput;
-  output: TOutput;
+export type Validated = {
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  input: {};
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  output: {};
 };
 
-type UnionToIntersection<U> = (
-  U extends unknown ? (k: U) => void : never
-) extends (k: infer I) => void
-  ? I
-  : never;
-
-type ExtractValidation<T extends { key: ValidationTarget; output: unknown }[]> =
-  {
-    [K in T[number]["key"]]: UnionToIntersection<
-      Extract<T[number], { key: K }>["output"]
-    >;
-  };
-
-export type IsNever<T> = [T] extends [never] ? true : false;
+export type ValidatedOutput<
+  TValidationTarget extends ValidationTarget,
+  TValidated extends Validated,
+> = TValidationTarget extends keyof TValidated["output"]
+  ? TValidated["output"][TValidationTarget]
+  : unknown;
 
 type ArrayElementsToString<T> = T extends unknown[] ? string[] : string;
 
-export type ObjectPropertiesToString<T> = {
+type ObjectPropertiesToString<T> = {
   [K in keyof T]: T[K] extends unknown[] ? ArrayElementsToString<T[K]> : string;
 };
+
+export type ValidatedOutputToString<
+  TValidationTarget extends ValidationTarget,
+  TValidated extends Validated,
+> = ObjectPropertiesToString<ValidatedOutput<TValidationTarget, TValidated>>;
 
 export type Handler<
   TParams = Params,
   TQuery = Query,
-  TValidateds extends Validated[] = Validated[],
+  TValidated extends Validated = Validated,
   TRouteResponse extends RouteResponse = RouteResponse,
-> = (context: Context<TParams, TQuery, TValidateds>) => TRouteResponse;
+> = (context: Context<TParams, TQuery, TValidated>) => TRouteResponse;
+
+// createRouteHandler 用のオーバーロード型定義
+export type CreateRoute<
+  TBindings extends Bindings,
+  THttpMethod extends string,
+> = {
+  // 1ハンドラーの場合
+  <
+    TValidated extends Validated = Validated,
+    TRouteResponse extends RouteResponse = RouteResponse,
+  >(
+    handler: Handler<
+      TBindings["params"],
+      TBindings["query"],
+      TValidated,
+      TRouteResponse
+    >
+  ): Record<
+    THttpMethod,
+    (
+      req: NextRequest,
+      segmentData: { params: Promise<TBindings["params"]> }
+    ) => Promise<TRouteResponse>
+  >;
+
+  // 2ハンドラーの場合
+  <
+    TValidated1 extends Validated = Validated,
+    TValidated2 extends Validated = TValidated1,
+    TRouteResponse extends RouteResponse = RouteResponse,
+  >(
+    handler1: Handler<TBindings["params"], TBindings["query"], TValidated1>,
+    handler2: Handler<
+      TBindings["params"],
+      TBindings["query"],
+      TValidated2,
+      TRouteResponse
+    >
+  ): Record<
+    THttpMethod,
+    (
+      req: NextRequest,
+      segmentData: { params: Promise<TBindings["params"]> }
+    ) => Promise<TRouteResponse>
+  >;
+
+  // 3ハンドラーの場合
+  <
+    TValidated1 extends Validated = Validated,
+    TValidated2 extends Validated = TValidated1,
+    TValidated3 extends Validated = TValidated1 & TValidated2,
+    TRouteResponse extends RouteResponse = RouteResponse,
+  >(
+    handler1: Handler<TBindings["params"], TBindings["query"], TValidated1>,
+    handler2: Handler<TBindings["params"], TBindings["query"], TValidated2>,
+    handler3: Handler<
+      TBindings["params"],
+      TBindings["query"],
+      TValidated3,
+      TRouteResponse
+    >
+  ): Record<
+    THttpMethod,
+    (
+      req: NextRequest,
+      segmentData: { params: Promise<TBindings["params"]> }
+    ) => Promise<TRouteResponse>
+  >;
+};

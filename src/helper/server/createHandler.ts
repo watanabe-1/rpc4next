@@ -4,10 +4,10 @@ import type { Handler, Params, Query, RouteResponse, Validated } from "./types";
 export const createHandler = <
   TParams extends Params,
   TQuery extends Query,
-  TValidateds extends Validated[],
+  TValidated extends Validated,
 >() => {
   return <TRouteResponse extends RouteResponse>(
-    handler: Handler<TParams, TQuery, TValidateds, TRouteResponse>
+    handler: Handler<TParams, TQuery, TValidated, TRouteResponse>
   ) => {
     return handler;
   };
