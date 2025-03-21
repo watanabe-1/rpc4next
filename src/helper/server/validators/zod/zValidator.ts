@@ -4,7 +4,7 @@ import type {
   Context,
   Params,
   Query,
-  RouteResponse,
+  TypedNextResponse,
   Validated,
   ValidatedOutputToString,
   ValidationTarget,
@@ -14,29 +14,28 @@ export const zValidator = <
   TValidationTarget extends ValidationTarget,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TSchema extends ZodSchema<any>,
+  Tparams extends TValidationTarget extends "params"
+    ? ValidatedOutputToString<TValidationTarget, TValidated>
+    : Params,
+  TQuery extends TValidationTarget extends "query"
+    ? ValidatedOutputToString<TValidationTarget, TValidated>
+    : Query,
   TInput = z.input<TSchema>,
   TOutput = z.output<TSchema>,
   TValidated extends Validated = {
     input: Record<TValidationTarget, TInput>;
     output: Record<TValidationTarget, TOutput>;
   },
+  THookReturn extends TypedNextResponse | void = void,
 >(
   target: TValidationTarget,
   schema: TSchema,
   hook?: (
     result: z.SafeParseReturnType<TInput, TOutput>,
-    context: Context
-  ) => RouteResponse
+    context: Context<Tparams, TQuery, TValidated>
+  ) => THookReturn
 ) => {
-  return createHandler<
-    TValidationTarget extends "params"
-      ? ValidatedOutputToString<TValidationTarget, TValidated>
-      : Params,
-    TValidationTarget extends "query"
-      ? ValidatedOutputToString<TValidationTarget, TValidated>
-      : Query,
-    TValidated
-  >()(async (c) => {
+  return createHandler<Tparams, TQuery, TValidated>()(async (c) => {
     const value = await (async () => {
       if (target === "params") {
         return await c.req.params();
@@ -49,9 +48,10 @@ export const zValidator = <
     const result = await schema.safeParseAsync(value);
 
     if (hook) {
-      const hookResult = await hook(result, c as never);
+      const hookResult = hook(result, c);
       if (hookResult instanceof Response) {
-        return hookResult as never;
+        // If it's of type Response, it won't be void, so we're excluding void here
+        return hookResult as Exclude<THookReturn, void>;
       }
     }
 
