@@ -229,71 +229,58 @@ export type Handler<
   TRouteResponse extends RouteResponse = RouteResponse,
 > = (context: Context<TParams, TQuery, TValidated>) => TRouteResponse;
 
-// createRouteHandler 用のオーバーロード型定義
 export type CreateRoute<
   TBindings extends Bindings,
   THttpMethod extends string,
 > = {
-  // 1ハンドラーの場合
+  // 1 handler
   <
-    TValidated extends Validated = Validated,
-    TRouteResponse extends RouteResponse = RouteResponse,
+    TV1 extends Validated = Validated,
+    TR1 extends RouteResponse = RouteResponse,
   >(
-    handler: Handler<
-      TBindings["params"],
-      TBindings["query"],
-      TValidated,
-      TRouteResponse
-    >
+    handler: Handler<TBindings["params"], TBindings["query"], TV1, TR1>
   ): Record<
     THttpMethod,
     (
       req: NextRequest,
       segmentData: { params: Promise<TBindings["params"]> }
-    ) => Promise<TRouteResponse>
+    ) => Promise<Awaited<TR1>>
   >;
 
-  // 2ハンドラーの場合
+  // 2 handlers
   <
-    TValidated1 extends Validated = Validated,
-    TValidated2 extends Validated = TValidated1,
-    TRouteResponse extends RouteResponse = RouteResponse,
+    TV1 extends Validated = Validated,
+    TV2 extends Validated = TV1,
+    TR1 extends RouteResponse = RouteResponse,
+    TR2 extends RouteResponse = RouteResponse,
   >(
-    handler1: Handler<TBindings["params"], TBindings["query"], TValidated1>,
-    handler2: Handler<
-      TBindings["params"],
-      TBindings["query"],
-      TValidated2,
-      TRouteResponse
-    >
+    handler1: Handler<TBindings["params"], TBindings["query"], TV1, TR1>,
+    handler2: Handler<TBindings["params"], TBindings["query"], TV2, TR2>
   ): Record<
     THttpMethod,
     (
       req: NextRequest,
       segmentData: { params: Promise<TBindings["params"]> }
-    ) => Promise<TRouteResponse>
+    ) => Promise<Awaited<TR1 | TR2>>
   >;
 
-  // 3ハンドラーの場合
+  // 3 handlers
   <
-    TValidated1 extends Validated = Validated,
-    TValidated2 extends Validated = TValidated1,
-    TValidated3 extends Validated = TValidated1 & TValidated2,
-    TRouteResponse extends RouteResponse = RouteResponse,
+    TV1 extends Validated = Validated,
+    TV2 extends Validated = TV1,
+    TV3 extends Validated = TV1 & TV2,
+    TR1 extends RouteResponse = RouteResponse,
+    TR2 extends RouteResponse = RouteResponse,
+    TR3 extends RouteResponse = RouteResponse,
   >(
-    handler1: Handler<TBindings["params"], TBindings["query"], TValidated1>,
-    handler2: Handler<TBindings["params"], TBindings["query"], TValidated2>,
-    handler3: Handler<
-      TBindings["params"],
-      TBindings["query"],
-      TValidated3,
-      TRouteResponse
-    >
+    handler1: Handler<TBindings["params"], TBindings["query"], TV1, TR1>,
+    handler2: Handler<TBindings["params"], TBindings["query"], TV2, TR2>,
+    handler3: Handler<TBindings["params"], TBindings["query"], TV3, TR3>
   ): Record<
     THttpMethod,
     (
       req: NextRequest,
       segmentData: { params: Promise<TBindings["params"]> }
-    ) => Promise<TRouteResponse>
+    ) => Promise<Awaited<TR1 | TR2 | TR3>>
   >;
 };
