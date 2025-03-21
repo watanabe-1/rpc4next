@@ -1,3 +1,4 @@
+import type { HTTP_METHOD } from "next/dist/server/web/http";
 import type { NextResponse, NextRequest } from "next/server";
 
 type KnownContentType =
@@ -156,7 +157,6 @@ export interface Context<
     valid: <TValidationTarget extends ValidationTarget>(
       target: TValidationTarget
     ) => ValidatedOutput<TValidationTarget, TValidated>;
-
     addValidatedData: (target: ValidationTarget, value: object) => void;
   };
   res: NextResponse;
@@ -229,9 +229,21 @@ export type Handler<
   TRouteResponse extends RouteResponse = RouteResponse,
 > = (context: Context<TParams, TQuery, TValidated>) => TRouteResponse;
 
+type CreateRouteReturn<
+  THttpMethod extends HTTP_METHOD,
+  TParams extends Bindings["params"],
+  TRouteResponse extends RouteResponse,
+> = Record<
+  THttpMethod,
+  (
+    req: NextRequest,
+    segmentData: { params: Promise<TParams> }
+  ) => Promise<Awaited<TRouteResponse>>
+>;
+
 export type CreateRoute<
   TBindings extends Bindings,
-  THttpMethod extends string,
+  THttpMethod extends HTTP_METHOD,
   TParams extends TBindings["params"] = TBindings["params"] extends undefined
     ? Params
     : Awaited<TBindings["params"]>,
@@ -245,13 +257,7 @@ export type CreateRoute<
     TR1 extends RouteResponse = RouteResponse,
   >(
     handler: Handler<TParams, TQuery, TV1, TR1>
-  ): Record<
-    THttpMethod,
-    (
-      req: NextRequest,
-      segmentData: { params: Promise<TParams> }
-    ) => Promise<Awaited<TR1>>
-  >;
+  ): CreateRouteReturn<THttpMethod, TParams, TR1>;
 
   // 2 handlers
   <
@@ -262,13 +268,7 @@ export type CreateRoute<
   >(
     handler1: Handler<TParams, TQuery, TV1, TR1>,
     handler2: Handler<TParams, TQuery, TV2, TR2>
-  ): Record<
-    THttpMethod,
-    (
-      req: NextRequest,
-      segmentData: { params: Promise<TParams> }
-    ) => Promise<Awaited<TR1 | TR2>>
-  >;
+  ): CreateRouteReturn<THttpMethod, TParams, TR1 | TR2>;
 
   // 3 handlers
   <
@@ -282,11 +282,5 @@ export type CreateRoute<
     handler1: Handler<TParams, TQuery, TV1, TR1>,
     handler2: Handler<TParams, TQuery, TV2, TR2>,
     handler3: Handler<TParams, TQuery, TV3, TR3>
-  ): Record<
-    THttpMethod,
-    (
-      req: NextRequest,
-      segmentData: { params: Promise<TParams> }
-    ) => Promise<Awaited<TR1 | TR2 | TR3>>
-  >;
+  ): CreateRouteReturn<THttpMethod, TParams, TR1 | TR2 | TR3>;
 };

@@ -1,4 +1,3 @@
-// 実装ファイル
 import { notFound } from "next/navigation";
 import { NextResponse } from "next/server";
 import { searchParamsToObject } from "./searchParamsToObject";
