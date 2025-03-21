@@ -26,12 +26,10 @@ const composeHandlers = <
 >(
   handlers: THandlers
 ) => {
-  type HandlerReturn = Awaited<ReturnType<THandlers[number]>>;
-
   return async (
     req: NextRequest,
     segmentData: { params: Promise<TParams> }
-  ): Promise<HandlerReturn> => {
+  ) => {
     const validationResults = {} as Record<ValidationTarget, unknown>;
 
     const context: Context<TParams, TQuery, TValidated> = {
@@ -88,15 +86,15 @@ const composeHandlers = <
         >,
     };
 
-    // handlers を順番に実行し、Response が返ってきたら即終了する
+    // Execute the handlers in order, and stop if a Response is returned
     for (const handler of handlers) {
       const result = await handler(context);
       if (result instanceof Response) {
-        return result as HandlerReturn;
+        return result;
       }
     }
 
-    // どの handler も Response を返さなかった場合は 404
+    // If none of the handlers returned a Response, return 404
     return context.notFound() as never;
   };
 };
