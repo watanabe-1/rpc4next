@@ -209,7 +209,7 @@ export type ValidatedOutput<
   TValidated extends Validated,
 > = TValidationTarget extends keyof TValidated["output"]
   ? TValidated["output"][TValidationTarget]
-  : unknown;
+  : never;
 
 type ArrayElementsToString<T> = T extends unknown[] ? string[] : string;
 
@@ -232,18 +232,24 @@ export type Handler<
 export type CreateRoute<
   TBindings extends Bindings,
   THttpMethod extends string,
+  TParams extends TBindings["params"] = TBindings["params"] extends undefined
+    ? Params
+    : Awaited<TBindings["params"]>,
+  TQuery extends TBindings["query"] = TBindings["query"] extends undefined
+    ? Query
+    : TBindings["query"],
 > = {
   // 1 handler
   <
     TV1 extends Validated = Validated,
     TR1 extends RouteResponse = RouteResponse,
   >(
-    handler: Handler<TBindings["params"], TBindings["query"], TV1, TR1>
+    handler: Handler<TParams, TQuery, TV1, TR1>
   ): Record<
     THttpMethod,
     (
       req: NextRequest,
-      segmentData: { params: Promise<TBindings["params"]> }
+      segmentData: { params: Promise<TParams> }
     ) => Promise<Awaited<TR1>>
   >;
 
@@ -254,13 +260,13 @@ export type CreateRoute<
     TR1 extends RouteResponse = RouteResponse,
     TR2 extends RouteResponse = RouteResponse,
   >(
-    handler1: Handler<TBindings["params"], TBindings["query"], TV1, TR1>,
-    handler2: Handler<TBindings["params"], TBindings["query"], TV2, TR2>
+    handler1: Handler<TParams, TQuery, TV1, TR1>,
+    handler2: Handler<TParams, TQuery, TV2, TR2>
   ): Record<
     THttpMethod,
     (
       req: NextRequest,
-      segmentData: { params: Promise<TBindings["params"]> }
+      segmentData: { params: Promise<TParams> }
     ) => Promise<Awaited<TR1 | TR2>>
   >;
 
@@ -273,14 +279,14 @@ export type CreateRoute<
     TR2 extends RouteResponse = RouteResponse,
     TR3 extends RouteResponse = RouteResponse,
   >(
-    handler1: Handler<TBindings["params"], TBindings["query"], TV1, TR1>,
-    handler2: Handler<TBindings["params"], TBindings["query"], TV2, TR2>,
-    handler3: Handler<TBindings["params"], TBindings["query"], TV3, TR3>
+    handler1: Handler<TParams, TQuery, TV1, TR1>,
+    handler2: Handler<TParams, TQuery, TV2, TR2>,
+    handler3: Handler<TParams, TQuery, TV3, TR3>
   ): Record<
     THttpMethod,
     (
       req: NextRequest,
-      segmentData: { params: Promise<TBindings["params"]> }
+      segmentData: { params: Promise<TParams> }
     ) => Promise<Awaited<TR1 | TR2 | TR3>>
   >;
 };

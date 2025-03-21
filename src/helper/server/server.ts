@@ -105,7 +105,7 @@ export const createRouteHandler = <TBindings extends Bindings>() => {
     return ((...handlers: any[]) => {
       const methodFunc = composeHandlers(handlers);
 
-      return { [method]: methodFunc };
+      return { [method]: methodFunc } as Record<THttpMethod, typeof methodFunc>;
     }) as CreateRoute<TBindings, THttpMethod>;
   }
 
