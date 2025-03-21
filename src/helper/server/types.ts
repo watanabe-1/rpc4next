@@ -244,12 +244,14 @@ type CreateRouteReturn<
 export type CreateRoute<
   TBindings extends Bindings,
   THttpMethod extends HTTP_METHOD,
-  TParams extends TBindings["params"] = TBindings["params"] extends undefined
-    ? Params
-    : Awaited<TBindings["params"]>,
-  TQuery extends TBindings["query"] = TBindings["query"] extends undefined
-    ? Query
-    : TBindings["query"],
+  TParams extends TBindings["params"] = TBindings extends {
+    params: infer TValue;
+  }
+    ? Awaited<TValue>
+    : Query,
+  TQuery extends TBindings["query"] = TBindings extends { query: infer TValue }
+    ? TValue
+    : Query,
 > = {
   // 1 handler
   <
