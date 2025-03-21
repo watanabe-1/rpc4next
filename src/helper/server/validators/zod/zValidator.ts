@@ -45,7 +45,8 @@ export const zValidator = <
       }
     })();
 
-    const result = await schema.safeParseAsync(value);
+    const result: z.SafeParseReturnType<TInput, TOutput> =
+      await schema.safeParseAsync(value);
 
     if (hook) {
       const hookResult = hook(result, c);
@@ -61,7 +62,7 @@ export const zValidator = <
     }
 
     // If validation succeeds, register it as validatedData
-    c.req.addValidatedData(target, result.data);
+    c.req.addValidatedData(target, result.data as object);
 
     // Return `undefined` if all validations pass
     return undefined as never;
