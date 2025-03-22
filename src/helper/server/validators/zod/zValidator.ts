@@ -26,7 +26,11 @@ export const zValidator = <
     input: Record<TValidationTarget, TInput>;
     output: Record<TValidationTarget, TOutput>;
   },
-  THookReturn extends TypedNextResponse | void = void,
+  THookReturn extends TypedNextResponse | void = TypedNextResponse<
+    z.SafeParseError<TInput>,
+    400,
+    "application/json"
+  > | void,
 >(
   target: TValidationTarget,
   schema: TSchema,
@@ -35,6 +39,14 @@ export const zValidator = <
     context: Context<Tparams, TQuery, TValidated>
   ) => THookReturn
 ) => {
+  const resolvedHook =
+    hook ??
+    ((result, c) => {
+      if (!result.success) {
+        return c.json(result, { status: 400 });
+      }
+    });
+
   return createHandler<Tparams, TQuery, TValidated>()(async (c) => {
     const value = await (async () => {
       if (target === "params") {
@@ -45,24 +57,22 @@ export const zValidator = <
       }
     })();
 
-    const result: z.SafeParseReturnType<TInput, TOutput> =
-      await schema.safeParseAsync(value);
+    const result = await schema.safeParseAsync(value);
 
-    if (hook) {
-      const hookResult = hook(result, c);
-      if (hookResult instanceof Response) {
-        // If it's of type Response, it won't be void, so we're excluding void here
-        return hookResult as Exclude<THookReturn, void>;
-      }
+    const hookResult = resolvedHook(result, c);
+    if (hookResult instanceof Response) {
+      // If it's of type Response, it won't be void, so we're excluding void here
+      return hookResult as Exclude<THookReturn, void>;
     }
 
     if (!result.success) {
-      // Validation failed
-      return c.json(result, { status: 400 });
+      throw new Error(
+        "If you provide a custom hook, you must explicitly return a response when validation fails."
+      );
     }
 
     // If validation succeeds, register it as validatedData
-    c.req.addValidatedData(target, result.data as object);
+    c.req.addValidatedData(target, result.data);
 
     // Return `undefined` if all validations pass
     return undefined as never;
