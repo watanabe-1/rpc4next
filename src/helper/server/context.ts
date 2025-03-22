@@ -34,7 +34,7 @@ export const createRouteContext = <
         validationResults[target] = value;
       },
     }),
-    res: new NextResponse(),
+
     body: <
       TData extends BodyInit | null,
       TStatus extends HttpStatusCode,
@@ -48,6 +48,7 @@ export const createRouteContext = <
         TStatus,
         TContentType
       >,
+
     json: <TData, TStatus extends HttpStatusCode = 200>(
       data: TData,
       init?: ResponseInit & { status?: TStatus }
@@ -57,6 +58,7 @@ export const createRouteContext = <
         TStatus,
         "application/json"
       >,
+
     text: <TData extends string, TStatus extends HttpStatusCode = 200>(
       data: TData,
       init?: ResponseInit & { status?: TStatus }
@@ -65,7 +67,9 @@ export const createRouteContext = <
         ...init,
         headers: { "Content-Type": "text/plain", ...init?.headers },
       }) as TypedNextResponse<TData, TStatus, "text/plain">,
+
     notFound: () => notFound() as TypedNextResponse<null, 404, "text/html">,
+
     redirect: <TStatus extends HttpStatusCode = 302>(
       url: string,
       status?: TStatus

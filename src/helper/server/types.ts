@@ -137,14 +137,8 @@ export interface TypedNextResponse<
 }
 
 export type Params = Record<string, string | string[]>;
+
 export type Query = Record<string, string | string[]>;
-
-interface ValidationResults {
-  params?: Params;
-  query?: Query;
-}
-
-export type ValidationTarget = keyof ValidationResults;
 
 export interface RouteContext<
   TParams = Params,
@@ -159,7 +153,6 @@ export interface RouteContext<
     ) => ValidationOutputFor<TValidationTarget, TValidationSchema>;
     addValidatedData: (target: ValidationTarget, value: object) => void;
   };
-  res: NextResponse;
 
   body: <
     TData extends BodyInit | null,
@@ -196,6 +189,8 @@ export interface RouteBindings {
   params?: Params | Promise<Params>;
   query?: Query;
 }
+
+export type ValidationTarget = "params" | "query";
 
 export interface ValidationSchema {
   // eslint-disable-next-line @typescript-eslint/no-empty-object-type
