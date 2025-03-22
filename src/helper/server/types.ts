@@ -139,10 +139,10 @@ export interface TypedNextResponse<
 export type Params = Record<string, string | string[]>;
 export type Query = Record<string, string | string[]>;
 
-type ValidationResults = {
+interface ValidationResults {
   params?: Params;
   query?: Query;
-};
+}
 
 export type ValidationTarget = keyof ValidationResults;
 
@@ -192,17 +192,17 @@ export type RouteResponse =
   | TypedNextResponse
   | Promise<TypedNextResponse | void>;
 
-export type RouteBindings = {
+export interface RouteBindings {
   params?: Params | Promise<Params>;
   query?: Query;
-};
+}
 
-export type ValidationSchema = {
+export interface ValidationSchema {
   // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   input: {};
   // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   output: {};
-};
+}
 
 type ValidationFor<
   TDirection extends keyof ValidationSchema,
