@@ -139,7 +139,7 @@ export interface TypedNextResponse<
 export type Params = Record<string, string | string[]>;
 export type Query = Record<string, string | string[]>;
 
-export type ValidationResults = {
+type ValidationResults = {
   params?: Params;
   query?: Query;
 };
@@ -204,12 +204,23 @@ export type ValidationSchema = {
   output: {};
 };
 
-export type ValidationOutputFor<
-  TValidationTarget extends ValidationTarget,
-  TValidationSchema extends ValidationSchema,
-> = TValidationTarget extends keyof TValidationSchema["output"]
-  ? TValidationSchema["output"][TValidationTarget]
+type ValidationFor<
+  TDirection extends keyof ValidationSchema,
+  TTarget extends ValidationTarget,
+  TSchema extends ValidationSchema,
+> = TTarget extends keyof TSchema[TDirection]
+  ? TSchema[TDirection][TTarget]
   : never;
+
+type ValidationInputFor<
+  TTarget extends ValidationTarget,
+  TSchema extends ValidationSchema,
+> = ValidationFor<"input", TTarget, TSchema>;
+
+type ValidationOutputFor<
+  TTarget extends ValidationTarget,
+  TSchema extends ValidationSchema,
+> = ValidationFor<"output", TTarget, TSchema>;
 
 type ArrayElementsToString<T> = T extends unknown[] ? string[] : string;
 
@@ -217,12 +228,14 @@ type ObjectPropertiesToString<T> = {
   [K in keyof T]: T[K] extends unknown[] ? ArrayElementsToString<T[K]> : string;
 };
 
-export type ValidationOutputToString<
-  TValidationTarget extends ValidationTarget,
-  TValidationSchema extends ValidationSchema,
-> = ObjectPropertiesToString<
-  ValidationOutputFor<TValidationTarget, TValidationSchema>
->;
+export type ConditionalValidationInput<
+  TTarget extends ValidationTarget,
+  TExpected extends ValidationTarget,
+  TSchema extends ValidationSchema,
+  TFallback,
+> = TTarget extends TExpected
+  ? ObjectPropertiesToString<ValidationInputFor<TTarget, TSchema>>
+  : TFallback;
 
 export type Handler<
   TParams = Params,

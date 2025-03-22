@@ -6,7 +6,7 @@ import type {
   Query,
   TypedNextResponse,
   ValidationSchema,
-  ValidationOutputToString,
+  ConditionalValidationInput,
   ValidationTarget,
 } from "../../types";
 
@@ -14,12 +14,18 @@ export const zValidator = <
   TValidationTarget extends ValidationTarget,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TSchema extends ZodSchema<any>,
-  Tparams extends TValidationTarget extends "params"
-    ? ValidationOutputToString<TValidationTarget, TValidationSchema>
-    : Params,
-  TQuery extends TValidationTarget extends "query"
-    ? ValidationOutputToString<TValidationTarget, TValidationSchema>
-    : Query,
+  Tparams extends ConditionalValidationInput<
+    TValidationTarget,
+    "params",
+    TValidationSchema,
+    Params
+  >,
+  TQuery extends ConditionalValidationInput<
+    TValidationTarget,
+    "query",
+    TValidationSchema,
+    Query
+  >,
   TInput = z.input<TSchema>,
   TOutput = z.output<TSchema>,
   TValidationSchema extends ValidationSchema = {
