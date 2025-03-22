@@ -51,7 +51,7 @@ export const createRouteHandler = <TBindings extends RouteBindings>() => {
         THttpMethod,
         typeof routeHandler
       >;
-    }) as MethodRouteDefinition<TBindings, THttpMethod>;
+    }) as MethodRouteDefinition<THttpMethod, TBindings>;
   };
 
   return {

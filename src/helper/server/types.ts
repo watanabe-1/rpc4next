@@ -253,8 +253,8 @@ type HttpMethodMapping<
 > = Record<THttpMethod, RouteHandler<TParams, TRouteResponse>>;
 
 export interface MethodRouteDefinition<
-  TBindings extends RouteBindings,
   THttpMethod extends HTTP_METHOD,
+  TBindings extends RouteBindings,
   TParams extends TBindings["params"] = TBindings extends {
     params: infer TValue;
   }
