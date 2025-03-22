@@ -15,6 +15,12 @@ type KnownContentType =
   | "multipart/form-data"
   | "application/x-www-form-urlencoded";
 
+/**
+ * A content type that can be either one of the predefined `KnownContentType` values,
+ * or any other custom string.
+ */
+// Allow KnownContentType values with autocomplete, plus any custom string.
+// (string & {}) keeps literal types while accepting arbitrary strings.
 export type ContentType = KnownContentType | (string & {});
 
 /**
@@ -111,6 +117,17 @@ export type HttpStatusCode =
   | ClientErrorHttpStatusCode
   | ServerErrorHttpStatusCode;
 
+/**
+ * Represents the result of an HTTP response status check.
+ *
+ * If the status code is in the range of successful HTTP status codes (e.g., 200–299),
+ * `ok` is `true` and `status` is set to the given successful status code.
+ *
+ * Otherwise, `ok` is `false` and `status` is set to a non-successful status code
+ * (i.e., `T` excluding successful status codes).
+ *
+ * @template T - An HTTP status code to classify.
+ */
 type HttpStatus<T extends HttpStatusCode> = T extends SuccessfulHttpStatusCode
   ? { ok: true; status: T }
   : {
@@ -118,21 +135,46 @@ type HttpStatus<T extends HttpStatusCode> = T extends SuccessfulHttpStatusCode
       status: Exclude<T, SuccessfulHttpStatusCode>;
     };
 
+/**
+ * A strongly typed wrapper around the standard Next.js `NextResponse` object,
+ * with additional type information for status code, content type, and response body.
+ *
+ * @template TData - The type of the response body (e.g., a JSON object or string).
+ * @template TStatus - The HTTP status code type of the response.
+ * @template TContentType - The content type of the response (e.g., "application/json" or "text/plain").
+ */
 export interface TypedNextResponse<
-  T = unknown,
+  TData = unknown,
   TStatus extends HttpStatusCode = HttpStatusCode,
   TContentType extends ContentType = ContentType,
 > extends NextResponse {
+  /**
+   * Returns the parsed response body as JSON, if the content type is "application/json".
+   * Otherwise, returns a `Promise<never>`.
+   */
   json: TContentType extends "application/json"
-    ? () => Promise<T>
+    ? () => Promise<TData>
     : () => Promise<never>;
+
+  /**
+   * Returns the response body as plain text, if the content type is "text/plain".
+   * If the expected type `T` is not a string, returns `Promise<never>`.
+   * Otherwise, returns the raw string body.
+   */
   text: TContentType extends "text/plain"
-    ? T extends string
-      ? () => Promise<T>
+    ? TData extends string
+      ? () => Promise<TData>
       : () => Promise<never>
     : () => Promise<string>;
 
+  /**
+   * Indicates whether the HTTP status code represents a successful response.
+   */
   readonly ok: HttpStatus<TStatus>["ok"];
+
+  /**
+   * The HTTP status code of the response, typed based on the given `TStatus`.
+   */
   readonly status: HttpStatus<TStatus>["status"];
 }
 
@@ -140,20 +182,71 @@ export type Params = Record<string, string | string[]>;
 
 export type Query = Record<string, string | string[]>;
 
+/**
+ * A typed wrapper around Next.js request/response utilities for API route handling.
+ *
+ * ## Features:
+ * - Enhanced `req` with helpers to parse query parameters, route params, and perform schema validation.
+ * - Typed response helpers (`json`, `text`, `body`) that return custom `TypedNextResponse` objects.
+ *
+ * @template TParams - Shape of dynamic route parameters.
+ * @template TQuery - Shape of parsed URL query parameters.
+ * @template TValidationSchema - Validation schema used to validate body/query/params.
+ */
 export interface RouteContext<
   TParams = Params,
   TQuery = Query,
   TValidationSchema extends ValidationSchema = ValidationSchema,
 > {
+  /**
+   * The original `NextRequest` object, extended with helper methods
+   * for parsing parameters, query, and managing validation.
+   */
   req: NextRequest & {
+    /**
+     * Parses and returns typed query parameters from `req.nextUrl.searchParams`.
+     *
+     * @returns Query parameters
+     */
     query: () => TQuery;
+
+    /**
+     * Resolves and returns dynamic route parameters.
+     * Typically sourced from the Next.js segment config.
+     *
+     * @returns Route parameters
+     */
     params: () => Promise<TParams>;
+
+    /**
+     * Retrieves validated data for a specific request part (e.g., `body`, `query`, `params`)
+     * that has been previously stored via `addValidatedData`.
+     *
+     * @param target - The part of the request to validate.
+     * @returns The validation result of the target.
+     */
     valid: <TValidationTarget extends ValidationTarget>(
       target: TValidationTarget
     ) => ValidationOutputFor<TValidationTarget, TValidationSchema>;
+
+    /**
+     * Stores validated data for a specific part of the request.
+     * This data can be retrieved later using `valid(...)`.
+     *
+     * @param target - The request part to associate the value with.
+     * @param value - The validated data.
+     */
     addValidatedData: (target: ValidationTarget, value: object) => void;
   };
 
+  /**
+   * Creates a typed response with an optional status and content type.
+   * Internally wraps `new NextResponse(...)`.
+   *
+   * @param data - The response body.
+   * @param init - Optional status code and content type.
+   * @returns A typed response.
+   */
   body: <
     TData extends BodyInit | null,
     TStatus extends HttpStatusCode,
@@ -163,18 +256,45 @@ export interface RouteContext<
     init?: ResponseInit & { status?: TStatus; contentType?: TContentType }
   ) => TypedNextResponse<TData, TStatus, TContentType>;
 
+  /**
+   * Creates a typed JSON response using `NextResponse.json(...)`.
+   *
+   * @param data - The response body as JSON.
+   * @param init - Optional status code.
+   * @returns A JSON response.
+   */
   json: <TData, TStatus extends HttpStatusCode = 200>(
     data: TData,
     init?: ResponseInit & { status?: TStatus }
   ) => TypedNextResponse<TData, TStatus, "application/json">;
 
+  /**
+   * Creates a plain text response with `Content-Type: text/plain`.
+   * Internally uses `new NextResponse(...)` with headers.
+   *
+   * @param data - The response body as plain text.
+   * @param init - Optional status code.
+   * @returns A plain text response.
+   */
   text: <TData extends string, TStatus extends HttpStatusCode = 200>(
     data: TData,
     init?: ResponseInit & { status?: TStatus }
   ) => TypedNextResponse<TData, TStatus, "text/plain">;
 
+  /**
+   * Returns a `404 Not Found` response.
+   * Internally wraps Next.js's `notFound()` utility.
+   */
   notFound: () => TypedNextResponse<null, 404, "text/html">;
 
+  /**
+   * Issues a redirect response.
+   * Internally wraps `NextResponse.redirect(...)`.
+   *
+   * @param url - The URL to redirect to.
+   * @param status - Optional redirect status code (default: 302).
+   * @returns A redirect response with content type `text/html`.
+   */
   redirect: <TStatus extends HttpStatusCode = 302>(
     url: string,
     status?: TStatus
@@ -241,15 +361,18 @@ export type Handler<
   routeContext: RouteContext<TParams, TQuery, TValidationSchema>
 ) => TRouteResponse;
 
-type RouteHandler<TParams, TRouteResponse> = (
+type RouteHandler<
+  TParams extends RouteBindings["params"],
+  TRouteResponse extends RouteResponse,
+> = (
   req: NextRequest,
   segmentData: { params: Promise<TParams> }
 ) => Promise<Awaited<TRouteResponse>>;
 
 type HttpMethodMapping<
   THttpMethod extends HTTP_METHOD,
-  TParams,
-  TRouteResponse,
+  TParams extends RouteBindings["params"],
+  TRouteResponse extends RouteResponse,
 > = Record<THttpMethod, RouteHandler<TParams, TRouteResponse>>;
 
 export interface MethodRouteDefinition<
