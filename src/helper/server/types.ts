@@ -253,7 +253,7 @@ type CreateRouteReturn<
   ) => Promise<Awaited<TRouteResponse>>
 >;
 
-export type CreateRoute<
+export interface CreateRoute<
   TBindings extends RouteBindings,
   THttpMethod extends HTTP_METHOD,
   TParams extends TBindings["params"] = TBindings extends {
@@ -264,7 +264,7 @@ export type CreateRoute<
   TQuery extends TBindings["query"] = TBindings extends { query: infer TValue }
     ? TValue
     : Query,
-> = {
+> {
   // 1 handler
   <
     TV1 extends ValidationSchema = ValidationSchema,
@@ -297,4 +297,4 @@ export type CreateRoute<
     handler2: Handler<TParams, TQuery, TV2, TR2>,
     handler3: Handler<TParams, TQuery, TV3, TR3>
   ): CreateRouteReturn<THttpMethod, TParams, TR1 | TR2 | TR3>;
-};
+}
