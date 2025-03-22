@@ -93,8 +93,7 @@ const composeHandlers = <
       }
     }
 
-    // If none of the handlers returned a Response, return 404
-    return context.notFound() as never;
+    throw new Error("No handler returned a response");
   };
 };
 
