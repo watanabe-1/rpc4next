@@ -5,7 +5,7 @@ import type {
   RouteBindings,
   ValidationSchema,
   Handler,
-  CreateRoute,
+  MethodRouteDefinition,
 } from "./types";
 import type { HTTP_METHOD } from "next/dist/server/web/http";
 import type { NextRequest } from "next/server";
@@ -40,7 +40,7 @@ const composeHandlers = <
 };
 
 export const createRouteHandler = <TBindings extends RouteBindings>() => {
-  const createRoute = <THttpMethod extends HTTP_METHOD>(
+  const defineRouteForMethod = <THttpMethod extends HTTP_METHOD>(
     method: THttpMethod
   ) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -51,16 +51,16 @@ export const createRouteHandler = <TBindings extends RouteBindings>() => {
         THttpMethod,
         typeof routeHandler
       >;
-    }) as CreateRoute<TBindings, THttpMethod>;
+    }) as MethodRouteDefinition<TBindings, THttpMethod>;
   };
 
   return {
-    get: createRoute("GET"),
-    post: createRoute("POST"),
-    put: createRoute("PUT"),
-    delete: createRoute("DELETE"),
-    patch: createRoute("PATCH"),
-    head: createRoute("HEAD"),
-    options: createRoute("OPTIONS"),
+    get: defineRouteForMethod("GET"),
+    post: defineRouteForMethod("POST"),
+    put: defineRouteForMethod("PUT"),
+    delete: defineRouteForMethod("DELETE"),
+    patch: defineRouteForMethod("PATCH"),
+    head: defineRouteForMethod("HEAD"),
+    options: defineRouteForMethod("OPTIONS"),
   };
 };

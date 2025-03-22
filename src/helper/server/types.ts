@@ -241,19 +241,18 @@ export type Handler<
   routeContext: RouteContext<TParams, TQuery, TValidationSchema>
 ) => TRouteResponse;
 
-type CreateRouteReturn<
-  THttpMethod extends HTTP_METHOD,
-  TParams extends RouteBindings["params"],
-  TRouteResponse extends RouteResponse,
-> = Record<
-  THttpMethod,
-  (
-    req: NextRequest,
-    segmentData: { params: Promise<TParams> }
-  ) => Promise<Awaited<TRouteResponse>>
->;
+type RouteHandler<TParams, TRouteResponse> = (
+  req: NextRequest,
+  segmentData: { params: Promise<TParams> }
+) => Promise<Awaited<TRouteResponse>>;
 
-export interface CreateRoute<
+type HttpMethodMapping<
+  THttpMethod extends HTTP_METHOD,
+  TParams,
+  TRouteResponse,
+> = Record<THttpMethod, RouteHandler<TParams, TRouteResponse>>;
+
+export interface MethodRouteDefinition<
   TBindings extends RouteBindings,
   THttpMethod extends HTTP_METHOD,
   TParams extends TBindings["params"] = TBindings extends {
@@ -271,7 +270,7 @@ export interface CreateRoute<
     TR1 extends RouteResponse = RouteResponse,
   >(
     handler: Handler<TParams, TQuery, TV1, TR1>
-  ): CreateRouteReturn<THttpMethod, TParams, TR1>;
+  ): HttpMethodMapping<THttpMethod, TParams, TR1>;
 
   // 2 handlers
   <
@@ -282,7 +281,7 @@ export interface CreateRoute<
   >(
     handler1: Handler<TParams, TQuery, TV1, TR1>,
     handler2: Handler<TParams, TQuery, TV2, TR2>
-  ): CreateRouteReturn<THttpMethod, TParams, TR1 | TR2>;
+  ): HttpMethodMapping<THttpMethod, TParams, TR1 | TR2>;
 
   // 3 handlers
   <
@@ -296,5 +295,5 @@ export interface CreateRoute<
     handler1: Handler<TParams, TQuery, TV1, TR1>,
     handler2: Handler<TParams, TQuery, TV2, TR2>,
     handler3: Handler<TParams, TQuery, TV3, TR3>
-  ): CreateRouteReturn<THttpMethod, TParams, TR1 | TR2 | TR3>;
+  ): HttpMethodMapping<THttpMethod, TParams, TR1 | TR2 | TR3>;
 }
