@@ -93,7 +93,7 @@ describe("scanRoute", () => {
   it("should return a route definition for a destructured export", () => {
     mock({
       "input.ts":
-        'export const { POST } = app.post((c) => c.json({test: "hello"}))',
+        'export const { POST } = app.post((rc) => rc.json({test: "hello"}))',
     });
 
     const result = scanRoute("output.ts", "input.ts", "POST");

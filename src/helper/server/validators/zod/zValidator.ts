@@ -47,19 +47,19 @@ export const zValidator = <
       }
     });
 
-  return createHandler<Tparams, TQuery, TValidationSchema>()(async (c) => {
+  return createHandler<Tparams, TQuery, TValidationSchema>()(async (rc) => {
     const value = await (async () => {
       if (target === "params") {
-        return await c.req.params();
+        return await rc.req.params();
       }
       if (target === "query") {
-        return c.req.query();
+        return rc.req.query();
       }
     })();
 
     const result = await schema.safeParseAsync(value);
 
-    const hookResult = resolvedHook(result, c);
+    const hookResult = resolvedHook(result, rc);
     if (hookResult instanceof Response) {
       // If it's of type Response, it won't be void, so we're excluding void here
       return hookResult as Exclude<THookReturn, void>;
@@ -72,7 +72,7 @@ export const zValidator = <
     }
 
     // If validation succeeds, register it as validatedData
-    c.req.addValidatedData(target, result.data);
+    rc.req.addValidatedData(target, result.data);
 
     // Return `undefined` if all validations pass
     return undefined as never;
