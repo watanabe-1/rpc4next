@@ -1,0 +1,202 @@
+import { NextRequest } from "next/server";
+import { describe, it, expect } from "vitest";
+import { z } from "zod";
+import { zValidator } from "./zValidator";
+import { createRouteHandler } from "../../server";
+
+const schema = z.object({
+  name: z.string(),
+  hoge: z.string(),
+});
+
+const schema2 = z.object({
+  name: z.string(),
+  age: z
+    .string()
+    .transform((val) => Number(val))
+    .refine((val) => !Number.isNaN(val)),
+});
+
+describe("zValidator tests", () => {
+  it("Should return 200 when params and query are valid (with custom hook)", async () => {
+    const handler = createRouteHandler<{
+      params: z.infer<typeof schema>;
+      query: { name: string; age: string };
+    }>().post(
+      zValidator("params", schema, (result, rc) => {
+        if (!result.success) return rc.json(result, { status: 401 });
+      }),
+      zValidator("query", schema2),
+      async (rc) => rc.text("ok")
+    );
+    const req = new NextRequest(new URL("http://localhost/?name=J&age=20"));
+    const res = await handler.POST(req, {
+      params: Promise.resolve({ name: "J", hoge: "30" }),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe("ok");
+  });
+
+  it("Should return 401 when params are invalid (handled by custom hook)", async () => {
+    const handler = createRouteHandler<{
+      params: z.infer<typeof schema>;
+      query: { name: string; age: string };
+    }>().post(
+      zValidator("params", schema, (result, rc) => {
+        if (!result.success) return rc.json(result, { status: 401 });
+      }),
+      zValidator("query", schema2),
+      async (rc) => rc.text("ok")
+    );
+    const req = new NextRequest(new URL("http://localhost/?name=J&age=20"));
+    const res = await handler.POST(req, {
+      params: Promise.resolve({ name: "J", hoge: 30 as unknown as string }),
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it("Should return 400 when query is invalid (default hook used)", async () => {
+    const handler = createRouteHandler<{
+      params: z.infer<typeof schema>;
+      query: z.input<typeof schema2>;
+    }>().post(
+      zValidator("params", schema),
+      zValidator("query", schema2),
+      async (rc) => rc.text("ok")
+    );
+
+    const req = new NextRequest(new URL("http://localhost/?name=J&age=abc")); // invalid because age can't be converted
+    const res = await handler.POST(req, {
+      params: Promise.resolve({ name: "J", hoge: "30" }),
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("Should return text when only params are validated and valid", async () => {
+    const handler = createRouteHandler<{
+      params: z.infer<typeof schema>;
+    }>().post(zValidator("params", schema), async (rc) =>
+      rc.text("only params")
+    );
+    const req = new NextRequest(new URL("http://localhost/?ignored=true"));
+    const res = await handler.POST(req, {
+      params: Promise.resolve({ name: "A", hoge: "18" }),
+    });
+    expect(await res.text()).toBe("only params");
+  });
+
+  it("Should return 400 when params are invalid even if query is valid", async () => {
+    const handler = createRouteHandler<{
+      params: z.infer<typeof schema>;
+      query: { name: string; age: string };
+    }>().post(
+      zValidator("params", schema),
+      zValidator("query", schema2),
+      async (rc) => rc.text("test")
+    );
+    const req = new NextRequest(new URL("http://localhost/?name=J&age=30"));
+    const res = await handler.POST(req, {
+      params: Promise.resolve({
+        name: 1 as unknown as string,
+        hoge: true as unknown as string,
+      }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("Should return 200 when params are valid and no custom hook is used", async () => {
+    const handler = createRouteHandler<{
+      params: z.infer<typeof schema>;
+    }>().post(zValidator("params", schema), async (rc) => rc.text("clean"));
+    const req = new NextRequest(new URL("http://localhost"));
+    const res = await handler.POST(req, {
+      params: Promise.resolve({ name: "B", hoge: "22" }),
+    });
+    expect(await res.text()).toBe("clean");
+  });
+
+  it("Should return 400 when params are invalid and no custom hook is used", async () => {
+    const handler = createRouteHandler<{
+      params: z.infer<typeof schema>;
+    }>().post(zValidator("params", schema), async (rc) =>
+      rc.text("never reach")
+    );
+    const req = new NextRequest(new URL("http://localhost"));
+    const res = await handler.POST(req, {
+      params: Promise.resolve({
+        name: 100 as unknown as string,
+        hoge: true as unknown as string,
+      }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("Should throw error if custom hook does not return a response on validation failure", async () => {
+    const handler = createRouteHandler<{
+      params: z.infer<typeof schema>;
+    }>().post(
+      zValidator("params", schema, (_, __) => {
+        // Does not return a response on failure
+      }),
+      async (rc) => rc.text("never reach")
+    );
+    const req = new NextRequest(new URL("http://localhost"));
+    await expect(() =>
+      handler.POST(req, {
+        params: Promise.resolve({
+          name: 100 as unknown as string,
+          hoge: "valid",
+        }),
+      })
+    ).rejects.toThrow(
+      "If you provide a custom hook, you must explicitly return a response when validation fails."
+    );
+  });
+
+  it("Should return validated values via rc.req.valid for both params and query", async () => {
+    const handler = createRouteHandler<{
+      params: z.infer<typeof schema>;
+      query: z.input<typeof schema2>;
+    }>().post(
+      zValidator("params", schema),
+      zValidator("query", schema2),
+      async (rc) => {
+        return rc.json({
+          params: rc.req.valid("params"),
+          query: rc.req.valid("query"),
+        });
+      }
+    );
+    const req = new NextRequest(new URL("http://localhost/?name=J&age=20"));
+    const res = await handler.POST(req, {
+      params: Promise.resolve({ name: "J", hoge: "30" }),
+    });
+    const json = res.ok ? await res.json() : { params: "", query: "" };
+    expect(json.params).toEqual({ name: "J", hoge: "30" });
+    expect(json.query).toEqual({ name: "J", age: 20 });
+  });
+
+  it("Should call custom hook during validation", async () => {
+    let hookCallCount = 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const hook = (result: any, rc: any) => {
+      hookCallCount += 1;
+      if (!result.success) return rc.json(result, { status: 401 });
+    };
+
+    const handler = createRouteHandler<{
+      params: z.infer<typeof schema>;
+      query: z.input<typeof schema2>;
+    }>().post(
+      zValidator("params", schema, hook),
+      zValidator("query", schema2, hook),
+      async (rc) => rc.text("ok")
+    );
+    const req = new NextRequest(new URL("http://localhost/?name=J&age=20"));
+    await handler.POST(req, {
+      params: Promise.resolve({ name: "J", hoge: "30" }),
+    });
+    expect(hookCallCount).toBe(2);
+  });
+});
