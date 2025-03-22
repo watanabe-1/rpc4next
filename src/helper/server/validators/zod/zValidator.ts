@@ -1,4 +1,3 @@
-import { z, ZodSchema } from "zod";
 import { createHandler } from "../../createHandler";
 import type {
   RouteContext,
@@ -9,6 +8,7 @@ import type {
   ConditionalValidationInput,
   ValidationTarget,
 } from "../../types";
+import type { z, ZodSchema } from "zod";
 
 export const zValidator = <
   TValidationTarget extends ValidationTarget,
