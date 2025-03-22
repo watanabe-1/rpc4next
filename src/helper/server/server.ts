@@ -98,14 +98,19 @@ const composeHandlers = <
 };
 
 export const createRouteHandler = <TBindings extends Bindings>() => {
-  function createRoute<THttpMethod extends HTTP_METHOD>(method: THttpMethod) {
+  const createRoute = <THttpMethod extends HTTP_METHOD>(
+    method: THttpMethod
+  ) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return ((...handlers: any[]) => {
-      const methodFunc = composeHandlers(handlers);
+      const routeHandler = composeHandlers(handlers);
 
-      return { [method]: methodFunc } as Record<THttpMethod, typeof methodFunc>;
+      return { [method]: routeHandler } as Record<
+        THttpMethod,
+        typeof routeHandler
+      >;
     }) as CreateRoute<TBindings, THttpMethod>;
-  }
+  };
 
   return {
     get: createRoute("GET"),
