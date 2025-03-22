@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { z } from "zod";
 import { zValidator } from "./zValidator";
 import { createRouteHandler } from "../../server";
@@ -178,12 +178,9 @@ describe("zValidator tests", () => {
   });
 
   it("Should call custom hook during validation", async () => {
-    let hookCallCount = 0;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const hook = (result: any, rc: any) => {
-      hookCallCount += 1;
+    const hook = vi.fn((result, rc) => {
       if (!result.success) return rc.json(result, { status: 401 });
-    };
+    });
 
     const handler = createRouteHandler<{
       params: z.infer<typeof schema>;
@@ -193,10 +190,20 @@ describe("zValidator tests", () => {
       zValidator("query", schema2, hook),
       async (rc) => rc.text("ok")
     );
+
     const req = new NextRequest(new URL("http://localhost/?name=J&age=20"));
     await handler.POST(req, {
       params: Promise.resolve({ name: "J", hoge: "30" }),
     });
-    expect(hookCallCount).toBe(2);
+
+    expect(hook).toHaveBeenCalledTimes(2);
+
+    const firstCallArgs = hook.mock.calls[0];
+    expect(firstCallArgs[0]).toHaveProperty("success", true);
+    expect(typeof firstCallArgs[1].json).toBe("function");
+
+    const secondCallArgs = hook.mock.calls[1];
+    expect(secondCallArgs[0]).toHaveProperty("success", true);
+    expect(typeof secondCallArgs[1].json).toBe("function");
   });
 });
