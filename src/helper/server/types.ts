@@ -146,17 +146,17 @@ export type ValidationResults = {
 
 export type ValidationTarget = keyof ValidationResults;
 
-export interface Context<
+export interface RouteContext<
   TParams = Params,
   TQuery = Query,
-  TValidated extends Validated = Validated,
+  TValidationSchema extends ValidationSchema = ValidationSchema,
 > {
   req: NextRequest & {
     query: () => TQuery;
     params: () => Promise<TParams>;
     valid: <TValidationTarget extends ValidationTarget>(
       target: TValidationTarget
-    ) => ValidatedOutput<TValidationTarget, TValidated>;
+    ) => ValidationOutputFor<TValidationTarget, TValidationSchema>;
     addValidatedData: (target: ValidationTarget, value: object) => void;
   };
   res: NextResponse;
@@ -192,23 +192,23 @@ export type RouteResponse =
   | TypedNextResponse
   | Promise<TypedNextResponse | void>;
 
-export type Bindings = {
+export type RouteBindings = {
   params?: Params | Promise<Params>;
   query?: Query;
 };
 
-export type Validated = {
+export type ValidationSchema = {
   // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   input: {};
   // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   output: {};
 };
 
-export type ValidatedOutput<
+export type ValidationOutputFor<
   TValidationTarget extends ValidationTarget,
-  TValidated extends Validated,
-> = TValidationTarget extends keyof TValidated["output"]
-  ? TValidated["output"][TValidationTarget]
+  TValidationSchema extends ValidationSchema,
+> = TValidationTarget extends keyof TValidationSchema["output"]
+  ? TValidationSchema["output"][TValidationTarget]
   : never;
 
 type ArrayElementsToString<T> = T extends unknown[] ? string[] : string;
@@ -217,21 +217,25 @@ type ObjectPropertiesToString<T> = {
   [K in keyof T]: T[K] extends unknown[] ? ArrayElementsToString<T[K]> : string;
 };
 
-export type ValidatedOutputToString<
+export type ValidationOutputToString<
   TValidationTarget extends ValidationTarget,
-  TValidated extends Validated,
-> = ObjectPropertiesToString<ValidatedOutput<TValidationTarget, TValidated>>;
+  TValidationSchema extends ValidationSchema,
+> = ObjectPropertiesToString<
+  ValidationOutputFor<TValidationTarget, TValidationSchema>
+>;
 
 export type Handler<
   TParams = Params,
   TQuery = Query,
-  TValidated extends Validated = Validated,
+  TValidationSchema extends ValidationSchema = ValidationSchema,
   TRouteResponse extends RouteResponse = RouteResponse,
-> = (context: Context<TParams, TQuery, TValidated>) => TRouteResponse;
+> = (
+  routeContext: RouteContext<TParams, TQuery, TValidationSchema>
+) => TRouteResponse;
 
 type CreateRouteReturn<
   THttpMethod extends HTTP_METHOD,
-  TParams extends Bindings["params"],
+  TParams extends RouteBindings["params"],
   TRouteResponse extends RouteResponse,
 > = Record<
   THttpMethod,
@@ -242,7 +246,7 @@ type CreateRouteReturn<
 >;
 
 export type CreateRoute<
-  TBindings extends Bindings,
+  TBindings extends RouteBindings,
   THttpMethod extends HTTP_METHOD,
   TParams extends TBindings["params"] = TBindings extends {
     params: infer TValue;
@@ -255,7 +259,7 @@ export type CreateRoute<
 > = {
   // 1 handler
   <
-    TV1 extends Validated = Validated,
+    TV1 extends ValidationSchema = ValidationSchema,
     TR1 extends RouteResponse = RouteResponse,
   >(
     handler: Handler<TParams, TQuery, TV1, TR1>
@@ -263,8 +267,8 @@ export type CreateRoute<
 
   // 2 handlers
   <
-    TV1 extends Validated = Validated,
-    TV2 extends Validated = TV1,
+    TV1 extends ValidationSchema = ValidationSchema,
+    TV2 extends ValidationSchema = TV1,
     TR1 extends RouteResponse = RouteResponse,
     TR2 extends RouteResponse = RouteResponse,
   >(
@@ -274,9 +278,9 @@ export type CreateRoute<
 
   // 3 handlers
   <
-    TV1 extends Validated = Validated,
-    TV2 extends Validated = TV1,
-    TV3 extends Validated = TV1 & TV2,
+    TV1 extends ValidationSchema = ValidationSchema,
+    TV2 extends ValidationSchema = TV1,
+    TV3 extends ValidationSchema = TV1 & TV2,
     TR1 extends RouteResponse = RouteResponse,
     TR2 extends RouteResponse = RouteResponse,
     TR3 extends RouteResponse = RouteResponse,

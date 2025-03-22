@@ -2,9 +2,9 @@ import { notFound } from "next/navigation";
 import { NextResponse } from "next/server";
 import { searchParamsToObject } from "./searchParamsToObject";
 import type {
-  Context,
+  RouteContext,
   Query,
-  Validated,
+  ValidationSchema,
   Params,
   ValidationTarget,
   TypedNextResponse,
@@ -13,14 +13,14 @@ import type {
 } from "./types";
 import type { NextRequest } from "next/server";
 
-export const createContext = <
+export const createRouteContext = <
   TParams extends Params,
   TQuery extends Query,
-  TValidated extends Validated,
+  TValidationSchema extends ValidationSchema,
 >(
   req: NextRequest,
   segmentData: { params: Promise<TParams> }
-): Context<TParams, TQuery, TValidated> => {
+): RouteContext<TParams, TQuery, TValidationSchema> => {
   const validationResults = {} as Record<ValidationTarget, unknown>;
 
   return {
