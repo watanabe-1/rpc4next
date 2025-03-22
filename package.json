@@ -43,22 +43,22 @@
   },
   "dependencies": {
     "commander": "^13.1.0",
-    "next": "15.1.7",
+    "next": "15.2.3",
     "rpc4next": "file:",
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@types/node": "^22.13.10",
-    "eslint": "^9.21.0",
-    "eslint-config-prettier": "^10.0.1",
+    "@types/node": "^22.13.11",
+    "eslint": "^9.23.0",
+    "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-unused-imports": "^4.1.4",
     "eslint-plugin-vitest": "^0.5.4",
     "mock-fs": "^5.5.0",
-    "prettier": "^3.5.2",
+    "prettier": "^3.5.3",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2",
-    "typescript-eslint": "^8.24.1",
-    "vitest": "^3.0.8"
+    "typescript-eslint": "^8.27.0",
+    "vitest": "^3.0.9"
   }
 }
