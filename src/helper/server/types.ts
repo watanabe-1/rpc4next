@@ -249,8 +249,8 @@ export interface RouteContext<
    */
   body: <
     TData extends BodyInit | null,
-    TStatus extends HttpStatusCode,
     TContentType extends ContentType,
+    TStatus extends HttpStatusCode = 200,
   >(
     data: TData,
     init?: ResponseInit & { status?: TStatus; contentType?: TContentType }
@@ -282,22 +282,16 @@ export interface RouteContext<
   ) => TypedNextResponse<TData, TStatus, "text/plain">;
 
   /**
-   * Returns a `404 Not Found` response.
-   * Internally wraps Next.js's `notFound()` utility.
-   */
-  notFound: () => TypedNextResponse<null, 404, "text/html">;
-
-  /**
    * Issues a redirect response.
    * Internally wraps `NextResponse.redirect(...)`.
    *
    * @param url - The URL to redirect to.
-   * @param status - Optional redirect status code (default: 302).
-   * @returns A redirect response with content type `text/html`.
+   * @param init - Optional redirect status code (default: 302).
+   * @returns A redirect response.
    */
   redirect: <TStatus extends HttpStatusCode = 302>(
     url: string,
-    status?: TStatus
+    init?: TStatus | (ResponseInit & { status?: TStatus })
   ) => TypedNextResponse<null, TStatus, "text/html">;
 }
 

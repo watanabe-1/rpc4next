@@ -1,4 +1,3 @@
-import { notFound } from "next/navigation";
 import { NextResponse } from "next/server";
 import { searchParamsToObject } from "./searchParamsToObject";
 import type {
@@ -37,8 +36,8 @@ export const createRouteContext = <
 
     body: <
       TData extends BodyInit | null,
-      TStatus extends HttpStatusCode,
       TContentType extends ContentType,
+      TStatus extends HttpStatusCode = 200,
     >(
       data: TData,
       init?: ResponseInit & { status?: TStatus; contentType?: TContentType }
@@ -68,13 +67,11 @@ export const createRouteContext = <
         headers: { "Content-Type": "text/plain", ...init?.headers },
       }) as TypedNextResponse<TData, TStatus, "text/plain">,
 
-    notFound: () => notFound() as TypedNextResponse<null, 404, "text/html">,
-
     redirect: <TStatus extends HttpStatusCode = 302>(
       url: string,
-      status?: TStatus
+      init?: TStatus | (ResponseInit & { status?: TStatus })
     ) =>
-      NextResponse.redirect(url, status) as TypedNextResponse<
+      NextResponse.redirect(url, init) as TypedNextResponse<
         null,
         TStatus,
         "text/html"
