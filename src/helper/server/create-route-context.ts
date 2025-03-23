@@ -9,6 +9,8 @@ import type {
   TypedNextResponse,
   HttpStatusCode,
   ContentType,
+  RedirectionHttpStatusCode,
+  TypedResponseInit,
 } from "./types";
 import type { NextRequest } from "next/server";
 
@@ -40,7 +42,7 @@ export const createRouteContext = <
       TStatus extends HttpStatusCode = 200,
     >(
       data: TData,
-      init?: ResponseInit & { status?: TStatus; contentType?: TContentType }
+      init?: TypedResponseInit<TStatus, TContentType>
     ) =>
       new NextResponse<TData>(data, init) as TypedNextResponse<
         TData,
@@ -50,7 +52,7 @@ export const createRouteContext = <
 
     json: <TData, TStatus extends HttpStatusCode = 200>(
       data: TData,
-      init?: ResponseInit & { status?: TStatus }
+      init?: TypedResponseInit<TStatus, "application/json">
     ) =>
       NextResponse.json<TData>(data, init) as TypedNextResponse<
         TData,
@@ -60,21 +62,21 @@ export const createRouteContext = <
 
     text: <TData extends string, TStatus extends HttpStatusCode = 200>(
       data: TData,
-      init?: ResponseInit & { status?: TStatus }
+      init?: TypedResponseInit<TStatus, "text/plain">
     ) =>
       new NextResponse<TData>(data, {
         ...init,
         headers: { "Content-Type": "text/plain", ...init?.headers },
       }) as TypedNextResponse<TData, TStatus, "text/plain">,
 
-    redirect: <TStatus extends HttpStatusCode = 302>(
+    redirect: <TStatus extends RedirectionHttpStatusCode = 307>(
       url: string,
-      init?: TStatus | (ResponseInit & { status?: TStatus })
+      init?: TStatus | TypedResponseInit<TStatus, undefined>
     ) =>
       NextResponse.redirect(url, init) as TypedNextResponse<
-        null,
+        undefined,
         TStatus,
-        "text/html"
+        undefined
       >,
   };
 };

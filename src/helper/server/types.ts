@@ -21,7 +21,7 @@ type KnownContentType =
  */
 // Allow KnownContentType values with autocomplete, plus any custom string.
 // (string & {}) keeps literal types while accepting arbitrary strings.
-export type ContentType = KnownContentType | (string & {});
+export type ContentType = KnownContentType | (string & {}) | undefined;
 
 /**
  * Informational responses (100–199)
@@ -46,7 +46,7 @@ type SuccessfulHttpStatusCode =
 /**
  * Redirection messages (300–399)
  */
-type RedirectionHttpStatusCode =
+export type RedirectionHttpStatusCode =
   | 300
   | 301
   | 302
@@ -134,6 +134,135 @@ type HttpStatus<T extends HttpStatusCode> = T extends SuccessfulHttpStatusCode
       ok: false;
       status: Exclude<T, SuccessfulHttpStatusCode>;
     };
+
+/**
+ * Represents HTTP response headers with optional fields, parameterized by the content type.
+ * This type includes common headers used for caching, content description, CORS, authentication, security, cookies, redirects, connection, and server information.
+ *
+ * @template TContentType - The specific content type for the `Content-Type` header.
+ */
+type HttpResponseHeaders<TContentType extends ContentType> = Partial<{
+  // Cache control
+  "Cache-Control": string;
+  Expires: string;
+  ETag: string;
+  "Last-Modified": string;
+
+  // Content information
+  "Content-Type": TContentType;
+  "Content-Length": string;
+  "Content-Encoding": string;
+  "Content-Language": string;
+  "Content-Location": string;
+  "Content-Disposition": string;
+
+  // CORS (Cross-Origin Resource Sharing)
+  "Access-Control-Allow-Origin": string;
+  "Access-Control-Allow-Credentials": string;
+  "Access-Control-Allow-Headers": string;
+  "Access-Control-Allow-Methods": string;
+  "Access-Control-Expose-Headers": string;
+
+  // Authentication
+  "WWW-Authenticate": string;
+  Authorization: string;
+
+  // Security
+  "Strict-Transport-Security": string;
+  "Content-Security-Policy": string;
+  "X-Content-Type-Options": string;
+  "X-Frame-Options": string;
+  "X-XSS-Protection": string;
+  "Referrer-Policy": string;
+  "Permissions-Policy": string;
+  "Cross-Origin-Opener-Policy": string;
+  "Cross-Origin-Embedder-Policy": string;
+  "Cross-Origin-Resource-Policy": string;
+
+  // Cookies
+  "Set-Cookie": string;
+
+  // Redirect
+  Location: string;
+
+  // Connection and communication
+  Connection: string;
+  "Keep-Alive": string;
+  "Transfer-Encoding": string;
+  Upgrade: string;
+  Vary: string;
+
+  // Server information
+  Date: string;
+  Server: string;
+  "X-Powered-By": string;
+}>;
+
+/**
+ * Represents HTTP request headers with optional fields.
+ * This type includes general request headers, CORS/security-related headers, and client-specific headers.
+ */
+type HttpRequestHeaders = Partial<{
+  // General information
+  Accept: string;
+  "Accept-Charset": string;
+  "Accept-Encoding": string;
+  "Accept-Language": string;
+  Authorization: string;
+  "Cache-Control": string;
+  Connection: string;
+  "Content-Length": string;
+  "Content-Type": string;
+  Cookie: string;
+  Date: string;
+  Expect: string;
+  Forwarded: string;
+  From: string;
+  Host: string;
+  "If-Match": string;
+  "If-Modified-Since": string;
+  "If-None-Match": string;
+  "If-Range": string;
+  "If-Unmodified-Since": string;
+  "Max-Forwards": string;
+  Origin: string;
+  Pragma: string;
+  Range: string;
+  Referer: string;
+  TE: string;
+  Trailer: string;
+  "Transfer-Encoding": string;
+  Upgrade: string;
+  "User-Agent": string;
+  Via: string;
+  Warning: string;
+
+  // CORS / Security-related
+  "Access-Control-Request-Method": string;
+  "Access-Control-Request-Headers": string;
+  DNT: string; // Do Not Track
+  "Sec-Fetch-Dest": string;
+  "Sec-Fetch-Mode": string;
+  "Sec-Fetch-Site": string;
+  "Sec-Fetch-User": string;
+  "Sec-CH-UA": string;
+  "Sec-CH-UA-Platform": string;
+  "Sec-CH-UA-Mobile": string;
+}>;
+
+/**
+ * Extension of the standard `ResponseInit` interface with strongly typed status and headers.
+ *
+ * @template TStatus - The HTTP status code.
+ * @template TContentType - The content type of the response.
+ */
+export interface TypedResponseInit<
+  TStatus extends HttpStatusCode,
+  TContentType extends ContentType,
+> extends ResponseInit {
+  headers?: HttpResponseHeaders<TContentType> & HeadersInit;
+  status?: TStatus;
+}
 
 /**
  * A strongly typed wrapper around the standard Next.js `NextResponse` object,
@@ -240,11 +369,11 @@ export interface RouteContext<
   };
 
   /**
-   * Creates a typed response with an optional status and content type.
+   * Creates a typed response with an optional status.
    * Internally wraps `new NextResponse(...)`.
    *
    * @param data - The response body.
-   * @param init - Optional status code and content type.
+   * @param init - Optional response init.
    * @returns A typed response.
    */
   body: <
@@ -253,19 +382,19 @@ export interface RouteContext<
     TStatus extends HttpStatusCode = 200,
   >(
     data: TData,
-    init?: ResponseInit & { status?: TStatus; contentType?: TContentType }
+    init?: TypedResponseInit<TStatus, TContentType>
   ) => TypedNextResponse<TData, TStatus, TContentType>;
 
   /**
    * Creates a typed JSON response using `NextResponse.json(...)`.
    *
    * @param data - The response body as JSON.
-   * @param init - Optional status code.
+   * @param init - Optional response init.
    * @returns A JSON response.
    */
   json: <TData, TStatus extends HttpStatusCode = 200>(
     data: TData,
-    init?: ResponseInit & { status?: TStatus }
+    init?: TypedResponseInit<TStatus, "application/json">
   ) => TypedNextResponse<TData, TStatus, "application/json">;
 
   /**
@@ -273,12 +402,12 @@ export interface RouteContext<
    * Internally uses `new NextResponse(...)` with headers.
    *
    * @param data - The response body as plain text.
-   * @param init - Optional status code.
+   * @param init - Optional response init.
    * @returns A plain text response.
    */
   text: <TData extends string, TStatus extends HttpStatusCode = 200>(
     data: TData,
-    init?: ResponseInit & { status?: TStatus }
+    init?: TypedResponseInit<TStatus, "text/plain">
   ) => TypedNextResponse<TData, TStatus, "text/plain">;
 
   /**
@@ -286,13 +415,13 @@ export interface RouteContext<
    * Internally wraps `NextResponse.redirect(...)`.
    *
    * @param url - The URL to redirect to.
-   * @param init - Optional redirect status code (default: 302).
+   * @param init - Optional redirect status code (default: 307).
    * @returns A redirect response.
    */
-  redirect: <TStatus extends HttpStatusCode = 302>(
+  redirect: <TStatus extends RedirectionHttpStatusCode = 307>(
     url: string,
-    init?: TStatus | (ResponseInit & { status?: TStatus })
-  ) => TypedNextResponse<null, TStatus, "text/html">;
+    init?: TStatus | TypedResponseInit<TStatus, undefined>
+  ) => TypedNextResponse<undefined, TStatus, undefined>;
 }
 
 export type RouteResponse =
