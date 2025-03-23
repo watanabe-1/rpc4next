@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createRelativeImportPath } from "./pathUtils";
+import { createRelativeImportPath } from "./path-utils";
 
 describe("createRelativeImportPath", () => {
   it("should return a relative path between two files", () => {

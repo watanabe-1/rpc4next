@@ -2,7 +2,7 @@
 
 import fs from "fs";
 import { Command } from "commander";
-import { generatePages } from "./generatePathStructure";
+import { generatePages } from "./generate-path-structure";
 
 const program = new Command();
 

@@ -8,8 +8,8 @@ import {
   NEWLINE,
   END_POINT_FILE_NAMES,
 } from "./constants";
-import { scanQuery, scanRoute } from "./scanUtils";
-import { createObjectType, createRecodeType } from "./typeUtils";
+import { scanQuery, scanRoute } from "./scan-utils";
+import { createObjectType, createRecodeType } from "./type-utils";
 import {
   OPTIONAL_CATCH_ALL_PREFIX,
   CATCH_ALL_PREFIX,

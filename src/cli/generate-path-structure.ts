@@ -1,6 +1,6 @@
 import { STATEMENT_TERMINATOR, NEWLINE, TYPE_KEYS } from "./constants";
-import { scanAppDir } from "./routeScanner";
-import { createImport } from "./typeUtils";
+import { scanAppDir } from "./route-scanner";
+import { createImport } from "./type-utils";
 
 export const generatePages = (outputPath: string, baseDir: string) => {
   const { pathStructure, imports } = scanAppDir(outputPath, baseDir);

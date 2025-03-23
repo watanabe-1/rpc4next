@@ -1,6 +1,6 @@
 import mock from "mock-fs";
 import { describe, beforeEach, afterEach, it, expect } from "vitest";
-import { hasTargetFiles, scanAppDir } from "./routeScanner";
+import { hasTargetFiles, scanAppDir } from "./route-scanner";
 
 describe("hasTargetFiles", () => {
   beforeEach(() => {

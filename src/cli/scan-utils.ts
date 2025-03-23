@@ -4,8 +4,8 @@ import {
   TYPE_KEY_QUERY,
   TYPE_KEY_OPTIONAL_QUERY,
 } from "./constants";
-import { createRelativeImportPath } from "./pathUtils";
-import { createImport, createRecodeType, createObjectType } from "./typeUtils";
+import { createRelativeImportPath } from "./path-utils";
+import { createImport, createRecodeType, createObjectType } from "./type-utils";
 import type { HTTP_METHOD } from "next/dist/server/web/http";
 
 // 連番付与

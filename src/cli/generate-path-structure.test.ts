@@ -6,14 +6,14 @@ import {
   TYPE_KEY_QUERY,
 } from "./constants";
 import { TYPE_KEY_PARAMS, TYPE_END_POINT } from "./constants";
-import { generatePages } from "./generatePathStructure";
+import { generatePages } from "./generate-path-structure";
 
 const scanAppDir = vi.hoisted(() => vi.fn());
-vi.mock("./routeScanner", () => ({
+vi.mock("./route-scanner", () => ({
   scanAppDir,
 }));
 
-vi.mock("./typeUtils", () => ({
+vi.mock("./type-utils", () => ({
   createImport: vi.fn(
     (type, path) => `import type { ${type} } from "${path}";`
   ),
