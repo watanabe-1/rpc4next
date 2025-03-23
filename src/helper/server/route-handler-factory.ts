@@ -46,6 +46,21 @@ const composeHandlersWithError = <
   };
 };
 
+/**
+ * A factory function that creates route handlers for various HTTP methods (GET, POST, etc.).
+ *
+ * Optionally accepts a global error handler that will be used if any route handler throws.
+ *
+ * Example usage:
+ * ```ts
+ * const createRouteHandler = routeHandlerFactory((err, rc) => rc.text("error", {status : 400}));
+ * export const { POST } = createRouteHandler<{ params: ..., query: ... }>().post((rc) => rc.json({success: true}));
+ * ```
+ *
+ * @template TOnErrorResponse Type of the response returned by the error handler (optional)
+ * @param onError Optional global error handler. If not provided, errors will be re-thrown.
+ * @returns An object with methods (`get`, `post`, `put`, etc.) to define route handlers for each HTTP method
+ */
 export const routeHandlerFactory =
   <TOnErrorResponse extends RequiredRouteResponse = never>(
     onError?: ErrorHandler<TOnErrorResponse>
@@ -66,6 +81,7 @@ export const routeHandlerFactory =
           handlers,
           resolvedOnError
         );
+
         return { [method]: routeHandler } as Record<
           THttpMethod,
           typeof routeHandler
