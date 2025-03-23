@@ -415,10 +415,10 @@ export interface RouteContext<
    * Internally wraps `NextResponse.redirect(...)`.
    *
    * @param url - The URL to redirect to.
-   * @param init - Optional redirect status code (default: 307).
+   * @param init - Optional redirect status code (default: 302).
    * @returns A redirect response.
    */
-  redirect: <TStatus extends RedirectionHttpStatusCode = 307>(
+  redirect: <TStatus extends RedirectionHttpStatusCode = 302>(
     url: string,
     init?: TStatus | TypedResponseInit<TStatus, undefined>
   ) => TypedNextResponse<undefined, TStatus, undefined>;

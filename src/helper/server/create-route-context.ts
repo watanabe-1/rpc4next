@@ -69,7 +69,7 @@ export const createRouteContext = <
         headers: { "Content-Type": "text/plain", ...init?.headers },
       }) as TypedNextResponse<TData, TStatus, "text/plain">,
 
-    redirect: <TStatus extends RedirectionHttpStatusCode = 307>(
+    redirect: <TStatus extends RedirectionHttpStatusCode = 302>(
       url: string,
       init?: TStatus | TypedResponseInit<TStatus, undefined>
     ) =>

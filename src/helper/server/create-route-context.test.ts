@@ -1,0 +1,82 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { createRouteContext } from "./create-route-context";
+import { NextResponse, NextRequest } from "next/server";
+import type { ValidationTarget } from "./types";
+
+const createRealNextRequest = (url: string): NextRequest => {
+  return new NextRequest(url);
+};
+
+describe("createRouteContext", () => {
+  const mockParams = { id: "123" };
+  const mockSearchParamsObject = { q: "test" };
+
+  it("should return a route context with query and params", async () => {
+    const req = createRealNextRequest("http://localhost/?q=test");
+    const context = createRouteContext(req, {
+      params: Promise.resolve(mockParams),
+    });
+
+    const query = context.req.query();
+    expect(query).toEqual(mockSearchParamsObject);
+
+    const params = await context.req.params();
+    expect(params).toEqual(mockParams);
+  });
+
+  it("should store and retrieve validated data", () => {
+    const req = createRealNextRequest("http://localhost/");
+    const context = createRouteContext(req, { params: Promise.resolve({}) });
+
+    context.req.addValidatedData("body" as ValidationTarget, { name: "John" });
+    expect(context.req.valid("body" as ValidationTarget)).toEqual({
+      name: "John",
+    });
+  });
+
+  it("should return a json response", () => {
+    const req = createRealNextRequest("http://localhost/");
+    const context = createRouteContext(req, { params: Promise.resolve({}) });
+
+    const response = context.json({ message: "ok" }, { status: 200 });
+    expect(response instanceof NextResponse).toBe(true);
+    expect(response.headers.get("content-type")).toContain("application/json");
+  });
+
+  it("should return a text response", () => {
+    const req = createRealNextRequest("http://localhost/");
+    const context = createRouteContext(req, { params: Promise.resolve({}) });
+
+    const response = context.text("hello", { status: 200 });
+    expect(response instanceof NextResponse).toBe(true);
+    expect(response.headers.get("content-type")).toBe("text/plain");
+  });
+
+  it("should return a body response with custom headers", () => {
+    const req = createRealNextRequest("http://localhost/");
+    const context = createRouteContext(req, { params: Promise.resolve({}) });
+
+    const response = context.body("raw-body", {
+      status: 201,
+      headers: {
+        "X-Custom-Header": "test-header",
+        "Content-Type": "application/custom",
+      },
+    });
+
+    expect(response instanceof NextResponse).toBe(true);
+    expect(response.status).toBe(201);
+    expect(response.headers.get("X-Custom-Header")).toBe("test-header");
+    expect(response.headers.get("Content-Type")).toBe("application/custom");
+  });
+
+  it("should return a redirect response", () => {
+    const req = createRealNextRequest("http://localhost/");
+    const context = createRouteContext(req, { params: Promise.resolve({}) });
+
+    const response = context.redirect("http://localhost/next-page", 302);
+    expect(response instanceof NextResponse).toBe(true);
+    expect(response.headers.get("location")).toBe("http://localhost/next-page");
+    expect(response.status).toBe(302);
+  });
+});
