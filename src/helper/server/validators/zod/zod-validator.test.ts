@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
 import { describe, it, expect, vi } from "vitest";
 import { z } from "zod";
-import { zValidator } from "./zValidator";
-import { createRouteHandler } from "../../server";
+import { zodValidator } from "./zod-validator";
+import { createRouteHandler } from "../../create-route-handler";
 
 const schema = z.object({
   name: z.string(),
@@ -23,10 +23,10 @@ describe("zValidator tests", () => {
       params: z.infer<typeof schema>;
       query: { name: string; age: string };
     }>().post(
-      zValidator("params", schema, (result, rc) => {
+      zodValidator("params", schema, (result, rc) => {
         if (!result.success) return rc.json(result, { status: 401 });
       }),
-      zValidator("query", schema2),
+      zodValidator("query", schema2),
       async (rc) => rc.text("ok")
     );
     const req = new NextRequest(new URL("http://localhost/?name=J&age=20"));
@@ -42,10 +42,10 @@ describe("zValidator tests", () => {
       params: z.infer<typeof schema>;
       query: { name: string; age: string };
     }>().post(
-      zValidator("params", schema, (result, rc) => {
+      zodValidator("params", schema, (result, rc) => {
         if (!result.success) return rc.json(result, { status: 401 });
       }),
-      zValidator("query", schema2),
+      zodValidator("query", schema2),
       async (rc) => rc.text("ok")
     );
     const req = new NextRequest(new URL("http://localhost/?name=J&age=20"));
@@ -60,8 +60,8 @@ describe("zValidator tests", () => {
       params: z.infer<typeof schema>;
       query: z.input<typeof schema2>;
     }>().post(
-      zValidator("params", schema),
-      zValidator("query", schema2),
+      zodValidator("params", schema),
+      zodValidator("query", schema2),
       async (rc) => rc.text("ok")
     );
 
@@ -76,7 +76,7 @@ describe("zValidator tests", () => {
   it("Should return text when only params are validated and valid", async () => {
     const handler = createRouteHandler<{
       params: z.infer<typeof schema>;
-    }>().post(zValidator("params", schema), async (rc) =>
+    }>().post(zodValidator("params", schema), async (rc) =>
       rc.text("only params")
     );
     const req = new NextRequest(new URL("http://localhost/?ignored=true"));
@@ -91,8 +91,8 @@ describe("zValidator tests", () => {
       params: z.infer<typeof schema>;
       query: { name: string; age: string };
     }>().post(
-      zValidator("params", schema),
-      zValidator("query", schema2),
+      zodValidator("params", schema),
+      zodValidator("query", schema2),
       async (rc) => rc.text("test")
     );
     const req = new NextRequest(new URL("http://localhost/?name=J&age=30"));
@@ -108,7 +108,7 @@ describe("zValidator tests", () => {
   it("Should return 200 when params are valid and no custom hook is used", async () => {
     const handler = createRouteHandler<{
       params: z.infer<typeof schema>;
-    }>().post(zValidator("params", schema), async (rc) => rc.text("clean"));
+    }>().post(zodValidator("params", schema), async (rc) => rc.text("clean"));
     const req = new NextRequest(new URL("http://localhost"));
     const res = await handler.POST(req, {
       params: Promise.resolve({ name: "B", hoge: "22" }),
@@ -119,7 +119,7 @@ describe("zValidator tests", () => {
   it("Should return 400 when params are invalid and no custom hook is used", async () => {
     const handler = createRouteHandler<{
       params: z.infer<typeof schema>;
-    }>().post(zValidator("params", schema), async (rc) =>
+    }>().post(zodValidator("params", schema), async (rc) =>
       rc.text("never reach")
     );
     const req = new NextRequest(new URL("http://localhost"));
@@ -136,7 +136,7 @@ describe("zValidator tests", () => {
     const handler = createRouteHandler<{
       params: z.infer<typeof schema>;
     }>().post(
-      zValidator("params", schema, (_, __) => {
+      zodValidator("params", schema, (_, __) => {
         // Does not return a response on failure
       }),
       async (rc) => rc.text("never reach")
@@ -159,8 +159,8 @@ describe("zValidator tests", () => {
       params: z.infer<typeof schema>;
       query: z.input<typeof schema2>;
     }>().post(
-      zValidator("params", schema),
-      zValidator("query", schema2),
+      zodValidator("params", schema),
+      zodValidator("query", schema2),
       async (rc) => {
         return rc.json({
           params: rc.req.valid("params"),
@@ -186,8 +186,8 @@ describe("zValidator tests", () => {
       params: z.infer<typeof schema>;
       query: z.input<typeof schema2>;
     }>().post(
-      zValidator("params", schema, hook),
-      zValidator("query", schema2, hook),
+      zodValidator("params", schema, hook),
+      zodValidator("query", schema2, hook),
       async (rc) => rc.text("ok")
     );
 

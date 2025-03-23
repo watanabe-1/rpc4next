@@ -1,4 +1,4 @@
-import { createHandler } from "../../createHandler";
+import { createHandler } from "../../create-handler";
 import type {
   RouteContext,
   Params,
@@ -10,7 +10,7 @@ import type {
 } from "../../types";
 import type { z, ZodSchema } from "zod";
 
-export const zValidator = <
+export const zodValidator = <
   TValidationTarget extends ValidationTarget,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TSchema extends ZodSchema<any>,

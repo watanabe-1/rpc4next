@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { searchParamsToObject } from "./searchParamsToObject";
+import { searchParamsToObject } from "./search-params-to-object";
 
 describe("searchParamsToObject", () => {
   it("should retrieve a single query parameter", () => {

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { searchParamsToObject } from "./searchParamsToObject";
+import { searchParamsToObject } from "./search-params-to-object";
 import type {
   RouteContext,
   Query,
