@@ -428,6 +428,8 @@ export type RouteResponse =
   | TypedNextResponse
   | Promise<TypedNextResponse | void>;
 
+type RequiredRouteResponse = TypedNextResponse | Promise<TypedNextResponse>;
+
 export interface RouteBindings {
   params?: Params | Promise<Params>;
   query?: Query;
@@ -513,7 +515,7 @@ export interface MethodRouteDefinition<
   // 1 handler
   <
     TV1 extends ValidationSchema = ValidationSchema,
-    TR1 extends RouteResponse = RouteResponse,
+    TR1 extends RequiredRouteResponse = RequiredRouteResponse,
   >(
     handler: Handler<TParams, TQuery, TV1, TR1>
   ): HttpMethodMapping<THttpMethod, TParams, TR1>;
@@ -523,7 +525,7 @@ export interface MethodRouteDefinition<
     TV1 extends ValidationSchema = ValidationSchema,
     TV2 extends ValidationSchema = TV1,
     TR1 extends RouteResponse = RouteResponse,
-    TR2 extends RouteResponse = RouteResponse,
+    TR2 extends RequiredRouteResponse = RequiredRouteResponse,
   >(
     handler1: Handler<TParams, TQuery, TV1, TR1>,
     handler2: Handler<TParams, TQuery, TV2, TR2>
@@ -536,7 +538,7 @@ export interface MethodRouteDefinition<
     TV3 extends ValidationSchema = TV1 & TV2,
     TR1 extends RouteResponse = RouteResponse,
     TR2 extends RouteResponse = RouteResponse,
-    TR3 extends RouteResponse = RouteResponse,
+    TR3 extends RequiredRouteResponse = RequiredRouteResponse,
   >(
     handler1: Handler<TParams, TQuery, TV1, TR1>,
     handler2: Handler<TParams, TQuery, TV2, TR2>,
