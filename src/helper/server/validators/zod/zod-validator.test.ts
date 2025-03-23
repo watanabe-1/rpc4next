@@ -3,6 +3,8 @@ import { describe, it, expect, vi } from "vitest";
 import { z } from "zod";
 import { zodValidator } from "./zod-validator";
 import { createRouteHandler } from "../../create-route-handler";
+import { Expect, Equal } from "../../../../__tests__/types";
+import { TypedNextResponse } from "../../types";
 
 const schema = z.object({
   name: z.string(),
@@ -205,5 +207,66 @@ describe("zValidator tests", () => {
     const secondCallArgs = hook.mock.calls[1];
     expect(secondCallArgs[0]).toHaveProperty("success", true);
     expect(typeof secondCallArgs[1].json).toBe("function");
+  });
+
+  it("should infer types correctly", async () => {
+    type ExpectOutput = z.output<typeof schema>;
+    type ExpectQuery = z.output<typeof schema2>;
+
+    const handler = createRouteHandler<{
+      params: z.infer<typeof schema>;
+      query: { name: string; age: string };
+    }>().post(
+      zodValidator("params", schema, (result, rc) => {
+        if (!result.success) return rc.json(result, { status: 401 });
+      }),
+      zodValidator("query", schema2),
+      async (rc) => {
+        const validParams = rc.req.valid("params");
+        const ValidQuery = rc.req.valid("query");
+
+        type Result1 = Expect<Equal<ExpectOutput, typeof validParams>>;
+        type Result2 = Expect<Equal<ExpectQuery, typeof ValidQuery>>;
+
+        if (ValidQuery) {
+          return rc.text("ok1");
+        }
+
+        return rc.text("ok2");
+      }
+    );
+    const req = new NextRequest(new URL("http://localhost/?name=J&age=20"));
+    const res = await handler.POST(req, {
+      params: Promise.resolve({ name: "J", hoge: "30" }),
+    });
+
+    type ExpectHookDefaultResponse = TypedNextResponse<
+      z.SafeParseError<{
+        name: string;
+        age: string;
+      }>,
+      400,
+      "application/json"
+    >;
+
+    type ExpectHookResponse = TypedNextResponse<
+      z.SafeParseError<{
+        name: string;
+        hoge: string;
+      }>,
+      401,
+      "application/json"
+    >;
+
+    type ExpectLastResponse =
+      | TypedNextResponse<"ok1", 200, "text/plain">
+      | TypedNextResponse<"ok2", 200, "text/plain">;
+
+    type ExpectResponse =
+      | ExpectHookDefaultResponse
+      | ExpectHookResponse
+      | ExpectLastResponse;
+
+    type Result3 = Expect<Equal<ExpectResponse, typeof res>>;
   });
 });
