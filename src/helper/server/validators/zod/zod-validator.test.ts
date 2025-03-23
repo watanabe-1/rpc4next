@@ -208,7 +208,9 @@ describe("zValidator tests", () => {
     expect(secondCallArgs[0]).toHaveProperty("success", true);
     expect(typeof secondCallArgs[1].json).toBe("function");
   });
+});
 
+describe("createHandler type definitions", () => {
   it("should infer types correctly", async () => {
     type ExpectOutput = z.output<typeof schema>;
     type ExpectQuery = z.output<typeof schema2>;

@@ -19,7 +19,9 @@ describe("createHandler", () => {
 
     expect(result).toBe(handler);
   });
+});
 
+describe("createHandler type definitions", () => {
   it("should infer types correctly", async () => {
     const handler = createHandler<Params, Query, ValidationSchema>()(async (
       c
