@@ -1,3 +1,4 @@
+import { error } from "console";
 import type { HTTP_METHOD } from "next/dist/server/web/http";
 import type { NextResponse, NextRequest } from "next/server";
 
@@ -428,7 +429,9 @@ export type RouteResponse =
   | TypedNextResponse
   | Promise<TypedNextResponse | void>;
 
-type RequiredRouteResponse = TypedNextResponse | Promise<TypedNextResponse>;
+export type RequiredRouteResponse =
+  | TypedNextResponse
+  | Promise<TypedNextResponse>;
 
 export interface RouteBindings {
   params?: Params | Promise<Params>;
@@ -486,6 +489,16 @@ export type Handler<
   routeContext: RouteContext<TParams, TQuery, TValidationSchema>
 ) => TRouteResponse;
 
+export type ErrorHandler<
+  TRouteResponse extends RequiredRouteResponse,
+  TParams = Params,
+  TQuery = Query,
+  TValidationSchema extends ValidationSchema = ValidationSchema,
+> = (
+  error: unknown,
+  routeContext: RouteContext<TParams, TQuery, TValidationSchema>
+) => TRouteResponse;
+
 type RouteHandler<
   TParams extends RouteBindings["params"],
   TRouteResponse extends RouteResponse,
@@ -503,6 +516,7 @@ type HttpMethodMapping<
 export interface MethodRouteDefinition<
   THttpMethod extends HTTP_METHOD,
   TBindings extends RouteBindings,
+  TOnErrorResponse extends RequiredRouteResponse,
   TParams extends TBindings["params"] = TBindings extends {
     params: infer TValue;
   }
@@ -518,7 +532,7 @@ export interface MethodRouteDefinition<
     TR1 extends RequiredRouteResponse = RequiredRouteResponse,
   >(
     handler: Handler<TParams, TQuery, TV1, TR1>
-  ): HttpMethodMapping<THttpMethod, TParams, TR1>;
+  ): HttpMethodMapping<THttpMethod, TParams, TR1 | TOnErrorResponse>;
 
   // 2 handlers
   <
@@ -529,7 +543,7 @@ export interface MethodRouteDefinition<
   >(
     handler1: Handler<TParams, TQuery, TV1, TR1>,
     handler2: Handler<TParams, TQuery, TV2, TR2>
-  ): HttpMethodMapping<THttpMethod, TParams, TR1 | TR2>;
+  ): HttpMethodMapping<THttpMethod, TParams, TR1 | TR2 | TOnErrorResponse>;
 
   // 3 handlers
   <
@@ -543,5 +557,9 @@ export interface MethodRouteDefinition<
     handler1: Handler<TParams, TQuery, TV1, TR1>,
     handler2: Handler<TParams, TQuery, TV2, TR2>,
     handler3: Handler<TParams, TQuery, TV3, TR3>
-  ): HttpMethodMapping<THttpMethod, TParams, TR1 | TR2 | TR3>;
+  ): HttpMethodMapping<
+    THttpMethod,
+    TParams,
+    TR1 | TR2 | TR3 | TOnErrorResponse
+  >;
 }

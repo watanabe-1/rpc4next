@@ -2,9 +2,11 @@ import { NextRequest } from "next/server";
 import { describe, it, expect, vi } from "vitest";
 import { z } from "zod";
 import { zodValidator } from "./zod-validator";
-import { createRouteHandler } from "../../create-route-handler";
+import { routeHandlerFactory } from "../../route-handler-factory";
 import { Expect, Equal } from "../../../../__tests__/types";
 import { TypedNextResponse } from "../../types";
+
+const createRouteHandler = routeHandlerFactory();
 
 const schema = z.object({
   name: z.string(),
