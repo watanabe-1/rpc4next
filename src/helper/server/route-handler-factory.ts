@@ -1,5 +1,5 @@
-import { HttpMethod } from "../../lib/types";
 import { createRouteContext } from "./create-route-context";
+import { HttpMethod } from "../../lib/types";
 import type {
   Query,
   Params,

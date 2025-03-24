@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { describe, it, expect, vi } from "vitest";
 import { routeHandlerFactory } from "./route-handler-factory";
-import { TypedNextResponse } from "../../../dist";
+import { TypedNextResponse } from "./types";
 import { Expect, Equal } from "../../__tests__/types";
 
 describe("routeHandlerFactory", () => {

@@ -1,5 +1,5 @@
-import type { NextResponse, NextRequest } from "next/server";
 import { HttpMethod } from "../../lib/types";
+import type { NextResponse, NextRequest } from "next/server";
 
 type KnownContentType =
   | "application/json"
