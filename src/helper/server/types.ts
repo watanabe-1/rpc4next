@@ -1,6 +1,5 @@
-import { error } from "console";
-import type { HTTP_METHOD } from "next/dist/server/web/http";
 import type { NextResponse, NextRequest } from "next/server";
+import { HttpMethod } from "../../lib/types";
 
 type KnownContentType =
   | "application/json"
@@ -509,13 +508,13 @@ type RouteHandler<
 ) => Promise<Exclude<Awaited<TRouteResponse>, void | undefined>>;
 
 type HttpMethodMapping<
-  THttpMethod extends HTTP_METHOD,
+  THttpMethod extends HttpMethod,
   TParams extends RouteBindings["params"],
   TRouteResponse extends RouteResponse,
 > = Record<THttpMethod, RouteHandler<TParams, TRouteResponse>>;
 
 export interface MethodRouteDefinition<
-  THttpMethod extends HTTP_METHOD,
+  THttpMethod extends HttpMethod,
   TBindings extends RouteBindings,
   TOnErrorResponse extends RequiredRouteResponse,
   TParams extends TBindings["params"] = TBindings extends {

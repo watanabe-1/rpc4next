@@ -1,3 +1,4 @@
+import { HttpMethod } from "../../lib/types";
 import { createRouteContext } from "./create-route-context";
 import type {
   Query,
@@ -9,7 +10,6 @@ import type {
   RequiredRouteResponse,
   ErrorHandler,
 } from "./types";
-import type { HTTP_METHOD } from "next/dist/server/web/http";
 import type { NextRequest } from "next/server";
 
 const composeHandlersWithError = <
@@ -66,7 +66,7 @@ export const routeHandlerFactory =
     onError?: ErrorHandler<TOnErrorResponse>
   ) =>
   <TBindings extends RouteBindings>() => {
-    const defineRouteForMethod = <THttpMethod extends HTTP_METHOD>(
+    const defineRouteForMethod = <THttpMethod extends HttpMethod>(
       method: THttpMethod
     ) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
