@@ -29,13 +29,13 @@ describe("createHandler type definitions", () => {
       return c.text("test");
     });
 
-    type ExpectHandler = Handler<
+    type ExpectedHandlerType = Handler<
       Params,
       Query,
       ValidationSchema,
       Promise<TypedNextResponse<"test", 200, "text/plain">>
     >;
 
-    type Result1 = Expect<Equal<ExpectHandler, typeof handler>>;
+    type Result1 = Expect<Equal<ExpectedHandlerType, typeof handler>>;
   });
 });
