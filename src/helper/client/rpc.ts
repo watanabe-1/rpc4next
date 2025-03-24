@@ -1,5 +1,7 @@
-import { createUrl, replaceDynamicSegments } from "./url";
-import { isDynamic, isCatchAllOrOptional, isHttpMethod } from "./utils";
+import { callHttpMethod } from "./http-method";
+import { matchPath } from "./match";
+import { createUrl } from "./url";
+import { isDynamic, isHttpMethod } from "./utils";
 import type {
   FuncParams,
   UrlOptions,
@@ -20,7 +22,7 @@ export const createRpcProxy = <T extends object>(
 
       const newKey = paths.at(-1) ?? "";
       if (isDynamic(newKey)) {
-        // 動的パラメータとして扱う
+        // Treat as a dynamic parameter
         return createRpcProxy(
           [...paths],
           { ...params, [dynamicKeys.at(-1) ?? ""]: value },
@@ -37,54 +39,16 @@ export const createRpcProxy = <T extends object>(
         }
 
         if (key === "$match") {
-          return (path: string) => {
-            const basePath = `/${paths.slice(1).join("/")}`;
-            const regexPattern = replaceDynamicSegments(basePath, {
-              optionalCatchAll: "/(.*)?",
-              catchAll: "/([^/]+(?:/[^/]+)*)",
-              dynamic: "/([^/]+)",
-            });
-            const match = new RegExp(`^${regexPattern}$`).exec(path);
-
-            if (!match) return null;
-
-            return dynamicKeys.reduce((acc, key, index) => {
-              const paramKey = key.replace(/^_+/, "");
-              const matchValue = match[index + 1];
-              const paramValue = isCatchAllOrOptional(key)
-                ? matchValue?.split("/")
-                : matchValue;
-
-              return {
-                ...acc,
-                [paramKey]: paramValue,
-              };
-            }, {});
-          };
+          return (path: string) => matchPath([...paths], dynamicKeys, path);
         }
 
         if (isHttpMethod(key)) {
-          return async (url?: UrlOptions, options?: FetcherOptions) => {
-            const urlObj = createUrl([...paths], params, dynamicKeys)(url);
-            const method = key.replace(/^\$/, "").toUpperCase();
-
-            const response = await fetch(urlObj.path, {
-              method: method,
-              next: options?.next,
-              headers: {
-                "Content-Type": "application/json",
-                ...options?.headers,
-              },
-              body: options?.body ? JSON.stringify(options.body) : undefined,
-              credentials: "include",
-            });
-
-            return response;
-          };
+          return async (url?: UrlOptions, options?: FetcherOptions) =>
+            callHttpMethod(key, [...paths], params, dynamicKeys, url, options);
         }
 
         if (isDynamic(key)) {
-          // 動的パラメータとして扱う
+          // Treat as a dynamic parameter
           return createRpcProxy([...paths, key], params, [...dynamicKeys, key]);
         }
 
