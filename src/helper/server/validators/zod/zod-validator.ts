@@ -79,8 +79,5 @@ export const zodValidator = <
 
     // If validation succeeds, register it as validatedData
     rc.req.addValidatedData(target, result.data);
-
-    // Return `undefined` if all validations pass
-    return undefined as never;
   });
 };

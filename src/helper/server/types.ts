@@ -505,7 +505,8 @@ type RouteHandler<
 > = (
   req: NextRequest,
   segmentData: { params: Promise<TParams> }
-) => Promise<Awaited<TRouteResponse>>;
+  // Exclude void | undefined because a response is always returned or an error is thrown internally
+) => Promise<Exclude<Awaited<TRouteResponse>, void | undefined>>;
 
 type HttpMethodMapping<
   THttpMethod extends HTTP_METHOD,
