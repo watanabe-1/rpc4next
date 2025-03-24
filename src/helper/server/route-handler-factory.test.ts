@@ -234,4 +234,44 @@ describe("routeHandlerFactory type definitions", () => {
 
     type _Result4 = Expect<Equal<ExpectedErrorResponse, typeof _res>>;
   });
+
+  // eslint-disable-next-line vitest/expect-expect
+  it("should infer types correctly for mixed async and sync normal handlers with onError", async () => {
+    type CustomError = { error: string };
+    const createRouteHandler = routeHandlerFactory((error: unknown, rc) => {
+      if (error instanceof Error) {
+        return rc.json({ error: error.message } as CustomError, {
+          status: 500,
+        });
+      }
+
+      return rc.text("sync error", { status: 400 });
+    });
+    const _handler = createRouteHandler<{
+      params: { id: string };
+      query: { token: string };
+    }>().post(
+      async (rc) => {
+        // Async normal handler: returns a response via rc.text
+        const _params = await rc.req.params();
+        const _query = rc.req.query();
+
+        return rc.text("async ok");
+      },
+      (rc) => {
+        // Synchronous normal handler: returns a response via rc.text
+        return rc.text("sync ok");
+      }
+    );
+
+    type ExpectedResponse =
+      | TypedNextResponse<"async ok", 200, "text/plain">
+      | TypedNextResponse<"sync ok", 200, "text/plain">
+      | TypedNextResponse<CustomError, 500, "application/json">
+      | TypedNextResponse<"sync error", 400, "text/plain">;
+
+    type _Result = Expect<
+      Equal<ExpectedResponse, Awaited<ReturnType<typeof _handler.POST>>>
+    >;
+  });
 });
