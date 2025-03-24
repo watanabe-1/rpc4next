@@ -32,7 +32,7 @@ export const createUrl = (
   dynamicKeys: string[]
 ) => {
   const baseUrl = paths.shift();
-  const basePath = paths.join("/");
+  const basePath = `/${paths.join("/")}`;
 
   const dynamicPath = dynamicKeys.reduce((acc, key) => {
     const param = params[key];
@@ -52,7 +52,7 @@ export const createUrl = (
   }, basePath);
 
   return (url?: UrlOptions) => {
-    const relativePath = `/${dynamicPath}${buildUrlSuffix(url)}`;
+    const relativePath = `${dynamicPath}${buildUrlSuffix(url)}`;
     const pathname = replaceDynamicSegments(basePath, {
       optionalCatchAll: "/[[...$1]]",
       catchAll: "/[...$1]",
@@ -62,7 +62,9 @@ export const createUrl = (
     return {
       pathname,
       params,
-      path: `${baseUrl}${relativePath}`,
+      path: baseUrl
+        ? `${baseUrl.replace(/\/$/, "")}${relativePath}`
+        : relativePath,
       relativePath,
     } as UrlResult;
   };
