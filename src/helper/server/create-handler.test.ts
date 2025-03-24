@@ -22,8 +22,9 @@ describe("createHandler", () => {
 });
 
 describe("createHandler type definitions", () => {
+  // eslint-disable-next-line vitest/expect-expect
   it("should infer types correctly", async () => {
-    const handler = createHandler<Params, Query, ValidationSchema>()(async (
+    const _handler = createHandler<Params, Query, ValidationSchema>()(async (
       c
     ) => {
       return c.text("test");
@@ -36,6 +37,6 @@ describe("createHandler type definitions", () => {
       Promise<TypedNextResponse<"test", 200, "text/plain">>
     >;
 
-    type Result1 = Expect<Equal<ExpectedHandlerType, typeof handler>>;
+    type _Result1 = Expect<Equal<ExpectedHandlerType, typeof _handler>>;
   });
 });

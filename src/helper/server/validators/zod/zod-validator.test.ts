@@ -2,8 +2,8 @@ import { NextRequest } from "next/server";
 import { describe, it, expect, vi } from "vitest";
 import { z } from "zod";
 import { zodValidator } from "./zod-validator";
-import { routeHandlerFactory } from "../../route-handler-factory";
 import { Expect, Equal } from "../../../../__tests__/types";
+import { routeHandlerFactory } from "../../route-handler-factory";
 import { TypedNextResponse } from "../../types";
 
 const createRouteHandler = routeHandlerFactory();
@@ -213,6 +213,7 @@ describe("zValidator tests", () => {
 });
 
 describe("zValidator type definitions", () => {
+  // eslint-disable-next-line vitest/expect-expect
   it("should infer types correctly", async () => {
     const handler = createRouteHandler<{
       params: z.infer<typeof schema>;
@@ -223,16 +224,16 @@ describe("zValidator type definitions", () => {
       }),
       zodValidator("query", schema2),
       async (rc) => {
-        const validParams = rc.req.valid("params");
-        const validQuery = rc.req.valid("query");
+        const _validParams = rc.req.valid("params");
+        const _validQuery = rc.req.valid("query");
 
         type ExpectedOutput = z.output<typeof schema>;
         type ExpectedQuery = z.output<typeof schema2>;
 
-        type Result1 = Expect<Equal<ExpectedOutput, typeof validParams>>;
-        type Result2 = Expect<Equal<ExpectedQuery, typeof validQuery>>;
+        type _Result1 = Expect<Equal<ExpectedOutput, typeof _validParams>>;
+        type _Result2 = Expect<Equal<ExpectedQuery, typeof _validQuery>>;
 
-        if (validQuery) {
+        if (_validQuery) {
           return rc.text("ok1");
         }
 
@@ -240,7 +241,7 @@ describe("zValidator type definitions", () => {
       }
     );
     const req = new NextRequest(new URL("http://localhost/?name=J&age=20"));
-    const res = await handler.POST(req, {
+    const _res = await handler.POST(req, {
       params: Promise.resolve({ name: "J", hoge: "30" }),
     });
 
@@ -271,6 +272,6 @@ describe("zValidator type definitions", () => {
       | ExpectedHookResponse
       | ExpectedLastResponse;
 
-    type Result3 = Expect<Equal<ExpectedResponse, typeof res>>;
+    type _Result3 = Expect<Equal<ExpectedResponse, typeof _res>>;
   });
 });
