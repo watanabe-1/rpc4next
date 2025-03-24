@@ -148,4 +148,18 @@ describe("createUrl", () => {
 
     expect(result.pathname).toBe("/[group]/user/[...ids]");
   });
+
+  it("generates correct URL when the first path segment is empty", () => {
+    const paths = ["", "_group", "user", "___ids"];
+    const params = { _group: "test", ___ids: ["1", "2"] };
+    const dynamicKeys = ["_group", "___ids"];
+    const urlGenerator = createUrl(paths, params, dynamicKeys);
+    const result = urlGenerator();
+
+    expect(result.relativePath).toContain("/test/user/1/2");
+    expect(result.path).toBe(result.relativePath);
+    expect(result.params).toEqual(params);
+
+    expect(result.pathname).toBe("/[group]/user/[...ids]");
+  });
 });
