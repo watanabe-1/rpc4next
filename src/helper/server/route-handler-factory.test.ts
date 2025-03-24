@@ -143,6 +143,37 @@ describe("routeHandlerFactory", () => {
       "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS"
     );
   });
+
+  it("should correctly receive query and params", async () => {
+    const createRouteHandler = routeHandlerFactory()<{
+      params: { user: string };
+      query: { id: string };
+    }>();
+    const handler = createRouteHandler.get(async (rc) => {
+      const params = await rc.req.params();
+      const query = rc.req.query();
+      expect(params).toEqual({ user: "john" });
+      expect(query).toEqual({ id: "123" });
+
+      return rc.text("Query and Params OK");
+    });
+
+    const req = new NextRequest(new URL("http://localhost/?id=123"));
+    const res = await handler.GET(req, {
+      params: Promise.resolve({ user: "john" }),
+    });
+    expect(await res.text()).toBe("Query and Params OK");
+  });
+
+  it("should support non-async (synchronous) handlers", async () => {
+    const createRouteHandler = routeHandlerFactory()();
+    const handler = createRouteHandler.get((rc) => {
+      return rc.text("sync response");
+    });
+    const req = new NextRequest("http://localhost");
+    const res = await handler.GET(req, { params: Promise.resolve({}) });
+    expect(await res.text()).toBe("sync response");
+  });
 });
 
 describe("routeHandlerFactory type definitions", () => {
@@ -188,16 +219,13 @@ describe("routeHandlerFactory type definitions", () => {
 
       return rc.text("onError", { status: 400 });
     });
-    const handler = createRouteHandler<{
-      params: { id: string };
-      query: { flag: string };
-    }>().get(async (_) => {
+    const handler = createRouteHandler().get(async (_) => {
       throw new Error("failed");
     });
 
-    const req = new NextRequest(new URL("http://localhost/?flag=true"));
+    const req = new NextRequest(new URL("http://localhost/"));
     const _res = await handler.GET(req, {
-      params: Promise.resolve({ id: "123" }),
+      params: Promise.resolve({}),
     });
 
     type ExpectedErrorResponse =
