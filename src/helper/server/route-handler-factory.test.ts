@@ -9,14 +9,14 @@ describe("routeHandlerFactory", () => {
     const createRouteHandler = routeHandlerFactory()();
     const handler = createRouteHandler.post(
       async (_) => {
-        // このハンドラは何も返さない（undefined）
+        // This handler does not return anything (undefined)
       },
       async (rc) => {
-        // 2つ目のハンドラで rc.text() を使ってレスポンスを返す
+        // The second handler returns a response using rc.text()
         return rc.text("first valid response");
       },
       async (rc) => {
-        // 3つ目のハンドラ（実行されないはず）
+        // The third handler (should not be executed)
         return rc.text("should not be reached");
       }
     );
@@ -30,11 +30,10 @@ describe("routeHandlerFactory", () => {
     const createRouteHandler = routeHandlerFactory()();
     const handler = createRouteHandler.get(
       async (_) => {
-        // どのハンドラも Response を返さないため、エラーとなるはず
+        // None of the handlers return a Response, so an error should be thrown
       },
       async (_) => {
-        // こちらも Response を返さない
-
+        // Also does not return a Response
         return undefined as unknown as TypedNextResponse;
       }
     );
@@ -47,7 +46,7 @@ describe("routeHandlerFactory", () => {
 
   it("should use the global error handler when provided", async () => {
     const globalErrorHandler = vi.fn(async (error, rc) => {
-      // グローバルエラーハンドラでは rc.text を使ってレスポンスを返す
+      // In the global error handler, return a response using rc.text
       return rc.text("global error handled", { status: 500 });
     });
     const createRouteHandler = routeHandlerFactory(globalErrorHandler)();
@@ -72,10 +71,10 @@ describe("routeHandlerFactory", () => {
     const createRouteHandler = routeHandlerFactory()();
     const handler = createRouteHandler.patch(
       async (_) => {
-        // 何も返さないハンドラ
+        // Handler that returns nothing
       },
       spyHandler,
-      secondHandler // このハンドラは実行されないはず
+      secondHandler // This handler should not be executed
     );
 
     const req = new NextRequest("http://localhost");
@@ -97,7 +96,7 @@ describe("routeHandlerFactory", () => {
       ),
       patch: createRouteHandler.patch(async (rc) => rc.text("PATCH response")),
       head: createRouteHandler.head(async (rc) => {
-        // HEADレスポンスにはボディがないことが一般的
+        // HEAD responses typically have no body
         return rc.body(null, { status: 200 });
       }),
       options: createRouteHandler.options(async (rc) => {
@@ -138,7 +137,7 @@ describe("routeHandlerFactory", () => {
     expect(await deleteRes.text()).toBe("DELETE response");
     expect(await patchRes.text()).toBe("PATCH response");
     expect(headRes.status).toBe(200);
-    expect(await headRes.text()).toBe(""); // HEADのレスポンスは空
+    expect(await headRes.text()).toBe(""); // HEAD responses are expected to have empty bodies
     expect(optionsRes.status).toBe(204);
     expect(optionsRes.headers.get("Allow")).toBe(
       "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS"
@@ -154,7 +153,7 @@ describe("routeHandlerFactory type definitions", () => {
       params: { name: string; age: string };
       query: { id: string };
     }>().post(async (rc) => {
-      // rc.req.params と rc.req.query の型がそれぞれ正しく推論されるかテスト
+      // Test whether rc.req.params and rc.req.query are inferred correctly
       const _validParams = await rc.req.params();
       const _validQuery = rc.req.query();
 
@@ -164,7 +163,7 @@ describe("routeHandlerFactory type definitions", () => {
       type _Result1 = Expect<Equal<ExpectedParams, typeof _validParams>>;
       type _Result2 = Expect<Equal<ExpectedQuery, typeof _validQuery>>;
 
-      // rc.body 経由でテキストを返す場合の型もチェック
+      // Also check the return type when using rc.text to return a response
       return rc.text("ok");
     });
 
@@ -193,7 +192,6 @@ describe("routeHandlerFactory type definitions", () => {
       params: { id: string };
       query: { flag: string };
     }>().get(async (_) => {
-      // 強制的にエラーをスローしてグローバルエラーハンドラが動作するようにする
       throw new Error("failed");
     });
 

@@ -93,7 +93,8 @@ describe("createRouteContext type definitions", () => {
   // eslint-disable-next-line vitest/expect-expect
   it("should infer params and query types correctly", async () => {
     const req = new NextRequest("http://localhost/?q=test");
-    // 明示的にジェネリクスを指定することで、型推論が正しく行われることを確認
+
+    // Ensure that type inference works correctly by explicitly specifying generics
     const _context = createRouteContext<
       MockParams,
       MockQuery,
@@ -102,12 +103,12 @@ describe("createRouteContext type definitions", () => {
       params: Promise.resolve({ id: "123" }),
     });
 
-    // params(): Promise<MockParams> の戻り値を検証
+    // Validate that the return type of params() is Promise<MockParams>
     type InferredParams = Awaited<ReturnType<typeof _context.req.params>>;
     type ExpectedParams = MockParams;
     type _TestParams = Expect<Equal<InferredParams, ExpectedParams>>;
 
-    // query(): MockQuery の戻り値を検証
+    // Validate that the return type of query() is MockQuery
     type InferredQuery = ReturnType<typeof _context.req.query>;
     type ExpectedQuery = MockQuery;
     type _TestQuery = Expect<Equal<InferredQuery, ExpectedQuery>>;
