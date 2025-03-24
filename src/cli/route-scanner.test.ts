@@ -92,14 +92,22 @@ describe("scanAppDir", () => {
     mock.restore();
   });
 
-  it("should scan API directory and generate path structure with dynamic route", () => {
+  it("should scan API directory and generate path structure with multiple HTTP methods, excluding OPTIONS", () => {
     mock({
       "/testApp": {
         api: {
           users: {
             "index.ts": "console.log('test');",
             "[id]": {
-              "route.ts": "export function GET() {};",
+              "route.ts": `
+                export function GET() {};
+                export function POST() {};
+                export function PUT() {};
+                export function DELETE() {};
+                export function PATCH() {};
+                export function HEAD() {};
+                export function OPTIONS() {}; // This should be ignored
+              `,
             },
           },
         },
@@ -109,7 +117,7 @@ describe("scanAppDir", () => {
     const expectPathStructure = `{
   "api": {
     "users": {
-      "_id": { "$get": typeof GET_0 } & Endpoint & Record<ParamsKey, { "id": string }>
+      "_id": { "$get": typeof GET_0 } & { "$head": typeof HEAD_0 } & { "$post": typeof POST_0 } & { "$put": typeof PUT_0 } & { "$delete": typeof DELETE_0 } & { "$patch": typeof PATCH_0 } & Endpoint & Record<ParamsKey, { "id": string }>
     }
   }
 }`;
@@ -117,11 +125,48 @@ describe("scanAppDir", () => {
     const { pathStructure, imports } = scanAppDir("/output", "/testApp");
     expect(pathStructure).equals(expectPathStructure);
 
-    const { statement, path } = imports[0];
-    expect(statement).equals(
-      'import type { GET as GET_0 } from "./testApp/api/users/[id]/route";'
+    expect(imports).toHaveLength(6);
+
+    const expectedImports = [
+      {
+        statement:
+          'import type { GET as GET_0 } from "./testApp/api/users/[id]/route";',
+        method: "GET",
+      },
+      {
+        statement:
+          'import type { HEAD as HEAD_0 } from "./testApp/api/users/[id]/route";',
+        method: "HEAD",
+      },
+      {
+        statement:
+          'import type { POST as POST_0 } from "./testApp/api/users/[id]/route";',
+        method: "POST",
+      },
+      {
+        statement:
+          'import type { PUT as PUT_0 } from "./testApp/api/users/[id]/route";',
+        method: "PUT",
+      },
+      {
+        statement:
+          'import type { DELETE as DELETE_0 } from "./testApp/api/users/[id]/route";',
+        method: "DELETE",
+      },
+      {
+        statement:
+          'import type { PATCH as PATCH_0 } from "./testApp/api/users/[id]/route";',
+        method: "PATCH",
+      },
+    ];
+
+    expectedImports.forEach(({ statement }, i) => {
+      expect(imports[i].statement).equals(statement);
+    });
+
+    expect(imports.every((imp) => !imp.statement.includes("OPTIONS"))).toBe(
+      true
     );
-    expect(path).equals("./testApp/api/users/[id]/route");
   });
 
   it("should scan page directory and generate path structure with dynamic segmente", () => {
