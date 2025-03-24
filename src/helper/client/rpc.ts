@@ -1,13 +1,8 @@
-import { callHttpMethod } from "./http-method";
+import { httpMethod } from "./http-method";
 import { matchPath } from "./match";
 import { createUrl } from "./url";
 import { isDynamic, isHttpMethod } from "./utils";
-import type {
-  FuncParams,
-  UrlOptions,
-  DynamicPathProxy,
-  FetcherOptions,
-} from "./types";
+import type { FuncParams, DynamicPathProxy } from "./types";
 
 export const createRpcProxy = <T extends object>(
   paths: string[] = [],
@@ -39,12 +34,11 @@ export const createRpcProxy = <T extends object>(
         }
 
         if (key === "$match") {
-          return (path: string) => matchPath([...paths], dynamicKeys, path);
+          return matchPath([...paths], dynamicKeys);
         }
 
         if (isHttpMethod(key)) {
-          return async (url?: UrlOptions, options?: FetcherOptions) =>
-            callHttpMethod(key, [...paths], params, dynamicKeys, url, options);
+          return httpMethod(key, [...paths], params, dynamicKeys);
         }
 
         if (isDynamic(key)) {
