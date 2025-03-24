@@ -1,96 +1,13 @@
-import {
-  DYNAMIC_PREFIX,
-  CATCH_ALL_PREFIX,
-  OPTIONAL_CATCH_ALL_PREFIX,
-  HTTP_METHOD_FUNC_KEYS,
-} from "../../lib/constants";
+import { createUrl, replaceDynamicSegments } from "./url";
+import { isDynamic, isCatchAllOrOptional, isHttpMethod } from "./utils";
 import type {
-  HttpMethodFuncKey,
-  UrlOptions,
   FuncParams,
-  UrlResult,
+  UrlOptions,
   DynamicPathProxy,
   FetcherOptions,
 } from "./types";
 
-const isDynamic = (key: string) => key.startsWith(DYNAMIC_PREFIX);
-const isCatchAllOrOptional = (key: string) =>
-  key.startsWith(CATCH_ALL_PREFIX) || key.startsWith(OPTIONAL_CATCH_ALL_PREFIX);
-
-const httpMethods: Set<HttpMethodFuncKey> = new Set(HTTP_METHOD_FUNC_KEYS);
-
-const isHttpMethod = (value: string): value is HttpMethodFuncKey =>
-  httpMethods.has(value as HttpMethodFuncKey);
-
-const buildUrlSuffix = (url?: UrlOptions) => {
-  if (!url) return "";
-  const query = url.query
-    ? "?" + new URLSearchParams(url.query as Record<string, string>).toString()
-    : "";
-  const hash = url.hash ? `#${url.hash}` : "";
-
-  return query + hash;
-};
-
-const replaceDynamicSegments = (
-  basePath: string,
-  replacements: {
-    optionalCatchAll: string;
-    catchAll: string;
-    dynamic: string;
-  }
-): string =>
-  basePath
-    // optionalCatchAll
-    .replace(/\/_{5}(\w+)/g, replacements.optionalCatchAll)
-    // catchAll
-    .replace(/\/_{3}(\w+)/g, replacements.catchAll)
-    // dynamic
-    .replace(/\/_(\w+)/g, replacements.dynamic);
-
-const createUrl = (
-  paths: string[],
-  params: FuncParams,
-  dynamicKeys: string[]
-) => {
-  const baseUrl = paths.shift();
-  const basePath = paths.join("/");
-
-  const dynamicPath = dynamicKeys.reduce((acc, key) => {
-    const param = params[key];
-
-    if (Array.isArray(param)) {
-      return acc.replace(
-        `/${key}`,
-        `/${param.map(encodeURIComponent).join("/")}`
-      );
-    }
-
-    if (param === undefined) {
-      return acc.replace(`/${key}`, "");
-    }
-
-    return acc.replace(`/${key}`, `/${encodeURIComponent(param)}`);
-  }, basePath);
-
-  return (url?: UrlOptions) => {
-    const relativePath = `/${dynamicPath}${buildUrlSuffix(url)}`;
-    const pathname = replaceDynamicSegments(basePath, {
-      optionalCatchAll: "/[[...$1]]",
-      catchAll: "/[...$1]",
-      dynamic: "/[$1]",
-    });
-
-    return {
-      pathname,
-      params,
-      path: `${baseUrl}${relativePath}`,
-      relativePath,
-    } as UrlResult;
-  };
-};
-
-const createRpcProxy = <T extends object>(
+export const createRpcProxy = <T extends object>(
   paths: string[] = [],
   params: FuncParams = {},
   dynamicKeys: string[] = []
