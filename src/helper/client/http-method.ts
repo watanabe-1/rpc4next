@@ -1,26 +1,31 @@
 import { createUrl } from "./url";
-import type { FuncParams, UrlOptions, FetcherOptions } from "./types";
+import { deepMerge } from "./utils";
+import type {
+  FuncParams,
+  UrlOptions,
+  ClientOptions,
+  TypedRequestInit,
+} from "./types";
 
 export const httpMethod = (
   key: string,
   paths: string[],
   params: FuncParams,
-  dynamicKeys: string[]
+  dynamicKeys: string[],
+  defaultOptions: ClientOptions
 ) => {
-  return async (url?: UrlOptions, options?: FetcherOptions) => {
+  return async (url?: UrlOptions, options?: ClientOptions) => {
     const urlObj = createUrl([...paths], params, dynamicKeys)(url);
     const method = key.replace(/^\$/, "").toUpperCase();
 
-    const response = await fetch(urlObj.path, {
-      method,
-      next: options?.next,
-      headers: {
-        "Content-Type": "application/json",
-        ...options?.headers,
-      },
-      body: options?.body ? JSON.stringify(options.body) : undefined,
-      credentials: "include",
-    });
+    const customFetch = options?.fetch || defaultOptions.fetch || fetch;
+
+    const defaultInit = defaultOptions.init || {};
+    const innerInit = options?.init || {};
+    const mergedInit: TypedRequestInit = deepMerge(defaultInit, innerInit);
+    mergedInit.method = method;
+
+    const response = await customFetch(urlObj.path, mergedInit);
 
     return response;
   };

@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { isDynamic, isCatchAllOrOptional, isHttpMethod } from "./utils";
+import {
+  isDynamic,
+  isCatchAllOrOptional,
+  isHttpMethod,
+  deepMerge,
+} from "./utils";
 import {
   DYNAMIC_PREFIX,
   CATCH_ALL_PREFIX,
@@ -45,5 +50,43 @@ describe("isHttpMethod", () => {
 
   it("returns false if the value is not included in HTTP_METHOD_FUNC_KEYS", () => {
     expect(isHttpMethod("INVALID_METHOD")).toBe(false);
+  });
+});
+
+describe("deepMerge", () => {
+  it("should merge two shallow objects", () => {
+    const target = { a: 1, b: 2 };
+    const source = { b: 3, c: 4 };
+    const result = deepMerge(target, source);
+    expect(result).toEqual({ a: 1, b: 3, c: 4 });
+  });
+
+  it("should merge nested objects recursively", () => {
+    const target = { a: 1, b: { x: 10, y: 20 } };
+    const source = { b: { y: 30, z: 40 }, c: 3 };
+    const result = deepMerge(target, source);
+    expect(result).toEqual({ a: 1, b: { x: 10, y: 30, z: 40 }, c: 3 });
+  });
+
+  it("should overwrite non-object values with source values", () => {
+    const target = { a: { x: 1 } };
+    const source = { a: 2 };
+    const result = deepMerge(target, source);
+    expect(result).toEqual({ a: 2 });
+  });
+
+  it("should handle arrays by overwriting them", () => {
+    const target = { arr: [1, 2, 3] };
+    const source = { arr: [4, 5] };
+    const result = deepMerge(target, source);
+    expect(result).toEqual({ arr: [4, 5] });
+  });
+
+  it("should not mutate the target object", () => {
+    const target = { a: 1, b: { x: 10 } };
+    const source = { b: { y: 20 } };
+    const copy = { ...target, b: { ...target.b } };
+    deepMerge(target, source);
+    expect(target).toEqual(copy);
   });
 });

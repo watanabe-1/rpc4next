@@ -2,9 +2,10 @@ import { httpMethod } from "./http-method";
 import { matchPath } from "./match";
 import { createUrl } from "./url";
 import { isDynamic, isHttpMethod } from "./utils";
-import type { FuncParams, DynamicPathProxy } from "./types";
+import type { FuncParams, DynamicPathProxy, ClientOptions } from "./types";
 
 export const createRpcProxy = <T extends object>(
+  options: ClientOptions,
   paths: string[] = [],
   params: FuncParams = {},
   dynamicKeys: string[] = []
@@ -12,20 +13,21 @@ export const createRpcProxy = <T extends object>(
   const proxy: unknown = new Proxy(
     (value?: string | number) => {
       if (value === undefined) {
-        return createRpcProxy([...paths], params, dynamicKeys);
+        return createRpcProxy(options, [...paths], params, dynamicKeys);
       }
 
       const newKey = paths.at(-1) ?? "";
       if (isDynamic(newKey)) {
         // Treat as a dynamic parameter
         return createRpcProxy(
+          options,
           [...paths],
           { ...params, [dynamicKeys.at(-1) ?? ""]: value },
           dynamicKeys
         );
       }
 
-      return createRpcProxy([...paths], params, dynamicKeys);
+      return createRpcProxy(options, [...paths], params, dynamicKeys);
     },
     {
       get: (_, key: string) => {
@@ -38,15 +40,18 @@ export const createRpcProxy = <T extends object>(
         }
 
         if (isHttpMethod(key)) {
-          return httpMethod(key, [...paths], params, dynamicKeys);
+          return httpMethod(key, [...paths], params, dynamicKeys, options);
         }
 
         if (isDynamic(key)) {
           // Treat as a dynamic parameter
-          return createRpcProxy([...paths, key], params, [...dynamicKeys, key]);
+          return createRpcProxy(options, [...paths, key], params, [
+            ...dynamicKeys,
+            key,
+          ]);
         }
 
-        return createRpcProxy([...paths, key], params, dynamicKeys);
+        return createRpcProxy(options, [...paths, key], params, dynamicKeys);
       },
     }
   );
@@ -54,5 +59,7 @@ export const createRpcProxy = <T extends object>(
   return proxy as DynamicPathProxy<T>;
 };
 
-export const createRpcClient = <T extends object>(baseUrl: string) =>
-  createRpcProxy<T>([baseUrl]);
+export const createRpcClient = <T extends object>(
+  baseUrl: string,
+  options: ClientOptions = {}
+) => createRpcProxy<T>(options, [baseUrl]);
