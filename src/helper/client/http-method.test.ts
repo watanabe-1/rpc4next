@@ -213,4 +213,92 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     expect(calledInit?.method).toBe("DELETE");
     expect(calledInit?.headers).toEqual({ Accept: "application/json" });
   });
+
+  it("should correctly replace dynamic keys in URL", async () => {
+    const key = "$get";
+    const paths = ["http://example.com", "api", "users", "_id"];
+    const params = { _id: "123" };
+    const dynamicKeys = ["_id"];
+
+    let calledUrl: RequestInfo | URL | null = null;
+    let calledInit: CapturedInit | undefined = {};
+    global.fetch = ((_input: RequestInfo | URL, _init?: RequestInit) => {
+      calledUrl = _input;
+      calledInit = _init as CapturedInit | undefined;
+
+      return Promise.resolve(new Response(null, { status: 200 }));
+    }) as typeof fetch;
+
+    const defaultOptions = {
+      init: { headers: { Accept: "application/json" } },
+    };
+
+    const requestFn = httpMethod(
+      key,
+      paths,
+      params,
+      dynamicKeys,
+      defaultOptions
+    );
+    await requestFn();
+
+    const expectedUrl = "http://example.com/api/users/123";
+    expect(calledUrl).toBe(expectedUrl);
+    expect(calledInit?.method).toBe("GET");
+  });
+
+  it("should work with method key without $ prefix", async () => {
+    const key = "patch";
+    const paths = ["http://example.com", "api", "patchTest"];
+    const params = {};
+    const dynamicKeys: string[] = [];
+
+    let calledUrl: RequestInfo | URL | null = null;
+    let calledInit: CapturedInit | undefined = {};
+    global.fetch = ((_input: RequestInfo | URL, _init?: RequestInit) => {
+      calledUrl = _input;
+      calledInit = _init as CapturedInit | undefined;
+
+      return Promise.resolve(new Response(null, { status: 200 }));
+    }) as typeof fetch;
+
+    const defaultOptions = {
+      init: { headers: {} },
+    };
+    const requestFn = httpMethod(
+      key,
+      paths,
+      params,
+      dynamicKeys,
+      defaultOptions
+    );
+    await requestFn();
+
+    const expectedUrl = paths.join("/");
+    expect(calledUrl).toBe(expectedUrl);
+    expect(calledInit?.method).toBe("PATCH");
+  });
+
+  it("should propagate errors from fetch", async () => {
+    const key = "$get";
+    const paths = ["http://example.com", "api", "error"];
+    const params = {};
+    const dynamicKeys: string[] = [];
+    const errorMessage = "Fetch failed";
+
+    global.fetch = ((_input: RequestInfo | URL, _init?: RequestInit) => {
+      return Promise.reject(new Error(errorMessage));
+    }) as typeof fetch;
+
+    const defaultOptions = { init: {} };
+    const requestFn = httpMethod(
+      key,
+      paths,
+      params,
+      dynamicKeys,
+      defaultOptions
+    );
+
+    await expect(requestFn()).rejects.toThrow(errorMessage);
+  });
 });
