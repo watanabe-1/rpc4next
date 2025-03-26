@@ -67,7 +67,7 @@ type HttpRequestHeaders = Partial<{
  * Extension of the standard `RequestInit` interface with strongly typed headers.
  */
 export interface TypedRequestInit extends RequestInit {
-  headers?: HttpRequestHeaders & HeadersInit;
+  headers?: HttpRequestHeaders | HeadersInit;
 }
 
 export type ClientOptions = { fetch?: typeof fetch; init?: TypedRequestInit };

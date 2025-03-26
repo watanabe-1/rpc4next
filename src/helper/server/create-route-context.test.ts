@@ -154,7 +154,7 @@ describe("createRouteContext type definitions", () => {
       302
     );
     type InferredRedirect = typeof _redirectResponse;
-    type ExpectedRedirect = TypedNextResponse<undefined, 302, undefined>;
+    type ExpectedRedirect = TypedNextResponse<undefined, 302, "">;
     expectTypeOf<InferredRedirect>().toEqualTypeOf<ExpectedRedirect>();
   });
 });

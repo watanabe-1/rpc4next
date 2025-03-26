@@ -71,12 +71,12 @@ export const createRouteContext = <
 
     redirect: <TStatus extends RedirectionHttpStatusCode = 302>(
       url: string,
-      init?: TStatus | TypedResponseInit<TStatus, undefined>
+      init?: TStatus | TypedResponseInit<TStatus, "">
     ) =>
       NextResponse.redirect(url, init) as TypedNextResponse<
         undefined,
         TStatus,
-        undefined
+        ""
       >,
   };
 };

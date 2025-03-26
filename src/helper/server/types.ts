@@ -21,7 +21,7 @@ type KnownContentType =
  */
 // Allow KnownContentType values with autocomplete, plus any custom string.
 // (string & {}) keeps literal types while accepting arbitrary strings.
-export type ContentType = KnownContentType | (string & {}) | undefined;
+export type ContentType = KnownContentType | (string & {});
 
 /**
  * Informational responses (100–199)
@@ -208,7 +208,7 @@ export interface TypedResponseInit<
   TStatus extends HttpStatusCode,
   TContentType extends ContentType,
 > extends ResponseInit {
-  headers?: HttpResponseHeaders<TContentType> & HeadersInit;
+  headers?: HttpResponseHeaders<TContentType> | HeadersInit;
   status?: TStatus;
 }
 
@@ -368,8 +368,8 @@ export interface RouteContext<
    */
   redirect: <TStatus extends RedirectionHttpStatusCode = 302>(
     url: string,
-    init?: TStatus | TypedResponseInit<TStatus, undefined>
-  ) => TypedNextResponse<undefined, TStatus, undefined>;
+    init?: TStatus | TypedResponseInit<TStatus, "">
+  ) => TypedNextResponse<undefined, TStatus, "">;
 }
 
 export type RouteResponse =
