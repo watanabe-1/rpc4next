@@ -1,8 +1,7 @@
 import { NextRequest } from "next/server";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, expectTypeOf } from "vitest";
 import { routeHandlerFactory } from "./route-handler-factory";
 import { TypedNextResponse } from "./types";
-import { Expect, Equal } from "../../__tests__/types";
 
 describe("routeHandlerFactory", () => {
   it("should return the response from the first handler that returns a Response", async () => {
@@ -177,7 +176,6 @@ describe("routeHandlerFactory", () => {
 });
 
 describe("routeHandlerFactory type definitions", () => {
-  // eslint-disable-next-line vitest/expect-expect
   it("should infer types correctly for a normal handler", async () => {
     const createRouteHandler = routeHandlerFactory();
     const handler = createRouteHandler<{
@@ -191,8 +189,8 @@ describe("routeHandlerFactory type definitions", () => {
       type ExpectedParams = { name: string; age: string };
       type ExpectedQuery = { id: string };
 
-      type _Result1 = Expect<Equal<ExpectedParams, typeof _validParams>>;
-      type _Result2 = Expect<Equal<ExpectedQuery, typeof _validQuery>>;
+      expectTypeOf<typeof _validParams>().toEqualTypeOf<ExpectedParams>();
+      expectTypeOf<typeof _validQuery>().toEqualTypeOf<ExpectedQuery>();
 
       // Also check the return type when using rc.text to return a response
       return rc.text("ok");
@@ -204,10 +202,9 @@ describe("routeHandlerFactory type definitions", () => {
     });
 
     type ExpectedResponse = TypedNextResponse<"ok", 200, "text/plain">;
-    type _Result3 = Expect<Equal<ExpectedResponse, typeof _res>>;
+    expectTypeOf<typeof _res>().toEqualTypeOf<ExpectedResponse>();
   });
 
-  // eslint-disable-next-line vitest/expect-expect
   it("should infer types correctly with a global error handler", async () => {
     type CustomError = { message: string };
     const createRouteHandler = routeHandlerFactory((error: unknown, rc) => {
@@ -232,10 +229,9 @@ describe("routeHandlerFactory type definitions", () => {
       | TypedNextResponse<CustomError, 500, "application/json">
       | TypedNextResponse<"onError", 400, "text/plain">;
 
-    type _Result4 = Expect<Equal<ExpectedErrorResponse, typeof _res>>;
+    expectTypeOf<typeof _res>().toEqualTypeOf<ExpectedErrorResponse>();
   });
 
-  // eslint-disable-next-line vitest/expect-expect
   it("should infer types correctly for mixed async and sync normal handlers with onError", async () => {
     type CustomError = { error: string };
     const createRouteHandler = routeHandlerFactory((error: unknown, rc) => {
@@ -270,8 +266,8 @@ describe("routeHandlerFactory type definitions", () => {
       | TypedNextResponse<CustomError, 500, "application/json">
       | TypedNextResponse<"sync error", 400, "text/plain">;
 
-    type _Result = Expect<
-      Equal<ExpectedResponse, Awaited<ReturnType<typeof _handler.POST>>>
-    >;
+    expectTypeOf<
+      Awaited<ReturnType<typeof _handler.POST>>
+    >().toEqualTypeOf<ExpectedResponse>();
   });
 });

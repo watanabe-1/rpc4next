@@ -1,8 +1,7 @@
 import { NextRequest } from "next/server";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, expectTypeOf } from "vitest";
 import { z } from "zod";
 import { zodValidator } from "./zod-validator";
-import { Expect, Equal } from "../../../../__tests__/types";
 import { routeHandlerFactory } from "../../route-handler-factory";
 import { TypedNextResponse } from "../../types";
 
@@ -213,7 +212,6 @@ describe("zValidator tests", () => {
 });
 
 describe("zValidator type definitions", () => {
-  // eslint-disable-next-line vitest/expect-expect
   it("should infer types correctly", async () => {
     const handler = createRouteHandler<{
       params: z.infer<typeof schema>;
@@ -230,8 +228,8 @@ describe("zValidator type definitions", () => {
         type ExpectedOutput = z.output<typeof schema>;
         type ExpectedQuery = z.output<typeof schema2>;
 
-        type _Result1 = Expect<Equal<ExpectedOutput, typeof _validParams>>;
-        type _Result2 = Expect<Equal<ExpectedQuery, typeof _validQuery>>;
+        expectTypeOf<typeof _validParams>().toEqualTypeOf<ExpectedOutput>();
+        expectTypeOf<typeof _validQuery>().toEqualTypeOf<ExpectedQuery>();
 
         if (_validQuery) {
           return rc.text("ok1");
@@ -272,6 +270,6 @@ describe("zValidator type definitions", () => {
       | ExpectedHookResponse
       | ExpectedLastResponse;
 
-    type _Result3 = Expect<Equal<ExpectedResponse, typeof _res>>;
+    expectTypeOf<typeof _res>().toEqualTypeOf<ExpectedResponse>();
   });
 });

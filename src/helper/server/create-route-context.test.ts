@@ -1,7 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, expectTypeOf } from "vitest";
 import { createRouteContext } from "./create-route-context";
-import { Expect, Equal } from "../../__tests__/types";
 import type {
   TypedNextResponse,
   ValidationSchema,
@@ -90,7 +89,6 @@ describe("createRouteContext type definitions", () => {
   type MockParams = { id: string };
   type MockQuery = { q: string };
 
-  // eslint-disable-next-line vitest/expect-expect
   it("should infer params and query types correctly", async () => {
     const req = new NextRequest("http://localhost/?q=test");
 
@@ -106,15 +104,14 @@ describe("createRouteContext type definitions", () => {
     // Validate that the return type of params() is Promise<MockParams>
     type InferredParams = Awaited<ReturnType<typeof _context.req.params>>;
     type ExpectedParams = MockParams;
-    type _TestParams = Expect<Equal<InferredParams, ExpectedParams>>;
+    expectTypeOf<InferredParams>().toEqualTypeOf<ExpectedParams>();
 
     // Validate that the return type of query() is MockQuery
     type InferredQuery = ReturnType<typeof _context.req.query>;
     type ExpectedQuery = MockQuery;
-    type _TestQuery = Expect<Equal<InferredQuery, ExpectedQuery>>;
+    expectTypeOf<InferredQuery>().toEqualTypeOf<ExpectedQuery>();
   });
 
-  // eslint-disable-next-line vitest/expect-expect
   it("should infer response types correctly", () => {
     const req = new NextRequest("http://localhost/");
     const context = createRouteContext(req, { params: Promise.resolve({}) });
@@ -127,13 +124,13 @@ describe("createRouteContext type definitions", () => {
       200,
       "application/json"
     >;
-    type _TestJson = Expect<Equal<InferredJson, ExpectedJson>>;
+    expectTypeOf<InferredJson>().toEqualTypeOf<ExpectedJson>();
 
     // text response
     const _textResponse = context.text("hello", { status: 200 });
     type InferredText = typeof _textResponse;
     type ExpectedText = TypedNextResponse<"hello", 200, "text/plain">;
-    type _TestText = Expect<Equal<InferredText, ExpectedText>>;
+    expectTypeOf<InferredText>().toEqualTypeOf<ExpectedText>();
 
     // body response
     const _bodyResponse = context.body("raw-body", {
@@ -149,7 +146,7 @@ describe("createRouteContext type definitions", () => {
       201,
       "application/custom"
     >;
-    type _TestBody = Expect<Equal<InferredBody, ExpectedBody>>;
+    expectTypeOf<InferredBody>().toEqualTypeOf<ExpectedBody>();
 
     // redirect response
     const _redirectResponse = context.redirect(
@@ -158,6 +155,6 @@ describe("createRouteContext type definitions", () => {
     );
     type InferredRedirect = typeof _redirectResponse;
     type ExpectedRedirect = TypedNextResponse<undefined, 302, undefined>;
-    type _TestRedirect = Expect<Equal<InferredRedirect, ExpectedRedirect>>;
+    expectTypeOf<InferredRedirect>().toEqualTypeOf<ExpectedRedirect>();
   });
 });
