@@ -91,12 +91,6 @@ type IsOptionalCatchAll = `${typeof OPTIONAL_CATCH_ALL_PREFIX}${string}`;
 type IsCatchAll = `${typeof CATCH_ALL_PREFIX}${string}`;
 type IsDynamic = `${typeof DYNAMIC_PREFIX}${string}`;
 
-export type FetcherOptions<TBody = unknown> = {
-  body?: TBody;
-  next?: NextFetchRequestConfig;
-  headers?: HeadersInit;
-};
-
 export type FuncParams<
   T = Record<string, string | number | string[] | undefined>,
 > = T;
@@ -123,7 +117,7 @@ type UrlArg<T> = T extends IsQuery
   ? [url: UrlOptions<T>]
   : [url?: UrlOptions<T>];
 
-type HttpMethodsArg<T> = [...UrlArg<T>, option?: FetcherOptions];
+type HttpMethodsArg<T> = [...UrlArg<T>, option?: ClientOptions];
 type InferHttpMethods<T extends IsHttpMethod> = {
   [K in keyof T as K extends HttpMethodFuncKey ? K : never]: (
     ...args: HttpMethodsArg<T>
