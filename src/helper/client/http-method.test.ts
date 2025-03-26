@@ -20,6 +20,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     global.fetch = originalFetch;
   });
 
+  // 既存のテストケース群...
   it("should use $get method with url options (query and hash) and merge init correctly", async () => {
     const key = "$get";
     const paths = ["http://example.com", "api", "users"];
@@ -75,8 +76,8 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     expect(calledInit?.method).toBe("GET");
     // Verify headers are merged between defaultOptions.init and clientOptions.init
     expect(calledInit?.headers).toEqual({
-      "Content-Type": "application/json",
-      Authorization: "Bearer token",
+      "content-type": "application/json",
+      authorization: "Bearer token",
     });
   });
 
@@ -113,7 +114,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     const expectedUrl = paths.join("/");
     expect(calledUrl).toBe(expectedUrl);
     expect(calledInit?.method).toBe("POST");
-    expect(calledInit?.headers).toEqual({ "Content-Type": "application/json" });
+    expect(calledInit?.headers).toEqual({ "content-type": "application/json" });
   });
 
   it("should prefer options.fetch over defaultOptions.fetch and global fetch", async () => {
@@ -174,8 +175,8 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     expect(calledUrl).toBe(expectedUrl);
     expect(calledInit?.method).toBe("PUT");
     expect(calledInit?.headers).toEqual({
-      "Content-Type": "application/json",
-      "X-Custom": "custom-value",
+      "content-type": "application/json",
+      "x-custom": "custom-value",
     });
   });
 
@@ -211,7 +212,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     const expectedUrl = paths.join("/");
     expect(calledUrl).toBe(expectedUrl);
     expect(calledInit?.method).toBe("DELETE");
-    expect(calledInit?.headers).toEqual({ Accept: "application/json" });
+    expect(calledInit?.headers).toEqual({ accept: "application/json" });
   });
 
   it("should correctly replace dynamic keys in URL", async () => {
@@ -300,5 +301,88 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     );
 
     await expect(requestFn()).rejects.toThrow(errorMessage);
+  });
+
+  it("should correctly merge Headers passed as a Headers instance and an array", async () => {
+    const key = "$get";
+    const paths = ["http://example.com", "api", "headersTest"];
+    const params = {};
+    const dynamicKeys: string[] = [];
+
+    let calledInit: CapturedInit | undefined = {};
+    global.fetch = ((_input: RequestInfo | URL, _init?: RequestInit) => {
+      calledInit = _init as CapturedInit | undefined;
+
+      return Promise.resolve(new Response(null, { status: 200 }));
+    }) as typeof fetch;
+
+    // defaultOptions.headers: Headers instance
+    const defaultHeaders = new Headers();
+    defaultHeaders.append("X-Default", "defaultValue");
+    // clientOptions.headers: array of [string, string]
+    const clientHeaders: [string, string][] = [["X-Custom", "customValue"]];
+
+    const defaultOptions = {
+      init: { headers: defaultHeaders },
+    };
+
+    const requestFn = httpMethod(
+      key,
+      paths,
+      params,
+      dynamicKeys,
+      defaultOptions
+    );
+
+    const clientOptions = {
+      init: { headers: clientHeaders },
+    };
+
+    await requestFn(undefined, clientOptions);
+
+    expect(calledInit?.headers).toEqual({
+      "x-default": "defaultValue",
+      "x-custom": "customValue",
+    });
+  });
+
+  it("should override default headers with client headers when keys overlap using different HeadersInit forms", async () => {
+    const key = "$get";
+    const paths = ["http://example.com", "api", "headersOverride"];
+    const params = {};
+    const dynamicKeys: string[] = [];
+
+    let calledInit: CapturedInit | undefined = {};
+    global.fetch = ((_input: RequestInfo | URL, _init?: RequestInit) => {
+      calledInit = _init as CapturedInit | undefined;
+
+      return Promise.resolve(new Response(null, { status: 200 }));
+    }) as typeof fetch;
+
+    // defaultOptions.headers: array form
+    const defaultHeaders: [string, string][] = [["X-Test", "default"]];
+    // clientOptions.headers: Headers instance overriding the same key
+    const clientHeaders = new Headers();
+    clientHeaders.append("X-Test", "client");
+
+    const defaultOptions = {
+      init: { headers: defaultHeaders },
+    };
+
+    const requestFn = httpMethod(
+      key,
+      paths,
+      params,
+      dynamicKeys,
+      defaultOptions
+    );
+
+    const clientOptions = {
+      init: { headers: clientHeaders },
+    };
+
+    await requestFn(undefined, clientOptions);
+
+    expect(calledInit?.headers).toEqual({ "x-test": "client" });
   });
 });

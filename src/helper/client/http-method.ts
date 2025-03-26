@@ -7,6 +7,30 @@ import type {
   TypedRequestInit,
 } from "./types";
 
+function normalizeHeaders(headers?: HeadersInit): Record<string, string> {
+  const result: Record<string, string> = {};
+  if (!headers) return result;
+  if (headers instanceof Headers) {
+    headers.forEach((value, key) => {
+      result[key.toLowerCase()] = value;
+    });
+
+    return result;
+  }
+  if (Array.isArray(headers)) {
+    headers.forEach(([key, value]) => {
+      result[key.toLowerCase()] = value;
+    });
+
+    return result;
+  }
+  Object.entries(headers).forEach(([key, value]) => {
+    result[key.toLowerCase()] = value;
+  });
+
+  return result;
+}
+
 export const httpMethod = (
   key: string,
   paths: string[],
@@ -22,8 +46,25 @@ export const httpMethod = (
 
     const defaultInit = defaultOptions.init || {};
     const innerInit = options?.init || {};
-    const mergedInit: TypedRequestInit = deepMerge(defaultInit, innerInit);
+
+    const defaultHeaders = normalizeHeaders(defaultInit.headers);
+    const innerHeaders = normalizeHeaders(innerInit.headers);
+    const mergedHeaders: Record<string, string> = {
+      ...defaultHeaders,
+      ...innerHeaders,
+    };
+
+    const { headers: _defaultHeaders, ...defaultInitWithoutHeaders } =
+      defaultInit;
+    const { headers: _innerHeaders, ...innerInitWithoutHeaders } = innerInit;
+    const mergedInit: TypedRequestInit = deepMerge(
+      defaultInitWithoutHeaders,
+      innerInitWithoutHeaders
+    );
     mergedInit.method = method;
+    if (Object.keys(mergedHeaders).length > 0) {
+      mergedInit.headers = mergedHeaders;
+    }
 
     const response = await customFetch(urlObj.path, mergedInit);
 
