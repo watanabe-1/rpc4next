@@ -7,35 +7,28 @@ import { ParamsKey, Endpoint } from "./types";
 
 const createRouteHandler = routeHandlerFactory();
 
-// POSTエンドポイント
 const { POST: _post_0 } = createRouteHandler().post(async (rc) =>
   rc.text("post")
 );
 
-// GETエンドポイント
 const { GET: _get_0 } = createRouteHandler().get(async (rc) =>
   rc.json({ method: "get" })
 );
 
-// DELETEエンドポイント
 const { DELETE: _delete_0 } = createRouteHandler().delete(async (rc) =>
   rc.text("delete")
 );
 
-// HEADエンドポイント
 const { HEAD: _head_0 } = createRouteHandler().head(async (rc) =>
   rc.text("head")
 );
 
-// PATCHエンドポイント
 const { PATCH: _patch_0 } = createRouteHandler().patch(async (rc) =>
   rc.text("patch")
 );
 
-// PUTエンドポイント
 const { PUT: _put_0 } = createRouteHandler().put(async (rc) => rc.text("put"));
 
-// 型定義に新規メソッドを追加
 export type PathStructure = Endpoint & {
   admin: Endpoint & {
     _qualification: Endpoint &
@@ -56,41 +49,35 @@ export type PathStructure = Endpoint & {
   };
 };
 
-// MSW のハンドラー設定
+// MSW handler configuration
 const server = setupServer(
-  // GET /api/questions/test → JSON { method: "get" } を返す
   http.get("http://localhost:3000/api/questions/test", () => {
     return HttpResponse.json({ method: "get" });
   }),
-  // POST /api/questions → "post" を返す
   http.post("http://localhost:3000/api/questions", () => {
     return HttpResponse.text("post");
   }),
-  // DELETE /api/questions → "delete" を返す
   http.delete("http://localhost:3000/api/questions", () => {
     return HttpResponse.text("delete");
   }),
-  // HEAD /api/questions → "head" を返す
   http.head("http://localhost:3000/api/questions", () => {
     return HttpResponse.text("head");
   }),
-  // PATCH /api/questions → "patch" を返す
   http.patch("http://localhost:3000/api/questions", () => {
     return HttpResponse.text("patch");
   }),
-  // PUT /api/questions → "put" を返す
   http.put("http://localhost:3000/api/questions", () => {
     return HttpResponse.text("put");
   })
 );
 
-// MSW のライフサイクル設定
+// MSW lifecycle setup
 beforeAll(() => server.listen());
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
 describe("createRpcClient", () => {
-  test("URL生成: client.admin._qualification('test').$url()", () => {
+  test("URL generation: client.admin._qualification('test').$url()", () => {
     const client = createRpcClient<PathStructure>("");
     const urlResult = client.admin._qualification("test").$url();
     expect(urlResult.path).toBe("/admin/test");
@@ -98,7 +85,7 @@ describe("createRpcClient", () => {
     expect(urlResult.params).toEqual({ qualification: "test" });
   });
 
-  test("GETリクエスト: client.api.questions._qualification('test').$get()", async () => {
+  test("GET request: client.api.questions._qualification('test').$get()", async () => {
     const client = createRpcClient<PathStructure>("http://localhost:3000");
     const response = await client.api.questions._qualification("test").$get();
     expect(response.status).toBe(200);
@@ -106,7 +93,7 @@ describe("createRpcClient", () => {
     expect(data).toEqual({ method: "get" });
   });
 
-  test("POSTリクエスト: client.api.questions.$post()", async () => {
+  test("POST request: client.api.questions.$post()", async () => {
     const client = createRpcClient<PathStructure>("http://localhost:3000");
     const response = await client.api.questions.$post();
     expect(response.status).toBe(200);
@@ -114,7 +101,7 @@ describe("createRpcClient", () => {
     expect(text).toBe("post");
   });
 
-  test("DELETEリクエスト: client.api.questions.$delete()", async () => {
+  test("DELETE request: client.api.questions.$delete()", async () => {
     const client = createRpcClient<PathStructure>("http://localhost:3000");
     const response = await client.api.questions.$delete();
     expect(response.status).toBe(200);
@@ -122,7 +109,7 @@ describe("createRpcClient", () => {
     expect(text).toBe("delete");
   });
 
-  test("HEADリクエスト: client.api.questions.$head()", async () => {
+  test("HEAD request: client.api.questions.$head()", async () => {
     const client = createRpcClient<PathStructure>("http://localhost:3000");
     const response = await client.api.questions.$head();
     expect(response.status).toBe(200);
@@ -130,7 +117,7 @@ describe("createRpcClient", () => {
     expect(text).toBe("head");
   });
 
-  test("PATCHリクエスト: client.api.questions.$patch()", async () => {
+  test("PATCH request: client.api.questions.$patch()", async () => {
     const client = createRpcClient<PathStructure>("http://localhost:3000");
     const response = await client.api.questions.$patch();
     expect(response.status).toBe(200);
@@ -138,7 +125,7 @@ describe("createRpcClient", () => {
     expect(text).toBe("patch");
   });
 
-  test("PUTリクエスト: client.api.questions.$put()", async () => {
+  test("PUT request: client.api.questions.$put()", async () => {
     const client = createRpcClient<PathStructure>("http://localhost:3000");
     const response = await client.api.questions.$put();
     expect(response.status).toBe(200);
@@ -146,7 +133,7 @@ describe("createRpcClient", () => {
     expect(text).toBe("put");
   });
 
-  test("URL生成: query/hash パラメータの付与", () => {
+  test("URL generation: add query/hash parameters", () => {
     const client = createRpcClient<PathStructure>("");
     const urlResult = client.admin._qualification("test").$url({
       query: { foo: "bar" },
