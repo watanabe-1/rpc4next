@@ -47,6 +47,7 @@ describe("createUrl", () => {
   it("generates a URL with dynamic parameters and query/hash", () => {
     const paths = ["https://example.com", "user", "_id", "profile"];
     const params = { _id: "123" };
+    const expectedParams = { id: "123" };
     const dynamicKeys = ["_id"];
     const urlGenerator = createUrl(paths, params, dynamicKeys);
     const result = urlGenerator({ query: { test: "value" }, hash: "section" });
@@ -56,7 +57,7 @@ describe("createUrl", () => {
     expect(result.relativePath).toContain("test=value");
     expect(result.relativePath).toContain("#section");
     expect(result.path).toBe(`https://example.com${result.relativePath}`);
-    expect(result.params).toEqual(params);
+    expect(result.params).toEqual(expectedParams);
 
     expect(result.pathname).toBe("/user/[id]/profile");
   });
@@ -64,13 +65,14 @@ describe("createUrl", () => {
   it("generates a URL with a catch-all parameter", () => {
     const paths = ["https://example.com", "user", "___ids"];
     const params = { ___ids: ["1", "2", "3"] };
+    const expectedParams = { ids: ["1", "2", "3"] };
     const dynamicKeys = ["___ids"];
     const urlGenerator = createUrl(paths, params, dynamicKeys);
     const result = urlGenerator();
 
     expect(result.relativePath).toContain("/user/1/2/3");
     expect(result.path).toBe(`https://example.com${result.relativePath}`);
-    expect(result.params).toEqual(params);
+    expect(result.params).toEqual(expectedParams);
 
     expect(result.pathname).toBe("/user/[...ids]");
   });
@@ -78,13 +80,14 @@ describe("createUrl", () => {
   it("generates a URL with undefined catch-all parameter", () => {
     const paths = ["https://example.com", "user", "___ids"];
     const params = { ___ids: undefined };
+    const expectedParams = { ids: undefined };
     const dynamicKeys = ["___ids"];
     const urlGenerator = createUrl(paths, params, dynamicKeys);
     const result = urlGenerator();
 
     expect(result.relativePath).toContain("/user");
     expect(result.path).toBe(`https://example.com${result.relativePath}`);
-    expect(result.params).toEqual(params);
+    expect(result.params).toEqual(expectedParams);
 
     expect(result.pathname).toBe("/user/[...ids]");
   });
@@ -92,13 +95,14 @@ describe("createUrl", () => {
   it("generates a URL with an empty catch-all parameter array", () => {
     const paths = ["https://example.com", "user", "___ids"];
     const params = { ___ids: [] };
+    const expectedParams = { ids: [] };
     const dynamicKeys = ["___ids"];
     const urlGenerator = createUrl(paths, params, dynamicKeys);
     const result = urlGenerator();
 
     expect(result.relativePath).toContain("/user");
     expect(result.path).toBe(`https://example.com${result.relativePath}`);
-    expect(result.params).toEqual(params);
+    expect(result.params).toEqual(expectedParams);
 
     expect(result.pathname).toBe("/user/[...ids]");
   });
@@ -106,13 +110,14 @@ describe("createUrl", () => {
   it("generates a URL with optional catch-all parameter", () => {
     const paths = ["https://example.com", "user", "_____ids"];
     const params = { _____ids: ["1", "2", "3"] };
+    const expectedParams = { ids: ["1", "2", "3"] };
     const dynamicKeys = ["_____ids"];
     const urlGenerator = createUrl(paths, params, dynamicKeys);
     const result = urlGenerator();
 
     expect(result.relativePath).toContain("/user/1/2/3");
     expect(result.path).toBe(`https://example.com${result.relativePath}`);
-    expect(result.params).toEqual(params);
+    expect(result.params).toEqual(expectedParams);
 
     expect(result.pathname).toBe("/user/[[...ids]]");
   });
@@ -138,13 +143,14 @@ describe("createUrl", () => {
   it("handles trailing slash in base URL correctly", () => {
     const paths = ["https://example.com/", "_group", "user", "___ids"];
     const params = { _group: "test", ___ids: ["1", "2"] };
+    const expectedParams = { group: "test", ids: ["1", "2"] };
     const dynamicKeys = ["_group", "___ids"];
     const urlGenerator = createUrl(paths, params, dynamicKeys);
     const result = urlGenerator();
 
     expect(result.relativePath).toContain("/test/user/1/2");
     expect(result.path).toBe(`https://example.com${result.relativePath}`);
-    expect(result.params).toEqual(params);
+    expect(result.params).toEqual(expectedParams);
 
     expect(result.pathname).toBe("/[group]/user/[...ids]");
   });
@@ -152,13 +158,14 @@ describe("createUrl", () => {
   it("generates correct URL when the first path segment is empty", () => {
     const paths = ["", "_group", "user", "___ids"];
     const params = { _group: "test", ___ids: ["1", "2"] };
+    const expectedParams = { group: "test", ids: ["1", "2"] };
     const dynamicKeys = ["_group", "___ids"];
     const urlGenerator = createUrl(paths, params, dynamicKeys);
     const result = urlGenerator();
 
     expect(result.relativePath).toContain("/test/user/1/2");
     expect(result.path).toBe(result.relativePath);
-    expect(result.params).toEqual(params);
+    expect(result.params).toEqual(expectedParams);
 
     expect(result.pathname).toBe("/[group]/user/[...ids]");
   });

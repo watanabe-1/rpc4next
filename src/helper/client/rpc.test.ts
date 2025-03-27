@@ -95,7 +95,7 @@ describe("createRpcClient", () => {
     const urlResult = client.admin._qualification("test").$url();
     expect(urlResult.path).toBe("/admin/test");
     expect(urlResult.pathname).toBe("/admin/[qualification]");
-    expect(urlResult.params).toEqual({ _qualification: "test" });
+    expect(urlResult.params).toEqual({ qualification: "test" });
   });
 
   test("GETリクエスト: client.api.questions._qualification('test').$get()", async () => {

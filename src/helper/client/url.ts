@@ -59,9 +59,15 @@ export const createUrl = (
       dynamic: "/[$1]",
     });
 
+    const cleanedParams: FuncParams = {};
+    for (const key in params) {
+      const cleanedKey = key.replace(/^_+/, "");
+      cleanedParams[cleanedKey] = params[key];
+    }
+
     return {
       pathname,
-      params,
+      params: cleanedParams,
       path: baseUrl
         ? `${baseUrl.replace(/\/$/, "")}${relativePath}`
         : relativePath,
