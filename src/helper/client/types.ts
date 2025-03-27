@@ -142,34 +142,33 @@ type PathProxyAsProperty<T> = { $match: (path: string) => Params<T> | null };
 
 type PathProxyAsFunction<T> = {
   $url: (...args: UrlArg<T>) => UrlResult<T>;
-} & (T extends IsHttpMethod ? InferHttpMethods<T> : unknown) &
-  PathProxyAsProperty<T>;
+} & (T extends IsHttpMethod ? InferHttpMethods<T> : unknown);
 
-type PathProxy<
-  T,
-  TUsedAsProperty extends boolean,
-> = TUsedAsProperty extends true
-  ? PathProxyAsProperty<T>
-  : PathProxyAsFunction<T>;
-
-type ParamFunction<
-  T,
-  TParamArgs extends unknown[],
-  TUsedAsProperty extends boolean,
-> = ((...args: [...TParamArgs]) => DynamicPathProxy<T, TUsedAsProperty>) &
-  DynamicPathProxy<T, true>;
+type ParamFunction<T, TParamArgs extends unknown[]> = ((
+  ...args: [...TParamArgs]
+) => DynamicPathProxyAsFunction<T>) &
+  DynamicPathProxyAsFunction<T>;
 
 type NonEmptyArray<T> = [T, ...T[]];
 
-export type DynamicPathProxy<T, TUsedAsProperty extends boolean = false> = Omit<
-  (T extends Endpoint ? PathProxy<T, TUsedAsProperty> : unknown) & {
+export type DynamicPathProxyAsFunction<T> = Omit<
+  (T extends Endpoint ? PathProxyAsFunction<T> : unknown) & {
     [K in keyof T]: K extends IsOptionalCatchAll
-      ? ParamFunction<T[K], [value?: string[]], TUsedAsProperty>
+      ? ParamFunction<T[K], [value?: string[]]>
       : K extends IsCatchAll
-        ? ParamFunction<T[K], [value: NonEmptyArray<string>], TUsedAsProperty>
+        ? ParamFunction<T[K], [value: NonEmptyArray<string>]>
         : K extends IsDynamic
-          ? ParamFunction<T[K], [value: string | number], TUsedAsProperty>
-          : DynamicPathProxy<T[K], TUsedAsProperty>;
+          ? ParamFunction<T[K], [value: string | number]>
+          : DynamicPathProxyAsFunction<T[K]>;
+  },
+  QueryKey | OptionalQueryKey | ParamsKey
+>;
+
+export type DynamicPathProxyAsProperty<T> = Omit<
+  (T extends Endpoint ? PathProxyAsProperty<T> : unknown) & {
+    [K in keyof T]: K extends unknown
+      ? DynamicPathProxyAsProperty<T[K]>
+      : DynamicPathProxyAsProperty<T[K]>;
   },
   QueryKey | OptionalQueryKey | ParamsKey
 >;

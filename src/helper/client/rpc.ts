@@ -2,14 +2,19 @@ import { httpMethod } from "./http-method";
 import { matchPath } from "./match";
 import { createUrl } from "./url";
 import { isDynamic, isHttpMethod } from "./utils";
-import type { FuncParams, DynamicPathProxy, ClientOptions } from "./types";
+import type {
+  FuncParams,
+  DynamicPathProxyAsFunction,
+  ClientOptions,
+  DynamicPathProxyAsProperty,
+} from "./types";
 
 export const createRpcProxy = <T extends object>(
   options: ClientOptions,
   paths: string[] = [],
   params: FuncParams = {},
   dynamicKeys: string[] = []
-): DynamicPathProxy<T> => {
+) => {
   const proxy: unknown = new Proxy(
     (value?: string | number) => {
       if (value === undefined) {
@@ -56,10 +61,13 @@ export const createRpcProxy = <T extends object>(
     }
   );
 
-  return proxy as DynamicPathProxy<T>;
+  return proxy as T;
 };
 
 export const createRpcClient = <T extends object>(
   baseUrl: string,
   options: ClientOptions = {}
-) => createRpcProxy<T>(options, [baseUrl]);
+) => createRpcProxy<DynamicPathProxyAsFunction<T>>(options, [baseUrl]);
+
+export const createRpcHelper = <T extends object>() =>
+  createRpcProxy<DynamicPathProxyAsProperty<T>>({}, ["/"]);
