@@ -1,3 +1,6 @@
+// Inspired by Hono (https://github.com/honojs/middleware/tree/main/packages/zod-validator)
+// Some parts of this code are based on or adapted from the Hono project
+
 import { createHandler } from "../../create-handler";
 import type {
   RouteContext,

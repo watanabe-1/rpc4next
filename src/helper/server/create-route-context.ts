@@ -1,3 +1,6 @@
+// Inspired by Hono (https://github.com/honojs/hono)
+// Some parts of this code are based on or adapted from the Hono project
+
 import { NextResponse } from "next/server";
 import { searchParamsToObject } from "./search-params-to-object";
 import type {

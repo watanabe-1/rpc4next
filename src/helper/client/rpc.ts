@@ -1,3 +1,6 @@
+// Inspired by Hono (https://github.com/honojs/hono)
+// Some parts of this code are based on or adapted from the Hono project
+
 import { httpMethod } from "./http-method";
 import { matchPath } from "./match";
 import { createUrl } from "./url";

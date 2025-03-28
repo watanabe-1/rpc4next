@@ -1,3 +1,6 @@
+// Inspired by pathpida (https://github.com/aspida/pathpida)
+// Some parts of this code are based on or adapted from the pathpida project
+
 import fs from "fs";
 import path from "path";
 

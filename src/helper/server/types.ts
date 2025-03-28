@@ -1,3 +1,6 @@
+// Inspired by Hono (https://github.com/honojs/hono)
+// Some parts of this code are based on or adapted from the Hono project
+
 import { HttpMethod } from "../../lib/types";
 import type { NextResponse, NextRequest } from "next/server";
 
