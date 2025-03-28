@@ -1,9 +1,18 @@
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
-import { beforeAll, afterEach, afterAll, describe, test, expect } from "vitest";
+import {
+  beforeAll,
+  afterEach,
+  afterAll,
+  describe,
+  test,
+  expect,
+  expectTypeOf,
+  it,
+} from "vitest";
 import { createRpcClient } from "./rpc";
-import { routeHandlerFactory } from "../server";
-import { ParamsKey, Endpoint } from "./types";
+import { routeHandlerFactory, TypedNextResponse } from "../server";
+import { ParamsKey, Endpoint, QueryKey, UrlResult } from "./types";
 
 const createRouteHandler = routeHandlerFactory();
 
@@ -413,5 +422,121 @@ describe("real fetch behavior", () => {
     expect(json["x-client"]).toBe("client-header");
     expect(json["x-method"]).toBe("method-header");
     expect(json["common"]).toBe("method");
+  });
+});
+
+const { POST: _post_1 } = createRouteHandler().post(
+  async (rc) => rc.json("json"),
+  async (rc) => rc.text("text")
+);
+
+const { POST: _get_1 } = createRouteHandler().post(
+  async (rc) => rc.text("error", { status: 400 }),
+  async (rc) => rc.json({ ok: true }, { status: 200 })
+);
+
+export type PathStructureForTypeTest = Endpoint & {
+  fuga: Endpoint & {
+    _foo: Endpoint &
+      Record<ParamsKey, { foo: string }> & {
+        _piyo: Endpoint & Record<QueryKey, { baz: string }>;
+      };
+  };
+  api: {
+    hoge: {
+      $post: typeof _post_1;
+    } & Endpoint & {
+        _foo: { $get: typeof _get_1 } & Endpoint;
+      };
+  };
+};
+
+describe("createHandler type definitions", () => {
+  it("should infer types correctly", async () => {
+    const customFetch = async (_: RequestInfo | URL, __?: RequestInit) => {
+      return new Response();
+    };
+    const client = createRpcClient<PathStructureForTypeTest>("", {
+      fetch: customFetch,
+    });
+    const _createUrl = client.fuga._foo("param")._piyo("").$url;
+
+    type ExpectedUrlFunc = (url: {
+      query: {
+        baz: string;
+      };
+      hash?: string;
+    }) => UrlResult<
+      Endpoint &
+        Record<
+          "__query",
+          {
+            baz: string;
+          }
+        >
+    >;
+
+    expectTypeOf<typeof _createUrl>().toEqualTypeOf<ExpectedUrlFunc>();
+
+    const _response = await client.api.hoge.$post();
+
+    type ExpectedResponse =
+      | TypedNextResponse<string, 200, "application/json">
+      | TypedNextResponse<"text", 200, "text/plain">;
+
+    expectTypeOf<typeof _response>().toEqualTypeOf<ExpectedResponse>();
+
+    const incloudErrResponse = await client.api.hoge._foo("").$get();
+
+    type ExpectedIncloudErrResponse =
+      | TypedNextResponse<"error", 400, "text/plain">
+      | TypedNextResponse<
+          {
+            ok: boolean;
+          },
+          200,
+          "application/json"
+        >;
+    expectTypeOf<
+      typeof incloudErrResponse
+    >().toEqualTypeOf<ExpectedIncloudErrResponse>();
+
+    if (incloudErrResponse.ok) {
+      type ExpectedOkResponse = TypedNextResponse<
+        {
+          ok: boolean;
+        },
+        200,
+        "application/json"
+      >;
+
+      type ExpectdJson = () => Promise<{
+        ok: boolean;
+      }>;
+      type ExpectdText = () => Promise<string>;
+
+      const _json = incloudErrResponse.json;
+      const _text = incloudErrResponse.text;
+
+      expectTypeOf<
+        typeof incloudErrResponse
+      >().toEqualTypeOf<ExpectedOkResponse>();
+      expectTypeOf<typeof _json>().toEqualTypeOf<ExpectdJson>();
+      expectTypeOf<typeof _text>().toEqualTypeOf<ExpectdText>();
+    } else {
+      type ExpectedErrResponse = TypedNextResponse<"error", 400, "text/plain">;
+
+      type ExpectdJson = () => Promise<never>;
+      type ExpectdText = () => Promise<"error">;
+
+      const _json = incloudErrResponse.json;
+      const _text = incloudErrResponse.text;
+
+      expectTypeOf<
+        typeof incloudErrResponse
+      >().toEqualTypeOf<ExpectedErrResponse>();
+      expectTypeOf<typeof _json>().toEqualTypeOf<ExpectdJson>();
+      expectTypeOf<typeof _text>().toEqualTypeOf<ExpectdText>();
+    }
   });
 });
