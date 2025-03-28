@@ -16,14 +16,14 @@ const httpMethods: Set<HttpMethodFuncKey> = new Set(HTTP_METHOD_FUNC_KEYS);
 export const isHttpMethod = (value: string): value is HttpMethodFuncKey =>
   httpMethods.has(value as HttpMethodFuncKey);
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
+const isPlainObject = (value: unknown): value is Record<string, unknown> => {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
+};
 
-export function deepMerge<T extends object, U extends object>(
+export const deepMerge = <T extends object, U extends object>(
   target: T,
   source: U
-): T {
+): T => {
   const result = { ...target } as T & U;
 
   for (const key in source) {
@@ -43,4 +43,4 @@ export function deepMerge<T extends object, U extends object>(
   }
 
   return result;
-}
+};

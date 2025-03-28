@@ -1,6 +1,8 @@
-export function searchParamsToObject<
+export const searchParamsToObject = <
   T extends Record<string, string | string[] | undefined>,
->(searchParams: URLSearchParams): T {
+>(
+  searchParams: URLSearchParams
+): T => {
   const params: Record<string, string | string[]> = {};
 
   searchParams.forEach((value, key) => {
@@ -14,4 +16,4 @@ export function searchParamsToObject<
   });
 
   return params as T;
-}
+};

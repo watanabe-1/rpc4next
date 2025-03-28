@@ -7,7 +7,7 @@ import type {
   TypedRequestInit,
 } from "./types";
 
-function normalizeHeaders(headers?: HeadersInit): Record<string, string> {
+const normalizeHeaders = (headers?: HeadersInit): Record<string, string> => {
   const result: Record<string, string> = {};
   if (!headers) return result;
   if (headers instanceof Headers) {
@@ -29,7 +29,7 @@ function normalizeHeaders(headers?: HeadersInit): Record<string, string> {
   });
 
   return result;
-}
+};
 
 export const httpMethod = (
   key: string,
