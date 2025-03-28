@@ -91,9 +91,10 @@ afterAll(() => server.close());
 
 describe("createRpcClient", () => {
   test("should generate correct URL for client.admin._qualification('test').$url()", () => {
-    const client = createRpcClient<PathStructure>("");
+    const client = createRpcClient<PathStructure>("http://localhost:3000");
     const urlResult = client.admin._qualification("test").$url();
-    expect(urlResult.path).toBe("/admin/test");
+    expect(urlResult.path).toBe("http://localhost:3000/admin/test");
+    expect(urlResult.relativePath).toBe("/admin/test");
     expect(urlResult.pathname).toBe("/admin/[qualification]");
     expect(urlResult.params).toEqual({ qualification: "test" });
   });
@@ -304,6 +305,64 @@ describe("createRpcClient", () => {
       expect(capturedInit!.method).toBe("DELETE");
       expect(capturedInit!.mode).toBe("cors");
       expect(capturedInit!.cache).toBe("no-store");
+    });
+
+    test("should propagate network errors", async () => {
+      const errorFetch = async (_: RequestInfo | URL, __?: RequestInit) => {
+        throw new Error("Network failure");
+      };
+
+      const client = createRpcClient<PathStructure>("http://localhost:3000", {
+        fetch: errorFetch,
+      });
+
+      await expect(client.api.questions.$delete()).rejects.toThrow(
+        "Network failure"
+      );
+    });
+
+    test("should correctly pass request body for POST requests", async () => {
+      let capturedBody;
+      const customFetch = async (_: RequestInfo | URL, init?: RequestInit) => {
+        capturedBody = init?.body;
+
+        return new Response("received", { status: 200 });
+      };
+
+      const client = createRpcClient<PathStructure>("http://localhost:3000", {
+        fetch: customFetch,
+      });
+
+      await client.api.questions.$post(undefined, {
+        init: {
+          body: JSON.stringify({ test: "data" }),
+        },
+      });
+      expect(capturedBody).toBe(JSON.stringify({ test: "data" }));
+    });
+
+    test("should correctly merge multiple header values", async () => {
+      let capturedHeaders;
+      const customFetch = async (_: RequestInfo | URL, init?: RequestInit) => {
+        capturedHeaders = init?.headers;
+
+        return new Response("ok", { status: 200 });
+      };
+
+      const client = createRpcClient<PathStructure>("http://localhost:3000", {
+        fetch: customFetch,
+        init: { headers: { "x-header": "value1", common: "client" } },
+      });
+
+      await client.api.questions.$delete(undefined, {
+        init: { headers: { "another-header": "value2", common: "method" } },
+      });
+
+      expect(capturedHeaders).toEqual({
+        "x-header": "value1",
+        common: "method",
+        "another-header": "value2",
+      });
     });
   });
 
