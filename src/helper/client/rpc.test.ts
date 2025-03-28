@@ -36,22 +36,22 @@ const { DELETE: _delete_1 } = createRouteHandler().delete(async (rc) => {
 });
 
 export type PathStructure = Endpoint & {
-  admin: Endpoint & {
-    _qualification: Endpoint &
-      Record<ParamsKey, { qualification: string }> & {
-        _grade: Endpoint;
+  fuga: Endpoint & {
+    _foo: Endpoint &
+      Record<ParamsKey, { foo: string }> & {
+        _piyo: Endpoint;
       };
   };
   api: {
-    questions: {
+    hoge: {
       $post: typeof _post_0;
       $delete: typeof _delete_0;
       $head: typeof _head_0;
       $patch: typeof _patch_0;
       $put: typeof _put_0;
     } & Endpoint & {
-        _qualification: { $get: typeof _get_0 } & Endpoint & {
-            _id: { $delete: typeof _delete_1 } & Endpoint;
+        _foo: { $get: typeof _get_0 } & Endpoint & {
+            _bar: { $delete: typeof _delete_1 } & Endpoint;
           };
       };
   };
@@ -59,25 +59,25 @@ export type PathStructure = Endpoint & {
 
 // MSW handler configuration
 const server = setupServer(
-  http.get("http://localhost:3000/api/questions/test", () => {
+  http.get("http://localhost:3000/api/hoge/test", () => {
     return HttpResponse.json({ method: "get" });
   }),
-  http.post("http://localhost:3000/api/questions", () => {
+  http.post("http://localhost:3000/api/hoge", () => {
     return HttpResponse.text("post");
   }),
-  http.delete("http://localhost:3000/api/questions", () => {
+  http.delete("http://localhost:3000/api/hoge", () => {
     return HttpResponse.text("delete");
   }),
-  http.head("http://localhost:3000/api/questions", () => {
+  http.head("http://localhost:3000/api/hoge", () => {
     return HttpResponse.text("head");
   }),
-  http.patch("http://localhost:3000/api/questions", () => {
+  http.patch("http://localhost:3000/api/hoge", () => {
     return HttpResponse.text("patch");
   }),
-  http.put("http://localhost:3000/api/questions", () => {
+  http.put("http://localhost:3000/api/hoge", () => {
     return HttpResponse.text("put");
   }),
-  http.delete("http://localhost:3000/api/questions/test/fetch", (resInfo) => {
+  http.delete("http://localhost:3000/api/hoge/test/fetch", (resInfo) => {
     const headers = Object.fromEntries(resInfo.request.headers.entries());
 
     return HttpResponse.json(headers);
@@ -92,25 +92,25 @@ afterAll(() => server.close());
 describe("createRpcClient basic behavior", () => {
   test("should generate correct URL", () => {
     const client = createRpcClient<PathStructure>("http://localhost:3000");
-    const urlResult = client.admin._qualification("test").$url();
-    expect(urlResult.path).toBe("http://localhost:3000/admin/test");
-    expect(urlResult.relativePath).toBe("/admin/test");
-    expect(urlResult.pathname).toBe("/admin/[qualification]");
-    expect(urlResult.params).toEqual({ qualification: "test" });
+    const urlResult = client.fuga._foo("test").$url();
+    expect(urlResult.path).toBe("http://localhost:3000/fuga/test");
+    expect(urlResult.relativePath).toBe("/fuga/test");
+    expect(urlResult.pathname).toBe("/fuga/[foo]");
+    expect(urlResult.params).toEqual({ foo: "test" });
   });
 
   test("should generate URL with query and hash parameters", () => {
     const client = createRpcClient<PathStructure>("");
-    const urlResult = client.admin._qualification("test").$url({
+    const urlResult = client.fuga._foo("test").$url({
       query: { foo: "bar" },
       hash: "section",
     });
-    expect(urlResult.path).toBe("/admin/test?foo=bar#section");
+    expect(urlResult.path).toBe("/fuga/test?foo=bar#section");
   });
 
   test("should successfully perform GET request", async () => {
     const client = createRpcClient<PathStructure>("http://localhost:3000");
-    const response = await client.api.questions._qualification("test").$get();
+    const response = await client.api.hoge._foo("test").$get();
     expect(response.status).toBe(200);
     const data = await response.json();
     expect(data).toEqual({ method: "get" });
@@ -118,7 +118,7 @@ describe("createRpcClient basic behavior", () => {
 
   test("should successfully perform POST request", async () => {
     const client = createRpcClient<PathStructure>("http://localhost:3000");
-    const response = await client.api.questions.$post();
+    const response = await client.api.hoge.$post();
     expect(response.status).toBe(200);
     const text = await response.text();
     expect(text).toBe("post");
@@ -126,7 +126,7 @@ describe("createRpcClient basic behavior", () => {
 
   test("should successfully perform DELETE request (text response)", async () => {
     const client = createRpcClient<PathStructure>("http://localhost:3000");
-    const response = await client.api.questions.$delete();
+    const response = await client.api.hoge.$delete();
     expect(response.status).toBe(200);
     const text = await response.text();
     expect(text).toBe("delete");
@@ -134,7 +134,7 @@ describe("createRpcClient basic behavior", () => {
 
   test("should successfully perform HEAD request", async () => {
     const client = createRpcClient<PathStructure>("http://localhost:3000");
-    const response = await client.api.questions.$head();
+    const response = await client.api.hoge.$head();
     expect(response.status).toBe(200);
     const text = await response.text();
     expect(text).toBe("head");
@@ -142,7 +142,7 @@ describe("createRpcClient basic behavior", () => {
 
   test("should successfully perform PATCH request", async () => {
     const client = createRpcClient<PathStructure>("http://localhost:3000");
-    const response = await client.api.questions.$patch();
+    const response = await client.api.hoge.$patch();
     expect(response.status).toBe(200);
     const text = await response.text();
     expect(text).toBe("patch");
@@ -150,7 +150,7 @@ describe("createRpcClient basic behavior", () => {
 
   test("should successfully perform PUT request", async () => {
     const client = createRpcClient<PathStructure>("http://localhost:3000");
-    const response = await client.api.questions.$put();
+    const response = await client.api.hoge.$put();
     expect(response.status).toBe(200);
     const text = await response.text();
     expect(text).toBe("put");
@@ -177,7 +177,7 @@ describe("customFetch behavior", () => {
       },
     });
 
-    await client.api.questions.$delete();
+    await client.api.hoge.$delete();
     expect(capturedInit).toBeDefined();
     expect(capturedInit!.method).toBe("DELETE");
     expect(capturedInit!.mode).toBe("cors");
@@ -199,7 +199,7 @@ describe("customFetch behavior", () => {
       fetch: customFetch,
     });
 
-    await client.api.questions.$delete(undefined, {
+    await client.api.hoge.$delete(undefined, {
       init: {
         headers: { "x-method": "method-header" },
         cache: "no-cache",
@@ -232,7 +232,7 @@ describe("customFetch behavior", () => {
       },
     });
 
-    await client.api.questions.$delete(undefined, {
+    await client.api.hoge.$delete(undefined, {
       init: {
         headers: { "x-method": "method-header", common: "method" },
         cache: "no-cache",
@@ -267,7 +267,7 @@ describe("customFetch behavior", () => {
       init: {},
     });
 
-    await client.api.questions.$delete(undefined, {
+    await client.api.hoge.$delete(undefined, {
       init: {
         headers: { "x-only": "only-header" },
       },
@@ -296,7 +296,7 @@ describe("customFetch behavior", () => {
       },
     });
 
-    await client.api.questions.$delete(undefined, {
+    await client.api.hoge.$delete(undefined, {
       init: {
         cache: "no-store",
       },
@@ -317,9 +317,7 @@ describe("customFetch behavior", () => {
       fetch: errorFetch,
     });
 
-    await expect(client.api.questions.$delete()).rejects.toThrow(
-      "Network failure"
-    );
+    await expect(client.api.hoge.$delete()).rejects.toThrow("Network failure");
   });
 
   test("should correctly pass request body for POST requests", async () => {
@@ -334,7 +332,7 @@ describe("customFetch behavior", () => {
       fetch: customFetch,
     });
 
-    await client.api.questions.$post(undefined, {
+    await client.api.hoge.$post(undefined, {
       init: {
         body: JSON.stringify({ test: "data" }),
       },
@@ -355,7 +353,7 @@ describe("customFetch behavior", () => {
       init: { headers: { "x-header": "value1", common: "client" } },
     });
 
-    await client.api.questions.$delete(undefined, {
+    await client.api.hoge.$delete(undefined, {
       init: { headers: { "another-header": "value2", common: "method" } },
     });
 
@@ -374,19 +372,16 @@ describe("real fetch behavior", () => {
         headers: { "x-client": "client-header" },
       },
     });
-    const response = await client.api.questions
-      ._qualification("test")
-      ._id("fetch")
-      .$delete();
+    const response = await client.api.hoge._foo("test")._bar("fetch").$delete();
     const json = await response.json();
     expect(json["x-client"]).toBe("client-header");
   });
 
   test("should send method-level headers", async () => {
     const client = createRpcClient<PathStructure>("http://localhost:3000");
-    const response = await client.api.questions
-      ._qualification("test")
-      ._id("fetch")
+    const response = await client.api.hoge
+      ._foo("test")
+      ._bar("fetch")
       .$delete(undefined, {
         init: {
           headers: { "x-only": "only-header" },
@@ -405,9 +400,9 @@ describe("real fetch behavior", () => {
       },
     });
 
-    const response = await client.api.questions
-      ._qualification("test")
-      ._id("fetch")
+    const response = await client.api.hoge
+      ._foo("test")
+      ._bar("fetch")
       .$delete(undefined, {
         init: {
           headers: { "x-method": "method-header", common: "method" },
