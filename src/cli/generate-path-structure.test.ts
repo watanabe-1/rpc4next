@@ -4,6 +4,7 @@ import {
   NEWLINE,
   TYPE_KEY_OPTIONAL_QUERY,
   TYPE_KEY_QUERY,
+  RPC4NEXT_CLIENT_IMPORT_PATH,
 } from "./constants";
 import { TYPE_KEY_PARAMS, TYPE_END_POINT } from "./constants";
 import { generatePages } from "./generate-path-structure";
@@ -40,7 +41,7 @@ describe("generatePages", () => {
     const result = generatePages(outputPath, baseDir);
 
     const expectedImports =
-      `import type { ${TYPE_END_POINT} ,${TYPE_KEY_OPTIONAL_QUERY} ,${TYPE_KEY_PARAMS} ,${TYPE_KEY_QUERY} } from "rpc4next/client"${STATEMENT_TERMINATOR}${NEWLINE}` +
+      `import type { ${TYPE_END_POINT} ,${TYPE_KEY_OPTIONAL_QUERY} ,${TYPE_KEY_PARAMS} ,${TYPE_KEY_QUERY} } from "${RPC4NEXT_CLIENT_IMPORT_PATH}"${STATEMENT_TERMINATOR}${NEWLINE}` +
       `import Home from './routes/home';${NEWLINE}import User from './routes/user';`;
 
     const expectedTypeDefinition = `export type PathStructure = { home: ${TYPE_END_POINT}, user: { id: ${TYPE_KEY_PARAMS} }, ${TYPE_KEY_QUERY}, ${TYPE_KEY_OPTIONAL_QUERY}}${STATEMENT_TERMINATOR}`;
@@ -60,7 +61,7 @@ describe("generatePages", () => {
     const baseDir = "./base";
     const result = generatePages(outputPath, baseDir);
 
-    const expectedImports = `import type { ${TYPE_END_POINT} } from "rpc4next/client"${STATEMENT_TERMINATOR}${NEWLINE}${NEWLINE}`;
+    const expectedImports = `import type { ${TYPE_END_POINT} } from "${RPC4NEXT_CLIENT_IMPORT_PATH}"${STATEMENT_TERMINATOR}${NEWLINE}${NEWLINE}`;
     const expectedTypeDefinition = `export type PathStructure = { dashboard: ${TYPE_END_POINT} }${STATEMENT_TERMINATOR}`;
 
     expect(result).toBe(

@@ -1,4 +1,9 @@
-import { STATEMENT_TERMINATOR, NEWLINE, TYPE_KEYS } from "./constants";
+import {
+  STATEMENT_TERMINATOR,
+  NEWLINE,
+  TYPE_KEYS,
+  RPC4NEXT_CLIENT_IMPORT_PATH,
+} from "./constants";
 import { scanAppDir } from "./route-scanner";
 import { createImport } from "./type-utils";
 
@@ -18,7 +23,7 @@ export const generatePages = (outputPath: string, baseDir: string) => {
   const keyTypes = TYPE_KEYS.filter((type) => pathStructure.includes(type));
   const keyTypesImportStr = createImport(
     keyTypes.join(" ,"),
-    "rpc4next/client"
+    RPC4NEXT_CLIENT_IMPORT_PATH
   );
 
   return `${keyTypesImportStr}${NEWLINE}${importsStr}${NEWLINE}${NEWLINE}${pathStructureType}`;
