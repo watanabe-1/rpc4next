@@ -1,13 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { createRpcHelper } from "./rpc";
-import { Endpoint, ParamsKey } from "./types";
+import { Endpoint } from "./types";
 
 export type PathStructure = Endpoint & {
   fuga: Endpoint & {
-    _foo: Endpoint &
-      Record<ParamsKey, { foo: string }> & {
-        _piyo: Endpoint;
-      };
+    _foo: Endpoint;
   };
 };
 
