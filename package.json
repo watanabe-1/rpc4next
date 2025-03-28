@@ -42,8 +42,7 @@
     "prepare": "npm run build"
   },
   "dependencies": {
-    "commander": "^13.1.0",
-    "rpc4next": "file:"
+    "commander": "^13.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.13.11",
