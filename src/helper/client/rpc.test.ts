@@ -89,14 +89,23 @@ beforeAll(() => server.listen());
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
-describe("createRpcClient", () => {
-  test("should generate correct URL for client.admin._qualification('test').$url()", () => {
+describe("createRpcClient basic behavior", () => {
+  test("should generate correct URL", () => {
     const client = createRpcClient<PathStructure>("http://localhost:3000");
     const urlResult = client.admin._qualification("test").$url();
     expect(urlResult.path).toBe("http://localhost:3000/admin/test");
     expect(urlResult.relativePath).toBe("/admin/test");
     expect(urlResult.pathname).toBe("/admin/[qualification]");
     expect(urlResult.params).toEqual({ qualification: "test" });
+  });
+
+  test("should generate URL with query and hash parameters", () => {
+    const client = createRpcClient<PathStructure>("");
+    const urlResult = client.admin._qualification("test").$url({
+      query: { foo: "bar" },
+      hash: "section",
+    });
+    expect(urlResult.path).toBe("/admin/test?foo=bar#section");
   });
 
   test("should successfully perform GET request", async () => {
@@ -115,7 +124,7 @@ describe("createRpcClient", () => {
     expect(text).toBe("post");
   });
 
-  test("should successfully perform DELETE request", async () => {
+  test("should successfully perform DELETE request (text response)", async () => {
     const client = createRpcClient<PathStructure>("http://localhost:3000");
     const response = await client.api.questions.$delete();
     expect(response.status).toBe(200);
@@ -146,277 +155,268 @@ describe("createRpcClient", () => {
     const text = await response.text();
     expect(text).toBe("put");
   });
+});
 
-  test("should generate URL with query and hash parameters", () => {
-    const client = createRpcClient<PathStructure>("");
-    const urlResult = client.admin._qualification("test").$url({
-      query: { foo: "bar" },
-      hash: "section",
+describe("customFetch behavior", () => {
+  test("should use only client-level options when only client options are specified", async () => {
+    let capturedInit: RequestInit | undefined;
+    const customFetch = async (
+      input: RequestInfo | URL,
+      init?: RequestInit
+    ) => {
+      capturedInit = init;
+
+      return new Response("ok", { status: 200 });
+    };
+
+    const client = createRpcClient<PathStructure>("http://localhost:3000", {
+      fetch: customFetch,
+      init: {
+        headers: { "x-client": "client-header" },
+        mode: "cors",
+      },
     });
-    expect(urlResult.path).toBe("/admin/test?foo=bar#section");
+
+    await client.api.questions.$delete();
+    expect(capturedInit).toBeDefined();
+    expect(capturedInit!.method).toBe("DELETE");
+    expect(capturedInit!.mode).toBe("cors");
+    expect(capturedInit!.headers).toEqual({ "x-client": "client-header" });
   });
 
-  describe("customFetch behavior", () => {
-    test("should use only client-level options when only client options are specified", async () => {
-      let capturedInit: RequestInit | undefined;
-      const customFetch = async (
-        input: RequestInfo | URL,
-        init?: RequestInit
-      ) => {
-        capturedInit = init;
+  test("should use only method-level options when only method options are specified", async () => {
+    let capturedInit: RequestInit | undefined;
+    const customFetch = async (
+      input: RequestInfo | URL,
+      init?: RequestInit
+    ) => {
+      capturedInit = init;
 
-        return new Response("ok", { status: 200 });
-      };
+      return new Response("ok", { status: 200 });
+    };
 
-      const client = createRpcClient<PathStructure>("http://localhost:3000", {
-        fetch: customFetch,
-        init: {
-          headers: { "x-client": "client-header" },
-          mode: "cors",
-        },
-      });
-
-      await client.api.questions.$delete();
-      expect(capturedInit).toBeDefined();
-      expect(capturedInit!.method).toBe("DELETE");
-      expect(capturedInit!.mode).toBe("cors");
-      expect(capturedInit!.headers).toEqual({ "x-client": "client-header" });
+    const client = createRpcClient<PathStructure>("http://localhost:3000", {
+      fetch: customFetch,
     });
 
-    test("should use only method-level options when only method options are specified", async () => {
-      let capturedInit: RequestInit | undefined;
-      const customFetch = async (
-        input: RequestInfo | URL,
-        init?: RequestInit
-      ) => {
-        capturedInit = init;
-
-        return new Response("ok", { status: 200 });
-      };
-
-      const client = createRpcClient<PathStructure>("http://localhost:3000", {
-        fetch: customFetch,
-      });
-
-      await client.api.questions.$delete(undefined, {
-        init: {
-          headers: { "x-method": "method-header" },
-          cache: "no-cache",
-        },
-      });
-
-      expect(capturedInit).toBeDefined();
-      expect(capturedInit!.method).toBe("DELETE");
-      expect(capturedInit!.cache).toBe("no-cache");
-      expect(capturedInit!.headers).toEqual({ "x-method": "method-header" });
+    await client.api.questions.$delete(undefined, {
+      init: {
+        headers: { "x-method": "method-header" },
+        cache: "no-cache",
+      },
     });
 
-    test("should merge client and method options correctly", async () => {
-      let capturedInit: RequestInit | undefined;
-      const customFetch = async (
-        input: RequestInfo | URL,
-        init?: RequestInit
-      ) => {
-        capturedInit = init;
+    expect(capturedInit).toBeDefined();
+    expect(capturedInit!.method).toBe("DELETE");
+    expect(capturedInit!.cache).toBe("no-cache");
+    expect(capturedInit!.headers).toEqual({ "x-method": "method-header" });
+  });
 
-        return new Response("ok", { status: 200 });
-      };
+  test("should correctly merge client and method options", async () => {
+    let capturedInit: RequestInit | undefined;
+    const customFetch = async (
+      input: RequestInfo | URL,
+      init?: RequestInit
+    ) => {
+      capturedInit = init;
 
-      const client = createRpcClient<PathStructure>("http://localhost:3000", {
-        fetch: customFetch,
+      return new Response("ok", { status: 200 });
+    };
+
+    const client = createRpcClient<PathStructure>("http://localhost:3000", {
+      fetch: customFetch,
+      init: {
+        headers: { "x-client": "client-header", common: "client" },
+        mode: "cors",
+        credentials: "include",
+      },
+    });
+
+    await client.api.questions.$delete(undefined, {
+      init: {
+        headers: { "x-method": "method-header", common: "method" },
+        cache: "no-cache",
+      },
+    });
+
+    expect(capturedInit).toBeDefined();
+    expect(capturedInit!.method).toBe("DELETE");
+    expect(capturedInit!.mode).toBe("cors");
+    expect(capturedInit!.credentials).toBe("include");
+    expect(capturedInit!.cache).toBe("no-cache");
+    expect(capturedInit!.headers).toEqual({
+      "x-client": "client-header",
+      common: "method",
+      "x-method": "method-header",
+    });
+  });
+
+  test("should work when init options have no headers", async () => {
+    let capturedInit: RequestInit | undefined;
+    const customFetch = async (
+      input: RequestInfo | URL,
+      init?: RequestInit
+    ) => {
+      capturedInit = init;
+
+      return new Response("ok", { status: 200 });
+    };
+
+    const client = createRpcClient<PathStructure>("http://localhost:3000", {
+      fetch: customFetch,
+      init: {},
+    });
+
+    await client.api.questions.$delete(undefined, {
+      init: {
+        headers: { "x-only": "only-header" },
+      },
+    });
+
+    expect(capturedInit).toBeDefined();
+    expect(capturedInit!.method).toBe("DELETE");
+    expect(capturedInit!.headers).toEqual({ "x-only": "only-header" });
+  });
+
+  test("should merge non-conflicting options from client and method", async () => {
+    let capturedInit: RequestInit | undefined;
+    const customFetch = async (
+      input: RequestInfo | URL,
+      init?: RequestInit
+    ) => {
+      capturedInit = init;
+
+      return new Response("ok", { status: 200 });
+    };
+
+    const client = createRpcClient<PathStructure>("http://localhost:3000", {
+      fetch: customFetch,
+      init: {
+        mode: "cors",
+      },
+    });
+
+    await client.api.questions.$delete(undefined, {
+      init: {
+        cache: "no-store",
+      },
+    });
+
+    expect(capturedInit).toBeDefined();
+    expect(capturedInit!.method).toBe("DELETE");
+    expect(capturedInit!.mode).toBe("cors");
+    expect(capturedInit!.cache).toBe("no-store");
+  });
+
+  test("should propagate network errors", async () => {
+    const errorFetch = async (_: RequestInfo | URL, __?: RequestInit) => {
+      throw new Error("Network failure");
+    };
+
+    const client = createRpcClient<PathStructure>("http://localhost:3000", {
+      fetch: errorFetch,
+    });
+
+    await expect(client.api.questions.$delete()).rejects.toThrow(
+      "Network failure"
+    );
+  });
+
+  test("should correctly pass request body for POST requests", async () => {
+    let capturedBody;
+    const customFetch = async (_: RequestInfo | URL, init?: RequestInit) => {
+      capturedBody = init?.body;
+
+      return new Response("received", { status: 200 });
+    };
+
+    const client = createRpcClient<PathStructure>("http://localhost:3000", {
+      fetch: customFetch,
+    });
+
+    await client.api.questions.$post(undefined, {
+      init: {
+        body: JSON.stringify({ test: "data" }),
+      },
+    });
+    expect(capturedBody).toBe(JSON.stringify({ test: "data" }));
+  });
+
+  test("should correctly merge multiple header values", async () => {
+    let capturedHeaders;
+    const customFetch = async (_: RequestInfo | URL, init?: RequestInit) => {
+      capturedHeaders = init?.headers;
+
+      return new Response("ok", { status: 200 });
+    };
+
+    const client = createRpcClient<PathStructure>("http://localhost:3000", {
+      fetch: customFetch,
+      init: { headers: { "x-header": "value1", common: "client" } },
+    });
+
+    await client.api.questions.$delete(undefined, {
+      init: { headers: { "another-header": "value2", common: "method" } },
+    });
+
+    expect(capturedHeaders).toEqual({
+      "x-header": "value1",
+      common: "method",
+      "another-header": "value2",
+    });
+  });
+});
+
+describe("real fetch behavior", () => {
+  test("should send client-level headers", async () => {
+    const client = createRpcClient<PathStructure>("http://localhost:3000", {
+      init: {
+        headers: { "x-client": "client-header" },
+      },
+    });
+    const response = await client.api.questions
+      ._qualification("test")
+      ._id("fetch")
+      .$delete();
+    const json = await response.json();
+    expect(json["x-client"]).toBe("client-header");
+  });
+
+  test("should send method-level headers", async () => {
+    const client = createRpcClient<PathStructure>("http://localhost:3000");
+    const response = await client.api.questions
+      ._qualification("test")
+      ._id("fetch")
+      .$delete(undefined, {
         init: {
-          headers: { "x-client": "client-header", common: "client" },
-          mode: "cors",
-          credentials: "include",
+          headers: { "x-only": "only-header" },
         },
       });
+    const json = await response.json();
+    expect(json["x-only"]).toBe("only-header");
+  });
 
-      await client.api.questions.$delete(undefined, {
+  test("should correctly merge client and method headers", async () => {
+    const client = createRpcClient<PathStructure>("http://localhost:3000", {
+      init: {
+        headers: { "x-client": "client-header", common: "client" },
+        mode: "cors",
+        credentials: "include",
+      },
+    });
+
+    const response = await client.api.questions
+      ._qualification("test")
+      ._id("fetch")
+      .$delete(undefined, {
         init: {
           headers: { "x-method": "method-header", common: "method" },
           cache: "no-cache",
         },
       });
-
-      expect(capturedInit).toBeDefined();
-      expect(capturedInit!.method).toBe("DELETE");
-      expect(capturedInit!.mode).toBe("cors");
-      expect(capturedInit!.credentials).toBe("include");
-      expect(capturedInit!.cache).toBe("no-cache");
-      expect(capturedInit!.headers).toEqual({
-        "x-client": "client-header",
-        common: "method",
-        "x-method": "method-header",
-      });
-    });
-
-    test("should handle missing headers in init options", async () => {
-      let capturedInit: RequestInit | undefined;
-      const customFetch = async (
-        input: RequestInfo | URL,
-        init?: RequestInit
-      ) => {
-        capturedInit = init;
-
-        return new Response("ok", { status: 200 });
-      };
-
-      const client = createRpcClient<PathStructure>("http://localhost:3000", {
-        fetch: customFetch,
-        init: {},
-      });
-
-      await client.api.questions.$delete(undefined, {
-        init: {
-          headers: { "x-only": "only-header" },
-        },
-      });
-
-      expect(capturedInit).toBeDefined();
-      expect(capturedInit!.method).toBe("DELETE");
-      expect(capturedInit!.headers).toEqual({ "x-only": "only-header" });
-    });
-
-    test("should merge non-conflicting options from both client and method", async () => {
-      let capturedInit: RequestInit | undefined;
-      const customFetch = async (
-        input: RequestInfo | URL,
-        init?: RequestInit
-      ) => {
-        capturedInit = init;
-
-        return new Response("ok", { status: 200 });
-      };
-
-      const client = createRpcClient<PathStructure>("http://localhost:3000", {
-        fetch: customFetch,
-        init: {
-          mode: "cors",
-        },
-      });
-
-      await client.api.questions.$delete(undefined, {
-        init: {
-          cache: "no-store",
-        },
-      });
-
-      expect(capturedInit).toBeDefined();
-      expect(capturedInit!.method).toBe("DELETE");
-      expect(capturedInit!.mode).toBe("cors");
-      expect(capturedInit!.cache).toBe("no-store");
-    });
-
-    test("should propagate network errors", async () => {
-      const errorFetch = async (_: RequestInfo | URL, __?: RequestInit) => {
-        throw new Error("Network failure");
-      };
-
-      const client = createRpcClient<PathStructure>("http://localhost:3000", {
-        fetch: errorFetch,
-      });
-
-      await expect(client.api.questions.$delete()).rejects.toThrow(
-        "Network failure"
-      );
-    });
-
-    test("should correctly pass request body for POST requests", async () => {
-      let capturedBody;
-      const customFetch = async (_: RequestInfo | URL, init?: RequestInit) => {
-        capturedBody = init?.body;
-
-        return new Response("received", { status: 200 });
-      };
-
-      const client = createRpcClient<PathStructure>("http://localhost:3000", {
-        fetch: customFetch,
-      });
-
-      await client.api.questions.$post(undefined, {
-        init: {
-          body: JSON.stringify({ test: "data" }),
-        },
-      });
-      expect(capturedBody).toBe(JSON.stringify({ test: "data" }));
-    });
-
-    test("should correctly merge multiple header values", async () => {
-      let capturedHeaders;
-      const customFetch = async (_: RequestInfo | URL, init?: RequestInit) => {
-        capturedHeaders = init?.headers;
-
-        return new Response("ok", { status: 200 });
-      };
-
-      const client = createRpcClient<PathStructure>("http://localhost:3000", {
-        fetch: customFetch,
-        init: { headers: { "x-header": "value1", common: "client" } },
-      });
-
-      await client.api.questions.$delete(undefined, {
-        init: { headers: { "another-header": "value2", common: "method" } },
-      });
-
-      expect(capturedHeaders).toEqual({
-        "x-header": "value1",
-        common: "method",
-        "another-header": "value2",
-      });
-    });
-  });
-
-  describe("real fetch behavior", () => {
-    test("should send client-level headers when specified", async () => {
-      const client = createRpcClient<PathStructure>("http://localhost:3000", {
-        init: {
-          headers: { "x-client": "client-header" },
-        },
-      });
-      const response = await client.api.questions
-        ._qualification("test")
-        ._id("fetch")
-        .$delete();
-      const json = await response.json();
-      expect(json["x-client"]).toBe("client-header");
-    });
-
-    test("should send method-level headers when specified", async () => {
-      const client = createRpcClient<PathStructure>("http://localhost:3000");
-      const response = await client.api.questions
-        ._qualification("test")
-        ._id("fetch")
-        .$delete(undefined, {
-          init: {
-            headers: { "x-only": "only-header" },
-          },
-        });
-      const json = await response.json();
-      expect(json["x-only"]).toBe("only-header");
-    });
-
-    test("should merge headers correctly when specified in both client and method", async () => {
-      const client = createRpcClient<PathStructure>("http://localhost:3000", {
-        init: {
-          headers: { "x-client": "client-header", common: "client" },
-          mode: "cors",
-          credentials: "include",
-        },
-      });
-
-      const response = await client.api.questions
-        ._qualification("test")
-        ._id("fetch")
-        .$delete(undefined, {
-          init: {
-            headers: { "x-method": "method-header", common: "method" },
-            cache: "no-cache",
-          },
-        });
-      const json = await response.json();
-      expect(json["x-client"]).toBe("client-header");
-      expect(json["x-method"]).toBe("method-header");
-      expect(json["common"]).toBe("method");
-    });
+    const json = await response.json();
+    expect(json["x-client"]).toBe("client-header");
+    expect(json["x-method"]).toBe("method-header");
+    expect(json["common"]).toBe("method");
   });
 });
