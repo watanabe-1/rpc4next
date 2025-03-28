@@ -144,10 +144,9 @@ type PathProxyAsFunction<T> = {
   $url: (...args: UrlArg<T>) => UrlResult<T>;
 } & (T extends IsHttpMethod ? InferHttpMethods<T> : unknown);
 
-type ParamFunction<T, TParamArgs extends unknown[]> = ((
+type ParamFunction<T, TParamArgs extends unknown[]> = (
   ...args: [...TParamArgs]
-) => DynamicPathProxyAsFunction<T>) &
-  DynamicPathProxyAsFunction<T>;
+) => DynamicPathProxyAsFunction<T>;
 
 type NonEmptyArray<T> = [T, ...T[]];
 
