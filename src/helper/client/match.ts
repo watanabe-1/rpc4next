@@ -19,8 +19,11 @@ export const matchPath = (paths: string[], dynamicKeys: string[]) => {
       const paramValue = isCatchAllOrOptional(key)
         ? matchValue === undefined || matchValue === ""
           ? undefined
-          : matchValue.split("/").filter((segment) => segment.length > 0)
-        : matchValue;
+          : matchValue
+              .split("/")
+              .filter((segment) => segment.length > 0)
+              .map((segment) => decodeURIComponent(segment))
+        : decodeURIComponent(matchValue);
 
       return { ...acc, [paramKey]: paramValue };
     }, {});

@@ -10,6 +10,9 @@ describe("matchPath", () => {
     const dynamicKeys = ["_id"];
     const matcher = matchPath(paths, dynamicKeys);
     expect(matcher("/users/123")).toEqual({ id: "123" });
+    expect(
+      matcher("/users/%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF")
+    ).toEqual({ id: "こんにちは" });
   });
 
   it("Simple dynamic segment (with trailing slash)", () => {
@@ -62,6 +65,9 @@ describe("matchPath", () => {
     const dynamicKeys = ["_____slug"];
     const matcher = matchPath(paths, dynamicKeys);
     expect(matcher("/blog/2021/05")).toEqual({ slug: ["2021", "05"] });
+    expect(
+      matcher("/blog/%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF/05")
+    ).toEqual({ slug: ["こんにちは", "05"] });
   });
 
   it("Optional catch-all segment (with parameter, with trailing slash)", () => {
