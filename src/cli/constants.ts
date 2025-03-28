@@ -17,3 +17,5 @@ export const TYPE_KEYS = [
   TYPE_KEY_PARAMS,
   TYPE_KEY_QUERY,
 ];
+
+export const RPC4NEXT_CLIENT_IMPORT_PATH = "rpc4next/client";
