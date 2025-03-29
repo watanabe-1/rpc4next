@@ -1,7 +1,12 @@
 import path from "path";
 import mock from "mock-fs";
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { clearVisitedDirsCacheAbove, visitedDirsCache } from "./cache";
+import {
+  clearCntCache,
+  clearVisitedDirsCacheAbove,
+  cntCache,
+  visitedDirsCache,
+} from "./cache";
 
 describe("clearVisitedDirsCacheAbove - when given a directory path", () => {
   beforeEach(() => {
@@ -126,5 +131,36 @@ describe("clearVisitedDirsCacheAbove - when given a file path", () => {
     const originalSize = visitedDirsCache.size;
     clearVisitedDirsCacheAbove(filePath);
     expect(visitedDirsCache.size).toBe(originalSize);
+  });
+});
+
+describe("clearCntCache", () => {
+  // Clear cache before each test
+  beforeEach(() => {
+    clearCntCache();
+  });
+
+  it("should remove all keys from cntCache when populated", () => {
+    // Set sample data to cntCache
+    cntCache["key1"] = 10;
+    cntCache["key2"] = 20;
+
+    // Ensure values are set
+    expect(Object.keys(cntCache)).toHaveLength(2);
+
+    // Execute clearCntCache
+    clearCntCache();
+
+    // Ensure cntCache is empty
+    expect(Object.keys(cntCache)).toHaveLength(0);
+  });
+
+  it("should work correctly when cntCache is already empty", () => {
+    // Ensure initial state is empty
+    expect(Object.keys(cntCache)).toHaveLength(0);
+
+    // Execute clearCntCache without error and still empty
+    clearCntCache();
+    expect(Object.keys(cntCache)).toHaveLength(0);
   });
 });
