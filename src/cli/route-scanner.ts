@@ -88,6 +88,7 @@ export const scanAppDir = (
   const imports: { statement: string; path: string }[] = [];
   const types: string[] = [];
   const params = [...parentParams];
+  const paramsTypes: { paramsType: string; path: string }[] = [];
 
   const entries = fs
     .readdirSync(input, { withFileTypes: true })
@@ -156,15 +157,19 @@ export const scanAppDir = (
 
       const isSkipDir = isGroup || isParallel;
 
-      const { pathStructure: childPathStructure, imports: childImports } =
-        scanAppDir(
-          output,
-          fullPath,
-          isSkipDir ? indent.replace(INDENT, "") : indent,
-          [...params]
-        );
+      const {
+        pathStructure: childPathStructure,
+        imports: childImports,
+        paramsTypes: childParamsTypes,
+      } = scanAppDir(
+        output,
+        fullPath,
+        isSkipDir ? indent.replace(INDENT, "") : indent,
+        [...params]
+      );
 
       imports.push(...childImports);
+      paramsTypes.push(...childParamsTypes);
 
       if (isSkipDir) {
         // Extract the contents inside {}
@@ -213,6 +218,7 @@ export const scanAppDir = (
         });
 
         const paramsType = createObjectType(fields);
+        paramsTypes.push({ paramsType, path: fullPath.replace(/\\/g, "/") });
         types.push(createRecodeType(TYPE_KEY_PARAMS, paramsType));
       }
     }
@@ -231,5 +237,6 @@ export const scanAppDir = (
   return {
     pathStructure,
     imports,
+    paramsTypes,
   };
 };

@@ -32,7 +32,10 @@ program
 
     const generate = () => {
       log(chalk.cyan("Generating..."));
-      const outputContent = generatePages(resolvedOutputPath, resolvedBaseDir);
+      const { pathStructure: outputContent } = generatePages(
+        resolvedOutputPath,
+        resolvedBaseDir
+      );
       fs.writeFileSync(resolvedOutputPath, outputContent);
       log(
         chalk.green(

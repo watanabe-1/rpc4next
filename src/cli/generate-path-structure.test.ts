@@ -34,11 +34,12 @@ describe("generatePages", () => {
           statement: "import User from './routes/user';",
         },
       ],
+      paramsTypes: [{ paramsType: '{ "hoge": string }', path: " C:/hoge/bar" }],
     });
 
     const outputPath = "./output";
     const baseDir = "./base";
-    const result = generatePages(outputPath, baseDir);
+    const { pathStructure, paramsTypes } = generatePages(outputPath, baseDir);
 
     const expectedImports =
       `import type { ${TYPE_END_POINT} ,${TYPE_KEY_OPTIONAL_QUERY} ,${TYPE_KEY_PARAMS} ,${TYPE_KEY_QUERY} } from "${RPC4NEXT_CLIENT_IMPORT_PATH}"${STATEMENT_TERMINATOR}${NEWLINE}` +
@@ -46,26 +47,34 @@ describe("generatePages", () => {
 
     const expectedTypeDefinition = `export type PathStructure = { home: ${TYPE_END_POINT}, user: { id: ${TYPE_KEY_PARAMS} }, ${TYPE_KEY_QUERY}, ${TYPE_KEY_OPTIONAL_QUERY}}${STATEMENT_TERMINATOR}`;
 
-    expect(result).toBe(
+    expect(pathStructure).toBe(
       `${expectedImports}${NEWLINE}${NEWLINE}${expectedTypeDefinition}`
     );
+    expect(paramsTypes).toStrictEqual([
+      {
+        paramsType: '{ "hoge": string }',
+        path: " C:/hoge/bar",
+      },
+    ]);
   });
 
   it("should handle cases with no imports", () => {
     scanAppDir.mockReturnValue({
       pathStructure: `{ dashboard: ${TYPE_END_POINT} }`,
       imports: [],
+      paramsTypes: [],
     });
 
     const outputPath = "./output";
     const baseDir = "./base";
-    const result = generatePages(outputPath, baseDir);
+    const { pathStructure, paramsTypes } = generatePages(outputPath, baseDir);
 
     const expectedImports = `import type { ${TYPE_END_POINT} } from "${RPC4NEXT_CLIENT_IMPORT_PATH}"${STATEMENT_TERMINATOR}${NEWLINE}${NEWLINE}`;
     const expectedTypeDefinition = `export type PathStructure = { dashboard: ${TYPE_END_POINT} }${STATEMENT_TERMINATOR}`;
 
-    expect(result).toBe(
+    expect(pathStructure).toBe(
       `${expectedImports}${NEWLINE}${expectedTypeDefinition}`
     );
+    expect(paramsTypes).toStrictEqual([]);
   });
 });

@@ -8,7 +8,10 @@ import { scanAppDir } from "./route-scanner";
 import { createImport } from "./type-utils";
 
 export const generatePages = (outputPath: string, baseDir: string) => {
-  const { pathStructure, imports } = scanAppDir(outputPath, baseDir);
+  const { pathStructure, imports, paramsTypes } = scanAppDir(
+    outputPath,
+    baseDir
+  );
   const pathStructureType = `export type PathStructure = ${pathStructure}${STATEMENT_TERMINATOR}`;
 
   const importsStr = imports.length
@@ -26,5 +29,8 @@ export const generatePages = (outputPath: string, baseDir: string) => {
     RPC4NEXT_CLIENT_IMPORT_PATH
   );
 
-  return `${keyTypesImportStr}${NEWLINE}${importsStr}${NEWLINE}${NEWLINE}${pathStructureType}`;
+  return {
+    pathStructure: `${keyTypesImportStr}${NEWLINE}${importsStr}${NEWLINE}${NEWLINE}${pathStructureType}`,
+    paramsTypes,
+  };
 };

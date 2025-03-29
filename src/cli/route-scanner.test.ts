@@ -122,7 +122,10 @@ describe("scanAppDir", () => {
   }
 }`;
 
-    const { pathStructure, imports } = scanAppDir("/output", "/testApp");
+    const { pathStructure, imports, paramsTypes } = scanAppDir(
+      "/output",
+      "/testApp"
+    );
     expect(pathStructure).equals(expectPathStructure);
 
     expect(imports).toHaveLength(6);
@@ -167,6 +170,19 @@ describe("scanAppDir", () => {
     expect(imports.every((imp) => !imp.statement.includes("OPTIONS"))).toBe(
       true
     );
+
+    expect(paramsTypes).toHaveLength(1);
+
+    const expectedParamsTypes = [
+      {
+        paramsType: '{ "id": string }',
+        path: "/testApp/api/users/[id]/route.ts",
+      },
+    ];
+
+    expectedParamsTypes.forEach((paramsType, i) => {
+      expect(paramsTypes[i]).toStrictEqual(paramsType);
+    });
   });
 
   it("should scan page directory and generate path structure with dynamic segmente", () => {
@@ -404,5 +420,43 @@ describe("scanAppDir", () => {
     mock({ "/emptyDir": {} });
     const { pathStructure } = scanAppDir("/output", "/emptyDir");
     expect(pathStructure).toBe("");
+  });
+
+  it("should handle multiple paramss", () => {
+    mock({
+      "/testApp": {
+        OptionalCatchAll: {
+          user: {
+            "[[...names]]": {
+              "page.tsx": "export function UserName() {};",
+            },
+          },
+        },
+        catchAll: {
+          "[user]": {
+            "[...names]": {
+              "page.tsx": "export function UserName() {};",
+            },
+          },
+        },
+      },
+    });
+
+    const { paramsTypes } = scanAppDir("/output", "/testApp");
+    expect(paramsTypes).toHaveLength(2);
+
+    const expectedParamsTypes = [
+      {
+        paramsType: '{ "names": string[] | undefined }',
+        path: "/testApp/OptionalCatchAll/user/[[...names]]/page.tsx",
+      },
+      {
+        paramsType: '{ "user": string; "names": string[]; }',
+        path: "/testApp/catchAll/[user]/[...names]/page.tsx",
+      },
+    ];
+    expectedParamsTypes.forEach((paramsType, i) => {
+      expect(paramsTypes[i]).toStrictEqual(paramsType);
+    });
   });
 });
