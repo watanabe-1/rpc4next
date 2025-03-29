@@ -415,19 +415,13 @@ type ValidationOutputFor<
   TSchema extends ValidationSchema,
 > = ValidationFor<"output", TTarget, TSchema>;
 
-type ArrayElementsToString<T> = T extends unknown[] ? string[] : string;
-
-type ObjectPropertiesToString<T> = {
-  [K in keyof T]: T[K] extends unknown[] ? ArrayElementsToString<T[K]> : string;
-};
-
 export type ConditionalValidationInput<
   TTarget extends ValidationTarget,
   TExpected extends ValidationTarget,
   TSchema extends ValidationSchema,
   TFallback,
 > = TTarget extends TExpected
-  ? ObjectPropertiesToString<ValidationInputFor<TTarget, TSchema>>
+  ? ValidationInputFor<TTarget, TSchema>
   : TFallback;
 
 export type Handler<

@@ -17,18 +17,20 @@ export const zodValidator = <
   TValidationTarget extends ValidationTarget,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TSchema extends ZodSchema<any>,
-  Tparams extends ConditionalValidationInput<
+  TParams extends ConditionalValidationInput<
     TValidationTarget,
     "params",
     TValidationSchema,
     Params
-  >,
+  > &
+    Params,
   TQuery extends ConditionalValidationInput<
     TValidationTarget,
     "query",
     TValidationSchema,
     Query
-  >,
+  > &
+    Query,
   TInput = z.input<TSchema>,
   TOutput = z.output<TSchema>,
   TValidationSchema extends ValidationSchema = {
@@ -45,7 +47,7 @@ export const zodValidator = <
   schema: TSchema,
   hook?: (
     result: z.SafeParseReturnType<TInput, TOutput>,
-    routeContext: RouteContext<Tparams, TQuery, TValidationSchema>
+    routeContext: RouteContext<TParams, TQuery, TValidationSchema>
   ) => THookReturn
 ) => {
   const resolvedHook =
@@ -56,7 +58,7 @@ export const zodValidator = <
       }
     });
 
-  return createHandler<Tparams, TQuery, TValidationSchema>()(async (rc) => {
+  return createHandler<TParams, TQuery, TValidationSchema>()(async (rc) => {
     const value = await (async () => {
       if (target === "params") {
         return await rc.req.params();
