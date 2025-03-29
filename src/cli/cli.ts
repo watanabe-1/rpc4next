@@ -9,6 +9,11 @@ import { clearCntCache, clearVisitedDirsCacheAbove } from "./cache";
 import { debounce } from "./debounce";
 import { generatePages } from "./generate-path-structure";
 
+interface Options {
+  watch?: boolean;
+  generateParamsTypes?: string | boolean;
+}
+
 const program = new Command();
 
 program
@@ -21,9 +26,27 @@ program
   )
   .argument("<outputPath>", "Output path for the generated type definitions")
   .option("-w, --watch", "Watch mode: regenerate on file changes")
-  .action((baseDir: string, outputPath: string, options) => {
+  .option(
+    "--generate-params-types [filename]",
+    "Generate params types file with specified filename"
+  )
+  .action((baseDir: string, outputPath: string, options: Options) => {
     const resolvedBaseDir = path.resolve(baseDir).replace(/\\/g, "/");
     const resolvedOutputPath = path.resolve(outputPath).replace(/\\/g, "/");
+
+    const paramsFileName =
+      typeof options.generateParamsTypes === "string"
+        ? options.generateParamsTypes
+        : null;
+
+    if (options.generateParamsTypes !== undefined && !paramsFileName) {
+      console.error(
+        chalk.red(
+          "Error: --generate-params-types requires a filename (e.g., params.ts) when specified."
+        )
+      );
+      process.exit(1);
+    }
 
     const log = (msg: string) => {
       const time = new Date().toLocaleTimeString();
@@ -32,16 +55,31 @@ program
 
     const generate = () => {
       log(chalk.cyan("Generating..."));
-      const { pathStructure: outputContent } = generatePages(
+      const { pathStructure: outputContent, paramsTypes } = generatePages(
         resolvedOutputPath,
         resolvedBaseDir
       );
+
       fs.writeFileSync(resolvedOutputPath, outputContent);
       log(
         chalk.green(
           `RPC client type definitions generated at ${resolvedOutputPath}`
         )
       );
+
+      if (paramsFileName) {
+        paramsTypes.forEach(({ paramsType, path: filePath }) => {
+          const stats = fs.statSync(filePath);
+          const dirPath = `${stats.isFile() ? path.dirname(filePath) : filePath}/${paramsFileName}`;
+          const params = `export type Params = ${paramsType}`;
+          fs.writeFileSync(dirPath, params);
+        });
+        log(
+          chalk.green(
+            `Params type files have been generated as '${paramsFileName}' alongside each route/page.`
+          )
+        );
+      }
     };
 
     generate();
