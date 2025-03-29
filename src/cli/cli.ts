@@ -43,6 +43,9 @@ program
 
       const changedPaths = new Set<string>();
 
+      // Once the debounced function starts executing, no new watcher events will be processed until it completes.
+      // This is due to JavaScript's single-threaded event loop: the current debounced function runs to completion,
+      // and any new change events are queued until the execution finishes.
       const debouncedGenerate = debounce(() => {
         changedPaths.forEach((path) => {
           clearVisitedDirsCacheAbove(path);
