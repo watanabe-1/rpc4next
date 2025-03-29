@@ -267,9 +267,6 @@ describe("routeHandlerFactory type definitions", () => {
     }>().post(
       async (rc) => {
         // Async normal handler: returns a response via rc.text
-        const _params = await rc.req.params();
-        const _query = rc.req.query();
-
         return rc.text("async ok");
       },
       (rc) => {
