@@ -1,6 +1,5 @@
 import path from "path";
-import mock from "mock-fs";
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import {
   clearCntCache,
   clearVisitedDirsCacheAbove,
@@ -23,21 +22,6 @@ describe("clearVisitedDirsCacheAbove - when given a directory path", () => {
     visitedDirsCache.set("/project/src/app/foo/bar", true);
     // Unrelated entry (should not be affected)
     visitedDirsCache.set("/project/other", true);
-
-    mock({
-      "/project/src/app/foo": {
-        "dummy.txt": "just to mock dir",
-        bar: {},
-      },
-      "/project": {},
-      "/project/other": {},
-      "/project/src": {},
-      "/project/src/app": {},
-    });
-  });
-
-  afterEach(() => {
-    mock.restore();
   });
 
   it("should remove the target directory and all its ancestor directories", () => {
@@ -107,22 +91,6 @@ describe("clearVisitedDirsCacheAbove - when given a file path", () => {
     visitedDirsCache.set("/project/src/app/foo", true);
     visitedDirsCache.set("/project/src/app/foo/bar", true);
     visitedDirsCache.set("/project/other", true);
-
-    // Set up mock filesystem
-    mock({
-      "/project/src/app/foo": {
-        "file.txt": "dummy content",
-        bar: {},
-      },
-      "/project": {},
-      "/project/other": {},
-      "/project/src": {},
-      "/project/src/app": {},
-    });
-  });
-
-  afterEach(() => {
-    mock.restore();
   });
 
   it("should remove the parent directory of the file and all its ancestor directories", () => {
