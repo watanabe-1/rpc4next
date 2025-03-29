@@ -30,7 +30,7 @@ export const createRouteContext = <
   return {
     req: Object.assign(req, {
       query: () => searchParamsToObject<TQuery>(req.nextUrl.searchParams),
-      params: async () => await segmentData.params,
+      params: () => segmentData.params,
       valid: (target: ValidationTarget) => {
         return validationResults[target] as never;
       },
