@@ -33,8 +33,12 @@ describe("createRelativeImportPath", () => {
 
   it("should normalize Windows-style backslashes", () => {
     const winRelative = path.win32.relative;
+    const winDirname = path.win32.dirname;
     vi.spyOn(path, "relative").mockImplementation((from, to) => {
       return winRelative(from, to);
+    });
+    vi.spyOn(path, "dirname").mockImplementation((path) => {
+      return winDirname(path);
     });
 
     const outputFile = "C:\\project\\src\\components\\Button.ts";
