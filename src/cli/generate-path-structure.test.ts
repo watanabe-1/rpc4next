@@ -1,3 +1,4 @@
+import mock from "mock-fs";
 import { describe, it, expect, vi } from "vitest";
 import {
   STATEMENT_TERMINATOR,
@@ -20,6 +21,10 @@ vi.mock("./type-utils", () => ({
   ),
 }));
 
+mock({
+  "/[hoge]": { bar: { "route.ts": "dummy content" } },
+});
+
 describe("generatePages", () => {
   it("should generate correct type definitions and imports", () => {
     scanAppDir.mockReturnValue({
@@ -34,7 +39,9 @@ describe("generatePages", () => {
           statement: "import User from './routes/user';",
         },
       ],
-      paramsTypes: [{ paramsType: '{ "hoge": string }', path: " C:/hoge/bar" }],
+      paramsTypes: [
+        { paramsType: '{ "hoge": string }', path: "/[hoge]/bar/route.ts" },
+      ],
     });
 
     const outputPath = "./output";
@@ -52,8 +59,8 @@ describe("generatePages", () => {
     );
     expect(paramsTypes).toStrictEqual([
       {
-        paramsType: '{ "hoge": string }',
-        path: " C:/hoge/bar",
+        paramsType: 'export type Params = { "hoge": string };',
+        dirPath: "/[hoge]/bar",
       },
     ]);
   });

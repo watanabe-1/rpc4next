@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import {
   STATEMENT_TERMINATOR,
   NEWLINE,
@@ -28,9 +30,19 @@ export const generatePages = (outputPath: string, baseDir: string) => {
     keyTypes.join(" ,"),
     RPC4NEXT_CLIENT_IMPORT_PATH
   );
+  const dirParamsTypes = paramsTypes.map(({ paramsType, path: filePath }) => {
+    const stats = fs.statSync(filePath);
+    const dirPath = stats.isFile() ? path.dirname(filePath) : filePath;
+    const params = `export type Params = ${paramsType}${STATEMENT_TERMINATOR}`;
+
+    return {
+      paramsType: params,
+      dirPath,
+    };
+  });
 
   return {
     pathStructure: `${keyTypesImportStr}${NEWLINE}${importsStr}${NEWLINE}${NEWLINE}${pathStructureType}`,
-    paramsTypes,
+    paramsTypes: dirParamsTypes,
   };
 };

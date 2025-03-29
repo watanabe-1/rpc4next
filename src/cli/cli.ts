@@ -68,11 +68,9 @@ program
       );
 
       if (paramsFileName) {
-        paramsTypes.forEach(({ paramsType, path: filePath }) => {
-          const stats = fs.statSync(filePath);
-          const dirPath = `${stats.isFile() ? path.dirname(filePath) : filePath}/${paramsFileName}`;
-          const params = `export type Params = ${paramsType}`;
-          fs.writeFileSync(dirPath, params);
+        paramsTypes.forEach(({ paramsType, dirPath }) => {
+          const filePath = `${dirPath}/${paramsFileName}`;
+          fs.writeFileSync(filePath, paramsType);
         });
         log(
           chalk.green(
