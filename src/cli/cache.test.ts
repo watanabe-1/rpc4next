@@ -23,6 +23,21 @@ describe("clearVisitedDirsCacheAbove - when given a directory path", () => {
     visitedDirsCache.set("/project/src/app/foo/bar", true);
     // Unrelated entry (should not be affected)
     visitedDirsCache.set("/project/other", true);
+
+    mock({
+      "/project/src/app/foo": {
+        "dummy.txt": "just to mock dir",
+        bar: {},
+      },
+      "/project": {},
+      "/project/other": {},
+      "/project/src": {},
+      "/project/src/app": {},
+    });
+  });
+
+  afterEach(() => {
+    mock.restore();
   });
 
   it("should remove the target directory and all its ancestor directories", () => {
