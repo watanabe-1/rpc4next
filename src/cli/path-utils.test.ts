@@ -1,7 +1,12 @@
-import { describe, it, expect } from "vitest";
+import path from "path";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { createRelativeImportPath } from "./path-utils";
 
 describe("createRelativeImportPath", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("should return a relative path between two files", () => {
     const outputFile = "/project/src/components/Button.js";
     const inputFile = "/project/src/utils/helpers.ts";
@@ -27,6 +32,11 @@ describe("createRelativeImportPath", () => {
   });
 
   it("should normalize Windows-style backslashes", () => {
+    const winRelative = path.win32.relative;
+    vi.spyOn(path, "relative").mockImplementation((from, to) => {
+      return winRelative(from, to);
+    });
+
     const outputFile = "C:\\project\\src\\components\\Button.ts";
     const inputFile = "C:\\project\\src\\utils\\helpers.ts";
 
