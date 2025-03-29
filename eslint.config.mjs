@@ -19,8 +19,9 @@ const config = [
   },
   {
     ignores: [
-      "**/dist/",
-      "**/bin/",
+      "**/node_modules",
+      "**/dist",
+      "**/bin",
       "**/.next",
       "**/eslint.config.mjs",
       "**/vitest.config.ts",
