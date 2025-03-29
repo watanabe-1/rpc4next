@@ -1,5 +1,6 @@
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
+import { NextRequest, NextResponse } from "next/server";
 import {
   beforeAll,
   afterEach,
@@ -10,7 +11,12 @@ import {
   it,
 } from "vitest";
 import { createRpcClient } from "./rpc";
-import { routeHandlerFactory, TypedNextResponse } from "../server";
+import {
+  ContentType,
+  HttpStatusCode,
+  routeHandlerFactory,
+  TypedNextResponse,
+} from "../server";
 import { ParamsKey, Endpoint, QueryKey } from "./types";
 
 const createRouteHandler = routeHandlerFactory();
@@ -440,6 +446,10 @@ describe("createRpcClient", () => {
     async (rc) => rc.json({ ok: true }, { status: 200 })
   );
 
+  async function _get_2(_: NextRequest) {
+    return NextResponse.json({ default: "true" });
+  }
+
   type PathStructureForTypeTest = Endpoint & {
     fuga: Endpoint & {
       _foo: Endpoint &
@@ -455,6 +465,8 @@ describe("createRpcClient", () => {
       } & Endpoint & {
           _foo: { $get: typeof _get_1 } & Endpoint &
             Record<ParamsKey, { foo: string }>;
+          _bar: { $get: typeof _get_2 } & Endpoint &
+            Record<ParamsKey, { bar: string }>;
         };
     };
   };
@@ -552,6 +564,19 @@ describe("createRpcClient", () => {
         expectTypeOf<typeof _json>().toEqualTypeOf<ExpectdJson>();
         expectTypeOf<typeof _text>().toEqualTypeOf<ExpectdText>();
       }
+
+      const _defaultResponse = await client.api.hoge._bar("").$get();
+
+      type ExpectedDefaultResponse = TypedNextResponse<
+        {
+          default: string;
+        },
+        HttpStatusCode,
+        ContentType
+      >;
+      expectTypeOf<
+        typeof _defaultResponse
+      >().toEqualTypeOf<ExpectedDefaultResponse>();
     });
   });
 });
