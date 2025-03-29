@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        next-version: ["14.0.0", "15.0.0", "15.2.3"]
+        next-version: ["14.0.0", "15.0.0", "15.2.4"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
