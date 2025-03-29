@@ -1,10 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import { createRpcHelper } from "./rpc";
-import { Endpoint } from "./types";
+import { Endpoint, ParamsKey } from "./types";
 
 export type PathStructure = Endpoint & {
   fuga: Endpoint & {
-    _foo: Endpoint;
+    _foo: Endpoint & Record<ParamsKey, { foo: string }>;
   };
 };
 
@@ -19,5 +19,17 @@ describe("createRpcHelper basic behavior", () => {
   it("Returns null for unmatched paths", () => {
     const match = rpcHelper.fuga._foo.$match("/hoge/test");
     expect(match).toBeNull();
+  });
+});
+
+describe("createRpcHelper type definitions", () => {
+  it("should infer types correctly", async () => {
+    const _dynamic = rpcHelper.fuga._foo.$match("/fuga/dynamic");
+
+    type ExpectedDynamicMatch = {
+      foo: string;
+    } | null;
+
+    expectTypeOf<typeof _dynamic>().toEqualTypeOf<ExpectedDynamicMatch>();
   });
 });
