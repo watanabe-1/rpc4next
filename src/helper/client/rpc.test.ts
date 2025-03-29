@@ -12,7 +12,7 @@ import {
 } from "vitest";
 import { createRpcClient } from "./rpc";
 import { routeHandlerFactory, TypedNextResponse } from "../server";
-import { ParamsKey, Endpoint, QueryKey, UrlResult } from "./types";
+import { ParamsKey, Endpoint, QueryKey } from "./types";
 
 const createRouteHandler = routeHandlerFactory();
 
@@ -439,14 +439,17 @@ export type PathStructureForTypeTest = Endpoint & {
   fuga: Endpoint & {
     _foo: Endpoint &
       Record<ParamsKey, { foo: string }> & {
-        _piyo: Endpoint & Record<QueryKey, { baz: string }>;
+        _piyo: Endpoint &
+          Record<QueryKey, { baz: string }> &
+          Record<ParamsKey, { foo: string; piyo: string }>;
       };
   };
   api: {
     hoge: {
       $post: typeof _post_1;
     } & Endpoint & {
-        _foo: { $get: typeof _get_1 } & Endpoint;
+        _foo: { $get: typeof _get_1 } & Endpoint &
+          Record<ParamsKey, { foo: string }>;
       };
   };
 };
@@ -461,20 +464,22 @@ describe("createHandler type definitions", () => {
     });
     const _createUrl = client.fuga._foo("param")._piyo("").$url;
 
+    type ExpectedUrlResult = {
+      pathname: string;
+      path: string;
+      relativePath: string;
+      params: {
+        foo: string;
+        piyo: string;
+      };
+    };
+
     type ExpectedUrlFunc = (url: {
       query: {
         baz: string;
       };
       hash?: string;
-    }) => UrlResult<
-      Endpoint &
-        Record<
-          "__query",
-          {
-            baz: string;
-          }
-        >
-    >;
+    }) => ExpectedUrlResult;
 
     expectTypeOf<typeof _createUrl>().toEqualTypeOf<ExpectedUrlFunc>();
 
