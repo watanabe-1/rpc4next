@@ -1,4 +1,3 @@
-# テキストファイル (改行コードは LF)
 *.env         text eol=lf
 *.gitattributes text eol=lf
 *.gitignore   text eol=lf
@@ -9,5 +8,6 @@
 *.ts          text eol=lf
 *.tsx         text eol=lf
 *.txt         text eol=lf
+*.yml         text eol=lf
 .code-workspace text eol=lf
 .gitignore    text eol=lf
