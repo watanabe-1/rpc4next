@@ -13,10 +13,13 @@ const program = new Command();
 
 program
   .description(
-    "Generate an RPC client type based on the provided base directory and output path."
+    "Generate RPC client type definitions based on the Next.js path structure."
   )
-  .argument("<baseDir>", "Base directory for the RPC client type")
-  .argument("<outputPath>", "Output path for the generated client type")
+  .argument(
+    "<baseDir>",
+    "Base directory containing Next.js paths for type generation"
+  )
+  .argument("<outputPath>", "Output path for the generated type definitions")
   .option("-w, --watch", "Watch mode: regenerate on file changes")
   .action((baseDir: string, outputPath: string, options) => {
     const resolvedBaseDir = path.resolve(baseDir).replace(/\\/g, "/");
@@ -31,7 +34,11 @@ program
       log(chalk.cyan("Generating..."));
       const outputContent = generatePages(resolvedOutputPath, resolvedBaseDir);
       fs.writeFileSync(resolvedOutputPath, outputContent);
-      log(chalk.green(`Generated RPC client at ${resolvedOutputPath}`));
+      log(
+        chalk.green(
+          `RPC client type definitions generated at ${resolvedOutputPath}`
+        )
+      );
     };
 
     generate();
