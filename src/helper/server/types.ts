@@ -466,7 +466,7 @@ export interface MethodRouteDefinition<
     params: infer TValue;
   }
     ? Awaited<TValue>
-    : Query,
+    : Params,
   TQuery extends TBindings["query"] = TBindings extends { query: infer TValue }
     ? TValue
     : Query,
