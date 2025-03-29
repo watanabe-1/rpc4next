@@ -6,7 +6,7 @@ import chalk from "chalk";
 import chokidar from "chokidar";
 import { Command } from "commander";
 import { clearCntCache, clearVisitedDirsCacheAbove } from "./cache";
-import { debounce } from "./cli-utils";
+import { debounce } from "./debounce";
 import { generatePages } from "./generate-path-structure";
 
 const program = new Command();

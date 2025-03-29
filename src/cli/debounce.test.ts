@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { debounce } from "./cli-utils";
+import { debounce } from "./debounce";
 
 describe("debounce", () => {
   it("should call the callback after the specified delay", () => {
