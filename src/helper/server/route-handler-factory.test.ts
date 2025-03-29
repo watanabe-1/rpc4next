@@ -173,6 +173,24 @@ describe("routeHandlerFactory", () => {
     const res = await handler.GET(req, { params: Promise.resolve({}) });
     expect(await res.text()).toBe("sync response");
   });
+
+  it("should support non-async (synchronous) params", async () => {
+    const createRouteHandler = routeHandlerFactory()<{
+      params: { user: string };
+    }>();
+    const handler = createRouteHandler.get(async (rc) => {
+      const params = await rc.req.params();
+      expect(params).toEqual({ user: "john" });
+
+      return rc.text("Non-async (synchronous) params OK");
+    });
+
+    const req = new NextRequest(new URL("http://localhost/?id=123"));
+    const res = await handler.GET(req, {
+      params: { user: "john" } as unknown as Promise<{ user: string }>,
+    });
+    expect(await res.text()).toBe("Non-async (synchronous) params OK");
+  });
 });
 
 describe("routeHandlerFactory type definitions", () => {
