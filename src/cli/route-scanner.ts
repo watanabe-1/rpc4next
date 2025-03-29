@@ -4,6 +4,7 @@
 import fs from "fs";
 import path from "path";
 
+import { visitedDirsCache } from "./cache";
 import {
   INDENT,
   TYPE_END_POINT,
@@ -22,11 +23,10 @@ import {
 import type { EndPointFileNames } from "./types";
 
 const endPointFileNames = new Set(END_POINT_FILE_NAMES);
-const visitedDirs = new Map<string, boolean>();
 
 export const hasTargetFiles = (dirPath: string): boolean => {
   // Return cached result if available
-  if (visitedDirs.has(dirPath)) return visitedDirs.get(dirPath)!;
+  if (visitedDirsCache.has(dirPath)) return visitedDirsCache.get(dirPath)!;
 
   const entries = fs.readdirSync(dirPath, { withFileTypes: true });
 
@@ -43,27 +43,27 @@ export const hasTargetFiles = (dirPath: string): boolean => {
       name.startsWith("(..)") ||
       name.startsWith("(...)")
     ) {
-      visitedDirs.set(dirPath, false);
+      visitedDirsCache.set(dirPath, false);
 
       return false;
     }
 
     if (entry.isFile() && endPointFileNames.has(name as EndPointFileNames)) {
-      visitedDirs.set(dirPath, true);
+      visitedDirsCache.set(dirPath, true);
 
       return true;
     }
 
     if (entry.isDirectory()) {
       if (hasTargetFiles(entryPath)) {
-        visitedDirs.set(dirPath, true);
+        visitedDirsCache.set(dirPath, true);
 
         return true;
       }
     }
   }
 
-  visitedDirs.set(dirPath, false);
+  visitedDirsCache.set(dirPath, false);
 
   return false;
 };

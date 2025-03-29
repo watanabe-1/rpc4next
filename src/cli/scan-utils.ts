@@ -1,4 +1,5 @@
 import fs from "fs";
+import { cntCache } from "./cache";
 import {
   QUERY_TYPES,
   TYPE_KEY_QUERY,
@@ -9,13 +10,12 @@ import { createImport, createRecodeType, createObjectType } from "./type-utils";
 import { HttpMethod } from "../lib/types";
 
 // 連番付与
-const cntObj = {} as Record<string, number>;
 export const createImportAlias = (type: string, key: string) => {
-  if (!cntObj[key]) {
-    cntObj[key] = 0;
+  if (!cntCache[key]) {
+    cntCache[key] = 0;
   }
 
-  return `${type}_${cntObj[key]++}`;
+  return `${type}_${cntCache[key]++}`;
 };
 
 export const scanFile = <T extends string | undefined>(
