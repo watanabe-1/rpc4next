@@ -20,7 +20,6 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     global.fetch = originalFetch;
   });
 
-  // 既存のテストケース群...
   it("should use $get method with url options (query and hash) and merge init correctly", async () => {
     const key = "$get";
     const paths = ["http://example.com", "api", "users"];
