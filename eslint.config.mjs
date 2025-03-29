@@ -1,17 +1,30 @@
 import js from "@eslint/js";
+import eslintPluginVitest from "@vitest/eslint-plugin";
 import eslintConfigPrettier from "eslint-config-prettier";
 import eslintPluginImport from "eslint-plugin-import";
 import eslintPluginUnusedImports from "eslint-plugin-unused-imports";
-import eslintPluginVitest from "eslint-plugin-vitest";
 import tseslint from "typescript-eslint";
 
 /** @type {import("eslint").Linter.Config[]} */
 const config = [
   {
+    languageOptions: {
+      parserOptions: {
+        project: "./tsconfig.json",
+      },
+    },
+  },
+  {
     files: ["*.js", "*.ts"],
   },
   {
-    ignores: ["**/dist/", "**/bin/"],
+    ignores: [
+      "**/dist/",
+      "**/bin/",
+      "**/.next",
+      "**/eslint.config.mjs",
+      "**/vitest.config.ts",
+    ],
   },
   {
     name: "eslint/recommended",
