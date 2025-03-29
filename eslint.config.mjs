@@ -8,7 +8,7 @@ import tseslint from "typescript-eslint";
 /** @type {import("eslint").Linter.Config[]} */
 const config = [
   {
-    files: ["*.js", "*.jsx", "*.ts", "*.tsx"],
+    files: ["*.js", "*.ts"],
   },
   {
     ignores: ["**/dist/", "**/bin/"],
@@ -75,6 +75,8 @@ const config = [
     },
     rules: {
       ...eslintPluginVitest.configs.recommended.rules,
+      "vitest/consistent-test-it": ["error", { fn: "it" }],
+      "vitest/require-top-level-describe": ["error"],
     },
     settings: {
       vitest: {

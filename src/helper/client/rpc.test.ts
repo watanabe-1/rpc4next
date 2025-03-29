@@ -5,7 +5,6 @@ import {
   afterEach,
   afterAll,
   describe,
-  test,
   expect,
   expectTypeOf,
   it,
@@ -44,7 +43,7 @@ const { DELETE: _delete_1 } = createRouteHandler().delete(async (rc) => {
   return rc.json(headers);
 });
 
-export type PathStructure = Endpoint & {
+type PathStructure = Endpoint & {
   fuga: Endpoint & {
     _foo: Endpoint &
       Record<ParamsKey, { foo: string }> & {
@@ -93,455 +92,466 @@ const server = setupServer(
   })
 );
 
-// MSW lifecycle setup
-beforeAll(() => server.listen());
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
+describe("createRpcClient", () => {
+  // MSW lifecycle setup
+  beforeAll(() => server.listen());
+  afterEach(() => server.resetHandlers());
+  afterAll(() => server.close());
 
-describe("createRpcClient basic behavior", () => {
-  test("should generate correct URL", () => {
-    const client = createRpcClient<PathStructure>("http://localhost:3000");
-    const urlResult = client.fuga._foo("test").$url();
-    expect(urlResult.path).toBe("http://localhost:3000/fuga/test");
-    expect(urlResult.relativePath).toBe("/fuga/test");
-    expect(urlResult.pathname).toBe("/fuga/[foo]");
-    expect(urlResult.params).toEqual({ foo: "test" });
-  });
-
-  test("should generate URL with query and hash parameters", () => {
-    const client = createRpcClient<PathStructure>("");
-    const urlResult = client.fuga._foo("test").$url({
-      query: { foo: "bar" },
-      hash: "section",
-    });
-    expect(urlResult.path).toBe("/fuga/test?foo=bar#section");
-  });
-
-  test("should successfully perform GET request", async () => {
-    const client = createRpcClient<PathStructure>("http://localhost:3000");
-    const response = await client.api.hoge._foo("test").$get();
-    expect(response.status).toBe(200);
-    const data = await response.json();
-    expect(data).toEqual({ method: "get" });
-  });
-
-  test("should successfully perform POST request", async () => {
-    const client = createRpcClient<PathStructure>("http://localhost:3000");
-    const response = await client.api.hoge.$post();
-    expect(response.status).toBe(200);
-    const text = await response.text();
-    expect(text).toBe("post");
-  });
-
-  test("should successfully perform DELETE request (text response)", async () => {
-    const client = createRpcClient<PathStructure>("http://localhost:3000");
-    const response = await client.api.hoge.$delete();
-    expect(response.status).toBe(200);
-    const text = await response.text();
-    expect(text).toBe("delete");
-  });
-
-  test("should successfully perform HEAD request", async () => {
-    const client = createRpcClient<PathStructure>("http://localhost:3000");
-    const response = await client.api.hoge.$head();
-    expect(response.status).toBe(200);
-    const text = await response.text();
-    expect(text).toBe("head");
-  });
-
-  test("should successfully perform PATCH request", async () => {
-    const client = createRpcClient<PathStructure>("http://localhost:3000");
-    const response = await client.api.hoge.$patch();
-    expect(response.status).toBe(200);
-    const text = await response.text();
-    expect(text).toBe("patch");
-  });
-
-  test("should successfully perform PUT request", async () => {
-    const client = createRpcClient<PathStructure>("http://localhost:3000");
-    const response = await client.api.hoge.$put();
-    expect(response.status).toBe(200);
-    const text = await response.text();
-    expect(text).toBe("put");
-  });
-});
-
-describe("customFetch behavior", () => {
-  test("should use only client-level options when only client options are specified", async () => {
-    let capturedInit: RequestInit | undefined;
-    const customFetch = async (
-      input: RequestInfo | URL,
-      init?: RequestInit
-    ) => {
-      capturedInit = init;
-
-      return new Response("ok", { status: 200 });
-    };
-
-    const client = createRpcClient<PathStructure>("http://localhost:3000", {
-      fetch: customFetch,
-      init: {
-        headers: { "x-client": "client-header" },
-        mode: "cors",
-      },
+  describe("createRpcClient basic behavior", () => {
+    it("should generate correct URL", () => {
+      const client = createRpcClient<PathStructure>("http://localhost:3000");
+      const urlResult = client.fuga._foo("test").$url();
+      expect(urlResult.path).toBe("http://localhost:3000/fuga/test");
+      expect(urlResult.relativePath).toBe("/fuga/test");
+      expect(urlResult.pathname).toBe("/fuga/[foo]");
+      expect(urlResult.params).toEqual({ foo: "test" });
     });
 
-    await client.api.hoge.$delete();
-    expect(capturedInit).toBeDefined();
-    expect(capturedInit!.method).toBe("DELETE");
-    expect(capturedInit!.mode).toBe("cors");
-    expect(capturedInit!.headers).toEqual({ "x-client": "client-header" });
-  });
-
-  test("should use only method-level options when only method options are specified", async () => {
-    let capturedInit: RequestInit | undefined;
-    const customFetch = async (
-      input: RequestInfo | URL,
-      init?: RequestInit
-    ) => {
-      capturedInit = init;
-
-      return new Response("ok", { status: 200 });
-    };
-
-    const client = createRpcClient<PathStructure>("http://localhost:3000", {
-      fetch: customFetch,
+    it("should generate URL with query and hash parameters", () => {
+      const client = createRpcClient<PathStructure>("");
+      const urlResult = client.fuga._foo("test").$url({
+        query: { foo: "bar" },
+        hash: "section",
+      });
+      expect(urlResult.path).toBe("/fuga/test?foo=bar#section");
     });
 
-    await client.api.hoge.$delete(undefined, {
-      init: {
-        headers: { "x-method": "method-header" },
-        cache: "no-cache",
-      },
+    it("should successfully perform GET request", async () => {
+      const client = createRpcClient<PathStructure>("http://localhost:3000");
+      const response = await client.api.hoge._foo("test").$get();
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data).toEqual({ method: "get" });
     });
 
-    expect(capturedInit).toBeDefined();
-    expect(capturedInit!.method).toBe("DELETE");
-    expect(capturedInit!.cache).toBe("no-cache");
-    expect(capturedInit!.headers).toEqual({ "x-method": "method-header" });
-  });
-
-  test("should correctly merge client and method options", async () => {
-    let capturedInit: RequestInit | undefined;
-    const customFetch = async (
-      input: RequestInfo | URL,
-      init?: RequestInit
-    ) => {
-      capturedInit = init;
-
-      return new Response("ok", { status: 200 });
-    };
-
-    const client = createRpcClient<PathStructure>("http://localhost:3000", {
-      fetch: customFetch,
-      init: {
-        headers: { "x-client": "client-header", common: "client" },
-        mode: "cors",
-        credentials: "include",
-      },
+    it("should successfully perform POST request", async () => {
+      const client = createRpcClient<PathStructure>("http://localhost:3000");
+      const response = await client.api.hoge.$post();
+      expect(response.status).toBe(200);
+      const text = await response.text();
+      expect(text).toBe("post");
     });
 
-    await client.api.hoge.$delete(undefined, {
-      init: {
-        headers: { "x-method": "method-header", common: "method" },
-        cache: "no-cache",
-      },
+    it("should successfully perform DELETE request (text response)", async () => {
+      const client = createRpcClient<PathStructure>("http://localhost:3000");
+      const response = await client.api.hoge.$delete();
+      expect(response.status).toBe(200);
+      const text = await response.text();
+      expect(text).toBe("delete");
     });
 
-    expect(capturedInit).toBeDefined();
-    expect(capturedInit!.method).toBe("DELETE");
-    expect(capturedInit!.mode).toBe("cors");
-    expect(capturedInit!.credentials).toBe("include");
-    expect(capturedInit!.cache).toBe("no-cache");
-    expect(capturedInit!.headers).toEqual({
-      "x-client": "client-header",
-      common: "method",
-      "x-method": "method-header",
+    it("should successfully perform HEAD request", async () => {
+      const client = createRpcClient<PathStructure>("http://localhost:3000");
+      const response = await client.api.hoge.$head();
+      expect(response.status).toBe(200);
+      const text = await response.text();
+      expect(text).toBe("head");
+    });
+
+    it("should successfully perform PATCH request", async () => {
+      const client = createRpcClient<PathStructure>("http://localhost:3000");
+      const response = await client.api.hoge.$patch();
+      expect(response.status).toBe(200);
+      const text = await response.text();
+      expect(text).toBe("patch");
+    });
+
+    it("should successfully perform PUT request", async () => {
+      const client = createRpcClient<PathStructure>("http://localhost:3000");
+      const response = await client.api.hoge.$put();
+      expect(response.status).toBe(200);
+      const text = await response.text();
+      expect(text).toBe("put");
     });
   });
 
-  test("should work when init options have no headers", async () => {
-    let capturedInit: RequestInit | undefined;
-    const customFetch = async (
-      input: RequestInfo | URL,
-      init?: RequestInit
-    ) => {
-      capturedInit = init;
+  describe("customFetch behavior", () => {
+    it("should use only client-level options when only client options are specified", async () => {
+      let capturedInit: RequestInit | undefined;
+      const customFetch = async (
+        input: RequestInfo | URL,
+        init?: RequestInit
+      ) => {
+        capturedInit = init;
 
-      return new Response("ok", { status: 200 });
-    };
+        return new Response("ok", { status: 200 });
+      };
 
-    const client = createRpcClient<PathStructure>("http://localhost:3000", {
-      fetch: customFetch,
-      init: {},
-    });
-
-    await client.api.hoge.$delete(undefined, {
-      init: {
-        headers: { "x-only": "only-header" },
-      },
-    });
-
-    expect(capturedInit).toBeDefined();
-    expect(capturedInit!.method).toBe("DELETE");
-    expect(capturedInit!.headers).toEqual({ "x-only": "only-header" });
-  });
-
-  test("should merge non-conflicting options from client and method", async () => {
-    let capturedInit: RequestInit | undefined;
-    const customFetch = async (
-      input: RequestInfo | URL,
-      init?: RequestInit
-    ) => {
-      capturedInit = init;
-
-      return new Response("ok", { status: 200 });
-    };
-
-    const client = createRpcClient<PathStructure>("http://localhost:3000", {
-      fetch: customFetch,
-      init: {
-        mode: "cors",
-      },
-    });
-
-    await client.api.hoge.$delete(undefined, {
-      init: {
-        cache: "no-store",
-      },
-    });
-
-    expect(capturedInit).toBeDefined();
-    expect(capturedInit!.method).toBe("DELETE");
-    expect(capturedInit!.mode).toBe("cors");
-    expect(capturedInit!.cache).toBe("no-store");
-  });
-
-  test("should propagate network errors", async () => {
-    const errorFetch = async (_: RequestInfo | URL, __?: RequestInit) => {
-      throw new Error("Network failure");
-    };
-
-    const client = createRpcClient<PathStructure>("http://localhost:3000", {
-      fetch: errorFetch,
-    });
-
-    await expect(client.api.hoge.$delete()).rejects.toThrow("Network failure");
-  });
-
-  test("should correctly pass request body for POST requests", async () => {
-    let capturedBody;
-    const customFetch = async (_: RequestInfo | URL, init?: RequestInit) => {
-      capturedBody = init?.body;
-
-      return new Response("received", { status: 200 });
-    };
-
-    const client = createRpcClient<PathStructure>("http://localhost:3000", {
-      fetch: customFetch,
-    });
-
-    await client.api.hoge.$post(undefined, {
-      init: {
-        body: JSON.stringify({ test: "data" }),
-      },
-    });
-    expect(capturedBody).toBe(JSON.stringify({ test: "data" }));
-  });
-
-  test("should correctly merge multiple header values", async () => {
-    let capturedHeaders;
-    const customFetch = async (_: RequestInfo | URL, init?: RequestInit) => {
-      capturedHeaders = init?.headers;
-
-      return new Response("ok", { status: 200 });
-    };
-
-    const client = createRpcClient<PathStructure>("http://localhost:3000", {
-      fetch: customFetch,
-      init: { headers: { "x-header": "value1", common: "client" } },
-    });
-
-    await client.api.hoge.$delete(undefined, {
-      init: { headers: { "another-header": "value2", common: "method" } },
-    });
-
-    expect(capturedHeaders).toEqual({
-      "x-header": "value1",
-      common: "method",
-      "another-header": "value2",
-    });
-  });
-});
-
-describe("real fetch behavior", () => {
-  test("should send client-level headers", async () => {
-    const client = createRpcClient<PathStructure>("http://localhost:3000", {
-      init: {
-        headers: { "x-client": "client-header" },
-      },
-    });
-    const response = await client.api.hoge._foo("test")._bar("fetch").$delete();
-    const json = await response.json();
-    expect(json["x-client"]).toBe("client-header");
-  });
-
-  test("should send method-level headers", async () => {
-    const client = createRpcClient<PathStructure>("http://localhost:3000");
-    const response = await client.api.hoge
-      ._foo("test")
-      ._bar("fetch")
-      .$delete(undefined, {
+      const client = createRpcClient<PathStructure>("http://localhost:3000", {
+        fetch: customFetch,
         init: {
-          headers: { "x-only": "only-header" },
+          headers: { "x-client": "client-header" },
+          mode: "cors",
         },
       });
-    const json = await response.json();
-    expect(json["x-only"]).toBe("only-header");
-  });
 
-  test("should correctly merge client and method headers", async () => {
-    const client = createRpcClient<PathStructure>("http://localhost:3000", {
-      init: {
-        headers: { "x-client": "client-header", common: "client" },
-        mode: "cors",
-        credentials: "include",
-      },
+      await client.api.hoge.$delete();
+      expect(capturedInit).toBeDefined();
+      expect(capturedInit!.method).toBe("DELETE");
+      expect(capturedInit!.mode).toBe("cors");
+      expect(capturedInit!.headers).toEqual({ "x-client": "client-header" });
     });
 
-    const response = await client.api.hoge
-      ._foo("test")
-      ._bar("fetch")
-      .$delete(undefined, {
+    it("should use only method-level options when only method options are specified", async () => {
+      let capturedInit: RequestInit | undefined;
+      const customFetch = async (
+        input: RequestInfo | URL,
+        init?: RequestInit
+      ) => {
+        capturedInit = init;
+
+        return new Response("ok", { status: 200 });
+      };
+
+      const client = createRpcClient<PathStructure>("http://localhost:3000", {
+        fetch: customFetch,
+      });
+
+      await client.api.hoge.$delete(undefined, {
+        init: {
+          headers: { "x-method": "method-header" },
+          cache: "no-cache",
+        },
+      });
+
+      expect(capturedInit).toBeDefined();
+      expect(capturedInit!.method).toBe("DELETE");
+      expect(capturedInit!.cache).toBe("no-cache");
+      expect(capturedInit!.headers).toEqual({ "x-method": "method-header" });
+    });
+
+    it("should correctly merge client and method options", async () => {
+      let capturedInit: RequestInit | undefined;
+      const customFetch = async (
+        input: RequestInfo | URL,
+        init?: RequestInit
+      ) => {
+        capturedInit = init;
+
+        return new Response("ok", { status: 200 });
+      };
+
+      const client = createRpcClient<PathStructure>("http://localhost:3000", {
+        fetch: customFetch,
+        init: {
+          headers: { "x-client": "client-header", common: "client" },
+          mode: "cors",
+          credentials: "include",
+        },
+      });
+
+      await client.api.hoge.$delete(undefined, {
         init: {
           headers: { "x-method": "method-header", common: "method" },
           cache: "no-cache",
         },
       });
-    const json = await response.json();
-    expect(json["x-client"]).toBe("client-header");
-    expect(json["x-method"]).toBe("method-header");
-    expect(json["common"]).toBe("method");
-  });
-});
 
-const { POST: _post_1 } = createRouteHandler().post(
-  async (rc) => rc.json("json"),
-  async (rc) => rc.text("text")
-);
-
-const { POST: _get_1 } = createRouteHandler().post(
-  async (rc) => rc.text("error", { status: 400 }),
-  async (rc) => rc.json({ ok: true }, { status: 200 })
-);
-
-export type PathStructureForTypeTest = Endpoint & {
-  fuga: Endpoint & {
-    _foo: Endpoint &
-      Record<ParamsKey, { foo: string }> & {
-        _piyo: Endpoint &
-          Record<QueryKey, { baz: string }> &
-          Record<ParamsKey, { foo: string; piyo: string }>;
-      };
-  };
-  api: {
-    hoge: {
-      $post: typeof _post_1;
-    } & Endpoint & {
-        _foo: { $get: typeof _get_1 } & Endpoint &
-          Record<ParamsKey, { foo: string }>;
-      };
-  };
-};
-
-describe("createHandler type definitions", () => {
-  it("should infer types correctly", async () => {
-    const customFetch = async (_: RequestInfo | URL, __?: RequestInit) => {
-      return new Response();
-    };
-    const client = createRpcClient<PathStructureForTypeTest>("", {
-      fetch: customFetch,
+      expect(capturedInit).toBeDefined();
+      expect(capturedInit!.method).toBe("DELETE");
+      expect(capturedInit!.mode).toBe("cors");
+      expect(capturedInit!.credentials).toBe("include");
+      expect(capturedInit!.cache).toBe("no-cache");
+      expect(capturedInit!.headers).toEqual({
+        "x-client": "client-header",
+        common: "method",
+        "x-method": "method-header",
+      });
     });
-    const _createUrl = client.fuga._foo("param")._piyo("").$url;
 
-    type ExpectedUrlResult = {
-      pathname: string;
-      path: string;
-      relativePath: string;
-      params: {
-        foo: string;
-        piyo: string;
+    it("should work when init options have no headers", async () => {
+      let capturedInit: RequestInit | undefined;
+      const customFetch = async (
+        input: RequestInfo | URL,
+        init?: RequestInit
+      ) => {
+        capturedInit = init;
+
+        return new Response("ok", { status: 200 });
       };
+
+      const client = createRpcClient<PathStructure>("http://localhost:3000", {
+        fetch: customFetch,
+        init: {},
+      });
+
+      await client.api.hoge.$delete(undefined, {
+        init: {
+          headers: { "x-only": "only-header" },
+        },
+      });
+
+      expect(capturedInit).toBeDefined();
+      expect(capturedInit!.method).toBe("DELETE");
+      expect(capturedInit!.headers).toEqual({ "x-only": "only-header" });
+    });
+
+    it("should merge non-conflicting options from client and method", async () => {
+      let capturedInit: RequestInit | undefined;
+      const customFetch = async (
+        input: RequestInfo | URL,
+        init?: RequestInit
+      ) => {
+        capturedInit = init;
+
+        return new Response("ok", { status: 200 });
+      };
+
+      const client = createRpcClient<PathStructure>("http://localhost:3000", {
+        fetch: customFetch,
+        init: {
+          mode: "cors",
+        },
+      });
+
+      await client.api.hoge.$delete(undefined, {
+        init: {
+          cache: "no-store",
+        },
+      });
+
+      expect(capturedInit).toBeDefined();
+      expect(capturedInit!.method).toBe("DELETE");
+      expect(capturedInit!.mode).toBe("cors");
+      expect(capturedInit!.cache).toBe("no-store");
+    });
+
+    it("should propagate network errors", async () => {
+      const errorFetch = async (_: RequestInfo | URL, __?: RequestInit) => {
+        throw new Error("Network failure");
+      };
+
+      const client = createRpcClient<PathStructure>("http://localhost:3000", {
+        fetch: errorFetch,
+      });
+
+      await expect(client.api.hoge.$delete()).rejects.toThrow(
+        "Network failure"
+      );
+    });
+
+    it("should correctly pass request body for POST requests", async () => {
+      let capturedBody;
+      const customFetch = async (_: RequestInfo | URL, init?: RequestInit) => {
+        capturedBody = init?.body;
+
+        return new Response("received", { status: 200 });
+      };
+
+      const client = createRpcClient<PathStructure>("http://localhost:3000", {
+        fetch: customFetch,
+      });
+
+      await client.api.hoge.$post(undefined, {
+        init: {
+          body: JSON.stringify({ test: "data" }),
+        },
+      });
+      expect(capturedBody).toBe(JSON.stringify({ test: "data" }));
+    });
+
+    it("should correctly merge multiple header values", async () => {
+      let capturedHeaders;
+      const customFetch = async (_: RequestInfo | URL, init?: RequestInit) => {
+        capturedHeaders = init?.headers;
+
+        return new Response("ok", { status: 200 });
+      };
+
+      const client = createRpcClient<PathStructure>("http://localhost:3000", {
+        fetch: customFetch,
+        init: { headers: { "x-header": "value1", common: "client" } },
+      });
+
+      await client.api.hoge.$delete(undefined, {
+        init: { headers: { "another-header": "value2", common: "method" } },
+      });
+
+      expect(capturedHeaders).toEqual({
+        "x-header": "value1",
+        common: "method",
+        "another-header": "value2",
+      });
+    });
+  });
+
+  describe("real fetch behavior", () => {
+    it("should send client-level headers", async () => {
+      const client = createRpcClient<PathStructure>("http://localhost:3000", {
+        init: {
+          headers: { "x-client": "client-header" },
+        },
+      });
+      const response = await client.api.hoge
+        ._foo("test")
+        ._bar("fetch")
+        .$delete();
+      const json = await response.json();
+      expect(json["x-client"]).toBe("client-header");
+    });
+
+    it("should send method-level headers", async () => {
+      const client = createRpcClient<PathStructure>("http://localhost:3000");
+      const response = await client.api.hoge
+        ._foo("test")
+        ._bar("fetch")
+        .$delete(undefined, {
+          init: {
+            headers: { "x-only": "only-header" },
+          },
+        });
+      const json = await response.json();
+      expect(json["x-only"]).toBe("only-header");
+    });
+
+    it("should correctly merge client and method headers", async () => {
+      const client = createRpcClient<PathStructure>("http://localhost:3000", {
+        init: {
+          headers: { "x-client": "client-header", common: "client" },
+          mode: "cors",
+          credentials: "include",
+        },
+      });
+
+      const response = await client.api.hoge
+        ._foo("test")
+        ._bar("fetch")
+        .$delete(undefined, {
+          init: {
+            headers: { "x-method": "method-header", common: "method" },
+            cache: "no-cache",
+          },
+        });
+      const json = await response.json();
+      expect(json["x-client"]).toBe("client-header");
+      expect(json["x-method"]).toBe("method-header");
+      expect(json["common"]).toBe("method");
+    });
+  });
+
+  const { POST: _post_1 } = createRouteHandler().post(
+    async (rc) => rc.json("json"),
+    async (rc) => rc.text("text")
+  );
+
+  const { POST: _get_1 } = createRouteHandler().post(
+    async (rc) => rc.text("error", { status: 400 }),
+    async (rc) => rc.json({ ok: true }, { status: 200 })
+  );
+
+  type PathStructureForTypeTest = Endpoint & {
+    fuga: Endpoint & {
+      _foo: Endpoint &
+        Record<ParamsKey, { foo: string }> & {
+          _piyo: Endpoint &
+            Record<QueryKey, { baz: string }> &
+            Record<ParamsKey, { foo: string; piyo: string }>;
+        };
     };
+    api: {
+      hoge: {
+        $post: typeof _post_1;
+      } & Endpoint & {
+          _foo: { $get: typeof _get_1 } & Endpoint &
+            Record<ParamsKey, { foo: string }>;
+        };
+    };
+  };
 
-    type ExpectedUrlFunc = (url: {
-      query: {
-        baz: string;
+  describe("createHandler type definitions", () => {
+    it("should infer types correctly", async () => {
+      const customFetch = async (_: RequestInfo | URL, __?: RequestInit) => {
+        return new Response();
       };
-      hash?: string;
-    }) => ExpectedUrlResult;
+      const client = createRpcClient<PathStructureForTypeTest>("", {
+        fetch: customFetch,
+      });
+      const _createUrl = client.fuga._foo("param")._piyo("").$url;
 
-    expectTypeOf<typeof _createUrl>().toEqualTypeOf<ExpectedUrlFunc>();
+      type ExpectedUrlResult = {
+        pathname: string;
+        path: string;
+        relativePath: string;
+        params: {
+          foo: string;
+          piyo: string;
+        };
+      };
 
-    const _response = await client.api.hoge.$post();
+      type ExpectedUrlFunc = (url: {
+        query: {
+          baz: string;
+        };
+        hash?: string;
+      }) => ExpectedUrlResult;
 
-    type ExpectedResponse =
-      | TypedNextResponse<string, 200, "application/json">
-      | TypedNextResponse<"text", 200, "text/plain">;
+      expectTypeOf<typeof _createUrl>().toEqualTypeOf<ExpectedUrlFunc>();
 
-    expectTypeOf<typeof _response>().toEqualTypeOf<ExpectedResponse>();
+      const _response = await client.api.hoge.$post();
 
-    const incloudErrResponse = await client.api.hoge._foo("").$get();
+      type ExpectedResponse =
+        | TypedNextResponse<string, 200, "application/json">
+        | TypedNextResponse<"text", 200, "text/plain">;
 
-    type ExpectedIncloudErrResponse =
-      | TypedNextResponse<"error", 400, "text/plain">
-      | TypedNextResponse<
+      expectTypeOf<typeof _response>().toEqualTypeOf<ExpectedResponse>();
+
+      const incloudErrResponse = await client.api.hoge._foo("").$get();
+
+      type ExpectedIncloudErrResponse =
+        | TypedNextResponse<"error", 400, "text/plain">
+        | TypedNextResponse<
+            {
+              ok: boolean;
+            },
+            200,
+            "application/json"
+          >;
+      expectTypeOf<
+        typeof incloudErrResponse
+      >().toEqualTypeOf<ExpectedIncloudErrResponse>();
+
+      if (incloudErrResponse.ok) {
+        type ExpectedOkResponse = TypedNextResponse<
           {
             ok: boolean;
           },
           200,
           "application/json"
         >;
-    expectTypeOf<
-      typeof incloudErrResponse
-    >().toEqualTypeOf<ExpectedIncloudErrResponse>();
 
-    if (incloudErrResponse.ok) {
-      type ExpectedOkResponse = TypedNextResponse<
-        {
+        type ExpectdJson = () => Promise<{
           ok: boolean;
-        },
-        200,
-        "application/json"
-      >;
+        }>;
+        type ExpectdText = () => Promise<string>;
 
-      type ExpectdJson = () => Promise<{
-        ok: boolean;
-      }>;
-      type ExpectdText = () => Promise<string>;
+        const _json = incloudErrResponse.json;
+        const _text = incloudErrResponse.text;
 
-      const _json = incloudErrResponse.json;
-      const _text = incloudErrResponse.text;
+        expectTypeOf<
+          typeof incloudErrResponse
+        >().toEqualTypeOf<ExpectedOkResponse>();
+        expectTypeOf<typeof _json>().toEqualTypeOf<ExpectdJson>();
+        expectTypeOf<typeof _text>().toEqualTypeOf<ExpectdText>();
+      } else {
+        type ExpectedErrResponse = TypedNextResponse<
+          "error",
+          400,
+          "text/plain"
+        >;
 
-      expectTypeOf<
-        typeof incloudErrResponse
-      >().toEqualTypeOf<ExpectedOkResponse>();
-      expectTypeOf<typeof _json>().toEqualTypeOf<ExpectdJson>();
-      expectTypeOf<typeof _text>().toEqualTypeOf<ExpectdText>();
-    } else {
-      type ExpectedErrResponse = TypedNextResponse<"error", 400, "text/plain">;
+        type ExpectdJson = () => Promise<never>;
+        type ExpectdText = () => Promise<"error">;
 
-      type ExpectdJson = () => Promise<never>;
-      type ExpectdText = () => Promise<"error">;
+        const _json = incloudErrResponse.json;
+        const _text = incloudErrResponse.text;
 
-      const _json = incloudErrResponse.json;
-      const _text = incloudErrResponse.text;
-
-      expectTypeOf<
-        typeof incloudErrResponse
-      >().toEqualTypeOf<ExpectedErrResponse>();
-      expectTypeOf<typeof _json>().toEqualTypeOf<ExpectdJson>();
-      expectTypeOf<typeof _text>().toEqualTypeOf<ExpectdText>();
-    }
+        expectTypeOf<
+          typeof incloudErrResponse
+        >().toEqualTypeOf<ExpectedErrResponse>();
+        expectTypeOf<typeof _json>().toEqualTypeOf<ExpectdJson>();
+        expectTypeOf<typeof _text>().toEqualTypeOf<ExpectdText>();
+      }
+    });
   });
 });
