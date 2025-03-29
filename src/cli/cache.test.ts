@@ -3,27 +3,27 @@ import mock from "mock-fs";
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { clearVisitedDirsCacheAbove, visitedDirsCache } from "./cache";
 
-describe("clearVisitedDirsCacheAbove - ディレクトリパスの場合", () => {
+describe("clearVisitedDirsCacheAbove - when given a directory path", () => {
   beforeEach(() => {
-    // テストごとにキャッシュをリセット
+    // Reset cache before each test
     visitedDirsCache.clear();
 
-    // 例として、以下のパスをキャッシュに設定
-    // 基準とするディレクトリより上のパス（祖先）
+    // Example: set up cache entries
+    // Ancestors (above the target directory)
     visitedDirsCache.set("/project", true);
     visitedDirsCache.set("/project/src", true);
     visitedDirsCache.set("/project/src/app", true);
-    // 基準となるディレクトリとその配下
+    // Target directory and its descendants
     visitedDirsCache.set("/project/src/app/foo", true);
     visitedDirsCache.set("/project/src/app/foo/bar", true);
-    // 影響を受けないキー
+    // Unrelated entry (should not be affected)
     visitedDirsCache.set("/project/other", true);
   });
 
-  it("対象ディレクトリパスが与えられた場合、基準およびその上位階層が削除される", () => {
-    // 対象: /project/src/app/foo を基準とする
-    // 期待: /project, /project/src, /project/src/app, /project/src/app/foo を削除
-    //       ただし、/project/src/app/foo/bar（基準の下）は削除されない
+  it("should remove the target directory and all its ancestor directories", () => {
+    // Target: /project/src/app/foo
+    // Expect: /project, /project/src, /project/src/app, and /project/src/app/foo to be removed
+    //         /project/src/app/foo/bar should remain
     clearVisitedDirsCacheAbove("/project/src/app/foo");
 
     expect(visitedDirsCache.has("/project")).toBe(false);
@@ -31,13 +31,13 @@ describe("clearVisitedDirsCacheAbove - ディレクトリパスの場合", () =>
     expect(visitedDirsCache.has("/project/src/app")).toBe(false);
     expect(visitedDirsCache.has("/project/src/app/foo")).toBe(false);
 
-    // 基準の下の階層は影響なし
+    // Descendant should not be removed
     expect(visitedDirsCache.has("/project/src/app/foo/bar")).toBe(true);
-    // 影響を受けないキー
+    // Unrelated entry remains
     expect(visitedDirsCache.has("/project/other")).toBe(true);
   });
 
-  it("対象ディレクトリパスに末尾スラッシュが付いていても正しく動作する", () => {
+  it("should work correctly even if the target directory has a trailing slash", () => {
     clearVisitedDirsCacheAbove("/project/src/app/foo/");
 
     expect(visitedDirsCache.has("/project")).toBe(false);
@@ -49,39 +49,38 @@ describe("clearVisitedDirsCacheAbove - ディレクトリパスの場合", () =>
     expect(visitedDirsCache.has("/project/other")).toBe(true);
   });
 
-  it("存在しないディレクトリパスの場合は、キャッチして既存のキャッシュに一致する祖先が削除される（存在しなければ変更なし）", () => {
-    // 存在しないパス "/not/exist" の場合、resolve された値に一致する祖先がなければ変更なし
+  it("should not remove anything if the target directory has no matching ancestor in the cache", () => {
+    // Non-existent path "/not/exist"
     clearVisitedDirsCacheAbove("/not/exist");
 
-    // 初期設定していた6件のうち、"/not/exist" の祖先に該当するものは無いので変更なし
+    // None of the 6 pre-registered entries should be affected
     expect(visitedDirsCache.size).toBe(6);
   });
 
-  it("相対パスでも正しく動作する", () => {
-    // relative path を指定
+  it("should work correctly with relative paths", () => {
     const relativeTarget = "./project/src/app/foo";
     const absoluteTarget = path.resolve(relativeTarget);
 
-    // さらに、絶対パスの祖先としてキーを追加
+    // Add additional entries
     visitedDirsCache.set(absoluteTarget, true);
     visitedDirsCache.set(path.join(absoluteTarget, "subdir"), true);
 
     clearVisitedDirsCacheAbove(relativeTarget);
 
-    // 祖先キー（絶対パスとそれより上）が削除される
+    // Ancestors (resolved as absolute path) should be removed
     expect(visitedDirsCache.has(absoluteTarget)).toBe(false);
-    // 基準の下（子供側）は削除されない
+    // Descendant should not be removed
     expect(visitedDirsCache.has(path.join(absoluteTarget, "subdir"))).toBe(
       true
     );
   });
 });
 
-describe("clearVisitedDirsCacheAbove - ファイルパスの場合", () => {
+describe("clearVisitedDirsCacheAbove - when given a file path", () => {
   beforeEach(() => {
     visitedDirsCache.clear();
 
-    // 以下のキーをキャッシュに設定
+    // Set up cache entries
     visitedDirsCache.set("/project", true);
     visitedDirsCache.set("/project/src", true);
     visitedDirsCache.set("/project/src/app", true);
@@ -89,12 +88,11 @@ describe("clearVisitedDirsCacheAbove - ファイルパスの場合", () => {
     visitedDirsCache.set("/project/src/app/foo/bar", true);
     visitedDirsCache.set("/project/other", true);
 
-    // mock-fs によりファイルシステムを構築
-    // 例として /project/src/app/foo/file.txt をファイルとして作成
+    // Set up mock filesystem
     mock({
       "/project/src/app/foo": {
         "file.txt": "dummy content",
-        bar: {}, // ディレクトリ
+        bar: {},
       },
       "/project": {},
       "/project/other": {},
@@ -107,11 +105,11 @@ describe("clearVisitedDirsCacheAbove - ファイルパスの場合", () => {
     mock.restore();
   });
 
-  it("ファイルパスが渡された場合、その親ディレクトリおよびその上位階層を削除する", () => {
+  it("should remove the parent directory of the file and all its ancestor directories", () => {
     const filePath = "/project/src/app/foo/file.txt";
-    // この場合、基準は filePath の親である "/project/src/app/foo" になる
-    // 期待: "/project", "/project/src", "/project/src/app", "/project/src/app/foo" が削除され、
-    //       基準の下の階層 "/project/src/app/foo/bar" は削除されない
+    // The target becomes "/project/src/app/foo"
+    // Expect: /project, /project/src, /project/src/app, and /project/src/app/foo to be removed
+    //         Descendants like /project/src/app/foo/bar should remain
     clearVisitedDirsCacheAbove(filePath);
 
     expect(visitedDirsCache.has("/project")).toBe(false);
@@ -123,7 +121,7 @@ describe("clearVisitedDirsCacheAbove - ファイルパスの場合", () => {
     expect(visitedDirsCache.has("/project/other")).toBe(true);
   });
 
-  it("存在しないファイルパスの場合は、エラーを catch して何も削除されない", () => {
+  it("should not remove anything if the file does not exist", () => {
     const filePath = "/non/existent/file.txt";
     const originalSize = visitedDirsCache.size;
     clearVisitedDirsCacheAbove(filePath);
