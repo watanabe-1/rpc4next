@@ -8,13 +8,6 @@ import tseslint from "typescript-eslint";
 /** @type {import("eslint").Linter.Config[]} */
 const config = [
   {
-    languageOptions: {
-      parserOptions: {
-        project: "./tsconfig.json",
-      },
-    },
-  },
-  {
     files: ["*.ts"],
   },
   {
@@ -26,6 +19,13 @@ const config = [
       "**/eslint.config.mjs",
       "**/vitest.config.ts",
     ],
+  },
+  {
+    languageOptions: {
+      parserOptions: {
+        project: "./tsconfig.json",
+      },
+    },
   },
   {
     name: "eslint/recommended",
