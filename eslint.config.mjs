@@ -15,7 +15,7 @@ const config = [
     },
   },
   {
-    files: ["*.js", "*.ts"],
+    files: ["*.ts"],
   },
   {
     ignores: [
