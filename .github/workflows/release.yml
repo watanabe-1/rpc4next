@@ -17,7 +17,7 @@ jobs:
           node-version: 18
           registry-url: https://registry.npmjs.org/
 
-      - name: Configure git
+      - name: Setup Git user
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
@@ -25,11 +25,20 @@ jobs:
       - name: Extract version from tag
         id: extract_version
         run: |
-          echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+          echo "version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+
+      - name: Get branch name
+        id: get_branch
+        run: |
+          BRANCH=$(git branch -r --contains $GITHUB_SHA | grep -Eo 'origin/[^ ]+' | head -n1 | sed 's|origin/||')
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout the branch
+        run: git checkout ${{ steps.get_branch.outputs.branch }}
 
       - name: Update package.json version
         run: |
-          npm version ${VERSION} --no-git-tag-version
+          npm version ${{ steps.extract_version.outputs.version }} --no-git-tag-version
 
       - name: Install dependencies
         run: npm ci
@@ -40,13 +49,13 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Publish
+      - name: Commit and Push updated version
+        run: |
+          git add package.json package-lock.json
+          git commit -m "chore: bump version to v${{ steps.extract_version.outputs.version }}" || echo "No changes to commit"
+          git push origin ${{ steps.get_branch.outputs.branch }}
+
+      - name: Publish to npm
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Commit updated package.json and package-lock.json
-        run: |
-          git add package.json package-lock.json
-          git commit -m "chore: bump version to v${VERSION}"
-          git push
