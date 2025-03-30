@@ -27,18 +27,17 @@ jobs:
         run: |
           echo "version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
 
-      - name: Get branch name
+      - name: Get branch name (safe)
         id: get_branch
         run: |
-          BRANCH=$(git branch -r --contains $GITHUB_SHA | grep -Eo 'origin/[^ ]+' | head -n1 | sed 's|origin/||')
-          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          branch=$(git rev-parse --symbolic-full-name --abbrev-ref HEAD)
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
 
-      - name: Checkout the branch
+      - name: Checkout to branch
         run: git checkout ${{ steps.get_branch.outputs.branch }}
 
       - name: Update package.json version
-        run: |
-          npm version ${{ steps.extract_version.outputs.version }} --no-git-tag-version
+        run: npm version ${{ steps.extract_version.outputs.version }} --no-git-tag-version
 
       - name: Install dependencies
         run: npm ci
