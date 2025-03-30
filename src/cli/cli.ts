@@ -11,7 +11,7 @@ import { generatePages } from "./generate-path-structure";
 
 interface Options {
   watch?: boolean;
-  generateParamsTypes?: string | boolean;
+  paramsFile?: string | boolean;
 }
 
 const program = new Command();
@@ -27,7 +27,7 @@ program
   .argument("<outputPath>", "Output path for the generated type definitions")
   .option("-w, --watch", "Watch mode: regenerate on file changes")
   .option(
-    "--generate-params-types [filename]",
+    "-p, --params-file [filename]",
     "Generate params types file with specified filename"
   )
   .action((baseDir: string, outputPath: string, options: Options) => {
@@ -35,11 +35,9 @@ program
     const resolvedOutputPath = path.resolve(outputPath).replace(/\\/g, "/");
 
     const paramsFileName =
-      typeof options.generateParamsTypes === "string"
-        ? options.generateParamsTypes
-        : null;
+      typeof options.paramsFile === "string" ? options.paramsFile : null;
 
-    if (options.generateParamsTypes !== undefined && !paramsFileName) {
+    if (options.paramsFile !== undefined && !paramsFileName) {
       console.error(
         chalk.red(
           "Error: --generate-params-types requires a filename (e.g., params.ts) when specified."
