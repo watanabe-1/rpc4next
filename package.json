@@ -31,16 +31,28 @@
       "import": {
         "types": "./dist/helper/client/index.d.ts",
         "default": "./dist/helper/client/index.js"
+      },
+      "default": {
+        "types": "./dist/helper/client/index.d.ts",
+        "default": "./dist/helper/client/index.js"
       }
     },
     "./server": {
       "import": {
         "types": "./dist/helper/server/index.d.ts",
         "default": "./dist/helper/server/index.js"
+      },
+      "default": {
+        "types": "./dist/helper/server/index.d.ts",
+        "default": "./dist/helper/server/index.js"
       }
     },
     "./server/validators/zod": {
       "import": {
+        "types": "./dist/helper/server/validators/zod/index.d.ts",
+        "default": "./dist/helper/server/validators/zod/index.js"
+      },
+      "default": {
         "types": "./dist/helper/server/validators/zod/index.d.ts",
         "default": "./dist/helper/server/validators/zod/index.js"
       }
