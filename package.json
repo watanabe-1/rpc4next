@@ -24,7 +24,7 @@
     "dist"
   ],
   "bin": {
-    "rpc4next": "dist/cli/cli.js"
+    "rpc4next": "dist/cli/index.js"
   },
   "exports": {
     "./client": {
