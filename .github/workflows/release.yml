@@ -64,7 +64,11 @@ jobs:
         id: changelog
         run: |
           changelog="$(git log $(git describe --tags --abbrev=0)..HEAD --pretty=format:"- %s")"
-          echo "changelog=$changelog" >> $GITHUB_OUTPUT
+          {
+            echo "changelog<<EOF"
+            printf '%s\n' "$changelog"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
