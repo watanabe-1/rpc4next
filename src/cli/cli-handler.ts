@@ -1,17 +1,12 @@
 import path from "path";
 import { generate } from "./generator";
-import { Logger } from "./types";
+import { CliOptions, Logger } from "./types";
 import { setupWatcher } from "./watcher";
-
-interface Options {
-  watch?: boolean;
-  paramsFile?: string;
-}
 
 export const handleCli = (
   baseDir: string,
   outputPath: string,
-  options: Options,
+  options: CliOptions,
   logger: Logger
 ): number => {
   const resolvedBaseDir = path.resolve(baseDir).replace(/\\/g, "/");

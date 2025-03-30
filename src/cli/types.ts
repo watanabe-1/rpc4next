@@ -7,3 +7,8 @@ export interface Logger {
   success: (msg: string) => void;
   error: (msg: string) => void;
 }
+
+export interface CliOptions {
+  watch?: boolean;
+  paramsFile?: string;
+}
