@@ -48,7 +48,9 @@ export const createRpcProxy = <T extends object>(
         }
 
         if (isHttpMethod(key)) {
-          return httpMethod(key, [...paths], params, dynamicKeys, options);
+          return httpMethod(key, [...paths], params, dynamicKeys, {
+            ...options,
+          });
         }
 
         if (isDynamic(key)) {
