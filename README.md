@@ -40,7 +40,6 @@ export async function GET(
   segmentData: { params: Promise<{ id: string }> }
 ) {
   const { id } = await segmentData.params;
-  // RPCとしてresponseの戻り値の推論が機能するのは、対象となる `route.ts` の HTTPメソッドハンドラ内で`NextResponse.json()` をしている物のみになります
   return NextResponse.json({ name: `User ${id}` });
 }
 ```
@@ -51,8 +50,7 @@ export async function GET(
 
 ### 3. Generate Type Definitions with CLI
 
-CLI を利用して、Next.js のルート構造から型安全な RPC クライアントの定義を自動生成します。  
-以下のコマンドを実行すると、`route.ts` と `page.tsx` ファイルの両方を走査し、型定義ファイル（outputPathに指定したファイル）が生成されます。
+CLI を利用して、Next.js のルート構造から型安全な RPC クライアントの定義を自動生成します。
 
 ```bash
 npx rpc4next <baseDir> <outputPath>
@@ -115,6 +113,41 @@ export default async function Page() {
 
 ---
 
+## ✅ さらに型安全にしたい場合 `honolike` + `createRouteHandler` による Next.js の型安全強化
+
+さらに `honolike` をベースとした `createRouteHandler()` を組み合わせることで、
+
+### 📌 主なメリット
+
+1. **レスポンス型安全**
+
+   - ステータス、Content-Type、Body がすべて型で保証される
+   - クライアントは受け取るレスポンス型を完全に推論可能
+
+2. **クライアント側補完強化**
+
+   - `status`, `content-type`, `json()`, `text()` などがステータスに応じて適切に補完される
+
+3. **サーバー側 params / query も型安全**
+   - `routeHandlerFactory()` を使えば、`params`, `query` も型推論可能
+
+---
+
+### ✅ 基本的な使い方
+
+```ts
+const createRouteHandler = routeHandlerFactory((err, rc) =>
+  rc.text("error", { status: 400 })
+);
+
+const { POST } = createRouteHandler().post(
+  async (rc) => rc.json("json response"),
+  async (rc) => rc.text("plain text")
+);
+```
+
+これだけで、POST リクエストの返り値が、responseの内容(json,textなど)、status,contenttypeが型付けされるようになります。
+
 ## 🚧 Requirements
 
 - Next.js 14+ (App Router 使用)
@@ -125,5 +158,3 @@ export default async function Page() {
 ## 💼 License
 
 MIT
-
----
