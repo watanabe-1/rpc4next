@@ -60,6 +60,22 @@ jobs:
           git commit -m "chore: bump version to v${{ steps.extract_version.outputs.version }}" || echo "No changes to commit"
           git push origin HEAD:refs/heads/${{ steps.default_branch.outputs.branch }}
 
+      - name: Generate changelog
+        id: changelog
+        run: |
+          echo "changelog<<EOF" >> "$GITHUB_OUTPUT"
+          git log $(git describe --tags --abbrev=0)..HEAD --pretty=format:"- %s" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.extract_version.outputs.version }}
+          name: Release v${{ steps.extract_version.outputs.version }}
+          body: ${{ steps.changelog.outputs.changelog }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Publish to npm
         run: npm publish
         env:
