@@ -45,8 +45,7 @@ export async function GET(
 }
 ```
 
-- `GET`、`POST` などのハンドラを定義
-- **RPCとして利用するには、`NextResponse.json()` によるレスポンス返却が必須です**
+- **RPCとしてresponseの戻り値の推論が機能するのは、対象となる `route.ts` の HTTPメソッドハンドラ内で`NextResponse.json()` をしている物のみになります**
 
 ---
 
