@@ -62,14 +62,14 @@ npx rpc4next <baseDir> <outputPath>
 #### オプション
 
 - **ウォッチモード**  
-  ファイル変更を検知して自動的に再生成する場合は `--watch` オプションを付けます。
+  ファイル変更を検知して自動的に再生成する場合は `--watch` or `-w` オプションを付けます。
 
   ```bash
   npx rpc4next <baseDir> <outputPath> --watch
   ```
 
 - **パラメータ型ファイルの生成**  
-  各ルートに対して個別のパラメータ型定義ファイルを生成する場合は、`--generate-params-types` オプションにファイル名を指定します。
+  各ルートに対して個別のパラメータ型定義ファイルを生成する場合は、`--params-file` or `-p` オプションにファイル名を指定します。
 
   ```bash
   npx rpc4next <baseDir> <outputPath> --generate-params-types <paramsFileName>
