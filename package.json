@@ -1,6 +1,6 @@
 {
   "name": "rpc4next",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Inspired by Hono RPC and Pathpida, rpc4next brings a lightweight and intuitive RPC solution to Next.js, making server-client communication seamless",
   "author": "watanabe-1",
   "license": "MIT",
