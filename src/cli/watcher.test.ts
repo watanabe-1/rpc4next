@@ -1,10 +1,10 @@
 import chokidar, { FSWatcher } from "chokidar";
 import { describe, it, vi, expect, beforeEach } from "vitest";
-import * as cacheModule from "./cache";
+import * as cacheModule from "./core/cache";
 import * as debounceModule from "./debounce";
 import { setupWatcher } from "./watcher";
 
-vi.mock("./cache", () => ({
+vi.mock("./core/cache", () => ({
   clearCntCache: vi.fn(),
   clearVisitedDirsCacheAbove: vi.fn(),
 }));

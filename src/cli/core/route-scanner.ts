@@ -19,7 +19,7 @@ import {
   CATCH_ALL_PREFIX,
   DYNAMIC_PREFIX,
   HTTP_METHODS_EXCLUDE_OPTIONS,
-} from "../lib/constants";
+} from "../../lib/constants";
 import type { EndPointFileNames } from "./types";
 
 const endPointFileNames = new Set(END_POINT_FILE_NAMES);

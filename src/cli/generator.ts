@@ -1,5 +1,5 @@
 import fs from "fs";
-import { generatePages } from "./generate-path-structure";
+import { generatePages } from "./core/generate-path-structure";
 import { Logger } from "./types";
 
 export const generate = ({

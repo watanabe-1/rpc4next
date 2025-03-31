@@ -7,7 +7,7 @@ import {
 } from "./constants";
 import { createRelativeImportPath } from "./path-utils";
 import { createImport, createRecodeType, createObjectType } from "./type-utils";
-import { HttpMethod } from "../lib/types";
+import { HttpMethod } from "../../lib/types";
 
 // 連番付与
 export const createImportAlias = (type: string, key: string) => {

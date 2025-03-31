@@ -6,8 +6,9 @@ import {
   TYPE_KEY_OPTIONAL_QUERY,
   TYPE_KEY_QUERY,
   RPC4NEXT_CLIENT_IMPORT_PATH,
+  TYPE_KEY_PARAMS,
+  TYPE_END_POINT,
 } from "./constants";
-import { TYPE_KEY_PARAMS, TYPE_END_POINT } from "./constants";
 import { generatePages } from "./generate-path-structure";
 
 const scanAppDir = vi.hoisted(() => vi.fn());
