@@ -9,7 +9,7 @@ Inspired by Hono RPC and Pathpida, **rpc4next** automatically generates a type-s
 ## ✨ Features
 
 - ✅ 既存の `app/**/route.ts` および `app/**/page.tsx` を活用するため、新たなハンドラファイルの作成は不要
-- ✅ ルート、パラメータ、リクエストボディ、レスポンスの型安全なクライアント生成
+- ✅ ルート、パラメータ、クエリパラメータ、 リクエストボディ、レスポンスの型安全なクライアント生成
 - ✅ 最小限のセットアップで、カスタムサーバー不要
 - ✅ 動的ルート（`[id]`、`[...slug]` など）に対応
 - ✅ CLI による自動クライアント用型定義生成
@@ -30,19 +30,29 @@ npm install rpc4next
 ### 2. Define API Routes in Next.js
 
 Next.js プロジェクト内の既存の `app/**/route.ts` と `app/**/page.tsx` ファイルをそのまま利用できます。
+さらに、クエリパラメータ（searchParams）の型安全性を有効にするには、対象のファイル内で `Query` または `OptionalQuery` 型を定義し、`export` してください。
 
 ```ts
 // app/api/user/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
+
+// searchParams用の型定義
+export type Query = {
+  q: string; // 必須
+  page?: number; // 任意
+};
 
 export async function GET(
   req: NextRequest,
   segmentData: { params: Promise<{ id: string }> }
 ) {
   const { id } = await segmentData.params;
-  return NextResponse.json({ name: `User ${id}` });
+  const q = req.nextUrl.searchParams.get("q");
+  return NextResponse.json({ id, q });
 }
 ```
+
+🚩 Query or OptionalQuery 型を export することで、searchParams の型も自動的にクライアントに反映されます。
 
 - **RPCとしてresponseの戻り値の推論が機能するのは、対象となる `route.ts` の HTTPメソッドハンドラ内で`NextResponse.json()` をしている物のみになります**
 
@@ -102,14 +112,16 @@ export const rpc = createClient<PathStructure>();
 import { rpc } from "@/lib/rpcClient";
 
 export default async function Page() {
-  const res = await rpc.api.user._id("123").$get();
+  const res = await rpc.api.user._id("123").$get({
+    query: { q: "hello", page: 1 },
+  });
   const json = await res.json();
-  return <div>{json.name}</div>;
+  return <div>{json.q}</div>;
 }
 ```
 
 - エディタの補完機能により、利用可能なエンドポイントが自動的に表示されます。
-- リクエストの構造（params, searchParams）はサーバーコードから推論され、レスポンスも型安全に扱えます。
+- リクエストの構造（params, query）はサーバーコードから推論され、レスポンスも型安全に扱えます。
 
 ---
 
@@ -126,7 +138,7 @@ export default async function Page() {
 
 2. **クライアント側補完強化**
 
-   - `status`, `content-type`, `json()`, `text()` などがステータスに応じて適切に補完される
+   - `status`, `content-type`, `json()`, `text()` などが適切に補完される
 
 3. **サーバー側 params / query も型安全**
    - `routeHandlerFactory()` を使えば、`params`, `query` も型推論可能
