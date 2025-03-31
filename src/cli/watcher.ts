@@ -1,5 +1,5 @@
 import chokidar from "chokidar";
-import { clearCntCache, clearVisitedDirsCacheAbove } from "./cache";
+import { clearCntCache, clearVisitedDirsCacheAbove } from "./core/cache";
 import { debounce } from "./debounce";
 import { Logger } from "./types";
 

@@ -1,6 +1,6 @@
 import fs from "fs";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import * as generatePathStructure from "./generate-path-structure";
+import * as generatePathStructure from "./core/generate-path-structure";
 import { generate } from "./generator";
 
 describe("generate", () => {
