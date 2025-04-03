@@ -2,7 +2,7 @@ import mock from "mock-fs";
 import { describe, beforeEach, afterEach, it, expect } from "vitest";
 import {
   clearCntCache,
-  clearScanAppDirCache,
+  clearScanAppDirCacheAbove,
   scanAppDirCache,
   visitedDirsCache,
 } from "./cache";
@@ -514,7 +514,7 @@ describe("scanAppDirCache", () => {
     });
 
     const result1 = scanAppDir("/output", "/testApp");
-    clearScanAppDirCache("/testApp");
+    clearScanAppDirCacheAbove("/testApp");
     const result2 = scanAppDir("/output", "/testApp");
     expect(result1).not.toBe(result2);
   });
@@ -533,7 +533,7 @@ describe("scanAppDirCache", () => {
     const parentResult1 = scanAppDir("/output", "/testApp");
     const childResult1 = scanAppDir("/output", "/testApp/sub");
 
-    clearScanAppDirCache("/testApp/sub");
+    clearScanAppDirCacheAbove("/testApp/sub");
 
     const parentResult2 = scanAppDir("/output", "/testApp");
     const childResult2 = scanAppDir("/output", "/testApp/sub");
@@ -556,7 +556,7 @@ describe("scanAppDirCache", () => {
     const resultTestApp1 = scanAppDir("/output", "/testApp");
     const resultAnother1 = scanAppDir("/output", "/another");
 
-    clearScanAppDirCache("/nonexistent");
+    clearScanAppDirCacheAbove("/nonexistent");
 
     const resultTestApp2 = scanAppDir("/output", "/testApp");
     const resultAnother2 = scanAppDir("/output", "/another");
@@ -605,7 +605,7 @@ describe("scanAppDirCache modification scenarios - detailed verification", () =>
         },
       },
     });
-    clearScanAppDirCache("/testApp/sub/page.tsx");
+    clearScanAppDirCacheAbove("/testApp/sub/page.tsx");
     const modified = scanAppDir("/output", "/testApp");
     const expectedModified = `{
   "sub": { "$get": typeof GET_0 } & Endpoint
@@ -637,7 +637,7 @@ describe("scanAppDirCache modification scenarios - detailed verification", () =>
         },
       },
     });
-    clearScanAppDirCache("/testApp/mid/page.tsx");
+    clearScanAppDirCacheAbove("/testApp/mid/page.tsx");
     const modified = scanAppDir("/output", "/testApp");
     const expectedModified = `{
   "mid": { "$get": typeof GET_0 } & Endpoint
@@ -663,7 +663,7 @@ describe("scanAppDirCache modification scenarios - detailed verification", () =>
         "route.ts": "export function GET() {};",
       },
     });
-    clearScanAppDirCache("/testApp/index.ts");
+    clearScanAppDirCacheAbove("/testApp/index.ts");
     const modified = scanAppDir("/output", "/testApp");
     const expectedModified = `{ "$get": typeof GET_0 } & Endpoint`;
     expect(modified.pathStructure).toBe(expectedModified);
@@ -695,7 +695,7 @@ describe("scanAppDirCache modification scenarios - detailed verification", () =>
         },
       },
     });
-    clearScanAppDirCache("/testApp/sub/newFolder");
+    clearScanAppDirCacheAbove("/testApp/sub/newFolder");
     const modified = scanAppDir("/output", "/testApp");
     const expectedModified = `{
   "sub": Endpoint & {
@@ -738,7 +738,7 @@ describe("scanAppDirCache modification scenarios - detailed verification", () =>
         },
       },
     });
-    clearScanAppDirCache("/testApp/mid/newFolder");
+    clearScanAppDirCacheAbove("/testApp/mid/newFolder");
     const modified = scanAppDir("/output", "/testApp");
     const expectedModified = `{
   "mid": {
@@ -770,7 +770,7 @@ describe("scanAppDirCache modification scenarios - detailed verification", () =>
         },
       },
     });
-    clearScanAppDirCache("/testApp/newFolder");
+    clearScanAppDirCacheAbove("/testApp/newFolder");
     const modified = scanAppDir("/output", "/testApp");
     const expectedModified = `Endpoint & {
   "newFolder": Endpoint
@@ -825,7 +825,7 @@ describe("scanAppDirCache dynamic folder scenarios - detailed verification", () 
         },
       },
     });
-    clearScanAppDirCache("/testApp/[user]/[id]");
+    clearScanAppDirCacheAbove("/testApp/[user]/[id]");
     const modified = scanAppDir("/output", "/testApp");
     const expectedModified = `{
   "_user": {
@@ -871,7 +871,7 @@ describe("scanAppDirCache dynamic folder scenarios - detailed verification", () 
         },
       },
     });
-    clearScanAppDirCache("/testApp/[user]/[id]");
+    clearScanAppDirCacheAbove("/testApp/[user]/[id]");
     const modified = scanAppDir("/output", "/testApp");
     const expectedModified = `{
   "_user": {
@@ -923,7 +923,7 @@ describe("scanAppDirCache dynamic folder scenarios - detailed verification", () 
         },
       },
     });
-    clearScanAppDirCache("/testApp/[user]/[lang]");
+    clearScanAppDirCacheAbove("/testApp/[user]/[lang]");
     const modified = scanAppDir("/output", "/testApp");
     const expectedModified = `{
   "_user": {
@@ -1017,8 +1017,8 @@ describe("scanAppDirCache multiple child directories scenarios", () => {
     });
 
     // Clear caches for added dynamic folders
-    clearScanAppDirCache("/testApp/[admin]/[id]");
-    clearScanAppDirCache("/testApp/[user]/[id]");
+    clearScanAppDirCacheAbove("/testApp/[admin]/[id]");
+    clearScanAppDirCacheAbove("/testApp/[user]/[id]");
 
     const modified = scanAppDir("/output", "/testApp");
     const expectedModified = `{
@@ -1089,8 +1089,8 @@ describe("scanAppDirCache multiple child directories scenarios", () => {
     });
 
     // Clear caches for added dynamic folders
-    clearScanAppDirCache("/testApp/[user]/[id]");
-    clearScanAppDirCache("/testApp/[group]/[id]");
+    clearScanAppDirCacheAbove("/testApp/[user]/[id]");
+    clearScanAppDirCacheAbove("/testApp/[group]/[id]");
 
     const modified = scanAppDir("/output", "/testApp");
     const expectedModified = `{
