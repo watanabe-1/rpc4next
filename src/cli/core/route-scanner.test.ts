@@ -8,8 +8,12 @@ import {
 } from "./cache";
 import { hasTargetFiles, scanAppDir } from "./route-scanner";
 
+// ----------------------
+// Test for hasTargetFiles
+// ----------------------
 describe("hasTargetFiles", () => {
   beforeEach(() => {
+    // Prepare mock file system
     mock({
       "/testDir": {
         "file1.ts": "console.log('test');",
@@ -65,6 +69,7 @@ describe("hasTargetFiles", () => {
   });
 
   afterEach(() => {
+    // Restore original file system after each test
     mock.restore();
   });
 
@@ -81,7 +86,7 @@ describe("hasTargetFiles", () => {
     expect(result2).toBe(false);
   });
 
-  it("should return false if except directory", () => {
+  it("should return false if the directory is one of the except directories", () => {
     const result = hasTargetFiles("/except/intercepts");
     expect(result).toBe(false);
 
@@ -93,13 +98,18 @@ describe("hasTargetFiles", () => {
   });
 });
 
+// ----------------------
+// Test for scanAppDir
+// ----------------------
 describe("scanAppDir", () => {
   afterEach(() => {
+    // Cleanup
     mock.restore();
     scanAppDirCache.clear();
   });
 
   it("should scan API directory and generate path structure with multiple HTTP methods, excluding OPTIONS", () => {
+    // Setup API directory with multiple HTTP methods including OPTIONS
     mock({
       "/testApp": {
         api: {
@@ -113,7 +123,7 @@ describe("scanAppDir", () => {
                 export function DELETE() {};
                 export function PATCH() {};
                 export function HEAD() {};
-                export function OPTIONS() {}; // This should be ignored
+                export function OPTIONS() {}; // Should be ignored
               `,
             },
           },
@@ -121,6 +131,7 @@ describe("scanAppDir", () => {
       },
     });
 
+    // Expected path structure
     const expectPathStructure = `{
   "api": {
     "users": {
@@ -132,8 +143,10 @@ describe("scanAppDir", () => {
       "/output",
       "/testApp"
     );
+
     expect(pathStructure).equals(expectPathStructure);
 
+    // Should import 6 methods excluding OPTIONS
     expect(imports).toHaveLength(6);
 
     const expectedImports = [
@@ -177,6 +190,7 @@ describe("scanAppDir", () => {
       true
     );
 
+    // Parameter types
     expect(paramsTypes).toHaveLength(1);
 
     const expectedParamsTypes = [
@@ -191,7 +205,8 @@ describe("scanAppDir", () => {
     });
   });
 
-  it("should scan page directory and generate path structure with dynamic segmente", () => {
+  it("should scan page directory and generate path structure with dynamic segment", () => {
+    // Setup dynamic segment
     mock({
       "/testApp": {
         page: {
@@ -216,6 +231,7 @@ describe("scanAppDir", () => {
   });
 
   it("should generate path structure with query type", () => {
+    // Setup page containing a Query type
     mock({
       "/testApp": {
         query: {
@@ -236,7 +252,8 @@ describe("scanAppDir", () => {
     expect(pathStructure).equals(expectPathStructure);
   });
 
-  it("sshould scan directory with multiple dynamic segments and generate path structure", () => {
+  it("should scan directory with multiple dynamic segments and generate path structure", () => {
+    // Setup multiple dynamic segments
     mock({
       "/testApp": {
         dynamic: {
@@ -265,6 +282,7 @@ describe("scanAppDir", () => {
   });
 
   it("should scan directory with catch-all routes and generate path structure", () => {
+    // Setup catch-all routes
     mock({
       "/testApp": {
         catchAll: {
@@ -289,6 +307,7 @@ describe("scanAppDir", () => {
   });
 
   it("should scan directory with optional catch-all routes and generate path structure", () => {
+    // Setup optional catch-all routes
     mock({
       "/testApp": {
         OptionalCatchAll: {
@@ -313,6 +332,7 @@ describe("scanAppDir", () => {
   });
 
   it("should scan directory with grouped routes and generate path structure", () => {
+    // Setup grouped routes
     mock({
       "/testApp": {
         group: {
@@ -335,6 +355,7 @@ describe("scanAppDir", () => {
   });
 
   it("should scan directory with parallel routes and generate path structure", () => {
+    // Setup parallel routes
     mock({
       "/testApp": {
         parallel: {
@@ -357,6 +378,7 @@ describe("scanAppDir", () => {
   });
 
   it("should scan directory with intercepting routes and generate path structure", () => {
+    // Setup intercepting routes
     mock({
       "/testApp": {
         intercepts: {
@@ -393,6 +415,7 @@ describe("scanAppDir", () => {
   });
 
   it("should scan private directory and generate path structure", () => {
+    // Setup private directory
     mock({
       "/testApp": {
         private: {
@@ -414,12 +437,14 @@ describe("scanAppDir", () => {
   });
 
   it("should handle empty directories gracefully", () => {
+    // Handle empty directories
     mock({ "/emptyDir": {} });
     const { pathStructure } = scanAppDir("/output", "/emptyDir");
     expect(pathStructure).toBe("");
   });
 
-  it("should handle multiple paramss", () => {
+  it("should handle multiple params", () => {
+    // Setup for multiple params
     mock({
       "/testApp": {
         OptionalCatchAll: {
@@ -458,12 +483,17 @@ describe("scanAppDir", () => {
   });
 });
 
+// ----------------------
+// Tests for scanAppDirCache
+// ----------------------
 describe("scanAppDirCache", () => {
   afterEach(() => {
+    // Cleanup
     mock.restore();
   });
 
   it("should return the same cached result for the same directory", () => {
+    // Result should be cached
     mock({
       "/testApp": {
         "page.tsx": "export function Page() {};",
@@ -476,6 +506,7 @@ describe("scanAppDirCache", () => {
   });
 
   it("should clear cache when clearScanAppDirCache is called with the exact path", () => {
+    // Clear by exact path
     mock({
       "/testApp": {
         "page.tsx": "export function Page() {};",
@@ -489,6 +520,7 @@ describe("scanAppDirCache", () => {
   });
 
   it("should clear parent cache when clearScanAppDirCache is called with a subdirectory", () => {
+    // Clear cache by subdirectory
     mock({
       "/testApp": {
         "page.tsx": "export function Page() {};",
@@ -501,7 +533,6 @@ describe("scanAppDirCache", () => {
     const parentResult1 = scanAppDir("/output", "/testApp");
     const childResult1 = scanAppDir("/output", "/testApp/sub");
 
-    // Clear cache by indicating a change in the subdirectory.
     clearScanAppDirCache("/testApp/sub");
 
     const parentResult2 = scanAppDir("/output", "/testApp");
@@ -512,6 +543,7 @@ describe("scanAppDirCache", () => {
   });
 
   it("should not clear any cache if clearScanAppDirCache is called with a non-matching path", () => {
+    // Clear with irrelevant path
     mock({
       "/testApp": {
         "page.tsx": "export function Page() {};",
@@ -524,7 +556,6 @@ describe("scanAppDirCache", () => {
     const resultTestApp1 = scanAppDir("/output", "/testApp");
     const resultAnother1 = scanAppDir("/output", "/another");
 
-    // Call clear with a path that doesn't match any cached entry.
     clearScanAppDirCache("/nonexistent");
 
     const resultTestApp2 = scanAppDir("/output", "/testApp");
@@ -535,8 +566,12 @@ describe("scanAppDirCache", () => {
   });
 });
 
+// ----------------------
+// Detailed scenarios for cache modification
+// ----------------------
 describe("scanAppDirCache modification scenarios - detailed verification", () => {
   beforeEach(() => {
+    // Clear all caches before each test
     scanAppDirCache.clear();
     visitedDirsCache.clear();
     clearCntCache();
@@ -547,7 +582,7 @@ describe("scanAppDirCache modification scenarios - detailed verification", () =>
   });
 
   it("should generate correct output when the lowest-level file is modified", () => {
-    // 初回スキャン：最下層のファイル (page.tsx) で Endpoint として認識される
+    // First scan: recognized as an Endpoint from lowest-level file (page.tsx)
     mock({
       "/testApp": {
         sub: {
@@ -559,10 +594,9 @@ describe("scanAppDirCache modification scenarios - detailed verification", () =>
     const expectedInitial = `{
   "sub": Endpoint
 }`;
-
     expect(initial.pathStructure).toBe(expectedInitial);
 
-    // 変更後：同じファイルの内容を route 定義に変更（GET メソッドが検出される）
+    // After modification: change to route definition with GET method
     mock.restore();
     mock({
       "/testApp": {
@@ -571,7 +605,6 @@ describe("scanAppDirCache modification scenarios - detailed verification", () =>
         },
       },
     });
-    // 変更されたファイルのパスを指定してキャッシュクリア
     clearScanAppDirCache("/testApp/sub/page.tsx");
     const modified = scanAppDir("/output", "/testApp");
     const expectedModified = `{
@@ -581,7 +614,7 @@ describe("scanAppDirCache modification scenarios - detailed verification", () =>
   });
 
   it("should generate correct output when a mid-level file is modified", () => {
-    // 初回スキャン：中間層のファイル (page.tsx) で Endpoint として認識される
+    // First scan: recognized as an Endpoint from mid-level file
     mock({
       "/testApp": {
         mid: {
@@ -595,7 +628,7 @@ describe("scanAppDirCache modification scenarios - detailed verification", () =>
 }`;
     expect(initial.pathStructure).toBe(expectedInitial);
 
-    // 変更後：中間層のファイル内容を変更して GET メソッドが検出される
+    // After modification: add GET method
     mock.restore();
     mock({
       "/testApp": {
@@ -613,7 +646,7 @@ describe("scanAppDirCache modification scenarios - detailed verification", () =>
   });
 
   it("should generate correct output when a top-level file is modified", () => {
-    // 初回スキャン：トップレベルのファイル (index.ts) で Endpoint として認識される
+    // First scan: top-level file as Endpoint
     mock({
       "/testApp": {
         "route.ts": "export default function Index() {};",
@@ -623,7 +656,7 @@ describe("scanAppDirCache modification scenarios - detailed verification", () =>
     const expectedInitial = `Endpoint`;
     expect(initial.pathStructure).toBe(expectedInitial);
 
-    // 変更後：同じファイル内容を変更して GET メソッドが検出される
+    // After modification: add GET method
     mock.restore();
     mock({
       "/testApp": {
@@ -635,9 +668,8 @@ describe("scanAppDirCache modification scenarios - detailed verification", () =>
     const expectedModified = `{ "$get": typeof GET_0 } & Endpoint`;
     expect(modified.pathStructure).toBe(expectedModified);
   });
-
   it("should generate correct output when a folder is added in the lowest-level directory", () => {
-    // 初回スキャン：/testApp/sub に1ファイルのみが存在
+    // First scan: /testApp/sub has only one file
     mock({
       "/testApp": {
         sub: {
@@ -651,7 +683,7 @@ describe("scanAppDirCache modification scenarios - detailed verification", () =>
 }`;
     expect(initial.pathStructure).toBe(expectedInitial);
 
-    // 変更後：/testApp/sub に新たなフォルダ newFolder が追加され、その中にファイルが存在する
+    // After modification: a new folder (newFolder) is added under /testApp/sub with a file
     mock.restore();
     mock({
       "/testApp": {
@@ -665,7 +697,6 @@ describe("scanAppDirCache modification scenarios - detailed verification", () =>
     });
     clearScanAppDirCache("/testApp/sub/newFolder");
     const modified = scanAppDir("/output", "/testApp");
-    // ※ 内部では sub 以下で page.tsx から Endpoint、newFolder からも Endpoint が生成される
     const expectedModified = `{
   "sub": Endpoint & {
     "newFolder": Endpoint
@@ -675,7 +706,7 @@ describe("scanAppDirCache modification scenarios - detailed verification", () =>
   });
 
   it("should generate correct output when a folder is added in a mid-level directory", () => {
-    // 初回スキャン：/testApp/mid/sub に1ファイルのみが存在
+    // First scan: /testApp/mid/sub has only one file
     mock({
       "/testApp": {
         mid: {
@@ -693,7 +724,7 @@ describe("scanAppDirCache modification scenarios - detailed verification", () =>
 }`;
     expect(initial.pathStructure).toBe(expectedInitial);
 
-    // 変更後：/testApp/mid に新たなフォルダ newFolder が追加され、その中にファイルが存在する
+    // After modification: add newFolder under mid
     mock.restore();
     mock({
       "/testApp": {
@@ -709,7 +740,6 @@ describe("scanAppDirCache modification scenarios - detailed verification", () =>
     });
     clearScanAppDirCache("/testApp/mid/newFolder");
     const modified = scanAppDir("/output", "/testApp");
-    // sorting により、ディレクトリ名がアルファベット順で並ぶ (newFolder < sub)
     const expectedModified = `{
   "mid": {
     "newFolder": Endpoint,
@@ -720,7 +750,7 @@ describe("scanAppDirCache modification scenarios - detailed verification", () =>
   });
 
   it("should generate correct output when a folder is added in the top-level directory", () => {
-    // 初回スキャン：/testApp にトップレベルのファイルのみが存在
+    // First scan: /testApp has only a top-level file
     mock({
       "/testApp": {
         "route.ts": "export default function Index() {};",
@@ -730,7 +760,7 @@ describe("scanAppDirCache modification scenarios - detailed verification", () =>
     const expectedInitial = `Endpoint`;
     expect(initial.pathStructure).toBe(expectedInitial);
 
-    // 変更後：/testApp に新たなフォルダ newFolder が追加され、その中にファイルが存在する
+    // After modification: add newFolder at the top level
     mock.restore();
     mock({
       "/testApp": {
@@ -749,6 +779,9 @@ describe("scanAppDirCache modification scenarios - detailed verification", () =>
   });
 });
 
+// ----------------------
+// Tests for dynamic folder scenarios
+// ----------------------
 describe("scanAppDirCache dynamic folder scenarios - detailed verification", () => {
   beforeEach(() => {
     scanAppDirCache.clear();
@@ -761,7 +794,7 @@ describe("scanAppDirCache dynamic folder scenarios - detailed verification", () 
   });
 
   it("should generate correct output when a single dynamic folder is inserted in between", () => {
-    // 初期状態: /testApp/[user]/home/page.tsx
+    // Initial: /testApp/[user]/home/page.tsx
     mock({
       "/testApp": {
         "[user]": {
@@ -779,8 +812,7 @@ describe("scanAppDirCache dynamic folder scenarios - detailed verification", () 
 }`;
     expect(initial.pathStructure).toBe(expectedInitial);
 
-    // 変更後: ダイナミックフォルダを1段追加
-    // → /testApp/[user]/[id]/home/page.tsx
+    // After modification: insert dynamic folder [id]
     mock.restore();
     mock({
       "/testApp": {
@@ -793,7 +825,6 @@ describe("scanAppDirCache dynamic folder scenarios - detailed verification", () 
         },
       },
     });
-    // 追加された部分のキャッシュをクリア（※子ディレクトリのキャッシュを削除すれば上位も再生成される）
     clearScanAppDirCache("/testApp/[user]/[id]");
     const modified = scanAppDir("/output", "/testApp");
     const expectedModified = `{
@@ -807,7 +838,7 @@ describe("scanAppDirCache dynamic folder scenarios - detailed verification", () 
   });
 
   it("should generate correct output when multiple dynamic folders are added in between", () => {
-    // 初期状態: /testApp/[user]/home/page.tsx
+    // Initial: /testApp/[user]/home/page.tsx
     mock({
       "/testApp": {
         "[user]": {
@@ -825,8 +856,7 @@ describe("scanAppDirCache dynamic folder scenarios - detailed verification", () 
 }`;
     expect(initial.pathStructure).toBe(expectedInitial);
 
-    // 変更後: 複数のダイナミックフォルダを挿入
-    // → /testApp/[user]/[id]/[detail]/home/page.tsx
+    // After modification: insert [id] and [detail] in between
     mock.restore();
     mock({
       "/testApp": {
@@ -855,8 +885,8 @@ describe("scanAppDirCache dynamic folder scenarios - detailed verification", () 
     expect(modified.pathStructure).toBe(expectedModified);
   });
 
-  it("should generate correct output when a dynamic folder is inserted in the middle of an already multi-folder dynamic structure", () => {
-    // 初期状態: /testApp/[user]/[id]/home/page.tsx
+  it("should generate correct output when a dynamic folder is inserted in the middle of an existing dynamic structure", () => {
+    // Initial: /testApp/[user]/[id]/home/page.tsx
     mock({
       "/testApp": {
         "[user]": {
@@ -878,8 +908,7 @@ describe("scanAppDirCache dynamic folder scenarios - detailed verification", () 
 }`;
     expect(initial.pathStructure).toBe(expectedInitial);
 
-    // 変更後: 既存の2段階の間にもう1段階挿入
-    // → /testApp/[user]/[lang]/[id]/home/page.tsx
+    // After modification: insert [lang] between [user] and [id]
     mock.restore();
     mock({
       "/testApp": {
@@ -909,22 +938,23 @@ describe("scanAppDirCache dynamic folder scenarios - detailed verification", () 
   });
 });
 
+// ----------------------
+// Test for scanAppDirCache multiple child directories scenarios
+// ----------------------
 describe("scanAppDirCache multiple child directories scenarios", () => {
   beforeEach(() => {
+    // Clear caches before each test
     scanAppDirCache.clear();
     visitedDirsCache.clear();
     clearCntCache();
   });
 
   afterEach(() => {
+    // Restore the mock file system
     mock.restore();
   });
 
   it("should generate correct output when multiple child directories exist and one branch is modified with an additional dynamic folder", () => {
-    // 初期状態:
-    // /testApp
-    //   [user]/home/page.tsx   → dynamic: "[user]" → "_user" として処理される
-    //   static/home/page.tsx     → 静的ディレクトリ "static"
     mock({
       "/testApp": {
         "[user]": {
@@ -944,8 +974,9 @@ describe("scanAppDirCache multiple child directories scenarios", () => {
         },
       },
     });
+
     const initial = scanAppDir("/output", "/testApp");
-    // sorted順はファイルシステムのデフォルトの lexicographical ソートに従い、"[user]" は _user、"static" はそのまま "static"
+    // Sorted by lexicographical order
     const expectedInitial = `{
   "_admin": {
     "home": Endpoint & Record<ParamsKey, { "admin": string }>
@@ -959,10 +990,7 @@ describe("scanAppDirCache multiple child directories scenarios", () => {
 }`;
     expect(initial.pathStructure).toBe(expectedInitial);
 
-    // 変更後: [user] ブランチに動的フォルダ [id] を追加して
-    // /testApp
-    //   [user]/[id]/home/page.tsx   → _user/_id の階層に変化
-    //   static/home/page.tsx         → 変更なし
+    // After modification: add dynamic folder [id] under both branches
     mock.restore();
     mock({
       "/testApp": {
@@ -987,9 +1015,11 @@ describe("scanAppDirCache multiple child directories scenarios", () => {
         },
       },
     });
-    // 追加された動的フォルダのパスを指定してキャッシュクリア
+
+    // Clear caches for added dynamic folders
     clearScanAppDirCache("/testApp/[admin]/[id]");
     clearScanAppDirCache("/testApp/[user]/[id]");
+
     const modified = scanAppDir("/output", "/testApp");
     const expectedModified = `{
   "_admin": {
@@ -1010,11 +1040,6 @@ describe("scanAppDirCache multiple child directories scenarios", () => {
   });
 
   it("should generate correct output when multiple child directories exist and both branches are modified with additional dynamic folders", () => {
-    // 初期状態:
-    // /testApp
-    //   [user]/home/page.tsx      → _user
-    //   [group]/dashboard/page.tsx → _group
-    // ※ 両方とも動的フォルダのため、各ブランチは Record<ParamsKey, …> が付与される
     mock({
       "/testApp": {
         "[user]": {
@@ -1029,8 +1054,9 @@ describe("scanAppDirCache multiple child directories scenarios", () => {
         },
       },
     });
+
     const initial = scanAppDir("/output", "/testApp");
-    // ソート順："[group]" が先、"[user]" が後になる想定
+    // Sorting: "[group]" comes before "[user]"
     const expectedInitial = `{
   "_group": {
     "dashboard": Endpoint & Record<ParamsKey, { "group": string }>
@@ -1041,10 +1067,7 @@ describe("scanAppDirCache multiple child directories scenarios", () => {
 }`;
     expect(initial.pathStructure).toBe(expectedInitial);
 
-    // 変更後: 両ブランチに追加の動的フォルダ [id] を挿入
-    // /testApp
-    //   [user]/[id]/home/page.tsx      → _user/_id
-    //   [group]/[id]/dashboard/page.tsx  → _group/_id
+    // After modification: insert additional dynamic folder [id] into both branches
     mock.restore();
     mock({
       "/testApp": {
@@ -1064,9 +1087,11 @@ describe("scanAppDirCache multiple child directories scenarios", () => {
         },
       },
     });
-    // キャッシュクリア：両方の追加されたパスをクリアすれば上位も再生成される
+
+    // Clear caches for added dynamic folders
     clearScanAppDirCache("/testApp/[user]/[id]");
     clearScanAppDirCache("/testApp/[group]/[id]");
+
     const modified = scanAppDir("/output", "/testApp");
     const expectedModified = `{
   "_group": {
