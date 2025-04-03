@@ -4,7 +4,7 @@
 import fs from "fs";
 import path from "path";
 
-import { visitedDirsCache } from "./cache";
+import { scanAppDirCache, visitedDirsCache } from "./cache";
 import {
   INDENT,
   TYPE_END_POINT,
@@ -68,6 +68,9 @@ export const hasTargetFiles = (dirPath: string): boolean => {
   return false;
 };
 
+// console.log要撤去
+// imports,paramsTypesも正しいかのテストを追加
+
 export const scanAppDir = (
   output: string,
   input: string,
@@ -82,7 +85,21 @@ export const scanAppDir = (
       isParallel: boolean;
     };
   }[] = []
-) => {
+): {
+  pathStructure: string;
+  imports: {
+    statement: string;
+    path: string;
+  }[];
+  paramsTypes: {
+    paramsType: string;
+    path: string;
+  }[];
+} => {
+  if (scanAppDirCache.has(input)) {
+    return scanAppDirCache.get(input)!;
+  }
+
   indent += INDENT;
   const pathStructures: string[] = [];
   const imports: { statement: string; path: string }[] = [];
@@ -143,6 +160,7 @@ export const scanAppDir = (
         return { paramName: param, keyName: `${prefix}${param}` };
       })();
 
+      let nextParams = params;
       if (isDynamic || isCatchAll || isOptionalCatchAll) {
         const routeType = {
           isGroup,
@@ -152,7 +170,7 @@ export const scanAppDir = (
           isDynamic,
         };
 
-        params.push({ paramName, routeType });
+        nextParams = [...params, { paramName, routeType }];
       }
 
       const isSkipDir = isGroup || isParallel;
@@ -165,7 +183,7 @@ export const scanAppDir = (
         output,
         fullPath,
         isSkipDir ? indent.replace(INDENT, "") : indent,
-        [...params]
+        nextParams
       );
 
       imports.push(...childImports);
@@ -216,7 +234,6 @@ export const scanAppDir = (
 
           return { name: paramName, type: paramType };
         });
-
         const paramsType = createObjectType(fields);
         paramsTypes.push({ paramsType, path: fullPath.replace(/\\/g, "/") });
         types.push(createRecodeType(TYPE_KEY_PARAMS, paramsType));
@@ -234,9 +251,13 @@ export const scanAppDir = (
         )}${NEWLINE}${indent.replace(INDENT, "")}}`
       : typeString;
 
-  return {
+  const result = {
     pathStructure,
     imports,
     paramsTypes,
   };
+
+  scanAppDirCache.set(input, result);
+
+  return result;
 };
