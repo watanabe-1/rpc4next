@@ -1,5 +1,9 @@
 import chokidar from "chokidar";
-import { clearCntCache, clearVisitedDirsCacheAbove } from "./core/cache";
+import {
+  clearCntCache,
+  clearScanAppDirCacheAbove,
+  clearVisitedDirsCacheAbove,
+} from "./core/cache";
 import { debounce } from "./debounce";
 import { Logger } from "./types";
 
@@ -21,6 +25,7 @@ export const setupWatcher = (
   const debouncedGenerate = debounce(() => {
     changedPaths.forEach((path) => {
       clearVisitedDirsCacheAbove(path);
+      clearScanAppDirCacheAbove(path);
     });
     changedPaths.clear();
     clearCntCache();
