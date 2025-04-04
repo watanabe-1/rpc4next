@@ -38,6 +38,8 @@ export const setupWatcher = (
   });
 
   watcher.on("ready", () => {
+    // First execution
+    debouncedGenerate();
     watcher.on("all", (event, path) => {
       if (isTargetFiles(path)) {
         logger.info(`[${event}] ${path}`);

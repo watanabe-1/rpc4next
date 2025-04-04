@@ -21,13 +21,6 @@ export const handleCli = (
     return 1;
   }
 
-  generate({
-    baseDir: resolvedBaseDir,
-    outputPath: resolvedOutputPath,
-    paramsFileName: options.paramsFile || null,
-    logger,
-  });
-
   if (options.watch) {
     setupWatcher(
       resolvedBaseDir,
@@ -41,6 +34,13 @@ export const handleCli = (
       },
       logger
     );
+  } else {
+    generate({
+      baseDir: resolvedBaseDir,
+      outputPath: resolvedOutputPath,
+      paramsFileName: options.paramsFile || null,
+      logger,
+    });
   }
 
   return 0;
