@@ -10,7 +10,9 @@ vi.mock("./core/cache", () => ({
   clearScanAppDirCacheAbove: vi.fn(),
 }));
 
-vi.spyOn(debounceModule, "debounce").mockImplementation((fn) => fn);
+vi.spyOn(debounceModule, "debounceOnceRunningWithTrailing").mockImplementation(
+  (fn) => fn
+);
 
 const logger = {
   info: vi.fn(),

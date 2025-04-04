@@ -3,7 +3,7 @@ import {
   clearScanAppDirCacheAbove,
   clearVisitedDirsCacheAbove,
 } from "./core/cache";
-import { debounce } from "./debounce";
+import { debounceOnceRunningWithTrailing } from "./debounce";
 import { Logger } from "./types";
 
 export const setupWatcher = (
@@ -21,7 +21,7 @@ export const setupWatcher = (
   // Once the debounced function starts executing, no new watcher events will be processed until it completes.
   // This is due to JavaScript's single-threaded event loop: the current debounced function runs to completion,
   // and any new change events are queued until the execution finishes.
-  const debouncedGenerate = debounce(() => {
+  const debouncedGenerate = debounceOnceRunningWithTrailing(() => {
     changedPaths.forEach((path) => {
       clearVisitedDirsCacheAbove(path);
       clearScanAppDirCacheAbove(path);
