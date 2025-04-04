@@ -57,7 +57,7 @@ describe("handleCli", () => {
     const result = handleCli(baseDir, outputPath, options, logger);
 
     expect(result).toBe(0);
-    expect(generatorModule.generate).toHaveBeenCalledTimes(1);
+    expect(generatorModule.generate).toHaveBeenCalledTimes(0);
     expect(watcherModule.setupWatcher).toHaveBeenCalledWith(
       expect.stringContaining("/testDir"),
       expect.any(Function),
@@ -68,7 +68,7 @@ describe("handleCli", () => {
     const callback = mockedSetupWatcher.mock.calls[0][1];
     callback();
 
-    expect(generatorModule.generate).toHaveBeenCalledTimes(2);
+    expect(generatorModule.generate).toHaveBeenCalledTimes(1);
   });
 
   it("should work correctly when options are omitted", () => {

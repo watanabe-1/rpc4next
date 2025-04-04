@@ -58,7 +58,7 @@ describe("setupWatcher", () => {
       return fakeWatcher;
     });
 
-    readyHandler?.();
+    readyHandler?.(); // debouncedGenerate() runs once here
 
     allHandler?.("change", "/base/dir/foo/page.tsx");
 
@@ -69,7 +69,7 @@ describe("setupWatcher", () => {
     expect(cacheModule.clearScanAppDirCacheAbove).toHaveBeenCalledWith(
       "/base/dir/foo/page.tsx"
     );
-    expect(onGenerate).toHaveBeenCalled();
+    expect(onGenerate).toHaveBeenCalledTimes(2);
   });
 
   it("should ignore non-target files", () => {
@@ -89,12 +89,13 @@ describe("setupWatcher", () => {
 
     readyHandler?.();
 
+    // Only the initial call from ready
     expect(logger.info).not.toHaveBeenCalledWith(
       "[change] /base/dir/foo/other.txt"
     );
     expect(cacheModule.clearVisitedDirsCacheAbove).not.toHaveBeenCalled();
     expect(cacheModule.clearScanAppDirCacheAbove).not.toHaveBeenCalled();
-    expect(onGenerate).not.toHaveBeenCalled();
+    expect(onGenerate).toHaveBeenCalledTimes(1); // only from ready
   });
 
   it("should process multiple changed paths before debounce triggers", () => {
@@ -134,6 +135,6 @@ describe("setupWatcher", () => {
       "/base/dir/bar/route.ts"
     );
 
-    expect(onGenerate).toHaveBeenCalled();
+    expect(onGenerate).toHaveBeenCalledTimes(3);
   });
 });
