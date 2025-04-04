@@ -1,22 +1,33 @@
 import path from "path";
+import type { scanAppDir } from "./route-scanner";
 
+// Caches
 export const visitedDirsCache = new Map<string, boolean>();
-export const cntCache = {} as Record<string, number>;
+export const scanAppDirCache = new Map<string, ReturnType<typeof scanAppDir>>();
 
-export const clearCntCache = () => {
-  Object.keys(cntCache).forEach((key) => delete cntCache[key]);
-};
-
-export const clearVisitedDirsCacheAbove = (targetPath: string) => {
+// Generic function to clear cache entries above a target path
+const clearCacheAbove = (
+  cache: Map<string, unknown>,
+  targetPath: string
+): void => {
   const basePath = path.resolve(targetPath);
 
-  for (const key of visitedDirsCache.keys()) {
+  [...cache.keys()].forEach((key) => {
     const normalizedKey = path.resolve(key);
     if (
       normalizedKey === basePath ||
       basePath.startsWith(normalizedKey + path.sep)
     ) {
-      visitedDirsCache.delete(key);
+      cache.delete(key);
     }
-  }
+  });
+};
+
+// Specific clear functions using the generic one
+export const clearVisitedDirsCacheAbove = (targetPath: string): void => {
+  clearCacheAbove(visitedDirsCache, targetPath);
+};
+
+export const clearScanAppDirCacheAbove = (targetPath: string): void => {
+  clearCacheAbove(scanAppDirCache, targetPath);
 };

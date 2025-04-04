@@ -7,6 +7,7 @@ import { setupWatcher } from "./watcher";
 vi.mock("./core/cache", () => ({
   clearCntCache: vi.fn(),
   clearVisitedDirsCacheAbove: vi.fn(),
+  clearScanAppDirCacheAbove: vi.fn(),
 }));
 
 vi.spyOn(debounceModule, "debounce").mockImplementation((fn) => fn);
@@ -63,7 +64,9 @@ describe("setupWatcher", () => {
     expect(cacheModule.clearVisitedDirsCacheAbove).toHaveBeenCalledWith(
       "/base/dir/foo/page.tsx"
     );
-    expect(cacheModule.clearCntCache).toHaveBeenCalled();
+    expect(cacheModule.clearScanAppDirCacheAbove).toHaveBeenCalledWith(
+      "/base/dir/foo/page.tsx"
+    );
     expect(onGenerate).toHaveBeenCalled();
   });
 
@@ -88,7 +91,7 @@ describe("setupWatcher", () => {
       "[change] /base/dir/foo/other.txt"
     );
     expect(cacheModule.clearVisitedDirsCacheAbove).not.toHaveBeenCalled();
-    expect(cacheModule.clearCntCache).not.toHaveBeenCalled();
+    expect(cacheModule.clearScanAppDirCacheAbove).not.toHaveBeenCalled();
     expect(onGenerate).not.toHaveBeenCalled();
   });
 
@@ -119,11 +122,16 @@ describe("setupWatcher", () => {
     expect(cacheModule.clearVisitedDirsCacheAbove).toHaveBeenCalledWith(
       "/base/dir/foo/page.tsx"
     );
+    expect(cacheModule.clearScanAppDirCacheAbove).toHaveBeenCalledWith(
+      "/base/dir/foo/page.tsx"
+    );
     expect(cacheModule.clearVisitedDirsCacheAbove).toHaveBeenCalledWith(
       "/base/dir/bar/route.ts"
     );
+    expect(cacheModule.clearScanAppDirCacheAbove).toHaveBeenCalledWith(
+      "/base/dir/bar/route.ts"
+    );
 
-    expect(cacheModule.clearCntCache).toHaveBeenCalled();
     expect(onGenerate).toHaveBeenCalled();
   });
 });

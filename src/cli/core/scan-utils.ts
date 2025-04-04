@@ -1,5 +1,5 @@
 import fs from "fs";
-import { cntCache } from "./cache";
+import { createImportAlias } from "./alias";
 import {
   QUERY_TYPES,
   TYPE_KEY_QUERY,
@@ -8,15 +8,6 @@ import {
 import { createRelativeImportPath } from "./path-utils";
 import { createImport, createRecodeType, createObjectType } from "./type-utils";
 import { HttpMethod } from "../../lib/types";
-
-// 連番付与
-export const createImportAlias = (type: string, key: string) => {
-  if (!cntCache[key]) {
-    cntCache[key] = 0;
-  }
-
-  return `${type}_${cntCache[key]++}`;
-};
 
 export const scanFile = <T extends string | undefined>(
   outputFile: string,
@@ -32,7 +23,7 @@ export const scanFile = <T extends string | undefined>(
 
   const relativeImportPath = createRelativeImportPath(outputFile, inputFile);
 
-  const importAlias = createImportAlias(type, type);
+  const importAlias = createImportAlias(relativeImportPath, type);
 
   return {
     importName: importAlias,
