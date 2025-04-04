@@ -67,7 +67,6 @@ describe("setupWatcher", () => {
     expect(cacheModule.clearScanAppDirCacheAbove).toHaveBeenCalledWith(
       "/base/dir/foo/page.tsx"
     );
-    expect(cacheModule.clearCntCache).toHaveBeenCalled();
     expect(onGenerate).toHaveBeenCalled();
   });
 
@@ -93,7 +92,6 @@ describe("setupWatcher", () => {
     );
     expect(cacheModule.clearVisitedDirsCacheAbove).not.toHaveBeenCalled();
     expect(cacheModule.clearScanAppDirCacheAbove).not.toHaveBeenCalled();
-    expect(cacheModule.clearCntCache).not.toHaveBeenCalled();
     expect(onGenerate).not.toHaveBeenCalled();
   });
 
@@ -134,7 +132,6 @@ describe("setupWatcher", () => {
       "/base/dir/bar/route.ts"
     );
 
-    expect(cacheModule.clearCntCache).toHaveBeenCalled();
     expect(onGenerate).toHaveBeenCalled();
   });
 });

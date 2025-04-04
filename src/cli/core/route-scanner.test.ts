@@ -1,12 +1,15 @@
 import mock from "mock-fs";
-import { describe, beforeEach, afterEach, it, expect } from "vitest";
+import { describe, beforeEach, afterEach, it, expect, vi } from "vitest";
 import {
-  clearCntCache,
   clearScanAppDirCacheAbove,
   scanAppDirCache,
   visitedDirsCache,
 } from "./cache";
 import { hasTargetFiles, scanAppDir } from "./route-scanner";
+
+vi.mock("./alias", () => ({
+  createImportAlias: vi.fn((path: string, name: string) => `${name}_asmocked`),
+}));
 
 // ----------------------
 // Test for hasTargetFiles
@@ -135,7 +138,7 @@ describe("scanAppDir", () => {
     const expectPathStructure = `{
   "api": {
     "users": {
-      "_id": { "$get": typeof GET_0 } & { "$head": typeof HEAD_0 } & { "$post": typeof POST_0 } & { "$put": typeof PUT_0 } & { "$delete": typeof DELETE_0 } & { "$patch": typeof PATCH_0 } & Endpoint & Record<ParamsKey, { "id": string }>
+      "_id": { "$get": typeof GET_asmocked } & { "$head": typeof HEAD_asmocked } & { "$post": typeof POST_asmocked } & { "$put": typeof PUT_asmocked } & { "$delete": typeof DELETE_asmocked } & { "$patch": typeof PATCH_asmocked } & Endpoint & Record<ParamsKey, { "id": string }>
     }
   }
 }`;
@@ -152,32 +155,32 @@ describe("scanAppDir", () => {
     const expectedImports = [
       {
         statement:
-          'import type { GET as GET_0 } from "./testApp/api/users/[id]/route";',
+          'import type { GET as GET_asmocked } from "./testApp/api/users/[id]/route";',
         method: "GET",
       },
       {
         statement:
-          'import type { HEAD as HEAD_0 } from "./testApp/api/users/[id]/route";',
+          'import type { HEAD as HEAD_asmocked } from "./testApp/api/users/[id]/route";',
         method: "HEAD",
       },
       {
         statement:
-          'import type { POST as POST_0 } from "./testApp/api/users/[id]/route";',
+          'import type { POST as POST_asmocked } from "./testApp/api/users/[id]/route";',
         method: "POST",
       },
       {
         statement:
-          'import type { PUT as PUT_0 } from "./testApp/api/users/[id]/route";',
+          'import type { PUT as PUT_asmocked } from "./testApp/api/users/[id]/route";',
         method: "PUT",
       },
       {
         statement:
-          'import type { DELETE as DELETE_0 } from "./testApp/api/users/[id]/route";',
+          'import type { DELETE as DELETE_asmocked } from "./testApp/api/users/[id]/route";',
         method: "DELETE",
       },
       {
         statement:
-          'import type { PATCH as PATCH_0 } from "./testApp/api/users/[id]/route";',
+          'import type { PATCH as PATCH_asmocked } from "./testApp/api/users/[id]/route";',
         method: "PATCH",
       },
     ];
@@ -245,7 +248,7 @@ describe("scanAppDir", () => {
 
     const expectPathStructure = `{
   "query": {
-    "home": Record<QueryKey, Query_0> & Endpoint
+    "home": Record<QueryKey, Query_asmocked> & Endpoint
   }
 }`;
     const { pathStructure } = scanAppDir("/output", "/testApp");
@@ -574,7 +577,6 @@ describe("scanAppDirCache modification scenarios - detailed verification", () =>
     // Clear all caches before each test
     scanAppDirCache.clear();
     visitedDirsCache.clear();
-    clearCntCache();
   });
 
   afterEach(() => {
@@ -608,7 +610,7 @@ describe("scanAppDirCache modification scenarios - detailed verification", () =>
     clearScanAppDirCacheAbove("/testApp/sub/page.tsx");
     const modified = scanAppDir("/output", "/testApp");
     const expectedModified = `{
-  "sub": { "$get": typeof GET_0 } & Endpoint
+  "sub": { "$get": typeof GET_asmocked } & Endpoint
 }`;
     expect(modified.pathStructure).toBe(expectedModified);
   });
@@ -640,7 +642,7 @@ describe("scanAppDirCache modification scenarios - detailed verification", () =>
     clearScanAppDirCacheAbove("/testApp/mid/page.tsx");
     const modified = scanAppDir("/output", "/testApp");
     const expectedModified = `{
-  "mid": { "$get": typeof GET_0 } & Endpoint
+  "mid": { "$get": typeof GET_asmocked } & Endpoint
 }`;
     expect(modified.pathStructure).toBe(expectedModified);
   });
@@ -665,7 +667,7 @@ describe("scanAppDirCache modification scenarios - detailed verification", () =>
     });
     clearScanAppDirCacheAbove("/testApp/index.ts");
     const modified = scanAppDir("/output", "/testApp");
-    const expectedModified = `{ "$get": typeof GET_0 } & Endpoint`;
+    const expectedModified = `{ "$get": typeof GET_asmocked } & Endpoint`;
     expect(modified.pathStructure).toBe(expectedModified);
   });
   it("should generate correct output when a folder is added in the lowest-level directory", () => {
@@ -786,7 +788,6 @@ describe("scanAppDirCache dynamic folder scenarios - detailed verification", () 
   beforeEach(() => {
     scanAppDirCache.clear();
     visitedDirsCache.clear();
-    clearCntCache();
   });
 
   afterEach(() => {
@@ -946,7 +947,6 @@ describe("scanAppDirCache multiple child directories scenarios", () => {
     // Clear caches before each test
     scanAppDirCache.clear();
     visitedDirsCache.clear();
-    clearCntCache();
   });
 
   afterEach(() => {

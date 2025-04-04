@@ -1,10 +1,8 @@
 import path from "path";
 import { describe, it, expect, beforeEach } from "vitest";
 import {
-  clearCntCache,
   clearVisitedDirsCacheAbove,
   clearScanAppDirCacheAbove,
-  cntCache,
   visitedDirsCache,
   scanAppDirCache,
 } from "./cache";
@@ -84,27 +82,6 @@ describe("clearVisitedDirsCacheAbove", () => {
     const originalSize = visitedDirsCache.size;
     clearVisitedDirsCacheAbove(filePath);
     expect(visitedDirsCache.size).toBe(originalSize);
-  });
-});
-
-describe("clearCntCache", () => {
-  beforeEach(() => {
-    clearCntCache();
-  });
-
-  it("clears populated cntCache", () => {
-    cntCache["key1"] = 10;
-    cntCache["key2"] = 20;
-
-    expect(Object.keys(cntCache)).toHaveLength(2);
-    clearCntCache();
-    expect(Object.keys(cntCache)).toHaveLength(0);
-  });
-
-  it("works even if cntCache is already empty", () => {
-    expect(Object.keys(cntCache)).toHaveLength(0);
-    clearCntCache();
-    expect(Object.keys(cntCache)).toHaveLength(0);
   });
 });
 

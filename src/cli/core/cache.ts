@@ -4,14 +4,6 @@ import type { scanAppDir } from "./route-scanner";
 // Caches
 export const visitedDirsCache = new Map<string, boolean>();
 export const scanAppDirCache = new Map<string, ReturnType<typeof scanAppDir>>();
-export const cntCache: Record<string, number> = {};
-
-// Clear count cache
-export const clearCntCache = (): void => {
-  Object.keys(cntCache).forEach((key) => {
-    delete cntCache[key];
-  });
-};
 
 // Generic function to clear cache entries above a target path
 const clearCacheAbove = (

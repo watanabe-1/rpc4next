@@ -25,12 +25,12 @@ describe("scanQuery", () => {
 
     const result = scanQuery("output.ts", "input.ts");
     expect(result).toBeDefined();
-    expect(result?.importName).toBe("Query_0");
+    expect(result?.importName).toBe("Query_da299b9577978fcd");
     expect(result?.importPath).toBe("./input");
     expect(result?.importStatement).toBe(
-      "import type { Query as Query_0 } from './input';"
+      "import type { Query as Query_da299b9577978fcd } from './input';"
     );
-    expect(result?.type).toBe("Record<QueryKey, Query_0>");
+    expect(result?.type).toBe("Record<QueryKey, Query_da299b9577978fcd>");
   });
 
   it("should return a query definition for an exported type alias", () => {
@@ -40,12 +40,14 @@ describe("scanQuery", () => {
 
     const result = scanQuery("output.ts", "input.ts");
     expect(result).toBeDefined();
-    expect(result?.importName).toBe("OptionalQuery_0");
+    expect(result?.importName).toBe("OptionalQuery_d6b34eab427491f5");
     expect(result?.importPath).toBe("./input");
     expect(result?.importStatement).toBe(
-      "import type { OptionalQuery as OptionalQuery_0 } from './input';"
+      "import type { OptionalQuery as OptionalQuery_d6b34eab427491f5 } from './input';"
     );
-    expect(result?.type).toBe("Record<OptionalQueryKey, OptionalQuery_0>");
+    expect(result?.type).toBe(
+      "Record<OptionalQueryKey, OptionalQuery_d6b34eab427491f5>"
+    );
   });
 
   it("should return undefined when no relevant query definition exists", () => {
@@ -67,12 +69,12 @@ describe("scanRoute", () => {
 
     const result = scanRoute("output.ts", "input.ts", "GET");
     expect(result).toBeDefined();
-    expect(result?.importName).toBe("GET_0");
+    expect(result?.importName).toBe("GET_84a33c1aab9019d2");
     expect(result?.importPath).toBe("./input");
     expect(result?.importStatement).toBe(
-      "import type { GET as GET_0 } from './input';"
+      "import type { GET as GET_84a33c1aab9019d2 } from './input';"
     );
-    expect(result?.type).toBe('{ "$get": typeof GET_0 }');
+    expect(result?.type).toBe('{ "$get": typeof GET_84a33c1aab9019d2 }');
   });
 
   it("should return a route definition for an exported constant function", () => {
@@ -82,12 +84,12 @@ describe("scanRoute", () => {
 
     const result = scanRoute("output.ts", "input.ts", "PATCH");
     expect(result).toBeDefined();
-    expect(result?.importName).toBe("PATCH_0");
+    expect(result?.importName).toBe("PATCH_2fb9d0ae6e8b8cfc");
     expect(result?.importPath).toBe("./input");
     expect(result?.importStatement).toBe(
-      "import type { PATCH as PATCH_0 } from './input';"
+      "import type { PATCH as PATCH_2fb9d0ae6e8b8cfc } from './input';"
     );
-    expect(result?.type).toBe('{ "$patch": typeof PATCH_0 }');
+    expect(result?.type).toBe('{ "$patch": typeof PATCH_2fb9d0ae6e8b8cfc }');
   });
 
   it("should return a route definition for a destructured export", () => {
@@ -98,12 +100,12 @@ describe("scanRoute", () => {
 
     const result = scanRoute("output.ts", "input.ts", "POST");
     expect(result).toBeDefined();
-    expect(result?.importName).toBe("POST_0");
+    expect(result?.importName).toBe("POST_8393a35405bb7d7f");
     expect(result?.importPath).toBe("./input");
     expect(result?.importStatement).toBe(
-      "import type { POST as POST_0 } from './input';"
+      "import type { POST as POST_8393a35405bb7d7f } from './input';"
     );
-    expect(result?.type).toBe('{ "$post": typeof POST_0 }');
+    expect(result?.type).toBe('{ "$post": typeof POST_8393a35405bb7d7f }');
   });
 
   it("should return a route definition for a re-exported function", () => {
@@ -113,12 +115,12 @@ describe("scanRoute", () => {
 
     const result = scanRoute("output.ts", "input.ts", "DELETE");
     expect(result).toBeDefined();
-    expect(result?.importName).toBe("DELETE_0");
+    expect(result?.importName).toBe("DELETE_bacf7eb8c865f8b9");
     expect(result?.importPath).toBe("./input");
     expect(result?.importStatement).toBe(
-      "import type { DELETE as DELETE_0 } from './input';"
+      "import type { DELETE as DELETE_bacf7eb8c865f8b9 } from './input';"
     );
-    expect(result?.type).toBe('{ "$delete": typeof DELETE_0 }');
+    expect(result?.type).toBe('{ "$delete": typeof DELETE_bacf7eb8c865f8b9 }');
   });
 
   it("should increment alias count for multiple imports of the same route", () => {
@@ -128,21 +130,21 @@ describe("scanRoute", () => {
 
     const result = scanRoute("output.ts", "input.ts", "PUT");
     expect(result).toBeDefined();
-    expect(result?.importName).toBe("PUT_0");
+    expect(result?.importName).toBe("PUT_203d1825e2307ab2");
     expect(result?.importPath).toBe("./input");
     expect(result?.importStatement).toBe(
-      "import type { PUT as PUT_0 } from './input';"
+      "import type { PUT as PUT_203d1825e2307ab2 } from './input';"
     );
-    expect(result?.type).toBe('{ "$put": typeof PUT_0 }');
+    expect(result?.type).toBe('{ "$put": typeof PUT_203d1825e2307ab2 }');
 
     const result2 = scanRoute("output.ts", "input.ts", "PUT");
     expect(result2).toBeDefined();
-    expect(result2?.importName).toBe("PUT_1");
+    expect(result2?.importName).toBe("PUT_203d1825e2307ab2");
     expect(result2?.importPath).toBe("./input");
     expect(result2?.importStatement).toBe(
-      "import type { PUT as PUT_1 } from './input';"
+      "import type { PUT as PUT_203d1825e2307ab2 } from './input';"
     );
-    expect(result2?.type).toBe('{ "$put": typeof PUT_1 }');
+    expect(result2?.type).toBe('{ "$put": typeof PUT_203d1825e2307ab2 }');
   });
 
   it("should return undefined when no matching route definition exists", () => {

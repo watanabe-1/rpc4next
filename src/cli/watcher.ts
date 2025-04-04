@@ -1,6 +1,5 @@
 import chokidar from "chokidar";
 import {
-  clearCntCache,
   clearScanAppDirCacheAbove,
   clearVisitedDirsCacheAbove,
 } from "./core/cache";
@@ -28,7 +27,6 @@ export const setupWatcher = (
       clearScanAppDirCacheAbove(path);
     });
     changedPaths.clear();
-    clearCntCache();
 
     onGenerate();
   }, 300);
