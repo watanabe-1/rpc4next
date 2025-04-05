@@ -1,5 +1,8 @@
-// Inspired by Hono (https://github.com/honojs/hono)
-// Some parts of this code are based on or adapted from the Hono project
+/*!
+ * Inspired by the design of Hono (https://github.com/honojs/hono)
+ * and pathpida (https://github.com/aspida/pathpida)
+ * particularly their routing structures and developer experience.
+ */
 
 import { httpMethod } from "./http-method";
 import { matchPath } from "./match";

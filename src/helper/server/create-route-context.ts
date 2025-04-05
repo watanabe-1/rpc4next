@@ -1,19 +1,16 @@
-// Inspired by Hono (https://github.com/honojs/hono)
-// Some parts of this code are based on or adapted from the Hono project
-
 import { NextResponse } from "next/server";
 import { searchParamsToObject } from "./search-params-to-object";
+import type { ValidationSchema } from "./route-types";
 import type {
   RouteContext,
   Query,
-  ValidationSchema,
   Params,
-  ValidationTarget,
   TypedNextResponse,
   HttpStatusCode,
   ContentType,
   RedirectionHttpStatusCode,
   TypedResponseInit,
+  ValidationTarget,
 } from "./types";
 import type { NextRequest } from "next/server";
 

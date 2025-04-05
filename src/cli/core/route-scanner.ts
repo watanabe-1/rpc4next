@@ -1,5 +1,7 @@
-// Inspired by pathpida (https://github.com/aspida/pathpida)
-// Some parts of this code are based on or adapted from the pathpida project
+/*!
+ * Inspired by pathpida (https://github.com/aspida/pathpida),
+ * especially the design and UX of its CLI.
+ */
 
 import fs from "fs";
 import path from "path";
@@ -67,9 +69,6 @@ export const hasTargetFiles = (dirPath: string): boolean => {
 
   return false;
 };
-
-// console.log要撤去
-// imports,paramsTypesも正しいかのテストを追加
 
 export const scanAppDir = (
   output: string,

@@ -1,15 +1,19 @@
+/*!
+ * Inspired by Hono (https://github.com/honojs/hono),
+ * particularly its routing design and handler interface.
+ */
+
 import { createRouteContext } from "./create-route-context";
-import { HttpMethod } from "../../lib/types";
 import type {
-  Query,
-  Params,
-  RouteBindings,
   ValidationSchema,
   Handler,
-  MethodRouteDefinition,
   RequiredRouteResponse,
   ErrorHandler,
-} from "./types";
+  RouteBindings,
+  MethodRouteDefinition,
+} from "./route-types";
+import type { Query, Params } from "./types";
+import type { HttpMethod } from "../../lib/types";
 import type { NextRequest } from "next/server";
 
 const composeHandlersWithError = <

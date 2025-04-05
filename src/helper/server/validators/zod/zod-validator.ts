@@ -1,13 +1,19 @@
-// Inspired by Hono (https://github.com/honojs/middleware/tree/main/packages/zod-validator)
-// Some parts of this code are based on or adapted from the Hono project
+/*!
+ * Portions of this code are based on the Hono project (https://github.com/honojs/middleware/tree/main/packages/zod-validator),
+ * originally created by Yusuke Wada (https://github.com/yusukebe) and developed with
+ * contributions from the Hono community.
+ * This code has been adapted and modified for this project.
+ * Original copyright belongs to Yusuke Wada and the Hono project contributors.
+ * Hono is licensed under the MIT License.
+ */
 
 import { createHandler } from "../../create-handler";
+import type { ValidationSchema } from "../../route-types";
 import type {
   RouteContext,
   Params,
   Query,
   TypedNextResponse,
-  ValidationSchema,
   ConditionalValidationInput,
   ValidationTarget,
 } from "../../types";

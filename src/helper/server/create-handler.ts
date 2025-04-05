@@ -1,10 +1,5 @@
-import type {
-  Handler,
-  Params,
-  Query,
-  RouteResponse,
-  ValidationSchema,
-} from "./types";
+import type { ValidationSchema, RouteResponse, Handler } from "./route-types";
+import type { Params, Query } from "./types";
 
 // I want to use currying so that the return value can be inferred.
 export const createHandler = <
