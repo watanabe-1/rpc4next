@@ -5,7 +5,9 @@ import type {
   UrlOptions,
   ClientOptions,
   TypedRequestInit,
+  BodyOptions,
 } from "./types";
+import type { ContentType } from "../server/types";
 
 const normalizeHeaders = (headers?: HeadersInit): Record<string, string> => {
   const result: Record<string, string> = {};
@@ -38,8 +40,19 @@ export const httpMethod = (
   dynamicKeys: string[],
   defaultOptions: ClientOptions
 ) => {
-  return async (url?: UrlOptions, options?: ClientOptions) => {
-    const urlObj = createUrl([...paths], params, dynamicKeys)(url);
+  return async (
+    methodParam?: { url?: UrlOptions; body?: BodyOptions },
+    options?: ClientOptions
+  ) => {
+    let methodParamBody: BodyInit | undefined = undefined;
+    let methodParamContentType: ContentType | undefined = undefined;
+
+    if (methodParam?.body?.json) {
+      methodParamContentType = "application/json";
+      methodParamBody = JSON.stringify(methodParam.body.json);
+    }
+
+    const urlObj = createUrl([...paths], params, dynamicKeys)(methodParam?.url);
     const method = key.replace(/^\$/, "").toUpperCase();
 
     const customFetch = options?.fetch || defaultOptions.fetch || fetch;
@@ -54,16 +67,25 @@ export const httpMethod = (
       ...innerHeaders,
     };
 
+    if (methodParamContentType) {
+      mergedHeaders["content-type"] = methodParamContentType;
+    }
+
     const { headers: _defaultHeaders, ...defaultInitWithoutHeaders } =
       defaultInit;
     const { headers: _innerHeaders, ...innerInitWithoutHeaders } = innerInit;
-    const mergedInit: TypedRequestInit = deepMerge(
+    const mergedInit: TypedRequestInit<ContentType> = deepMerge(
       defaultInitWithoutHeaders,
       innerInitWithoutHeaders
     );
     mergedInit.method = method;
+
     if (Object.keys(mergedHeaders).length > 0) {
       mergedInit.headers = mergedHeaders;
+    }
+
+    if (methodParamBody) {
+      mergedInit.body = methodParamBody;
     }
 
     const response = await customFetch(urlObj.path, mergedInit);

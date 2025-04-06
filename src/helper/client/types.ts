@@ -5,9 +5,15 @@ import type {
   HTTP_METHOD_FUNC_KEYS,
 } from "../../lib/constants";
 import type {
+  RouteHandlerResponse,
+  RouteResponse,
+  ValidationSchema,
+} from "../server/route-types";
+import type {
   TypedNextResponse,
   HttpStatusCode,
   ContentType,
+  ValidationInputFor,
 } from "../server/types";
 import type { NextResponse } from "next/server";
 
@@ -15,7 +21,7 @@ import type { NextResponse } from "next/server";
  * Represents HTTP request headers with optional fields.
  * This type includes general request headers, CORS/security-related headers, and client-specific headers.
  */
-type HttpRequestHeaders = Partial<{
+type HttpRequestHeaders<TContentType extends ContentType> = Partial<{
   // General information
   Accept: string;
   "Accept-Charset": string;
@@ -25,7 +31,7 @@ type HttpRequestHeaders = Partial<{
   "Cache-Control": string;
   Connection: string;
   "Content-Length": string;
-  "Content-Type": string;
+  "Content-Type": TContentType;
   Cookie: string;
   Date: string;
   Expect: string;
@@ -66,11 +72,18 @@ type HttpRequestHeaders = Partial<{
 /**
  * Extension of the standard `RequestInit` interface with strongly typed headers.
  */
-export interface TypedRequestInit extends RequestInit {
-  headers?: HttpRequestHeaders | HeadersInit;
+export interface TypedRequestInit<TContentType extends ContentType>
+  extends RequestInit {
+  headers?: HttpRequestHeaders<TContentType> | HeadersInit;
 }
 
-export type ClientOptions = { fetch?: typeof fetch; init?: TypedRequestInit };
+export type ClientOptions<
+  TContentType extends ContentType = ContentType,
+  TWithoutInit extends keyof TypedRequestInit<TContentType> = never,
+> = {
+  fetch?: typeof fetch;
+  init?: Omit<TypedRequestInit<TContentType>, TWithoutInit>;
+};
 
 declare const __proxy: unique symbol;
 export type Endpoint = { [__proxy]?: true };
@@ -113,16 +126,50 @@ export type UrlResult<T = unknown> = {
   params: Params<T>;
 };
 
-type UrlArg<T> = T extends IsQuery
+type UrlArgs<T> = T extends IsQuery
   ? [url: UrlOptions<T>]
   : [url?: UrlOptions<T>];
 
-type HttpMethodsArg<T> = [...UrlArg<T>, option?: ClientOptions];
+type UrlArgsObj<T> = T extends IsQuery
+  ? { url: UrlOptions<T> }
+  : { url?: UrlOptions<T> };
+
+type IsNever<T> = [T] extends [never] ? true : false;
+
+export type BodyOptions<TJson = unknown> = { json: TJson };
+
+type BodyArgsObj<TJson> =
+  IsNever<TJson> extends true ? unknown : { body: BodyOptions<TJson> };
+
+type AllOptional<T> = Partial<T> extends T ? true : false;
+
+type HttpMethodsArgs<
+  T,
+  TValidationSchema extends ValidationSchema,
+  TJson = ValidationInputFor<"json", TValidationSchema>,
+  TBaseArgs = UrlArgsObj<T> & BodyArgsObj<TJson>,
+> = [
+  ...(AllOptional<TBaseArgs> extends true
+    ? [methodParam?: TBaseArgs]
+    : [methodParam: TBaseArgs]),
+  option?: ClientOptions<
+    IsNever<TJson> extends true ? ContentType : "application/json",
+    IsNever<TJson> extends true ? never : "body"
+  >,
+];
+
 type InferHttpMethods<T extends IsHttpMethod> = {
   [K in keyof T as K extends HttpMethodFuncKey ? K : never]: (
-    ...args: HttpMethodsArg<T>
+    ...args: HttpMethodsArgs<T, InferValidationSchema<T[K]>>
   ) => Promise<InferTypedNextResponseType<T[K]>>;
 };
+
+type InferValidationSchema<T> = T extends (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ...args: any[]
+) => RouteHandlerResponse<RouteResponse, infer TValidationSchema>
+  ? TValidationSchema
+  : ValidationSchema;
 
 type InferNextResponseType<T> = T extends (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -141,7 +188,7 @@ type InferTypedNextResponseType<T> = T extends (
 type PathProxyAsProperty<T> = { $match: (path: string) => Params<T> | null };
 
 type PathProxyAsFunction<T> = {
-  $url: (...args: UrlArg<T>) => UrlResult<T>;
+  $url: (...args: UrlArgs<T>) => UrlResult<T>;
 } & (T extends IsHttpMethod ? InferHttpMethods<T> : unknown);
 
 type ParamFunction<T, TParamArgs extends unknown[]> = (

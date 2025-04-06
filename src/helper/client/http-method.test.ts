@@ -60,7 +60,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       init: { headers: { Authorization: "Bearer token" } },
     };
 
-    await requestFn(urlOptions, clientOptions);
+    await requestFn({ url: urlOptions }, clientOptions);
 
     // Assume createUrl generates paths.join('/') + query + hash
     const expectedBase = paths.join("/");
@@ -108,12 +108,13 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       dynamicKeys,
       defaultOptions
     );
-    await requestFn();
+    await requestFn({ body: { json: params } });
 
     const expectedUrl = paths.join("/");
     expect(calledUrl).toBe(expectedUrl);
     expect(calledInit?.method).toBe("POST");
     expect(calledInit?.headers).toEqual({ "content-type": "application/json" });
+    expect(calledInit?.body).toBe(JSON.stringify(params));
   });
 
   it("should prefer options.fetch over defaultOptions.fetch and global fetch", async () => {
@@ -166,7 +167,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       init: { headers: { "X-Custom": "custom-value" } },
     };
 
-    await requestFn(undefined, clientOptions);
+    await requestFn({ body: { json: params } }, clientOptions);
 
     expect(optionsFetchCalled).toBe(true);
     expect(defaultFetchCalled).toBe(false);
@@ -177,6 +178,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       "content-type": "application/json",
       "x-custom": "custom-value",
     });
+    expect(calledInit?.body).toBe(JSON.stringify(params));
   });
 
   it("should allow empty clientOptions and URL options, using defaults", async () => {
@@ -206,12 +208,16 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       defaultOptions
     );
     // Omit URL options and clientOptions
-    await requestFn();
+    await requestFn({ body: { json: params } });
 
     const expectedUrl = paths.join("/");
     expect(calledUrl).toBe(expectedUrl);
     expect(calledInit?.method).toBe("DELETE");
-    expect(calledInit?.headers).toEqual({ accept: "application/json" });
+    expect(calledInit?.headers).toEqual({
+      accept: "application/json",
+      "content-type": "application/json",
+    });
+    expect(calledInit?.body).toBe(JSON.stringify(params));
   });
 
   it("should correctly replace dynamic keys in URL", async () => {
@@ -272,11 +278,12 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       dynamicKeys,
       defaultOptions
     );
-    await requestFn();
+    await requestFn({ body: { json: params } });
 
     const expectedUrl = paths.join("/");
     expect(calledUrl).toBe(expectedUrl);
     expect(calledInit?.method).toBe("PATCH");
+    expect(calledInit?.body).toBe(JSON.stringify(params));
   });
 
   it("should propagate errors from fetch", async () => {
@@ -383,5 +390,52 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     await requestFn(undefined, clientOptions);
 
     expect(calledInit?.headers).toEqual({ "x-test": "client" });
+  });
+
+  it("should prioritize body.json over clientOptions and defaultOptions body", async () => {
+    const key = "$post";
+    const paths = ["http://example.com", "api", "priority"];
+    const params = {};
+    const dynamicKeys: string[] = [];
+
+    let calledInit: CapturedInit | undefined = {};
+    global.fetch = ((_input: RequestInfo | URL, _init?: RequestInit) => {
+      calledInit = _init as CapturedInit | undefined;
+
+      return Promise.resolve(new Response(null, { status: 200 }));
+    }) as typeof fetch;
+
+    const defaultOptions = {
+      init: {
+        headers: { "Content-Type": "default-type" },
+        body: "default-body",
+      },
+    };
+
+    const clientOptions = {
+      init: {
+        headers: { Authorization: "Bearer xyz" },
+        body: "client-body",
+      },
+    };
+
+    const jsonBody = { hello: "world" };
+
+    const requestFn = httpMethod(
+      key,
+      paths,
+      params,
+      dynamicKeys,
+      defaultOptions
+    );
+
+    await requestFn({ body: { json: jsonBody } }, clientOptions);
+
+    expect(calledInit?.body).toBe(JSON.stringify(jsonBody));
+
+    expect(calledInit?.headers).toEqual({
+      "content-type": "application/json",
+      authorization: "Bearer xyz",
+    });
   });
 });

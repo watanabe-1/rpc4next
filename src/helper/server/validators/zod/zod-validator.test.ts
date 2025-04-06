@@ -3,7 +3,8 @@ import { describe, it, expect, vi, expectTypeOf } from "vitest";
 import { z } from "zod";
 import { zodValidator } from "./zod-validator";
 import { routeHandlerFactory } from "../../route-handler-factory";
-import { TypedNextResponse } from "../../types";
+import { RouteHandler } from "../../route-types";
+import { Params, TypedNextResponse } from "../../types";
 
 const createRouteHandler = routeHandlerFactory();
 
@@ -209,6 +210,43 @@ describe("zValidator tests", () => {
     expect(secondCallArgs[0]).toHaveProperty("success", true);
     expect(typeof secondCallArgs[1].json).toBe("function");
   });
+
+  it("Should return 200 when json body is valid", async () => {
+    const handler = createRouteHandler().post(
+      zodValidator("json", schema),
+      async (rc) => {
+        return rc.text("valid json");
+      }
+    );
+
+    const req = new NextRequest(new URL("http://localhost"), {
+      method: "POST",
+      body: JSON.stringify({ name: "Taro", hoge: "fuga" }),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const res = await handler.POST(req, { params: Promise.resolve({}) });
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe("valid json");
+  });
+
+  it("Should return 400 when json body is invalid", async () => {
+    const handler = createRouteHandler().post(
+      zodValidator("json", schema),
+      async (rc) => {
+        return rc.text("never reach");
+      }
+    );
+
+    const req = new NextRequest(new URL("http://localhost"), {
+      method: "POST",
+      body: JSON.stringify({ name: 123, hoge: true }),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const res = await handler.POST(req, { params: Promise.resolve({}) });
+    expect(res.status).toBe(400);
+  });
 });
 
 describe("zValidator type definitions", () => {
@@ -271,5 +309,68 @@ describe("zValidator type definitions", () => {
       | ExpectedLastResponse;
 
     expectTypeOf<typeof _res>().toEqualTypeOf<ExpectedResponse>();
+  });
+
+  it("should infer json types correctly", async () => {
+    const handler = createRouteHandler().post(
+      zodValidator("json", schema2),
+      async (rc) => {
+        const _validJson = rc.req.valid("json");
+        type ExpectedJson = z.output<typeof schema2>;
+
+        expectTypeOf<typeof _validJson>().toEqualTypeOf<ExpectedJson>();
+
+        return rc.text("ok");
+      }
+    );
+    const req = new NextRequest(new URL("http://localhost/?name=J&age=20"), {
+      method: "post",
+      body: JSON.stringify({ name: "", age: 0 }),
+    });
+    const post = await handler.POST;
+    const _res = await post(req, {
+      params: Promise.resolve({}),
+    });
+
+    type ExpectedHookDefaultResponse = TypedNextResponse<
+      z.SafeParseError<{
+        name: string;
+        age: string;
+      }>,
+      400,
+      "application/json"
+    >;
+
+    type ExpectedLastResponse = TypedNextResponse<"ok", 200, "text/plain">;
+
+    type ExpectedResponse = ExpectedHookDefaultResponse | ExpectedLastResponse;
+
+    expectTypeOf<typeof _res>().toEqualTypeOf<ExpectedResponse>();
+
+    type ExpectedValidated = {
+      input: Record<
+        "json",
+        {
+          name: string;
+          age: string;
+        }
+      >;
+      output: Record<
+        "json",
+        {
+          name: string;
+          age: number;
+        }
+      >;
+    };
+
+    type ExpectedHttpFunc = RouteHandler<
+      Params,
+      | Promise<ExpectedHookDefaultResponse | undefined>
+      | Promise<ExpectedLastResponse>,
+      ExpectedValidated
+    >;
+
+    expectTypeOf<typeof post>().toEqualTypeOf<ExpectedHttpFunc>();
   });
 });

@@ -372,7 +372,7 @@ export interface RouteContext<
   ) => TypedNextResponse<undefined, TStatus, "">;
 }
 
-export type ValidationTarget = "params" | "query";
+export type ValidationTarget = "params" | "query" | "json";
 
 type ValidationFor<
   TDirection extends keyof ValidationSchema,
@@ -382,7 +382,7 @@ type ValidationFor<
   ? TSchema[TDirection][TTarget]
   : never;
 
-type ValidationInputFor<
+export type ValidationInputFor<
   TTarget extends ValidationTarget,
   TSchema extends ValidationSchema,
 > = ValidationFor<"input", TTarget, TSchema>;
