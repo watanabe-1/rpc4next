@@ -72,6 +72,9 @@ export const zodValidator = <
       if (target === "query") {
         return rc.req.query();
       }
+      if (target === "json") {
+        return rc.req.json();
+      }
     })();
 
     const result = await schema.safeParseAsync(value);

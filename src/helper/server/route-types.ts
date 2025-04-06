@@ -50,20 +50,32 @@ export type ErrorHandler<
   routeContext: RouteContext<TParams, TQuery, TValidationSchema>
 ) => TRouteResponse;
 
-type RouteHandler<
+export type RouteHandlerResponse<
+  TRouteResponse extends RouteResponse,
+  // _TValidationSchema is used as a generic to allow referencing the ValidationSchema on the client side.
+  _TValidationSchema extends ValidationSchema,
+> =
+  // Exclude void | undefined because a response is always returned or an error is thrown internally
+  Promise<Exclude<Awaited<TRouteResponse>, void | undefined>>;
+
+export type RouteHandler<
   TParams extends RouteBindings["params"],
   TRouteResponse extends RouteResponse,
+  TValidationSchema extends ValidationSchema,
 > = (
   req: NextRequest,
   segmentData: { params: Promise<TParams> }
-  // Exclude void | undefined because a response is always returned or an error is thrown internally
-) => Promise<Exclude<Awaited<TRouteResponse>, void | undefined>>;
+) => RouteHandlerResponse<TRouteResponse, TValidationSchema>;
 
 type HttpMethodMapping<
   THttpMethod extends HttpMethod,
   TParams extends RouteBindings["params"],
   TRouteResponse extends RouteResponse,
-> = Record<THttpMethod, RouteHandler<TParams, TRouteResponse>>;
+  TValidationSchema extends ValidationSchema,
+> = Record<
+  THttpMethod,
+  RouteHandler<TParams, TRouteResponse, TValidationSchema>
+>;
 
 export interface MethodRouteDefinition<
   THttpMethod extends HttpMethod,
@@ -84,7 +96,7 @@ export interface MethodRouteDefinition<
     TR1 extends RequiredRouteResponse = RequiredRouteResponse,
   >(
     handler: Handler<TParams, TQuery, TV1, TR1>
-  ): HttpMethodMapping<THttpMethod, TParams, TR1 | TOnErrorResponse>;
+  ): HttpMethodMapping<THttpMethod, TParams, TR1 | TOnErrorResponse, TV1>;
 
   // 2 handlers
   <
@@ -95,7 +107,7 @@ export interface MethodRouteDefinition<
   >(
     handler1: Handler<TParams, TQuery, TV1, TR1>,
     handler2: Handler<TParams, TQuery, TV2, TR2>
-  ): HttpMethodMapping<THttpMethod, TParams, TR1 | TR2 | TOnErrorResponse>;
+  ): HttpMethodMapping<THttpMethod, TParams, TR1 | TR2 | TOnErrorResponse, TV2>;
 
   // 3 handlers
   <
@@ -112,6 +124,29 @@ export interface MethodRouteDefinition<
   ): HttpMethodMapping<
     THttpMethod,
     TParams,
-    TR1 | TR2 | TR3 | TOnErrorResponse
+    TR1 | TR2 | TR3 | TOnErrorResponse,
+    TV3
+  >;
+
+  // 4 handlers
+  <
+    TV1 extends ValidationSchema = ValidationSchema,
+    TV2 extends ValidationSchema = TV1,
+    TV3 extends ValidationSchema = TV1 & TV2,
+    TV4 extends ValidationSchema = TV1 & TV2 & TV3,
+    TR1 extends RouteResponse = RouteResponse,
+    TR2 extends RouteResponse = RouteResponse,
+    TR3 extends RouteResponse = RouteResponse,
+    TR4 extends RequiredRouteResponse = RequiredRouteResponse,
+  >(
+    handler1: Handler<TParams, TQuery, TV1, TR1>,
+    handler2: Handler<TParams, TQuery, TV2, TR2>,
+    handler3: Handler<TParams, TQuery, TV3, TR3>,
+    handler4: Handler<TParams, TQuery, TV4, TR4>
+  ): HttpMethodMapping<
+    THttpMethod,
+    TParams,
+    TR1 | TR2 | TR3 | TR4 | TOnErrorResponse,
+    TV4
   >;
 }
