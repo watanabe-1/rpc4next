@@ -66,7 +66,7 @@ jobs:
           current_tag="${GITHUB_REF#refs/tags/}"
           previous_tag=$(git tag --sort=-v:refname | grep -v "^${current_tag}$" | head -n 1)
           echo "Found previous tag: $previous_tag"
-          changelog="$(git log ${previous_tag}^..HEAD --pretty=format:"- %s")"
+          changelog="$(git log HEAD ^${previous_tag} --pretty=format:"- %s" | grep -v 'chore: bump version')"
           {
             echo "changelog<<EOF"
             printf '%s\n' "$changelog"
