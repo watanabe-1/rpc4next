@@ -438,4 +438,88 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       authorization: "Bearer xyz",
     });
   });
+  it("should prioritize methodParam.requestHeaders.headers over options.init.headers", async () => {
+    const key = "$get";
+    const paths = ["http://example.com", "api", "priorityHeaders"];
+    const params = {};
+    const dynamicKeys: string[] = [];
+
+    let calledInit: CapturedInit | undefined = {};
+    global.fetch = ((_input: RequestInfo | URL, _init?: RequestInit) => {
+      calledInit = _init as CapturedInit | undefined;
+
+      return Promise.resolve(new Response(null, { status: 200 }));
+    }) as typeof fetch;
+
+    const defaultOptions = {
+      init: { headers: { "X-Default": "default" } },
+    };
+
+    const requestFn = httpMethod(
+      key,
+      paths,
+      params,
+      dynamicKeys,
+      defaultOptions
+    );
+
+    const methodParam = {
+      requestHeaders: {
+        headers: { "X-Default": "overridden", "X-New": "new" },
+        cookies: undefined,
+      },
+    };
+
+    const clientOptions = {
+      init: { headers: { "X-Default": "client" } },
+    };
+
+    await requestFn(methodParam, clientOptions);
+
+    expect(calledInit?.headers).toEqual({
+      "x-default": "overridden",
+      "x-new": "new",
+    });
+  });
+  it("should include cookies from requestHeaders.cookies into the Cookie header", async () => {
+    const key = "$get";
+    const paths = ["http://example.com", "api", "withCookies"];
+    const params = {};
+    const dynamicKeys: string[] = [];
+
+    let calledInit: CapturedInit | undefined = {};
+    global.fetch = ((_input: RequestInfo | URL, _init?: RequestInit) => {
+      calledInit = _init as CapturedInit | undefined;
+
+      return Promise.resolve(new Response(null, { status: 200 }));
+    }) as typeof fetch;
+
+    const defaultOptions = {
+      init: {},
+    };
+
+    const requestFn = httpMethod(
+      key,
+      paths,
+      params,
+      dynamicKeys,
+      defaultOptions
+    );
+
+    const methodParam = {
+      requestHeaders: {
+        cookies: {
+          sessionId: "abc123",
+          theme: "dark",
+        },
+        headers: undefined,
+      },
+    };
+
+    await requestFn(methodParam);
+
+    expect(calledInit?.headers).toEqual({
+      cookie: "sessionId=abc123; theme=dark",
+    });
+  });
 });
