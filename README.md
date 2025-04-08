@@ -8,14 +8,11 @@ Inspired by Hono RPC and Pathpida, **rpc4next** automatically generates a type-s
 
 ## ✨ Features
 
-- ✅ 既存の `app/**/route.ts` および `app/**/page.tsx` を活用するため、新たなハンドラファイルの作成は不要
 - ✅ ルート、パラメータ、クエリパラメータ、 リクエストボディ、レスポンスの型安全なクライアント生成
+- ✅ 既存の `app/**/route.ts` および `app/**/page.tsx` を活用するため、新たなハンドラファイルの作成は不要
 - ✅ 最小限のセットアップで、カスタムサーバー不要
 - ✅ 動的ルート（`[id]`、`[...slug]` など）に対応
 - ✅ CLI による自動クライアント用型定義生成
-
-> **注意**  
-> RPCとしてresponseの戻り値の推論が機能するのは、対象となる `route.ts` の HTTPメソッドハンドラ内で`NextResponse.json()` をしている物のみになります。
 
 ---
 
@@ -54,7 +51,7 @@ export async function GET(
 
 🚩 Query or OptionalQuery 型を export することで、searchParams の型も自動的にクライアントに反映されます。
 
-- **RPCとしてresponseの戻り値の推論が機能するのは、対象となる `route.ts` の HTTPメソッドハンドラ内で`NextResponse.json()` をしている物のみになります**
+- **RPCとしてresponseの戻り値の推論が機能するのは、対象となる `route.ts` の HTTPメソッドハンドラ内で`NextResponse.json()` をしている関数のみになります**
 
 ---
 
@@ -84,8 +81,6 @@ npx rpc4next <baseDir> <outputPath>
   ```bash
   npx rpc4next <baseDir> <outputPath> --generate-params-types <paramsFileName>
   ```
-
-  ※ このオプションを指定する際は、必ずファイル名をセットしてください。ファイル名が指定されない場合、エラーが発生します。
 
 ---
 
@@ -152,10 +147,7 @@ const createRouteHandler = routeHandlerFactory((err, rc) =>
   rc.text("error", { status: 400 })
 );
 
-const { POST } = createRouteHandler().post(
-  async (rc) => rc.json("json response"),
-  async (rc) => rc.text("plain text")
-);
+const { POST } = createRouteHandler().post(async (rc) => rc.text("plain text"));
 ```
 
 これだけで、POST リクエストの返り値が、responseの内容(json,textなど)、status,contenttypeが型付けされるようになります。
