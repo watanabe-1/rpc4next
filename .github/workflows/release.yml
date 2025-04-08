@@ -63,7 +63,10 @@ jobs:
       - name: Generate changelog
         id: changelog
         run: |
-          changelog="$(git log $(git describe --tags --abbrev=0)..HEAD --pretty=format:"- %s")"
+          current_tag="${GITHUB_REF#refs/tags/}"
+          previous_tag=$(git tag --sort=-v:refname | grep -v "^${current_tag}$" | head -n 1)
+          echo "Found previous tag: $previous_tag"
+          changelog="$(git log ${previous_tag}^..HEAD --pretty=format:"- %s")"
           {
             echo "changelog<<EOF"
             printf '%s\n' "$changelog"
