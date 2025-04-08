@@ -5,6 +5,7 @@ import { zodValidator } from "./zod-validator";
 import { routeHandlerFactory } from "../../route-handler-factory";
 import { RouteHandler } from "../../route-types";
 import { Params, TypedNextResponse } from "../../types";
+import * as validatorUtils from "../validator-utils";
 
 const createRouteHandler = routeHandlerFactory();
 
@@ -247,6 +248,102 @@ describe("zValidator tests", () => {
     const res = await handler.POST(req, { params: Promise.resolve({}) });
     expect(res.status).toBe(400);
   });
+
+  describe("Headers validation", () => {
+    it("Should return validated headers when headers are valid", async () => {
+      const headerSchema = z.object({ "x-test": z.string() });
+      vi.spyOn(validatorUtils, "getHeadersObject").mockResolvedValueOnce({
+        "x-test": "123",
+      });
+
+      const handler = createRouteHandler().post(
+        zodValidator("headers", headerSchema),
+        async (rc) => {
+          return rc.json({ header: rc.req.valid("headers") });
+        }
+      );
+
+      const req = new NextRequest(new URL("http://localhost"));
+      const res = await handler.POST(req, { params: Promise.resolve({}) });
+      expect(res.status).toBe(200);
+      const json = await (
+        res as TypedNextResponse<
+          {
+            header: {
+              "x-test": string;
+            };
+          },
+          200,
+          "application/json"
+        >
+      ).json();
+      expect(json.header).toEqual({ "x-test": "123" });
+    });
+
+    it("Should return 400 when headers are invalid", async () => {
+      const headerSchema = z.object({ "x-test": z.number() });
+      vi.spyOn(validatorUtils, "getHeadersObject").mockResolvedValueOnce({
+        "x-test": "not a number",
+      });
+
+      const handler = createRouteHandler().post(
+        zodValidator("headers", headerSchema),
+        async (rc) => rc.text("never reach")
+      );
+
+      const req = new NextRequest(new URL("http://localhost"));
+      const res = await handler.POST(req, { params: Promise.resolve({}) });
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe("Cookies validation", () => {
+    it("Should return validated cookies when cookies are valid", async () => {
+      const cookieSchema = z.object({ token: z.string() });
+      vi.spyOn(validatorUtils, "getCookiesObject").mockResolvedValueOnce({
+        token: "abc",
+      });
+
+      const handler = createRouteHandler().post(
+        zodValidator("cookies", cookieSchema),
+        async (rc) => {
+          return rc.json({ cookie: rc.req.valid("cookies") });
+        }
+      );
+
+      const req = new NextRequest(new URL("http://localhost"));
+      const res = await handler.POST(req, { params: Promise.resolve({}) });
+      expect(res.status).toBe(200);
+      const json = await (
+        res as TypedNextResponse<
+          {
+            cookie: {
+              token: string;
+            };
+          },
+          200,
+          "application/json"
+        >
+      ).json();
+      expect(json.cookie).toEqual({ token: "abc" });
+    });
+
+    it("Should return 400 when cookies are invalid", async () => {
+      const cookieSchema = z.object({ token: z.number() });
+      vi.spyOn(validatorUtils, "getCookiesObject").mockResolvedValueOnce({
+        token: "def",
+      });
+
+      const handler = createRouteHandler().post(
+        zodValidator("cookies", cookieSchema),
+        async (rc) => rc.text("never reach")
+      );
+
+      const req = new NextRequest(new URL("http://localhost"));
+      const res = await handler.POST(req, { params: Promise.resolve({}) });
+      expect(res.status).toBe(400);
+    });
+  });
 });
 
 describe("zValidator type definitions", () => {
@@ -360,6 +457,132 @@ describe("zValidator type definitions", () => {
         {
           name: string;
           age: number;
+        }
+      >;
+    };
+
+    type ExpectedHttpFunc = RouteHandler<
+      Params,
+      | Promise<ExpectedHookDefaultResponse | undefined>
+      | Promise<ExpectedLastResponse>,
+      ExpectedValidated
+    >;
+
+    expectTypeOf<typeof post>().toEqualTypeOf<ExpectedHttpFunc>();
+  });
+
+  it("should infer header types correctly", async () => {
+    const headerSchema = z.object({ "x-custom": z.string() });
+    vi.spyOn(validatorUtils, "getHeadersObject").mockResolvedValueOnce({
+      "x-custom": "not a number",
+    });
+    const handler = createRouteHandler().post(
+      zodValidator("headers", headerSchema),
+      async (rc) => {
+        const _validHeaders = rc.req.valid("headers");
+        type ExpectedHeader = z.output<typeof headerSchema>;
+        expectTypeOf<typeof _validHeaders>().toEqualTypeOf<ExpectedHeader>();
+
+        return rc.text("header ok");
+      }
+    );
+    const req = new NextRequest(new URL("http://localhost"));
+    const post = await handler.POST;
+    const _res = await post(req, { params: Promise.resolve({}) });
+
+    type ExpectedHookDefaultResponse = TypedNextResponse<
+      z.SafeParseError<{
+        "x-custom": string;
+      }>,
+      400,
+      "application/json"
+    >;
+
+    type ExpectedLastResponse = TypedNextResponse<
+      "header ok",
+      200,
+      "text/plain"
+    >;
+
+    type ExpectedResponse = ExpectedHookDefaultResponse | ExpectedLastResponse;
+
+    expectTypeOf<typeof _res>().toEqualTypeOf<ExpectedResponse>();
+
+    type ExpectedValidated = {
+      input: Record<
+        "headers",
+        {
+          "x-custom": string;
+        }
+      >;
+      output: Record<
+        "headers",
+        {
+          "x-custom": string;
+        }
+      >;
+    };
+
+    type ExpectedHttpFunc = RouteHandler<
+      Params,
+      | Promise<ExpectedHookDefaultResponse | undefined>
+      | Promise<ExpectedLastResponse>,
+      ExpectedValidated
+    >;
+
+    expectTypeOf<typeof post>().toEqualTypeOf<ExpectedHttpFunc>();
+  });
+});
+
+describe("zValidator additional type definitions for headers and cookies", () => {
+  it("should infer cookie types correctly", async () => {
+    const cookieSchema = z.object({ session: z.string() });
+    vi.spyOn(validatorUtils, "getCookiesObject").mockResolvedValueOnce({
+      session: "abc",
+    });
+    const handler = createRouteHandler().post(
+      zodValidator("cookies", cookieSchema),
+      async (rc) => {
+        const _validCookies = rc.req.valid("cookies");
+        type ExpectedCookie = z.output<typeof cookieSchema>;
+        expectTypeOf<typeof _validCookies>().toEqualTypeOf<ExpectedCookie>();
+
+        return rc.text("cookie ok");
+      }
+    );
+    const req = new NextRequest(new URL("http://localhost"));
+    const post = await handler.POST;
+    const _res = await post(req, { params: Promise.resolve({}) });
+
+    type ExpectedHookDefaultResponse = TypedNextResponse<
+      z.SafeParseError<{
+        session: string;
+      }>,
+      400,
+      "application/json"
+    >;
+
+    type ExpectedLastResponse = TypedNextResponse<
+      "cookie ok",
+      200,
+      "text/plain"
+    >;
+
+    type ExpectedResponse = ExpectedHookDefaultResponse | ExpectedLastResponse;
+
+    expectTypeOf<typeof _res>().toEqualTypeOf<ExpectedResponse>();
+
+    type ExpectedValidated = {
+      input: Record<
+        "cookies",
+        {
+          session: string;
+        }
+      >;
+      output: Record<
+        "cookies",
+        {
+          session: string;
         }
       >;
     };

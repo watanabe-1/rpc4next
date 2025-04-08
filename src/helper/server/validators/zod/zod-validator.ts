@@ -8,6 +8,7 @@
  */
 
 import { createHandler } from "../../create-handler";
+import { getCookiesObject, getHeadersObject } from "../validator-utils";
 import type { ValidationSchema } from "../../route-types";
 import type {
   RouteContext,
@@ -74,6 +75,12 @@ export const zodValidator = <
       }
       if (target === "json") {
         return rc.req.json();
+      }
+      if (target === "headers") {
+        return await getHeadersObject();
+      }
+      if (target === "cookies") {
+        return await getCookiesObject();
       }
     })();
 

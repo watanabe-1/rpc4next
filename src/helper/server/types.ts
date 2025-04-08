@@ -372,7 +372,12 @@ export interface RouteContext<
   ) => TypedNextResponse<undefined, TStatus, "">;
 }
 
-export type ValidationTarget = "params" | "query" | "json";
+export type ValidationTarget =
+  | "params"
+  | "query"
+  | "json"
+  | "headers"
+  | "cookies";
 
 type ValidationFor<
   TDirection extends keyof ValidationSchema,

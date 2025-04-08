@@ -21,7 +21,7 @@ import type { NextResponse } from "next/server";
  * Represents HTTP request headers with optional fields.
  * This type includes general request headers, CORS/security-related headers, and client-specific headers.
  */
-type HttpRequestHeaders<TContentType extends ContentType> = Partial<{
+type HttpRequestHeaders = Partial<{
   // General information
   Accept: string;
   "Accept-Charset": string;
@@ -31,7 +31,7 @@ type HttpRequestHeaders<TContentType extends ContentType> = Partial<{
   "Cache-Control": string;
   Connection: string;
   "Content-Length": string;
-  "Content-Type": TContentType;
+  "Content-Type": ContentType;
   Cookie: string;
   Date: string;
   Expect: string;
@@ -72,17 +72,20 @@ type HttpRequestHeaders<TContentType extends ContentType> = Partial<{
 /**
  * Extension of the standard `RequestInit` interface with strongly typed headers.
  */
-export interface TypedRequestInit<TContentType extends ContentType>
-  extends RequestInit {
-  headers?: HttpRequestHeaders<TContentType> | HeadersInit;
+export interface TypedRequestInit<
+  TWithoutHeaders extends "Content-Type" | "Cookie" = never,
+> extends RequestInit {
+  headers?:
+    | (Omit<HttpRequestHeaders, TWithoutHeaders> & Record<string, string>)
+    | HeadersInit;
 }
 
 export type ClientOptions<
-  TContentType extends ContentType = ContentType,
-  TWithoutInit extends keyof TypedRequestInit<TContentType> = never,
+  TWithoutHeaders extends "Content-Type" | "Cookie" = never,
+  TWithoutInit extends "body" | "headers" = never,
 > = {
   fetch?: typeof fetch;
-  init?: Omit<TypedRequestInit<TContentType>, TWithoutInit>;
+  init?: Omit<TypedRequestInit<TWithoutHeaders>, TWithoutInit>;
 };
 
 declare const __proxy: unique symbol;
@@ -126,35 +129,51 @@ export type UrlResult<T = unknown> = {
   params: Params<T>;
 };
 
+type IsNever<T> = [T] extends [never] ? true : false;
+type AllOptional<T> = Partial<T> extends T ? true : false;
+
 type UrlArgs<T> = T extends IsQuery
   ? [url: UrlOptions<T>]
   : [url?: UrlOptions<T>];
-
 type UrlArgsObj<T> = T extends IsQuery
   ? { url: UrlOptions<T> }
   : { url?: UrlOptions<T> };
 
-type IsNever<T> = [T] extends [never] ? true : false;
-
 export type BodyOptions<TJson = unknown> = { json: TJson };
-
 type BodyArgsObj<TJson> =
   IsNever<TJson> extends true ? unknown : { body: BodyOptions<TJson> };
 
-type AllOptional<T> = Partial<T> extends T ? true : false;
+export type HeadersOptions<THeaders = unknown, TCookies = unknown> = {
+  headers: THeaders;
+  cookies: TCookies;
+};
+type HeadersArgsObj<THeaders = unknown, TCookies = unknown> =
+  IsNever<THeaders> extends true
+    ? IsNever<TCookies> extends true
+      ? unknown
+      : { requestHeaders: Pick<HeadersOptions<THeaders, TCookies>, "cookies"> }
+    : IsNever<TCookies> extends true
+      ? { requestHeaders: Pick<HeadersOptions<THeaders, TCookies>, "headers"> }
+      : { requestHeaders: HeadersOptions<THeaders, TCookies> };
 
 type HttpMethodsArgs<
   T,
   TValidationSchema extends ValidationSchema,
   TJson = ValidationInputFor<"json", TValidationSchema>,
-  TBaseArgs = UrlArgsObj<T> & BodyArgsObj<TJson>,
+  THeaders = ValidationInputFor<"headers", TValidationSchema>,
+  TCookies = ValidationInputFor<"cookies", TValidationSchema>,
+  TBaseArgs = UrlArgsObj<T> &
+    BodyArgsObj<TJson> &
+    HeadersArgsObj<THeaders, TCookies>,
 > = [
   ...(AllOptional<TBaseArgs> extends true
     ? [methodParam?: TBaseArgs]
     : [methodParam: TBaseArgs]),
   option?: ClientOptions<
-    IsNever<TJson> extends true ? ContentType : "application/json",
-    IsNever<TJson> extends true ? never : "body"
+    | (IsNever<TJson> extends true ? never : "Content-Type")
+    | (IsNever<TCookies> extends true ? never : "Cookie"),
+    | (IsNever<TJson> extends true ? never : "body")
+    | (IsNever<THeaders> extends true ? never : "headers")
   >,
 ];
 

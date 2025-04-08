@@ -6,6 +6,7 @@ import type {
   ClientOptions,
   TypedRequestInit,
   BodyOptions,
+  HeadersOptions,
 } from "./types";
 import type { ContentType } from "../server/types";
 
@@ -41,7 +42,11 @@ export const httpMethod = (
   defaultOptions: ClientOptions
 ) => {
   return async (
-    methodParam?: { url?: UrlOptions; body?: BodyOptions },
+    methodParam?: {
+      url?: UrlOptions;
+      body?: BodyOptions;
+      requestHeaders?: HeadersOptions;
+    },
     options?: ClientOptions
   ) => {
     let methodParamBody: BodyInit | undefined = undefined;
@@ -52,6 +57,13 @@ export const httpMethod = (
       methodParamBody = JSON.stringify(methodParam.body.json);
     }
 
+    const methodParamHeaders = methodParam?.requestHeaders?.headers as
+      | Record<string, string>
+      | undefined;
+    const methodParamCookies = methodParam?.requestHeaders?.cookies as
+      | Record<string, string>
+      | undefined;
+
     const urlObj = createUrl([...paths], params, dynamicKeys)(methodParam?.url);
     const method = key.replace(/^\$/, "").toUpperCase();
 
@@ -61,7 +73,9 @@ export const httpMethod = (
     const innerInit = options?.init || {};
 
     const defaultHeaders = normalizeHeaders(defaultInit.headers);
-    const innerHeaders = normalizeHeaders(innerInit.headers);
+    const innerHeaders = normalizeHeaders(
+      methodParamHeaders ? methodParamHeaders : innerInit.headers
+    );
     const mergedHeaders: Record<string, string> = {
       ...defaultHeaders,
       ...innerHeaders,
@@ -71,10 +85,16 @@ export const httpMethod = (
       mergedHeaders["content-type"] = methodParamContentType;
     }
 
+    if (methodParamCookies) {
+      mergedHeaders["cookie"] = Object.entries(methodParamCookies)
+        .map(([key, value]) => `${key}=${value}`)
+        .join("; ");
+    }
+
     const { headers: _defaultHeaders, ...defaultInitWithoutHeaders } =
       defaultInit;
     const { headers: _innerHeaders, ...innerInitWithoutHeaders } = innerInit;
-    const mergedInit: TypedRequestInit<ContentType> = deepMerge(
+    const mergedInit: TypedRequestInit = deepMerge(
       defaultInitWithoutHeaders,
       innerInitWithoutHeaders
     );
