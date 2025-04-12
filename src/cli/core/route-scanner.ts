@@ -182,8 +182,7 @@ export const scanAppDir = (
             ]
           : params;
 
-      // For group or parallel segments, do not change the indent
-      const usePreviousIndent = isGroup || isParallel;
+      const isSkipDir = isGroup || isParallel;
 
       const {
         pathStructure: childPathStructure,
@@ -192,14 +191,14 @@ export const scanAppDir = (
       } = scanAppDir(
         output,
         fullPath,
-        usePreviousIndent ? previousIndent : currentIndent,
+        isSkipDir ? previousIndent : currentIndent,
         nextParams
       );
 
       imports.push(...childImports);
       paramsTypes.push(...childParamsTypes);
 
-      if (usePreviousIndent) {
+      if (isSkipDir) {
         // Extract only the inner part inside `{}` from the child output
         const match = childPathStructure.match(/^\s*\{([\s\S]*)\}\s*$/);
         const childContent = match ? match[1].trim() : "";
