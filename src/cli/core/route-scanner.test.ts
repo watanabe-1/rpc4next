@@ -199,7 +199,7 @@ describe("scanAppDir", () => {
     const expectedParamsTypes = [
       {
         paramsType: '{ "id": string }',
-        path: "/testApp/api/users/[id]/route.ts",
+        dirPath: "/testApp/api/users/[id]",
       },
     ];
 
@@ -473,11 +473,11 @@ describe("scanAppDir", () => {
     const expectedParamsTypes = [
       {
         paramsType: '{ "names": string[] | undefined }',
-        path: "/testApp/OptionalCatchAll/user/[[...names]]/page.tsx",
+        dirPath: "/testApp/OptionalCatchAll/user/[[...names]]",
       },
       {
         paramsType: '{ "user": string; "names": string[]; }',
-        path: "/testApp/catchAll/[user]/[...names]/page.tsx",
+        dirPath: "/testApp/catchAll/[user]/[...names]",
       },
     ];
     expectedParamsTypes.forEach((paramsType, i) => {

@@ -24,6 +24,16 @@ import {
 } from "../../lib/constants";
 import type { EndPointFileNames } from "./types";
 
+type ImportObj = {
+  statement: string;
+  path: string;
+};
+
+type ParamsType = {
+  paramsType: string;
+  dirPath: string;
+};
+
 const endPointFileNames = new Set(END_POINT_FILE_NAMES);
 
 export const hasTargetFiles = (dirPath: string): boolean => {
@@ -86,14 +96,8 @@ export const scanAppDir = (
   }[] = []
 ): {
   pathStructure: string;
-  imports: {
-    statement: string;
-    path: string;
-  }[];
-  paramsTypes: {
-    paramsType: string;
-    path: string;
-  }[];
+  imports: ImportObj[];
+  paramsTypes: ParamsType[];
 } => {
   if (scanAppDirCache.has(input)) {
     return scanAppDirCache.get(input)!;
@@ -101,10 +105,10 @@ export const scanAppDir = (
 
   indent += INDENT;
   const pathStructures: string[] = [];
-  const imports: { statement: string; path: string }[] = [];
+  const imports: ImportObj[] = [];
   const types: string[] = [];
   const params = [...parentParams];
-  const paramsTypes: { paramsType: string; path: string }[] = [];
+  const paramsTypes: ParamsType[] = [];
 
   const entries = fs
     .readdirSync(input, { withFileTypes: true })
@@ -234,7 +238,10 @@ export const scanAppDir = (
           return { name: paramName, type: paramType };
         });
         const paramsType = createObjectType(fields);
-        paramsTypes.push({ paramsType, path: fullPath.replace(/\\/g, "/") });
+        paramsTypes.push({
+          paramsType,
+          dirPath: path.dirname(fullPath.replace(/\\/g, "/")),
+        });
         types.push(createRecodeType(TYPE_KEY_PARAMS, paramsType));
       }
     }
