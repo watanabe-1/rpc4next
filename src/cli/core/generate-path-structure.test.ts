@@ -41,7 +41,7 @@ describe("generatePages", () => {
         },
       ],
       paramsTypes: [
-        { paramsType: '{ "hoge": string }', path: "/[hoge]/bar/route.ts" },
+        { paramsType: '{ "hoge": string }', dirPath: "/[hoge]/bar" },
       ],
     });
 
