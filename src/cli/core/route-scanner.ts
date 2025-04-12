@@ -120,24 +120,20 @@ export const scanAppDir = (
     .sort();
 
   entries.forEach((entry) => {
-    const fullPath = path.join(input, entry.name);
-    const nameWithoutExt = entry.isFile()
-      ? entry.name.replace(/\.[^/.]+$/, "")
-      : entry.name;
+    const fullPath = path.join(input, entry.name).replace(/\\/g, "/");
 
     if (entry.isDirectory()) {
-      const isGroup =
-        nameWithoutExt.startsWith("(") && nameWithoutExt.endsWith(")");
-      const isParallel = nameWithoutExt.startsWith("@");
+      const entryName = entry.name;
+      const isGroup = entryName.startsWith("(") && entryName.endsWith(")");
+      const isParallel = entryName.startsWith("@");
       const isOptionalCatchAll =
-        nameWithoutExt.startsWith("[[...") && nameWithoutExt.endsWith("]]");
+        entryName.startsWith("[[...") && entryName.endsWith("]]");
       const isCatchAll =
-        nameWithoutExt.startsWith("[...") && nameWithoutExt.endsWith("]");
-      const isDynamic =
-        nameWithoutExt.startsWith("[") && nameWithoutExt.endsWith("]");
+        entryName.startsWith("[...") && entryName.endsWith("]");
+      const isDynamic = entryName.startsWith("[") && entryName.endsWith("]");
 
       const { paramName, keyName } = (() => {
-        let param = nameWithoutExt;
+        let param = entryName;
         // Remove []
         if (isDynamic) {
           param = param.replace(/^\[+|\]+$/g, "");
@@ -235,7 +231,7 @@ export const scanAppDir = (
         const paramsType = createObjectType(fields);
         paramsTypes.push({
           paramsType,
-          dirPath: path.dirname(fullPath.replace(/\\/g, "/")),
+          dirPath: path.dirname(fullPath),
         });
         types.push(createRecodeType(TYPE_KEY_PARAMS, paramsType));
       }
