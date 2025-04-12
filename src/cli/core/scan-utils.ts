@@ -33,7 +33,7 @@ export const scanFile = <T extends string | undefined>(
   };
 };
 
-// query定義作成
+// Create query definitions
 export const scanQuery = (outputFile: string, inputFile: string) => {
   return scanFile(
     outputFile,
@@ -52,7 +52,7 @@ export const scanQuery = (outputFile: string, inputFile: string) => {
   );
 };
 
-// route定義作成
+// Create route definitions
 export const scanRoute = (
   outputFile: string,
   inputFile: string,
