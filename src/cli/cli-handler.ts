@@ -1,6 +1,7 @@
 import path from "path";
+import { EXIT_FAILURE, EXIT_SUCCESS } from "./constants";
 import { generate } from "./generator";
-import { CliOptions, Logger } from "./types";
+import { CliOptions, ExitCode, Logger } from "./types";
 import { setupWatcher } from "./watcher";
 
 export const handleCli = (
@@ -8,7 +9,7 @@ export const handleCli = (
   outputPath: string,
   options: CliOptions,
   logger: Logger
-): number => {
+): ExitCode => {
   const resolvedBaseDir = path.resolve(baseDir).replace(/\\/g, "/");
   const resolvedOutputPath = path.resolve(outputPath).replace(/\\/g, "/");
 
@@ -18,7 +19,7 @@ export const handleCli = (
   if (options.paramsFile !== undefined && !paramsFileName) {
     logger.error("Error: --params-file requires a filename.");
 
-    return 1;
+    return EXIT_FAILURE;
   }
 
   if (options.watch) {
@@ -28,7 +29,7 @@ export const handleCli = (
         generate({
           baseDir: resolvedBaseDir,
           outputPath: resolvedOutputPath,
-          paramsFileName: options.paramsFile || null,
+          paramsFileName,
           logger,
         });
       },
@@ -38,10 +39,10 @@ export const handleCli = (
     generate({
       baseDir: resolvedBaseDir,
       outputPath: resolvedOutputPath,
-      paramsFileName: options.paramsFile || null,
+      paramsFileName,
       logger,
     });
   }
 
-  return 0;
+  return EXIT_SUCCESS;
 };

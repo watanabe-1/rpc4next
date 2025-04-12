@@ -1,4 +1,5 @@
 import chokidar from "chokidar";
+import { END_POINT_FILE_NAMES } from "./constants";
 import {
   clearScanAppDirCacheAbove,
   clearVisitedDirsCacheAbove,
@@ -13,8 +14,8 @@ export const setupWatcher = (
 ) => {
   logger.info(`Watching ${baseDir}...`);
 
-  const isTargetFiles = (path: string) =>
-    path.endsWith("route.ts") || path.endsWith("page.tsx");
+  const isTargetFiles = (path: string): boolean =>
+    END_POINT_FILE_NAMES.some((fileName) => path.endsWith(fileName));
 
   const changedPaths = new Set<string>();
 

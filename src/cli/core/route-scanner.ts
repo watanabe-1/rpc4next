@@ -7,13 +7,7 @@ import fs from "fs";
 import path from "path";
 
 import { scanAppDirCache, visitedDirsCache } from "./cache";
-import {
-  INDENT,
-  TYPE_END_POINT,
-  TYPE_KEY_PARAMS,
-  NEWLINE,
-  END_POINT_FILE_NAMES,
-} from "./constants";
+import { INDENT, TYPE_END_POINT, TYPE_KEY_PARAMS, NEWLINE } from "./constants";
 import { scanQuery, scanRoute } from "./scan-utils";
 import { createObjectType, createRecodeType } from "./type-utils";
 import {
@@ -22,7 +16,8 @@ import {
   DYNAMIC_PREFIX,
   HTTP_METHODS_EXCLUDE_OPTIONS,
 } from "../../lib/constants";
-import type { EndPointFileNames } from "./types";
+import { END_POINT_FILE_NAMES } from "../constants";
+import { EndPointFileNames } from "../types";
 
 type ImportObj = {
   statement: string;

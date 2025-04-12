@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { handleCli } from "./cli-handler";
 import { createLogger } from "./logger";
-import { Logger } from "./types";
+import { CliOptions, Logger } from "./types";
 
 export const runCli = (argv: string[], logger: Logger = createLogger()) => {
   const program = new Command();
@@ -20,12 +20,14 @@ export const runCli = (argv: string[], logger: Logger = createLogger()) => {
       "-p, --params-file [filename]",
       "Generate params types file with specified filename"
     )
-    .action(async (baseDir, outputPath, options) => {
-      const exitCode = handleCli(baseDir, outputPath, options, logger);
-      if (!options.watch) {
-        process.exit(exitCode);
+    .action(
+      async (baseDir: string, outputPath: string, options: CliOptions) => {
+        const exitCode = handleCli(baseDir, outputPath, options, logger);
+        if (!options.watch) {
+          process.exit(exitCode as number);
+        }
       }
-    });
+    );
 
   program.parse(argv);
 };
