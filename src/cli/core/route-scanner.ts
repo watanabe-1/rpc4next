@@ -17,7 +17,7 @@ import {
   HTTP_METHODS_EXCLUDE_OPTIONS,
 } from "../../lib/constants";
 import { END_POINT_FILE_NAMES } from "../constants";
-import { EndPointFileNames } from "../types";
+import type { EndPointFileNames } from "../types";
 
 type ImportObj = {
   statement: string;
@@ -155,18 +155,21 @@ export const scanAppDir = (
         return { paramName: param, keyName: `${prefix}${param}` };
       })();
 
-      let nextParams = params;
-      if (isDynamic || isCatchAll || isOptionalCatchAll) {
-        const routeType = {
-          isGroup,
-          isParallel,
-          isOptionalCatchAll,
-          isCatchAll,
-          isDynamic,
-        };
+      const nextParams = (() => {
+        if (isDynamic || isCatchAll || isOptionalCatchAll) {
+          const routeType = {
+            isGroup,
+            isParallel,
+            isOptionalCatchAll,
+            isCatchAll,
+            isDynamic,
+          };
 
-        nextParams = [...params, { paramName, routeType }];
-      }
+          return [...params, { paramName, routeType }];
+        }
+
+        return params;
+      })();
 
       const isSkipDir = isGroup || isParallel;
 
