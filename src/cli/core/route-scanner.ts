@@ -32,18 +32,16 @@ type ParamsType = {
 const endPointFileNames = new Set(END_POINT_FILE_NAMES);
 
 export const hasTargetFiles = (dirPath: string): boolean => {
-  // Return cached result if available
   if (visitedDirsCache.has(dirPath)) return visitedDirsCache.get(dirPath)!;
 
   const entries = fs.readdirSync(dirPath, { withFileTypes: true });
-
   for (const entry of entries) {
     const { name } = entry;
     const entryPath = path.join(dirPath, name);
 
     if (
       name === "node_modules" ||
-      // privete
+      // private
       name.startsWith("_") ||
       // intercepts
       name.startsWith("(.)") ||
@@ -61,18 +59,47 @@ export const hasTargetFiles = (dirPath: string): boolean => {
       return true;
     }
 
-    if (entry.isDirectory()) {
-      if (hasTargetFiles(entryPath)) {
-        visitedDirsCache.set(dirPath, true);
+    if (entry.isDirectory() && hasTargetFiles(entryPath)) {
+      visitedDirsCache.set(dirPath, true);
 
-        return true;
-      }
+      return true;
     }
   }
 
   visitedDirsCache.set(dirPath, false);
 
   return false;
+};
+
+const extractParamInfo = (
+  entryName: string,
+  {
+    isDynamic,
+    isCatchAll,
+    isOptionalCatchAll,
+  }: { isDynamic: boolean; isCatchAll: boolean; isOptionalCatchAll: boolean }
+): { paramName: string; keyName: string } => {
+  let param = entryName;
+
+  // Remove brackets if it's a dynamic segment
+  if (isDynamic) {
+    param = param.replace(/^\[+|\]+$/g, "");
+  }
+
+  // Remove leading "..." if it's a catch-all segment
+  if (isCatchAll || isOptionalCatchAll) {
+    param = param.replace(/^\.{3}/, "");
+  }
+
+  const prefix = isOptionalCatchAll
+    ? OPTIONAL_CATCH_ALL_PREFIX
+    : isCatchAll
+      ? CATCH_ALL_PREFIX
+      : isDynamic
+        ? DYNAMIC_PREFIX
+        : "";
+
+  return { paramName: param, keyName: `${prefix}${param}` };
 };
 
 export const scanAppDir = (
@@ -94,24 +121,22 @@ export const scanAppDir = (
   imports: ImportObj[];
   paramsTypes: ParamsType[];
 } => {
-  if (scanAppDirCache.has(input)) {
-    return scanAppDirCache.get(input)!;
-  }
+  if (scanAppDirCache.has(input)) return scanAppDirCache.get(input)!;
 
-  const prevIndent = indent;
-  indent += INDENT;
+  const previousIndent = indent;
+  const currentIndent = indent + INDENT;
   const pathStructures: string[] = [];
   const imports: ImportObj[] = [];
-  const types: string[] = [];
-  const params = [...parentParams];
+  const typeFragments: string[] = [];
   const paramsTypes: ParamsType[] = [];
+  const params = [...parentParams];
 
+  // Get entries under the directory (only target files or directories) and sort them
   const entries = fs
     .readdirSync(input, { withFileTypes: true })
     .filter((entry) => {
-      const { name } = entry;
       if (entry.isDirectory()) {
-        const dirPath = path.join(input, name);
+        const dirPath = path.join(input, entry.name);
 
         return hasTargetFiles(dirPath);
       }
@@ -120,7 +145,7 @@ export const scanAppDir = (
     })
     .sort();
 
-  entries.forEach((entry) => {
+  for (const entry of entries) {
     const fullPath = path.join(input, entry.name).replace(/\\/g, "/");
 
     if (entry.isDirectory()) {
@@ -133,45 +158,32 @@ export const scanAppDir = (
         entryName.startsWith("[...") && entryName.endsWith("]");
       const isDynamic = entryName.startsWith("[") && entryName.endsWith("]");
 
-      const { paramName, keyName } = (() => {
-        let param = entryName;
-        // Remove []
-        if (isDynamic) {
-          param = param.replace(/^\[+|\]+$/g, "");
-        }
-        // Remove ...
-        if (isCatchAll || isOptionalCatchAll) {
-          param = param.replace(/^\.{3}/, "");
-        }
+      const { paramName, keyName } = extractParamInfo(entryName, {
+        isDynamic,
+        isCatchAll,
+        isOptionalCatchAll,
+      });
 
-        const prefix = isOptionalCatchAll
-          ? OPTIONAL_CATCH_ALL_PREFIX
-          : isCatchAll
-            ? CATCH_ALL_PREFIX
-            : isDynamic
-              ? DYNAMIC_PREFIX
-              : "";
+      // If it's a dynamic segment, inherit the parameters
+      const nextParams =
+        isDynamic || isCatchAll || isOptionalCatchAll
+          ? [
+              ...params,
+              {
+                paramName,
+                routeType: {
+                  isDynamic,
+                  isCatchAll,
+                  isOptionalCatchAll,
+                  isGroup,
+                  isParallel,
+                },
+              },
+            ]
+          : params;
 
-        return { paramName: param, keyName: `${prefix}${param}` };
-      })();
-
-      const nextParams = (() => {
-        if (isDynamic || isCatchAll || isOptionalCatchAll) {
-          const routeType = {
-            isGroup,
-            isParallel,
-            isOptionalCatchAll,
-            isCatchAll,
-            isDynamic,
-          };
-
-          return [...params, { paramName, routeType }];
-        }
-
-        return params;
-      })();
-
-      const isSkipDir = isGroup || isParallel;
+      // For group or parallel segments, do not change the indent
+      const usePreviousIndent = isGroup || isParallel;
 
       const {
         pathStructure: childPathStructure,
@@ -180,74 +192,76 @@ export const scanAppDir = (
       } = scanAppDir(
         output,
         fullPath,
-        isSkipDir ? prevIndent : indent,
+        usePreviousIndent ? previousIndent : currentIndent,
         nextParams
       );
 
       imports.push(...childImports);
       paramsTypes.push(...childParamsTypes);
 
-      if (isSkipDir) {
-        // Extract the contents inside {}
+      if (usePreviousIndent) {
+        // Extract only the inner part inside `{}` from the child output
         const match = childPathStructure.match(/^\s*\{([\s\S]*)\}\s*$/);
-        const childStr = match ? match[1].trim() : null;
-        if (childStr) {
-          pathStructures.push(`${indent}${childStr}`);
+        const childContent = match ? match[1].trim() : "";
+        if (childContent) {
+          pathStructures.push(`${currentIndent}${childContent}`);
         }
       } else {
-        pathStructures.push(`${indent}"${keyName}": ${childPathStructure}`);
+        pathStructures.push(
+          `${currentIndent}"${keyName}": ${childPathStructure}`
+        );
       }
     } else {
+      // Process endpoint file
       const queryDef = scanQuery(output, fullPath);
       if (queryDef) {
-        const { importStatement: statement, importPath: path, type } = queryDef;
-        imports.push({ statement, path });
-        types.push(type);
+        const { importStatement, importPath, type } = queryDef;
+        imports.push({ statement: importStatement, path: importPath });
+        typeFragments.push(type);
       }
 
+      // Process routes for each HTTP method (excluding OPTIONS)
       HTTP_METHODS_EXCLUDE_OPTIONS.forEach((method) => {
         const routeDef = scanRoute(output, fullPath, method);
         if (routeDef) {
-          const {
-            importStatement: statement,
-            importPath: path,
-            type,
-          } = routeDef;
-          imports.push({ statement, path });
-          types.push(type);
+          const { importStatement, importPath, type } = routeDef;
+          imports.push({ statement: importStatement, path: importPath });
+          typeFragments.push(type);
         }
       });
 
-      types.push(TYPE_END_POINT);
+      // Add endpoint type
+      typeFragments.push(TYPE_END_POINT);
 
+      // If parameters exist, generate their type definition
       if (params.length > 0) {
-        const fields = params.map((param) => {
-          const { paramName, routeType } = param;
-          const { isCatchAll, isOptionalCatchAll } = routeType;
-          const paramType = isCatchAll
+        const fields = params.map(({ paramName, routeType }) => {
+          const paramType = routeType.isCatchAll
             ? "string[]"
-            : isOptionalCatchAll
+            : routeType.isOptionalCatchAll
               ? "string[] | undefined"
               : "string";
 
           return { name: paramName, type: paramType };
         });
-        const paramsType = createObjectType(fields);
+        const paramsTypeStr = createObjectType(fields);
         paramsTypes.push({
-          paramsType,
+          paramsType: paramsTypeStr,
           dirPath: path.dirname(fullPath),
         });
-        types.push(createRecodeType(TYPE_KEY_PARAMS, paramsType));
+        typeFragments.push(createRecodeType(TYPE_KEY_PARAMS, paramsTypeStr));
       }
     }
-  });
+  }
 
-  const typeString = types.join(" & ");
+  // Combine all type definitions
+  const typeString = typeFragments.join(" & ");
 
-  const hasPaths = pathStructures.length > 0;
-  const pathStructureBody = hasPaths
-    ? `{${NEWLINE}${pathStructures.join(`,${NEWLINE}`)}${NEWLINE}${prevIndent}}`
-    : "";
+  // Construct the nested path structure
+  const pathStructureBody =
+    pathStructures.length > 0
+      ? `{${NEWLINE}${pathStructures.join(`,${NEWLINE}`)}${NEWLINE}${previousIndent}}`
+      : "";
 
   const pathStructure =
     typeString && pathStructureBody
@@ -260,6 +274,7 @@ export const scanAppDir = (
     paramsTypes,
   };
 
+  // Cache the result for reuse
   scanAppDirCache.set(input, result);
 
   return result;
