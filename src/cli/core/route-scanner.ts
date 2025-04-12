@@ -98,6 +98,7 @@ export const scanAppDir = (
     return scanAppDirCache.get(input)!;
   }
 
+  const prevIndent = indent;
   indent += INDENT;
   const pathStructures: string[] = [];
   const imports: ImportObj[] = [];
@@ -176,7 +177,7 @@ export const scanAppDir = (
       } = scanAppDir(
         output,
         fullPath,
-        isSkipDir ? indent.replace(INDENT, "") : indent,
+        isSkipDir ? prevIndent : indent,
         nextParams
       );
 
@@ -239,14 +240,16 @@ export const scanAppDir = (
   });
 
   const typeString = types.join(" & ");
+
+  const hasPaths = pathStructures.length > 0;
+  const pathStructureBody = hasPaths
+    ? `{${NEWLINE}${pathStructures.join(`,${NEWLINE}`)}${NEWLINE}${prevIndent}}`
+    : "";
+
   const pathStructure =
-    pathStructures.length > 0
-      ? `${typeString}${
-          typeString ? " & " : ""
-        }{${NEWLINE}${pathStructures.join(
-          `,${NEWLINE}`
-        )}${NEWLINE}${indent.replace(INDENT, "")}}`
-      : typeString;
+    typeString && pathStructureBody
+      ? `${typeString} & ${pathStructureBody}`
+      : typeString || pathStructureBody;
 
   const result = {
     pathStructure,
