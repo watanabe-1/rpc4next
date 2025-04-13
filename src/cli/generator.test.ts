@@ -40,12 +40,9 @@ describe("generate", () => {
       logger,
     });
 
-    expect(logger.info).toHaveBeenCalledWith(
-      "Types regenerated due to file change",
-      {
-        event: "generate",
-      }
-    );
+    expect(logger.info).toHaveBeenCalledWith("Generating types...", {
+      event: "generate",
+    });
 
     expect(generatePathStructure.generatePages).toHaveBeenCalledWith(
       outputPath,
@@ -87,12 +84,9 @@ describe("generate", () => {
       logger,
     });
 
-    expect(logger.info).toHaveBeenCalledWith(
-      "Types regenerated due to file change",
-      {
-        event: "generate",
-      }
-    );
+    expect(logger.info).toHaveBeenCalledWith("Generating types...", {
+      event: "generate",
+    });
 
     expect(generatePathStructure.generatePages).toHaveBeenCalledWith(
       outputPath,

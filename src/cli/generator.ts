@@ -20,7 +20,7 @@ export const generate = ({
   paramsFileName: string | null;
   logger: Logger;
 }) => {
-  logger.info("Types regenerated due to file change", { event: "generate" });
+  logger.info("Generating types...", { event: "generate" });
 
   const { pathStructure, paramsTypes } = generatePages(outputPath, baseDir);
 
