@@ -1,3 +1,4 @@
+import * as path from "path";
 import chokidar, { FSWatcher } from "chokidar";
 import { describe, it, vi, expect, beforeEach } from "vitest";
 import * as cacheModule from "./core/cache";
@@ -36,14 +37,22 @@ describe("setupWatcher", () => {
     fakeOn.mockReset();
   });
 
-  it("should setup watcher and react to target file events", () => {
-    setupWatcher("/base/dir", onGenerate, logger);
+  it("should log relative path with watch event", () => {
+    const baseDir = "/base/dir";
+    setupWatcher(baseDir, onGenerate, logger);
 
-    expect(logger.info).toHaveBeenCalledWith("Watching /base/dir...");
-    expect(chokidar.watch).toHaveBeenCalledWith(
-      "/base/dir",
-      expect.any(Object)
-    );
+    const expectedRelative = path.relative(process.cwd(), baseDir);
+
+    expect(logger.info).toHaveBeenCalledWith(expectedRelative, {
+      event: "watch",
+    });
+  });
+
+  it("should setup watcher and react to target file events", () => {
+    const baseDir = "/base/dir";
+    const targetPath = "/base/dir/foo/page.tsx";
+
+    setupWatcher(baseDir, onGenerate, logger);
 
     const readyHandler = fakeOn.mock.calls.find(
       (call) => call[0] === "ready"
@@ -58,22 +67,28 @@ describe("setupWatcher", () => {
       return fakeWatcher;
     });
 
-    readyHandler?.(); // debouncedGenerate() runs once here
+    readyHandler?.(); // debouncedGenerate runs once
+    allHandler?.("change", targetPath);
 
-    allHandler?.("change", "/base/dir/foo/page.tsx");
+    const expectedRelative = path.relative(process.cwd(), targetPath);
 
-    expect(logger.info).toHaveBeenCalledWith("[change] /base/dir/foo/page.tsx");
+    expect(logger.info).toHaveBeenCalledWith(expectedRelative, {
+      event: "change",
+    });
     expect(cacheModule.clearVisitedDirsCacheAbove).toHaveBeenCalledWith(
-      "/base/dir/foo/page.tsx"
+      targetPath
     );
     expect(cacheModule.clearScanAppDirCacheAbove).toHaveBeenCalledWith(
-      "/base/dir/foo/page.tsx"
+      targetPath
     );
-    expect(onGenerate).toHaveBeenCalledTimes(2);
+    expect(onGenerate).toHaveBeenCalledTimes(2); // ready + change
   });
 
   it("should ignore non-target files", () => {
-    setupWatcher("/base/dir", onGenerate, logger);
+    const baseDir = "/base/dir";
+    const nonTargetPath = "/base/dir/foo/other.txt";
+
+    setupWatcher(baseDir, onGenerate, logger);
 
     const readyHandler = fakeOn.mock.calls.find(
       (call) => call[0] === "ready"
@@ -81,7 +96,7 @@ describe("setupWatcher", () => {
 
     fakeOn.mockImplementation((event, cb) => {
       if (event === "all") {
-        cb("change", "/base/dir/foo/other.txt");
+        cb("change", nonTargetPath);
       }
 
       return fakeWatcher;
@@ -89,9 +104,11 @@ describe("setupWatcher", () => {
 
     readyHandler?.();
 
-    // Only the initial call from ready
+    const expectedRelative = path.relative(process.cwd(), nonTargetPath);
+
     expect(logger.info).not.toHaveBeenCalledWith(
-      "[change] /base/dir/foo/other.txt"
+      expectedRelative,
+      expect.anything()
     );
     expect(cacheModule.clearVisitedDirsCacheAbove).not.toHaveBeenCalled();
     expect(cacheModule.clearScanAppDirCacheAbove).not.toHaveBeenCalled();
@@ -99,7 +116,11 @@ describe("setupWatcher", () => {
   });
 
   it("should process multiple changed paths before debounce triggers", () => {
-    setupWatcher("/base/dir", onGenerate, logger);
+    const baseDir = "/base/dir";
+    const path1 = "/base/dir/foo/page.tsx";
+    const path2 = "/base/dir/bar/route.ts";
+
+    setupWatcher(baseDir, onGenerate, logger);
 
     const readyHandler = fakeOn.mock.calls.find(
       (call) => call[0] === "ready"
@@ -116,25 +137,25 @@ describe("setupWatcher", () => {
 
     readyHandler?.();
 
-    allHandler?.("change", "/base/dir/foo/page.tsx");
-    allHandler?.("change", "/base/dir/bar/route.ts");
+    allHandler?.("change", path1);
+    allHandler?.("change", path2);
 
-    expect(logger.info).toHaveBeenCalledWith("[change] /base/dir/foo/page.tsx");
-    expect(logger.info).toHaveBeenCalledWith("[change] /base/dir/bar/route.ts");
+    const expectedRelative1 = path.relative(process.cwd(), path1);
 
-    expect(cacheModule.clearVisitedDirsCacheAbove).toHaveBeenCalledWith(
-      "/base/dir/foo/page.tsx"
-    );
-    expect(cacheModule.clearScanAppDirCacheAbove).toHaveBeenCalledWith(
-      "/base/dir/foo/page.tsx"
-    );
-    expect(cacheModule.clearVisitedDirsCacheAbove).toHaveBeenCalledWith(
-      "/base/dir/bar/route.ts"
-    );
-    expect(cacheModule.clearScanAppDirCacheAbove).toHaveBeenCalledWith(
-      "/base/dir/bar/route.ts"
-    );
+    const expectedRelative2 = path.relative(process.cwd(), path2);
 
-    expect(onGenerate).toHaveBeenCalledTimes(3);
+    expect(logger.info).toHaveBeenCalledWith(expectedRelative1, {
+      event: "change",
+    });
+    expect(logger.info).toHaveBeenCalledWith(expectedRelative2, {
+      event: "change",
+    });
+
+    expect(cacheModule.clearVisitedDirsCacheAbove).toHaveBeenCalledWith(path1);
+    expect(cacheModule.clearScanAppDirCacheAbove).toHaveBeenCalledWith(path1);
+    expect(cacheModule.clearVisitedDirsCacheAbove).toHaveBeenCalledWith(path2);
+    expect(cacheModule.clearScanAppDirCacheAbove).toHaveBeenCalledWith(path2);
+
+    expect(onGenerate).toHaveBeenCalledTimes(3); // ready + 2 changes
   });
 });

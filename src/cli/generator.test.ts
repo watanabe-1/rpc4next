@@ -1,7 +1,14 @@
 import fs from "fs";
+import path from "path";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import {
+  SUCCESS_INDENT_LEVEL,
+  SUCCESS_PAD_LENGTH,
+  SUCCESS_SEPARATOR,
+} from "./constants";
 import * as generatePathStructure from "./core/generate-path-structure";
 import { generate } from "./generator";
+import { padMessage } from "./logger";
 
 describe("generate", () => {
   const logger = {
@@ -33,18 +40,33 @@ describe("generate", () => {
       logger,
     });
 
-    expect(logger.info).toHaveBeenCalledWith("Generating...");
+    expect(logger.info).toHaveBeenCalledWith(
+      "Types regenerated due to file change",
+      {
+        event: "generate",
+      }
+    );
+
     expect(generatePathStructure.generatePages).toHaveBeenCalledWith(
       outputPath,
       baseDir
     );
+
     expect(fs.writeFileSync).toHaveBeenCalledWith(
       outputPath,
       "generated-type-content"
     );
-    expect(logger.success).toHaveBeenCalledWith(
-      `Generated types at ${outputPath}`
+
+    const expectedSuccessMessage = padMessage(
+      "Path structure type",
+      path.relative(process.cwd(), outputPath),
+      SUCCESS_SEPARATOR,
+      SUCCESS_PAD_LENGTH
     );
+
+    expect(logger.success).toHaveBeenCalledWith(expectedSuccessMessage, {
+      indentLevel: SUCCESS_INDENT_LEVEL,
+    });
   });
 
   it("should generate types and params files when paramsFileName is provided", () => {
@@ -65,28 +87,50 @@ describe("generate", () => {
       logger,
     });
 
-    expect(logger.info).toHaveBeenCalledWith("Generating...");
+    expect(logger.info).toHaveBeenCalledWith(
+      "Types regenerated due to file change",
+      {
+        event: "generate",
+      }
+    );
+
     expect(generatePathStructure.generatePages).toHaveBeenCalledWith(
       outputPath,
       baseDir
     );
+
     expect(fs.writeFileSync).toHaveBeenCalledWith(
       outputPath,
       "generated-type-content"
     );
+
     expect(fs.writeFileSync).toHaveBeenCalledWith(
-      "dir1/params.ts",
+      path.join("dir1", paramsFileName),
       "params-type-1"
     );
     expect(fs.writeFileSync).toHaveBeenCalledWith(
-      "dir2/params.ts",
+      path.join("dir2", paramsFileName),
       "params-type-2"
     );
-    expect(logger.success).toHaveBeenCalledWith(
-      `Generated types at ${outputPath}`
+
+    const expectedTypeMessage = padMessage(
+      "Path structure type",
+      path.relative(process.cwd(), outputPath),
+      SUCCESS_SEPARATOR,
+      SUCCESS_PAD_LENGTH
     );
-    expect(logger.success).toHaveBeenCalledWith(
-      `Generated params type at ${paramsFileName}`
+    expect(logger.success).toHaveBeenCalledWith(expectedTypeMessage, {
+      indentLevel: SUCCESS_INDENT_LEVEL,
+    });
+
+    const expectedParamsMessage = padMessage(
+      "Params types",
+      paramsFileName,
+      SUCCESS_SEPARATOR,
+      SUCCESS_PAD_LENGTH
     );
+    expect(logger.success).toHaveBeenCalledWith(expectedParamsMessage, {
+      indentLevel: SUCCESS_INDENT_LEVEL,
+    });
   });
 });
