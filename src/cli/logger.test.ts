@@ -1,3 +1,4 @@
+import chalk from "chalk";
 import {
   describe,
   it,
@@ -7,7 +8,8 @@ import {
   afterAll,
   beforeEach,
 } from "vitest";
-import { createLogger } from "./logger";
+import { INDENT } from "./core/constants";
+import { createLogger, padMessage } from "./logger";
 
 describe("createLogger", () => {
   const originalLog = console.log;
@@ -31,21 +33,67 @@ describe("createLogger", () => {
     mockError.mockClear();
   });
 
-  it("should call console.log on info", () => {
+  it("should log info without options", () => {
     const logger = createLogger();
     logger.info("info message");
     expect(mockLog).toHaveBeenCalledWith("info message");
   });
 
-  it("should call console.log on success", () => {
+  it("should log info with indent and event", () => {
     const logger = createLogger();
-    logger.success("success message");
-    expect(mockLog).toHaveBeenCalledWith("success message");
+    const indent = INDENT.repeat(2);
+    logger.info("info message", { indentLevel: 2, event: "scan" });
+    expect(mockLog).toHaveBeenCalledWith(
+      `${indent}${chalk.cyan("[scan]")} info message`
+    );
   });
 
-  it("should call console.error on error", () => {
+  it("should log success without options", () => {
+    const logger = createLogger();
+    logger.success("success message");
+    expect(mockLog).toHaveBeenCalledWith(`${chalk.green("✓")} success message`);
+  });
+
+  it("should log success with indent", () => {
+    const logger = createLogger();
+    const indent = INDENT.repeat(1);
+    logger.success("success message", { indentLevel: 1 });
+    expect(mockLog).toHaveBeenCalledWith(
+      `${indent}${chalk.green("✓")} success message`
+    );
+  });
+
+  it("should log error without options", () => {
     const logger = createLogger();
     logger.error("error message");
-    expect(mockError).toHaveBeenCalledWith("error message");
+    expect(mockError).toHaveBeenCalledWith(
+      `${chalk.red("✗")} ${chalk.red("error message")}`
+    );
+  });
+
+  it("should log error with indent", () => {
+    const logger = createLogger();
+    const indent = INDENT.repeat(1);
+    logger.error("error message", { indentLevel: 1 });
+    expect(mockError).toHaveBeenCalledWith(
+      `${indent}${chalk.red("✗")} ${chalk.red("error message")}`
+    );
+  });
+});
+
+describe("padMessage", () => {
+  it("should pad label and format the message with default separator", () => {
+    const result = padMessage("Label", "Value");
+    expect(result).toBe("Label                    → Value");
+  });
+
+  it("should use custom separator", () => {
+    const result = padMessage("Label", "Value", "=");
+    expect(result).toBe("Label                    = Value");
+  });
+
+  it("should pad to given target length", () => {
+    const result = padMessage("Short", "Data", "→", 10);
+    expect(result).toBe("Short      → Data");
   });
 });

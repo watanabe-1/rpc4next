@@ -1,8 +1,8 @@
 import path from "path";
 import { EXIT_FAILURE, EXIT_SUCCESS } from "./constants";
 import { generate } from "./generator";
-import { CliOptions, ExitCode, Logger } from "./types";
 import { setupWatcher } from "./watcher";
+import type { CliOptions, ExitCode, Logger } from "./types";
 
 export const handleCli = (
   baseDir: string,

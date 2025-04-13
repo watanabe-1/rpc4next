@@ -1,16 +1,21 @@
-import { END_POINT_FILE_NAMES } from "./constants";
+import type { END_POINT_FILE_NAMES } from "./constants";
 
 export type EndPointFileNames = (typeof END_POINT_FILE_NAMES)[number];
-
-export interface Logger {
-  info: (msg: string) => void;
-  success: (msg: string) => void;
-  error: (msg: string) => void;
-}
 
 export interface CliOptions {
   watch?: boolean;
   paramsFile?: string;
+}
+
+type LogOptions = {
+  indentLevel?: number;
+  event?: string;
+};
+
+export interface Logger {
+  info: (msg: string, options?: LogOptions) => void;
+  success: (msg: string, options?: Pick<LogOptions, "indentLevel">) => void;
+  error: (msg: string, options?: Pick<LogOptions, "indentLevel">) => void;
 }
 
 type BuildRange<
