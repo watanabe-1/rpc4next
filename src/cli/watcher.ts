@@ -53,4 +53,26 @@ export const setupWatcher = (
       }
     });
   });
+
+  watcher.on("error", (error) => {
+    if (error instanceof Error) {
+      logger.error(`Watcher error: ${error.message}`);
+    } else {
+      logger.error(`Unknown watcher error: ${String(error)}`);
+    }
+  });
+
+  const cleanup = () => {
+    watcher
+      .close()
+      .then(() => {
+        logger.info("Watcher closed.", { event: "watch" });
+      })
+      .catch((err) => {
+        logger.error(`Failed to close watcher: ${err.message}`);
+      });
+  };
+
+  process.on("SIGINT", cleanup);
+  process.on("SIGTERM", cleanup);
 };
