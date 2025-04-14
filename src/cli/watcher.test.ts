@@ -158,4 +158,90 @@ describe("setupWatcher", () => {
 
     expect(onGenerate).toHaveBeenCalledTimes(3); // ready + 2 changes
   });
+
+  it("should log error on watcher error", () => {
+    setupWatcher("/base/dir", onGenerate, logger);
+
+    const errorHandler = fakeOn.mock.calls.find(
+      (call) => call[0] === "error"
+    )?.[1];
+
+    expect(errorHandler).toBeDefined();
+
+    errorHandler?.(new Error("Something went wrong"));
+
+    expect(logger.error).toHaveBeenCalledWith(
+      "Watcher error: Something went wrong"
+    );
+
+    errorHandler?.("some string error");
+
+    expect(logger.error).toHaveBeenCalledWith(
+      "Unknown watcher error: some string error"
+    );
+  });
+
+  it("should close watcher on SIGINT/SIGTERM", async () => {
+    const handlers: Record<string, () => void | Promise<void>> = {};
+    vi.spyOn(process, "on").mockImplementation((event, handler) => {
+      if (typeof event === "string") {
+        handlers[event] = handler;
+      }
+
+      return process;
+    });
+
+    const logger = {
+      info: vi.fn(),
+      success: vi.fn(),
+      error: vi.fn(),
+    };
+
+    // On success
+    const mockClose = vi.fn().mockResolvedValue(undefined);
+    const watcherSuccess = {
+      on: vi.fn(),
+      close: mockClose,
+    };
+
+    vi.spyOn(chokidar, "watch").mockReturnValueOnce(
+      watcherSuccess as unknown as FSWatcher
+    );
+
+    setupWatcher("/base/dir", onGenerate, logger);
+    await handlers["SIGINT"]?.();
+
+    expect(mockClose).toHaveBeenCalled();
+    expect(logger.info).toHaveBeenCalledWith("Watcher closed.", {
+      event: "watch",
+    });
+
+    process.removeAllListeners("SIGTERM");
+
+    // On failure
+    const mockCloseError = vi.fn().mockRejectedValue(new Error("close fail"));
+    const watcherError = {
+      on: vi.fn(),
+      close: mockCloseError,
+    };
+
+    vi.spyOn(chokidar, "watch").mockReturnValueOnce(
+      watcherError as unknown as FSWatcher
+    );
+
+    setupWatcher("/base/dir", onGenerate, logger);
+
+    const flushPromises = () => new Promise(setImmediate);
+    await handlers["SIGTERM"]?.();
+    // Ensure the async catch() is executed
+    await flushPromises();
+
+    console.log("mockCloseError.mock.calls:", mockCloseError.mock.calls);
+    console.log("logger.error.mock.calls:", logger.error.mock.calls);
+
+    expect(mockCloseError).toHaveBeenCalled();
+    expect(logger.error).toHaveBeenCalledWith(
+      "Failed to close watcher: close fail"
+    );
+  });
 });
