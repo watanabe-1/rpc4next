@@ -1,0 +1,64 @@
+name: Release on PR Merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+    paths:
+      - "package.json"
+
+jobs:
+  release:
+    if: github.event.pull_request.merged == true && startsWith(github.head_ref, 'release/v') && github.event.pull_request.user.login == 'github-actions'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          registry-url: https://registry.npmjs.org/
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Get version from package.json
+        id: get_version
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          current_tag="v${{ steps.get_version.outputs.version }}"
+          previous_tag=$(git tag --sort=-v:refname | grep -v "^${current_tag}$" | head -n 1)
+          changelog="$(git log ${previous_tag}..HEAD --pretty=format:"- %s" | grep -v 'chore: bump version')"
+          {
+            echo "changelog<<EOF"
+            printf '%s\n' "$changelog"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: Release v${{ steps.get_version.outputs.version }}
+          body: ${{ steps.changelog.outputs.changelog }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to npm
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
