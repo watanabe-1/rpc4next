@@ -33,6 +33,11 @@ jobs:
           branch=$(git remote show origin | grep 'HEAD branch' | awk '{print $NF}')
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
 
+      - name: Setup Git user
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+
       - name: Create release branch
         run: |
           git checkout -b release/v${{ steps.extract_version.outputs.version }}
