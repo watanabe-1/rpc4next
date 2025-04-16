@@ -13,5 +13,3 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/labeler@v5
-        with:
-          configuration-path: .github/configs/labeler.yml
