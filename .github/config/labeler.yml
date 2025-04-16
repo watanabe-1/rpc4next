@@ -1,0 +1,47 @@
+# Labels based on file paths
+app:
+  - changed-files:
+      - any-glob-to-any-file: "src/**"
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file: ".github/**"
+
+cli:
+  - changed-files:
+      - any-glob-to-any-file: "src/cli/**"
+      - any-glob-to-any-file: "cli/**"
+
+docs:
+  - changed-files:
+      - any-glob-to-any-file: "docs/**"
+      - any-glob-to-any-file: "**/*.md"
+
+test:
+  - changed-files:
+      - any-glob-to-any-file: "tests/**"
+      - any-glob-to-any-file: "**/*.test.*"
+
+# Labels based on branch names
+feature:
+  - head-branch: ["^feature/", "^feat/"]
+bug:
+  - head-branch: ["^bugfix/", "^fix/", "^bug/"]
+release:
+  - head-branch: ["^release/"]
+hotfix:
+  - head-branch: ["^hotfix/"]
+
+# Labels based on PR title prefixes (e.g. for new features or fixes)
+feature:
+  - title: ["^feat:"]
+fix:
+  - title: ["^fix:"]
+chore:
+  - title: ["^chore:"]
+refactor:
+  - title: ["^refactor:"]
+docs:
+  - title: ["^docs?:"]
+test:
+  - title: ["^test:"]
