@@ -15,27 +15,23 @@ docs:
   - changed-files:
       - any-glob-to-any-file: "docs/**"
       - any-glob-to-any-file: "**/*.md"
-  - title: ["^docs?:"]
 
 test:
   - changed-files:
       - any-glob-to-any-file: "tests/**"
       - any-glob-to-any-file: "**/*.test.*"
-  - title: ["^test:"]
 
 feature:
   - head-branch: ["^feature/", "^feat/"]
-  - title: ["^feat:"]
 
 fix:
   - head-branch: ["^bugfix/", "^fix/", "^bug/"]
-  - title: ["^fix:"]
 
 chore:
-  - title: ["^chore:"]
+  - head-branch: ["^chore/"]
 
 refactor:
-  - title: ["^refactor:"]
+  - head-branch: ["^refactor/"]
 
 release:
   - head-branch: ["^release/"]
