@@ -1,4 +1,3 @@
-# Labels based on file paths
 app:
   - changed-files:
       - any-glob-to-any-file: "src/**"
@@ -16,32 +15,30 @@ docs:
   - changed-files:
       - any-glob-to-any-file: "docs/**"
       - any-glob-to-any-file: "**/*.md"
+  - title: ["^docs?:"]
 
 test:
   - changed-files:
       - any-glob-to-any-file: "tests/**"
       - any-glob-to-any-file: "**/*.test.*"
+  - title: ["^test:"]
 
-# Labels based on branch names
 feature:
   - head-branch: ["^feature/", "^feat/"]
-bug:
-  - head-branch: ["^bugfix/", "^fix/", "^bug/"]
-release:
-  - head-branch: ["^release/"]
-hotfix:
-  - head-branch: ["^hotfix/"]
-
-# Labels based on PR title prefixes (e.g. for new features or fixes)
-feature:
   - title: ["^feat:"]
+
 fix:
+  - head-branch: ["^bugfix/", "^fix/", "^bug/"]
   - title: ["^fix:"]
+
 chore:
   - title: ["^chore:"]
+
 refactor:
   - title: ["^refactor:"]
-docs:
-  - title: ["^docs?:"]
-test:
-  - title: ["^test:"]
+
+release:
+  - head-branch: ["^release/"]
+
+hotfix:
+  - head-branch: ["^hotfix/"]
