@@ -40,26 +40,13 @@ jobs:
         id: get_version
         run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
 
-      - name: Generate changelog
-        id: changelog
-        run: |
-          current_tag="v${{ steps.get_version.outputs.version }}"
-          previous_tag=$(git tag --sort=-v:refname | grep -v "^${current_tag}$" | head -n 1)
-          changelog="$(git log ${previous_tag}..HEAD --pretty=format:"- %s" | grep -v 'chore: bump version')"
-          {
-            echo "changelog<<EOF"
-            printf '%s\n' "$changelog"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.get_version.outputs.version }}
-          name: Release v${{ steps.get_version.outputs.version }}
-          body: ${{ steps.changelog.outputs.changelog }}
+      - name: Create GitHub Release (with auto-generated notes)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ steps.get_version.outputs.version }}" \
+            --title "Release v${{ steps.get_version.outputs.version }}" \
+            --generate-notes
 
       - name: Publish to npm
         run: npm publish
