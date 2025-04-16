@@ -17,6 +17,7 @@ import {
   HTTP_METHODS_EXCLUDE_OPTIONS,
 } from "../../lib/constants";
 import { END_POINT_FILE_NAMES } from "../constants";
+import { toPosixPath } from "./path-utils";
 import type { EndPointFileNames } from "../types";
 
 type ImportObj = {
@@ -146,7 +147,7 @@ export const scanAppDir = (
     .sort();
 
   for (const entry of entries) {
-    const fullPath = path.join(input, entry.name).replace(/\\/g, "/");
+    const fullPath = toPosixPath(path.join(input, entry.name));
 
     if (entry.isDirectory()) {
       const entryName = entry.name;

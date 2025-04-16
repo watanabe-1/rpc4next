@@ -1,12 +1,8 @@
 import path from "path";
-import { describe, it, expect, vi, afterEach } from "vitest";
-import { createRelativeImportPath } from "./path-utils";
+import { describe, it, expect, vi } from "vitest";
+import { createRelativeImportPath, toPosixPath } from "./path-utils";
 
 describe("createRelativeImportPath", () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("should return a relative path between two files", () => {
     const outputFile = "/project/src/components/Button.js";
     const inputFile = "/project/src/utils/helpers.ts";
@@ -46,5 +42,27 @@ describe("createRelativeImportPath", () => {
 
     const result = createRelativeImportPath(outputFile, inputFile);
     expect(result).toBe("../utils/helpers");
+  });
+});
+
+describe("toPosixPath", () => {
+  it("converts backslashes to forward slashes", () => {
+    expect(toPosixPath("foo\\bar\\baz")).toBe("foo/bar/baz");
+  });
+
+  it("returns the same string if there are no backslashes", () => {
+    expect(toPosixPath("foo/bar/baz")).toBe("foo/bar/baz");
+  });
+
+  it("handles empty string", () => {
+    expect(toPosixPath("")).toBe("");
+  });
+
+  it("handles mixed slashes", () => {
+    expect(toPosixPath("foo/bar\\baz")).toBe("foo/bar/baz");
+  });
+
+  it("handles repeated backslashes", () => {
+    expect(toPosixPath("foo\\\\bar\\\\baz")).toBe("foo//bar//baz");
   });
 });

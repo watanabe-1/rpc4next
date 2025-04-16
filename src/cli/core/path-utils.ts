@@ -4,10 +4,9 @@ export const createRelativeImportPath = (
   outputFile: string,
   inputFile: string
 ) => {
-  let relativePath = path
-    .relative(path.dirname(outputFile), inputFile)
-    .replace(/\\/g, "/")
-    .replace(/\.tsx?$/, "");
+  let relativePath = toPosixPath(
+    path.relative(path.dirname(outputFile), inputFile)
+  ).replace(/\.tsx?$/, "");
 
   // Add "./" if the file is in the same directory
   if (!relativePath.startsWith("../")) {
@@ -15,4 +14,8 @@ export const createRelativeImportPath = (
   }
 
   return relativePath;
+};
+
+export const toPosixPath = (p: string): string => {
+  return p.replace(/\\/g, "/");
 };
