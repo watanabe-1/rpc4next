@@ -1,6 +1,10 @@
 import path from "path";
 import { describe, it, expect, vi } from "vitest";
-import { createRelativeImportPath, toPosixPath } from "./path-utils";
+import {
+  createRelativeImportPath,
+  relativeFromRoot,
+  toPosixPath,
+} from "./path-utils";
 
 describe("createRelativeImportPath", () => {
   it("should return a relative path between two files", () => {
@@ -64,5 +68,31 @@ describe("toPosixPath", () => {
 
   it("handles repeated backslashes", () => {
     expect(toPosixPath("foo\\\\bar\\\\baz")).toBe("foo//bar//baz");
+  });
+});
+
+describe("relativeFromRoot", () => {
+  it("returns correct relative path from project root", () => {
+    const mockCwd = "/Users/example/project";
+    const targetPath = "/Users/example/project/src/utils/file.ts";
+
+    vi.spyOn(process, "cwd").mockReturnValue(mockCwd);
+
+    const result = relativeFromRoot(targetPath);
+    expect(toPosixPath(result)).toBe("src/utils/file.ts");
+
+    vi.restoreAllMocks();
+  });
+
+  it('returns "../" when file is outside the cwd', () => {
+    const mockCwd = "/Users/example/project";
+    const targetPath = "/Users/example";
+
+    vi.spyOn(process, "cwd").mockReturnValue(mockCwd);
+
+    const result = relativeFromRoot(targetPath);
+    expect(toPosixPath(result)).toBe("..");
+
+    vi.restoreAllMocks();
   });
 });

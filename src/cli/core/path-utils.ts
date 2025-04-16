@@ -19,3 +19,7 @@ export const createRelativeImportPath = (
 export const toPosixPath = (p: string): string => {
   return p.replace(/\\/g, "/");
 };
+
+export const relativeFromRoot = (filePath: string): string => {
+  return path.relative(process.cwd(), filePath);
+};

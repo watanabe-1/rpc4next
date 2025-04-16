@@ -1,10 +1,10 @@
-import path from "path";
 import chokidar from "chokidar";
 import { END_POINT_FILE_NAMES } from "./constants";
 import {
   clearScanAppDirCacheAbove,
   clearVisitedDirsCacheAbove,
 } from "./core/cache";
+import { relativeFromRoot } from "./core/path-utils";
 import { debounceOnceRunningWithTrailing } from "./debounce";
 import type { Logger } from "./types";
 
@@ -13,7 +13,7 @@ export const setupWatcher = (
   onGenerate: () => void,
   logger: Logger
 ) => {
-  logger.info(`${path.relative(process.cwd(), baseDir)}`, {
+  logger.info(`${relativeFromRoot(baseDir)}`, {
     event: "watch",
   });
 
@@ -46,7 +46,7 @@ export const setupWatcher = (
     debouncedGenerate();
     watcher.on("all", (event, filePath) => {
       if (isTargetFiles(filePath)) {
-        const relativePath = path.relative(process.cwd(), filePath);
+        const relativePath = relativeFromRoot(filePath);
         logger.info(relativePath, { event });
         changedPaths.add(filePath);
         debouncedGenerate();
