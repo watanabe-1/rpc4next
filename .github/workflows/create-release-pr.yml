@@ -43,6 +43,22 @@ jobs:
           npm version ${{ steps.extract_version.outputs.version }} --no-git-tag-version
           git add package.json package-lock.json
 
+      - name: Get previous tag
+        id: previous_tag
+        run: |
+          prev_tag=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | grep -v "^v${{ steps.extract_version.outputs.version }}$" | head -n 1)
+          echo "tag=$prev_tag" >> "$GITHUB_OUTPUT"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          changelog=$(git log ${{ steps.previous_tag.outputs.tag }}..HEAD --pretty=format:"- %s" | grep -v 'chore: bump version')
+          {
+            echo "changelog<<EOF"
+            echo "$changelog"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
@@ -51,6 +67,11 @@ jobs:
           base: ${{ steps.default_branch.outputs.branch }}
           commit-message: "chore: bump version to v${{ steps.extract_version.outputs.version }}"
           title: "Release v${{ steps.extract_version.outputs.version }}"
-          body: "This PR prepares the release of v${{ steps.extract_version.outputs.version }}"
+          body: |
+            This PR prepares the release of v${{ steps.extract_version.outputs.version }}
+
+            ## Changes
+
+            ${{ steps.changelog.outputs.changelog }}
           delete-branch: false
           token: ${{ secrets.GITHUB_TOKEN }}
