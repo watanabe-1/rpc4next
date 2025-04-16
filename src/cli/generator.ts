@@ -6,6 +6,7 @@ import {
   SUCCESS_INDENT_LEVEL,
 } from "./constants";
 import { generatePages } from "./core/generate-path-structure";
+import { relativeFromRoot } from "./core/path-utils";
 import { padMessage } from "./logger";
 import type { Logger } from "./types";
 
@@ -28,7 +29,7 @@ export const generate = ({
   logger.success(
     padMessage(
       "Path structure type",
-      path.relative(process.cwd(), outputPath),
+      relativeFromRoot(outputPath),
       SUCCESS_SEPARATOR,
       SUCCESS_PAD_LENGTH
     ),
