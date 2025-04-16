@@ -10,20 +10,21 @@ permissions:
   pull-requests: write
 
 jobs:
-  create-pr:
+  check-tag:
     runs-on: ubuntu-latest
-
+    outputs:
+      not_on_main: ${{ steps.check.outputs.not_on_main }}
     steps:
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Fetch full history
-        run: git fetch --tags origin +refs/heads/main:refs/remotes/origin/main
+      - name: Fetch main branch
+        run: git fetch origin main
 
       - name: Check if tag is on main
-        id: check_tag_on_main
+        id: check
         run: |
           tag_commit=$(git rev-list -n 1 ${{ github.ref_name }})
           main_commit=$(git rev-parse origin/main)
@@ -34,13 +35,19 @@ jobs:
             echo "not_on_main=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Exit if tag is not on main
-        if: steps.check_tag_on_main.outputs.not_on_main == 'true'
-        run: |
-          echo "Tag is not on main. Skipping."
-          exit 0
+  create-pr:
+    needs: check-tag
+    if: needs.check-tag.outputs.not_on_main == 'false'
+    runs-on: ubuntu-latest
 
-      - uses: actions/setup-node@v4
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 18
 
