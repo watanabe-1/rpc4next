@@ -19,6 +19,27 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Fetch full history
+        run: git fetch --tags origin +refs/heads/main:refs/remotes/origin/main
+
+      - name: Check if tag is on main
+        id: check_tag_on_main
+        run: |
+          tag_commit=$(git rev-list -n 1 ${{ github.ref_name }})
+          main_commit=$(git rev-parse origin/main)
+          base_commit=$(git merge-base $tag_commit $main_commit)
+          if [ "$base_commit" != "$tag_commit" ]; then
+            echo "not_on_main=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "not_on_main=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Exit if tag is not on main
+        if: steps.check_tag_on_main.outputs.not_on_main == 'true'
+        run: |
+          echo "Tag is not on main. Skipping."
+          exit 0
+
       - uses: actions/setup-node@v4
         with:
           node-version: 18
