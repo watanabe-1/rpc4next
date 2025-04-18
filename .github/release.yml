@@ -31,6 +31,14 @@ changelog:
       labels:
         - cli
 
+    - title: 🧩 Client
+      labels:
+        - client
+
+    - title: 🖧 Server
+      labels:
+        - server
+
     - title: 🖥 App
       labels:
         - app
