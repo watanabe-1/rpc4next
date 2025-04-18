@@ -49,6 +49,7 @@ jobs:
         run: |
           gh release create "v${{ steps.get_version.outputs.version }}" \
             --title "Release v${{ steps.get_version.outputs.version }}" \
+            --target "${{ github.event.pull_request.merge_commit_sha }}" \
             --generate-notes
 
       - name: Publish to npm
