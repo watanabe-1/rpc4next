@@ -149,4 +149,57 @@ export interface MethodRouteDefinition<
     TR1 | TR2 | TR3 | TR4 | TOnErrorResponse,
     TV4
   >;
+
+  // 5 handlers
+  <
+    TV1 extends ValidationSchema = ValidationSchema,
+    TV2 extends ValidationSchema = TV1,
+    TV3 extends ValidationSchema = TV1 & TV2,
+    TV4 extends ValidationSchema = TV1 & TV2 & TV3,
+    TV5 extends ValidationSchema = TV1 & TV2 & TV3 & TV4,
+    TR1 extends RouteResponse = RouteResponse,
+    TR2 extends RouteResponse = RouteResponse,
+    TR3 extends RouteResponse = RouteResponse,
+    TR4 extends RouteResponse = RouteResponse,
+    TR5 extends RequiredRouteResponse = RequiredRouteResponse,
+  >(
+    handler1: Handler<TParams, TQuery, TV1, TR1>,
+    handler2: Handler<TParams, TQuery, TV2, TR2>,
+    handler3: Handler<TParams, TQuery, TV3, TR3>,
+    handler4: Handler<TParams, TQuery, TV4, TR4>,
+    handler5: Handler<TParams, TQuery, TV5, TR5>
+  ): HttpMethodMapping<
+    THttpMethod,
+    TParams,
+    TR1 | TR2 | TR3 | TR4 | TR5 | TOnErrorResponse,
+    TV5
+  >;
+
+  // 6 handlers
+  <
+    TV1 extends ValidationSchema = ValidationSchema,
+    TV2 extends ValidationSchema = TV1,
+    TV3 extends ValidationSchema = TV1 & TV2,
+    TV4 extends ValidationSchema = TV1 & TV2 & TV3,
+    TV5 extends ValidationSchema = TV1 & TV2 & TV3 & TV4,
+    TV6 extends ValidationSchema = TV1 & TV2 & TV3 & TV4 & TV5,
+    TR1 extends RouteResponse = RouteResponse,
+    TR2 extends RouteResponse = RouteResponse,
+    TR3 extends RouteResponse = RouteResponse,
+    TR4 extends RouteResponse = RouteResponse,
+    TR5 extends RouteResponse = RouteResponse,
+    TR6 extends RequiredRouteResponse = RequiredRouteResponse,
+  >(
+    handler1: Handler<TParams, TQuery, TV1, TR1>,
+    handler2: Handler<TParams, TQuery, TV2, TR2>,
+    handler3: Handler<TParams, TQuery, TV3, TR3>,
+    handler4: Handler<TParams, TQuery, TV4, TR4>,
+    handler5: Handler<TParams, TQuery, TV5, TR5>,
+    handler6: Handler<TParams, TQuery, TV6, TR6>
+  ): HttpMethodMapping<
+    THttpMethod,
+    TParams,
+    TR1 | TR2 | TR3 | TR4 | TR5 | TR6 | TOnErrorResponse,
+    TV6
+  >;
 }
