@@ -1,121 +1,12 @@
 import type { ValidationSchema } from "./route-types";
+import type { ContentType } from "../lib/content-type-types";
+import type { HttpResponseHeaders } from "../lib/http-response-headers-types";
+import type {
+  HttpStatusCode,
+  RedirectionHttpStatusCode,
+  SuccessfulHttpStatusCode,
+} from "../lib/http-status-code-types";
 import type { NextResponse, NextRequest } from "next/server";
-
-type KnownContentType =
-  | "application/json"
-  | "text/html"
-  | "text/plain"
-  | "application/javascript"
-  | "text/css"
-  | "image/png"
-  | "image/jpeg"
-  | "image/svg+xml"
-  | "application/pdf"
-  | "application/octet-stream"
-  | "multipart/form-data"
-  | "application/x-www-form-urlencoded";
-
-/**
- * A content type that can be either one of the predefined `KnownContentType` values,
- * or any other custom string.
- */
-// Allow KnownContentType values with autocomplete, plus any custom string.
-// (string & {}) keeps literal types while accepting arbitrary strings.
-export type ContentType = KnownContentType | (string & {});
-
-/**
- * Informational responses (100–199)
- */
-type InformationalHttpStatusCode = 100 | 101 | 102 | 103;
-
-/**
- * Successful responses (200–299)
- */
-type SuccessfulHttpStatusCode =
-  | 200
-  | 201
-  | 202
-  | 203
-  | 204
-  | 205
-  | 206
-  | 207
-  | 208
-  | 226;
-
-/**
- * Redirection messages (300–399)
- */
-export type RedirectionHttpStatusCode =
-  | 300
-  | 301
-  | 302
-  | 303
-  | 304
-  | 305
-  | 306
-  | 307
-  | 308;
-
-/**
- * Client error responses (400–499)
- */
-type ClientErrorHttpStatusCode =
-  | 400
-  | 401
-  | 402
-  | 403
-  | 404
-  | 405
-  | 406
-  | 407
-  | 408
-  | 409
-  | 410
-  | 411
-  | 412
-  | 413
-  | 414
-  | 415
-  | 416
-  | 417
-  | 418
-  | 421
-  | 422
-  | 423
-  | 424
-  | 425
-  | 426
-  | 428
-  | 429
-  | 431
-  | 451;
-
-/**
- * Server error responses (500–599)
- */
-type ServerErrorHttpStatusCode =
-  | 500
-  | 501
-  | 502
-  | 503
-  | 504
-  | 505
-  | 506
-  | 507
-  | 508
-  | 510
-  | 511;
-
-/**
- * Http status code (100～599)
- */
-export type HttpStatusCode =
-  | InformationalHttpStatusCode
-  | SuccessfulHttpStatusCode
-  | RedirectionHttpStatusCode
-  | ClientErrorHttpStatusCode
-  | ServerErrorHttpStatusCode;
 
 /**
  * Represents the result of an HTTP response status check.
@@ -134,69 +25,6 @@ type HttpStatus<T extends HttpStatusCode> = T extends SuccessfulHttpStatusCode
       ok: false;
       status: Exclude<T, SuccessfulHttpStatusCode>;
     };
-
-/**
- * Represents HTTP response headers with optional fields, parameterized by the content type.
- * This type includes common headers used for caching, content description, CORS, authentication, security, cookies, redirects, connection, and server information.
- *
- * @template TContentType - The specific content type for the `Content-Type` header.
- */
-type HttpResponseHeaders<TContentType extends ContentType> = Partial<{
-  // Cache control
-  "Cache-Control": string;
-  Expires: string;
-  ETag: string;
-  "Last-Modified": string;
-
-  // Content information
-  "Content-Type": TContentType;
-  "Content-Length": string;
-  "Content-Encoding": string;
-  "Content-Language": string;
-  "Content-Location": string;
-  "Content-Disposition": string;
-
-  // CORS (Cross-Origin Resource Sharing)
-  "Access-Control-Allow-Origin": string;
-  "Access-Control-Allow-Credentials": string;
-  "Access-Control-Allow-Headers": string;
-  "Access-Control-Allow-Methods": string;
-  "Access-Control-Expose-Headers": string;
-
-  // Authentication
-  "WWW-Authenticate": string;
-  Authorization: string;
-
-  // Security
-  "Strict-Transport-Security": string;
-  "Content-Security-Policy": string;
-  "X-Content-Type-Options": string;
-  "X-Frame-Options": string;
-  "X-XSS-Protection": string;
-  "Referrer-Policy": string;
-  "Permissions-Policy": string;
-  "Cross-Origin-Opener-Policy": string;
-  "Cross-Origin-Embedder-Policy": string;
-  "Cross-Origin-Resource-Policy": string;
-
-  // Cookies
-  "Set-Cookie": string;
-
-  // Redirect
-  Location: string;
-
-  // Connection and communication
-  Connection: string;
-  "Keep-Alive": string;
-  "Transfer-Encoding": string;
-  Upgrade: string;
-  Vary: string;
-
-  // Server information
-  Date: string;
-  Server: string;
-  "X-Powered-By": string;
-}>;
 
 /**
  * Extension of the standard `ResponseInit` interface with strongly typed status and headers.
