@@ -18,6 +18,7 @@ docs:
 
 test:
   - changed-files:
+      - any-glob-to-any-file: "src/tests/**"
       - any-glob-to-any-file: "tests/**"
       - any-glob-to-any-file: "**/*.test.*"
 
