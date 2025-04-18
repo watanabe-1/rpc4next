@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         node-version: [18, 20, 22]
-        next-version: ["14.0.0", "15.0.0", "15.2.4"]
+        next-version: ["14.0.0", "15.0.0", "from-package"]
     steps:
       - uses: actions/checkout@v4
 
@@ -23,7 +23,13 @@ jobs:
         run: npm ci
 
       - name: Install target Next.js version
-        run: npm install next@${{ matrix.next-version }}
+        run: |
+          if [ "${{ matrix.next-version }}" = "from-package" ]; then
+            echo "Using next from package.json"
+          else
+            echo "Installing next@${{ matrix.next-version }}"
+            npm install "next@${{ matrix.next-version }}"
+          fi
 
       - name: Print versions
         run: |
