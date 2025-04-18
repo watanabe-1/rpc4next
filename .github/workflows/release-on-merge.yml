@@ -61,4 +61,6 @@ jobs:
     uses: ./.github/workflows/add-version-to-pr-title.yml
     with:
       version: ${{ needs.release.outputs.version }}
+    permissions:
+      pull-requests: write
     secrets: inherit
