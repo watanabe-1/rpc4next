@@ -236,9 +236,6 @@ describe("setupWatcher", () => {
     // Ensure the async catch() is executed
     await flushPromises();
 
-    console.log("mockCloseError.mock.calls:", mockCloseError.mock.calls);
-    console.log("logger.error.mock.calls:", logger.error.mock.calls);
-
     expect(mockCloseError).toHaveBeenCalled();
     expect(logger.error).toHaveBeenCalledWith(
       "Failed to close watcher: close fail"
