@@ -9,7 +9,6 @@ ci:
 cli:
   - changed-files:
       - any-glob-to-any-file: "src/cli/**"
-      - any-glob-to-any-file: "cli/**"
 
 docs:
   - changed-files:
@@ -19,7 +18,6 @@ docs:
 test:
   - changed-files:
       - any-glob-to-any-file: "src/tests/**"
-      - any-glob-to-any-file: "tests/**"
       - any-glob-to-any-file: "**/*.test.*"
 
 feature:
