@@ -3,7 +3,7 @@ import {
   CATCH_ALL_PREFIX,
   OPTIONAL_CATCH_ALL_PREFIX,
   HTTP_METHOD_FUNC_KEYS,
-} from "../../lib/constants";
+} from "../lib/constants";
 import type { HttpMethodFuncKey } from "./types";
 
 export const isDynamic = (key: string) => key.startsWith(DYNAMIC_PREFIX);

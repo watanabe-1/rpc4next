@@ -3,7 +3,7 @@ import type {
   CATCH_ALL_PREFIX,
   DYNAMIC_PREFIX,
   HTTP_METHOD_FUNC_KEYS,
-} from "../../lib/constants";
+} from "../lib/constants";
 import type {
   RouteHandlerResponse,
   RouteResponse,
