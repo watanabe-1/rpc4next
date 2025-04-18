@@ -24,37 +24,37 @@
     "dist"
   ],
   "bin": {
-    "rpc4next": "dist/cli/index.js"
+    "rpc4next": "dist/rpc/cli/index.js"
   },
   "exports": {
     "./client": {
       "import": {
-        "types": "./dist/helper/client/index.d.ts",
-        "default": "./dist/helper/client/index.js"
+        "types": "./dist/rpc/client/index.d.ts",
+        "default": "./dist/rpc/client/index.js"
       },
       "default": {
-        "types": "./dist/helper/client/index.d.ts",
-        "default": "./dist/helper/client/index.js"
+        "types": "./dist/rpc/client/index.d.ts",
+        "default": "./dist/rpc/client/index.js"
       }
     },
     "./server": {
       "import": {
-        "types": "./dist/helper/server/index.d.ts",
-        "default": "./dist/helper/server/index.js"
+        "types": "./dist/rpc/server/index.d.ts",
+        "default": "./dist/rpc/server/index.js"
       },
       "default": {
-        "types": "./dist/helper/server/index.d.ts",
-        "default": "./dist/helper/server/index.js"
+        "types": "./dist/rpc/server/index.d.ts",
+        "default": "./dist/rpc/server/index.js"
       }
     },
     "./server/validators/zod": {
       "import": {
-        "types": "./dist/helper/server/validators/zod/index.d.ts",
-        "default": "./dist/helper/server/validators/zod/index.js"
+        "types": "./dist/rpc/server/validators/zod/index.d.ts",
+        "default": "./dist/rpc/server/validators/zod/index.js"
       },
       "default": {
-        "types": "./dist/helper/server/validators/zod/index.d.ts",
-        "default": "./dist/helper/server/validators/zod/index.js"
+        "types": "./dist/rpc/server/validators/zod/index.d.ts",
+        "default": "./dist/rpc/server/validators/zod/index.js"
       }
     }
   },
