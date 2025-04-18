@@ -17,10 +17,14 @@ jobs:
         with:
           node-version: 18
 
-      - name: Install dependencies
-        run: |
-          npm install next@${{ matrix.next-version }}
-          npm ci
+      - name: Install base dependencies
+        run: npm ci
+
+      - name: Install target Next.js version
+        run: npm install next@${{ matrix.next-version }}
+
+      - name: Next version
+        run: npx next --version
 
       - name: Lint
         run: npm run lint
