@@ -6,12 +6,14 @@ import type {
   Query,
   Params,
   TypedNextResponse,
-  HttpStatusCode,
-  ContentType,
-  RedirectionHttpStatusCode,
   TypedResponseInit,
   ValidationTarget,
 } from "./types";
+import type { ContentType } from "../lib/content-type-types";
+import type {
+  HttpStatusCode,
+  RedirectionHttpStatusCode,
+} from "../lib/http-status-code-types";
 import type { NextRequest } from "next/server";
 
 export const createRouteContext = <

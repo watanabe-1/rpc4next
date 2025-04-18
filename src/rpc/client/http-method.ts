@@ -8,7 +8,7 @@ import type {
   BodyOptions,
   HeadersOptions,
 } from "./types";
-import type { ContentType } from "../server/types";
+import type { ContentType } from "../lib/content-type-types";
 
 const normalizeHeaders = (headers?: HeadersInit): Record<string, string> => {
   const result: Record<string, string> = {};
