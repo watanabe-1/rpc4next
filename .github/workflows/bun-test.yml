@@ -23,7 +23,8 @@ jobs:
             echo "Using next from package.json"
           else
             echo "Overwriting package.json to use next@${{ matrix.next-version }}"
-            jq '.devDependencies.next = "${{ matrix.next-version }}"' package.json > package.tmp.json && mv package.tmp.json package.json
+            rm -f package-lock.json
+            bun add "next@${{ matrix.next-version }}"
           fi
 
       - name: Install dependencies
