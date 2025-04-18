@@ -1,11 +1,8 @@
 import { NextResponse, NextRequest } from "next/server";
 import { describe, it, expect, expectTypeOf } from "vitest";
 import { createRouteContext } from "./create-route-context";
-import type {
-  TypedNextResponse,
-  ValidationSchema,
-  ValidationTarget,
-} from "./types";
+import type { ValidationSchema } from "./route-types";
+import type { TypedNextResponse, ValidationTarget } from "./types";
 
 const createRealNextRequest = (url: string): NextRequest => {
   return new NextRequest(url);

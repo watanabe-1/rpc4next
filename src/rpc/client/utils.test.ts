@@ -10,7 +10,7 @@ import {
   CATCH_ALL_PREFIX,
   OPTIONAL_CATCH_ALL_PREFIX,
   HTTP_METHOD_FUNC_KEYS,
-} from "../../lib/constants";
+} from "../lib/constants";
 
 describe("isDynamic", () => {
   it("returns true if the string starts with DYNAMIC_PREFIX", () => {

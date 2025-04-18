@@ -8,8 +8,15 @@ ci:
 
 cli:
   - changed-files:
-      - any-glob-to-any-file: "src/cli/**"
-      - any-glob-to-any-file: "cli/**"
+      - any-glob-to-any-file: "src/rpc/cli/**"
+
+client:
+  - changed-files:
+      - any-glob-to-any-file: "src/rpc/client/**"
+
+server:
+  - changed-files:
+      - any-glob-to-any-file: "src/rpc/server/**"
 
 docs:
   - changed-files:
@@ -19,7 +26,6 @@ docs:
 test:
   - changed-files:
       - any-glob-to-any-file: "src/tests/**"
-      - any-glob-to-any-file: "tests/**"
       - any-glob-to-any-file: "**/*.test.*"
 
 feature:

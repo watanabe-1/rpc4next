@@ -1,2 +1,2 @@
-export * from "./helper/server";
-export * from "./helper/client";
+export * from "./rpc/server";
+export * from "./rpc/client";

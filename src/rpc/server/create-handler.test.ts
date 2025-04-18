@@ -1,13 +1,7 @@
 import { describe, it, expect, expectTypeOf } from "vitest";
 import { createHandler } from "./create-handler";
-import {
-  Handler,
-  Params,
-  Query,
-  RouteContext,
-  TypedNextResponse,
-  ValidationSchema,
-} from "./types";
+import type { Handler, ValidationSchema } from "./route-types";
+import type { Params, Query, RouteContext, TypedNextResponse } from "./types";
 
 describe("createHandler", () => {
   it("should return the same handler function", () => {

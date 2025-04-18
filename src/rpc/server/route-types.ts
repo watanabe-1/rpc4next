@@ -8,7 +8,7 @@
  */
 
 import type { TypedNextResponse, Query, RouteContext, Params } from "./types";
-import type { HttpMethod } from "../../lib/types";
+import type { HttpMethod } from "../lib/types";
 import type { NextRequest } from "next/server";
 
 export type RouteResponse =
