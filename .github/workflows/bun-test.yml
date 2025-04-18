@@ -17,10 +17,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
 
-      - name: Install base dependencies
-        run: bun install
-
-      - name: Install target Next.js version
+      - name: Add target Next.js version
         run: |
           if [ "${{ matrix.next-version }}" = "from-package" ]; then
             echo "Using next from package.json"
@@ -28,6 +25,9 @@ jobs:
             echo "Installing next@${{ matrix.next-version }}"
             bun add "next@${{ matrix.next-version }}"
           fi
+
+      - name: Install dependencies
+        run: bun install
 
       - name: Print versions
         run: |
