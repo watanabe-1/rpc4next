@@ -1,4 +1,4 @@
-name: CI
+name: Bun test
 
 on:
   push:
@@ -10,17 +10,15 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18, 20, 22]
         next-version: ["14.0.0", "15.0.0", "from-package"]
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
 
       - name: Install base dependencies
-        run: npm ci
+        run: bun install
 
       - name: Install target Next.js version
         run: |
@@ -28,19 +26,19 @@ jobs:
             echo "Using next from package.json"
           else
             echo "Installing next@${{ matrix.next-version }}"
-            npm install "next@${{ matrix.next-version }}"
+            bun add "next@${{ matrix.next-version }}"
           fi
 
       - name: Print versions
         run: |
-          node -v
-          npx next --version
+          bun -v
+          bunx next --version
 
       - name: Lint
-        run: npm run lint
+        run: bun run lint
 
       - name: Build
-        run: npm run build
+        run: bun run build:bun
 
       - name: Test
-        run: npm test
+        run: bun run test

@@ -1,0 +1,46 @@
+name: Node test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18, 20, 22]
+        next-version: ["14.0.0", "15.0.0", "from-package"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install base dependencies
+        run: npm ci
+
+      - name: Install target Next.js version
+        run: |
+          if [ "${{ matrix.next-version }}" = "from-package" ]; then
+            echo "Using next from package.json"
+          else
+            echo "Installing next@${{ matrix.next-version }}"
+            npm install "next@${{ matrix.next-version }}"
+          fi
+
+      - name: Print versions
+        run: |
+          node -v
+          npx next --version
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
