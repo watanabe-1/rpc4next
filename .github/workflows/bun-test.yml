@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        bun-version: ["1.0.0", "tool-versions"]
+        bun-version: ["1.1.0", "tool-versions"]
         next-version: ["14.0.0", "15.0.0", "from-package"]
 
     steps:
