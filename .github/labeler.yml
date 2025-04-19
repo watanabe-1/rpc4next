@@ -27,6 +27,7 @@ test:
   - changed-files:
       - any-glob-to-any-file: "src/tests/**"
       - any-glob-to-any-file: "**/*.test.*"
+  - head-branch: ["^test/"]
 
 feature:
   - head-branch: ["^feature/", "^feat/"]
