@@ -30,8 +30,18 @@ jobs:
         with:
           node-version-file: .tool-versions
 
+      - name: Read bun version from .tool-versions
+        id: bun-version
+        run: |
+          echo "version=$(grep '^bun ' .tool-versions | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: "${{ steps.bun-version.outputs.version }}"
+
       - name: Install base dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
 
       - name: Install target Next.js version
         run: |
@@ -39,19 +49,19 @@ jobs:
             echo "Using next from package.json"
           else
             echo "Installing next@${{ matrix.next-version }}"
-            npm install "next@${{ matrix.next-version }}"
+            bun add "next@${{ matrix.next-version }}"
           fi
 
       - name: Print versions
         run: |
           node -v
-          npx next --version
+          bun next --version
 
       - name: Lint
-        run: npm run lint
+        run: bun run lint
 
       - name: Build
-        run: npm run build
+        run: bun run build
 
       - name: Test
         run: |
