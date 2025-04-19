@@ -29,12 +29,12 @@ export const debounceOnceRunningWithTrailing = <
 
     timer = setTimeout(() => {
       if (isRunning) {
-        pendingArgs = args ?? [];
+        pendingArgs = args;
 
         return;
       }
 
-      execute(...(args ?? []));
+      execute(...args);
     }, delay);
   };
 };
