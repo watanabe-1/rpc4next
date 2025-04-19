@@ -12,14 +12,23 @@ jobs:
       contents: read
     strategy:
       matrix:
-        node-version: [18, 20, 22]
+        node-version: [18, 20, 22, tool-versions]
         next-version: ["14.0.0", "15.0.0", "from-package"]
+
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js (from matrix)
+        if: matrix.node-version != 'tool-versions'
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
+
+      - name: Setup Node.js (from .tool-versions)
+        if: matrix.node-version == 'tool-versions'
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .tool-versions
 
       - name: Install base dependencies
         run: npm ci
