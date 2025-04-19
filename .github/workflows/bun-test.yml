@@ -37,10 +37,9 @@ jobs:
           if [ "${{ matrix.next-version }}" = "from-package" ]; then
             echo "Using next from package.json"
           else
-            echo "Installing next@${{ matrix.next-version }}"
-            rm -f bun.lockb package-lock.json
+            echo "Overwriting package.json to use next@${{ matrix.next-version }}"
+            rm -f package-lock.json
             bun add "next@${{ matrix.next-version }}"
-            bun install
           fi
 
       - name: Install dependencies
@@ -48,8 +47,8 @@ jobs:
 
       - name: Print versions
         run: |
-          echo "Bun version: $(bun -v)"
-          echo "Next.js version: $(bunx next --version)"
+          bun -v
+          bunx next --version
 
       - name: Lint
         run: bun run lint
