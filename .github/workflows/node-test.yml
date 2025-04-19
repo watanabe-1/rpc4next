@@ -46,10 +46,10 @@ jobs:
       - name: Install target Next.js version
         run: |
           if [ "${{ matrix.next-version }}" = "from-package" ]; then
-            echo "Using next from package.json"
+            echo "Using next from bun.lock"
           else
             echo "Installing next@${{ matrix.next-version }}"
-            bun add "next@${{ matrix.next-version }} --no-save"
+            bun add "next@${{ matrix.next-version }} --exact"
           fi
 
       - name: Print versions
