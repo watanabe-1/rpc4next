@@ -48,8 +48,9 @@ jobs:
           if [ "${{ matrix.next-version }}" = "from-package" ]; then
             echo "Using next from bun.lock"
           else
-            echo "Installing next@${{ matrix.next-version }}"
-            bun add "next@${{ matrix.next-version }} --exact"
+            echo "Overwriting bun.lock to use next@${{ matrix.next-version }}"
+            rm -f bun.lock
+            bun add "next@${{ matrix.next-version }}"
           fi
 
       - name: Print versions
