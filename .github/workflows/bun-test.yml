@@ -38,6 +38,7 @@ jobs:
             bun install --frozen-lockfile
           else
             bun install
+            bun install --frozen-lockfile
           fi
 
       - name: Set Next.js version
