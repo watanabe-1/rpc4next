@@ -38,7 +38,6 @@ jobs:
             bun install --frozen-lockfile
           else
             bun install
-            bun install --frozen-lockfile
           fi
 
       - name: Set Next.js version
@@ -47,7 +46,7 @@ jobs:
             echo "Using next from package.json"
           else
             echo "Overwriting package.json to use next@${{ matrix.next-version }}"
-            rm -f bun.lock
+            rm -f bun.lockb bun.lock
             bun add "next@${{ matrix.next-version }}"
           fi
 
