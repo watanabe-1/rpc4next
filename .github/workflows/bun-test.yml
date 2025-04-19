@@ -10,12 +10,27 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        bun-version: ["1.1.0", "tool-versions"]
         next-version: ["14.0.0", "15.0.0", "from-package"]
+
     steps:
       - uses: actions/checkout@v4
 
+      - name: Determine Bun version
+        id: bun-version
+        run: |
+          if [ "${{ matrix.bun-version }}" = "tool-versions" ]; then
+            version=$(grep '^bun ' .tool-versions | awk '{print $2}')
+          else
+            version="${{ matrix.bun-version }}"
+          fi
+          echo "Resolved Bun version: $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: "${{ steps.bun-version.outputs.version }}"
 
       - name: Set Next.js version
         run: |
