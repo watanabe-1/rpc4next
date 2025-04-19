@@ -10,21 +10,37 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        bun-version: ["1.0.0", "tool-versions"]
         next-version: ["14.0.0", "15.0.0", "from-package"]
+
     steps:
       - uses: actions/checkout@v4
 
+      - name: Determine Bun version
+        id: bun-version
+        run: |
+          if [ "${{ matrix.bun-version }}" = "tool-versions" ]; then
+            version=$(grep '^bun ' .tool-versions | awk '{print $2}')
+          else
+            version="${{ matrix.bun-version }}"
+          fi
+          echo "Resolved Bun version: $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: "${{ steps.bun-version.outputs.version }}"
 
       - name: Set Next.js version
         run: |
           if [ "${{ matrix.next-version }}" = "from-package" ]; then
             echo "Using next from package.json"
           else
-            echo "Overwriting package.json to use next@${{ matrix.next-version }}"
-            rm -f package-lock.json
+            echo "Installing next@${{ matrix.next-version }}"
+            rm -f bun.lockb package-lock.json
             bun add "next@${{ matrix.next-version }}"
+            bun install
           fi
 
       - name: Install dependencies
@@ -32,8 +48,8 @@ jobs:
 
       - name: Print versions
         run: |
-          bun -v
-          bunx next --version
+          echo "Bun version: $(bun -v)"
+          echo "Next.js version: $(bunx next --version)"
 
       - name: Lint
         run: bun run lint
