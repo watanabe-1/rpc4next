@@ -49,7 +49,7 @@ jobs:
             echo "Using next from package.json"
           else
             echo "Installing next@${{ matrix.next-version }}"
-            bun add "next@${{ matrix.next-version }}"
+            bun add "next@${{ matrix.next-version }} --no-save"
           fi
 
       - name: Print versions
