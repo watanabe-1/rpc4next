@@ -33,7 +33,12 @@ jobs:
           bun-version: "${{ steps.bun-version.outputs.version }}"
 
       - name: Install base dependencies
-        run: bun install --frozen-lockfile
+        run: |
+          if [ "${{ matrix.bun-version }}" = "tool-versions" ]; then
+            bun install --frozen-lockfile
+          else
+            bun install
+          fi
 
       - name: Set Next.js version
         run: |
