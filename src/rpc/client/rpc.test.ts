@@ -436,6 +436,28 @@ describe("createRpcClient", () => {
     });
   });
 
+  type FalierPathStructure = Endpoint & {
+    _fuga: Endpoint;
+    hoge: Endpoint;
+  };
+
+  describe("Invalid usage patterns", () => {
+    it("throws when a dynamic parameter is called without an argument or when a static path is called as a function", () => {
+      const client = createRpcClient<FalierPathStructure>("");
+
+      // calling dynamic param without argument
+      expect(() => client._fuga(undefined as unknown as string)).toThrow(
+        "An argument is required when calling the function for paramKey: _fuga"
+      );
+
+      // calling static path segment as a function
+      const hoge = client.hoge as unknown as (value: string) => "";
+      expect(() => hoge("")).toThrow(
+        "paramKey: hoge is not a dynamic parameter and cannot be called as a function"
+      );
+    });
+  });
+
   const { POST: _post_1 } = createRouteHandler().post(
     async (rc) => rc.json("json"),
     async (rc) => rc.text("text")
