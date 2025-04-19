@@ -46,9 +46,9 @@ jobs:
       - name: Install target Next.js version
         run: |
           if [ "${{ matrix.next-version }}" = "from-package" ]; then
-            echo "Using next from bun.lock"
+            echo "Using next from package.json"
           else
-            echo "Overwriting bun.lock to use next@${{ matrix.next-version }}"
+            echo "Overwriting package.json to use next@${{ matrix.next-version }}"
             rm -f bun.lock
             bun add "next@${{ matrix.next-version }}"
           fi
