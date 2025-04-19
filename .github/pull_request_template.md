@@ -21,6 +21,6 @@
 
 ## 🔄 Testing
 
-- [ ] `npm run lint` passed
-- [ ] `npm run test` passed
+- [ ] `bun run lint` passed
+- [ ] `bun run test` passed
 - [ ] Manual verification completed
