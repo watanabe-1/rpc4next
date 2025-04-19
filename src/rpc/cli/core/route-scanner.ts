@@ -202,9 +202,8 @@ export const scanAppDir = (
       if (isSkipDir) {
         // Extract only the inner part inside `{}` from the child output
         const match = childPathStructure.match(/^\s*\{([\s\S]*)\}\s*$/);
-        const childContent = match ? match[1].trim() : "";
-        if (childContent) {
-          pathStructures.push(`${currentIndent}${childContent}`);
+        if (match) {
+          pathStructures.push(`${currentIndent}${match[1].trim()}`);
         }
       } else {
         pathStructures.push(
