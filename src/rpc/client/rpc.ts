@@ -23,22 +23,28 @@ export const createRpcProxy = <T extends object>(
 ) => {
   const proxy: unknown = new Proxy(
     (value?: string | number) => {
+      const pathKey = paths.at(-1);
+      const paramKey = dynamicKeys.at(-1);
+
       if (value === undefined) {
-        return createRpcProxy(options, [...paths], params, dynamicKeys);
+        throw new Error(
+          `An argument is required when calling the function for paramKey: ${paramKey}`
+        );
       }
 
-      const newKey = paths.at(-1) ?? "";
-      if (isDynamic(newKey)) {
+      if (pathKey && paramKey && isDynamic(pathKey)) {
         // Treat as a dynamic parameter
         return createRpcProxy(
           options,
           [...paths],
-          { ...params, [dynamicKeys.at(-1) ?? ""]: value },
+          { ...params, [paramKey]: value },
           dynamicKeys
         );
       }
 
-      return createRpcProxy(options, [...paths], params, dynamicKeys);
+      throw new Error(
+        `paramKey: ${pathKey} is not a dynamic parameter and cannot be called as a function`
+      );
     },
     {
       get: (_, key: string) => {
