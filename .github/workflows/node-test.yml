@@ -66,14 +66,14 @@ jobs:
 
       - name: Test
         run: |
-          if [ "${{ matrix.node-version }}" = "22" ] && [ "${{ matrix.next-version }}" = "from-package" ]; then
+          if [ "${{ matrix.node-version }}" = "tool-versions" ] && [ "${{ matrix.next-version }}" = "from-package" ]; then
             npm run test:coverage
           else
             npm run test
           fi
 
       - name: Upload coverage
-        if: ${{ matrix.node-version == '22' && matrix.next-version == 'from-package' }}
+        if: ${{ matrix.node-version == 'tool-versions' && matrix.next-version == 'from-package' }}
         uses: actions/upload-artifact@v4
         with:
           name: coverage
