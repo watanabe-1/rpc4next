@@ -241,4 +241,38 @@ describe("setupWatcher", () => {
       "Failed to close watcher: close fail"
     );
   });
+
+  it("should correctly ignore non-target files and include target files", () => {
+    type IgnoredFn = (path: string, stats?: { isFile(): boolean }) => boolean;
+
+    const baseDir = "/base/dir";
+    let ignoredFn: IgnoredFn | undefined;
+
+    vi.spyOn(chokidar, "watch").mockImplementationOnce((_, options) => {
+      ignoredFn = options?.ignored as IgnoredFn;
+
+      return fakeWatcher as unknown as FSWatcher;
+    });
+
+    setupWatcher(baseDir, onGenerate, logger);
+
+    expect(ignoredFn).toBeDefined();
+
+    // If we exclude everything except files using ignored, the watch mode will terminate, so we added "only files" to the exclusion condition.
+    expect(
+      ignoredFn?.("/base/dir/should/ignore", { isFile: () => false })
+    ).toBe(false);
+
+    expect(ignoredFn?.("/base/dir/non-target.ts", { isFile: () => true })).toBe(
+      true
+    );
+
+    expect(ignoredFn?.("/base/dir/route.ts", { isFile: () => true })).toBe(
+      false
+    );
+
+    expect(ignoredFn?.("/base/dir/page.tsx", { isFile: () => true })).toBe(
+      false
+    );
+  });
 });
