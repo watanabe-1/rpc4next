@@ -67,14 +67,14 @@ export const httpMethod = (
     const urlObj = createUrl([...paths], params, dynamicKeys)(methodParam?.url);
     const method = key.replace(/^\$/, "").toUpperCase();
 
-    const customFetch = options?.fetch || defaultOptions.fetch || fetch;
+    const customFetch = options?.fetch ?? defaultOptions.fetch ?? fetch;
 
-    const defaultInit = defaultOptions.init || {};
-    const innerInit = options?.init || {};
+    const defaultInit = defaultOptions.init ?? {};
+    const innerInit = options?.init ?? {};
 
     const defaultHeaders = normalizeHeaders(defaultInit.headers);
     const innerHeaders = normalizeHeaders(
-      methodParamHeaders ? methodParamHeaders : innerInit.headers
+      methodParamHeaders ?? innerInit.headers
     );
     const mergedHeaders: Record<string, string> = {
       ...defaultHeaders,
