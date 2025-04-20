@@ -68,4 +68,34 @@ describe("runCli", () => {
       mockLogger
     );
   });
+
+  it("should log error with Error instance and exit", async () => {
+    vi.spyOn(cliHandler, "handleCli").mockImplementation(() => {
+      throw new Error("Something went wrong");
+    });
+
+    const argv = ["node", "script", "src", "types.ts"];
+    runCli(argv);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      "Unexpected error occurred:Something went wrong"
+    );
+    expect(process.exit).toHaveBeenCalledWith(1);
+  });
+
+  it("should log error with non-Error and exit", async () => {
+    vi.spyOn(cliHandler, "handleCli").mockImplementation(() => {
+      throw "plain string error";
+    });
+
+    const argv = ["node", "script", "src", "types.ts"];
+    runCli(argv);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      "Unexpected error occurred:plain string error"
+    );
+    expect(process.exit).toHaveBeenCalledWith(1);
+  });
 });
