@@ -1,1 +1,3 @@
-export type { HTTP_METHOD as HttpMethod } from "next/dist/server/web/http";
+import type { HTTP_METHODS } from "./constants";
+
+export type HttpMethod = (typeof HTTP_METHODS)[number];

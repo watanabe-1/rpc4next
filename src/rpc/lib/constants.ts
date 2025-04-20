@@ -1,4 +1,12 @@
-import { HTTP_METHODS } from "next/dist/server/web/http";
+export const HTTP_METHODS = [
+  "GET",
+  "HEAD",
+  "OPTIONS",
+  "POST",
+  "PUT",
+  "DELETE",
+  "PATCH",
+] as const;
 
 export const OPTIONAL_CATCH_ALL_PREFIX = "_____";
 export const CATCH_ALL_PREFIX = "___";
