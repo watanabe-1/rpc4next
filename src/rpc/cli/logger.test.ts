@@ -1,4 +1,4 @@
-import { styleText } from "node:util";
+import chalk from "chalk";
 import {
   describe,
   it,
@@ -10,10 +10,6 @@ import {
 } from "vitest";
 import { INDENT } from "./core/constants";
 import { createLogger, padMessage } from "./logger";
-
-const cyan = (text: string) => styleText(["cyan"], text);
-const green = (text: string) => styleText(["green"], text);
-const red = (text: string) => styleText(["red"], text);
 
 describe("createLogger", () => {
   const originalLog = console.log;
@@ -48,14 +44,14 @@ describe("createLogger", () => {
     const indent = INDENT.repeat(2);
     logger.info("info message", { indentLevel: 2, event: "scan" });
     expect(mockLog).toHaveBeenCalledWith(
-      `${indent}${cyan("[scan]")} info message`
+      `${indent}${chalk.cyan("[scan]")} info message`
     );
   });
 
   it("should log success without options", () => {
     const logger = createLogger();
     logger.success("success message");
-    expect(mockLog).toHaveBeenCalledWith(`${green("✓")} success message`);
+    expect(mockLog).toHaveBeenCalledWith(`${chalk.green("✓")} success message`);
   });
 
   it("should log success with indent", () => {
@@ -63,7 +59,7 @@ describe("createLogger", () => {
     const indent = INDENT.repeat(1);
     logger.success("success message", { indentLevel: 1 });
     expect(mockLog).toHaveBeenCalledWith(
-      `${indent}${green("✓")} success message`
+      `${indent}${chalk.green("✓")} success message`
     );
   });
 
@@ -71,7 +67,7 @@ describe("createLogger", () => {
     const logger = createLogger();
     logger.error("error message");
     expect(mockError).toHaveBeenCalledWith(
-      `${red("✗")} ${red("error message")}`
+      `${chalk.red("✗")} ${chalk.red("error message")}`
     );
   });
 
@@ -80,7 +76,7 @@ describe("createLogger", () => {
     const indent = INDENT.repeat(1);
     logger.error("error message", { indentLevel: 1 });
     expect(mockError).toHaveBeenCalledWith(
-      `${indent}${red("✗")} ${red("error message")}`
+      `${indent}${chalk.red("✗")} ${chalk.red("error message")}`
     );
   });
 });
