@@ -71,6 +71,7 @@
     "lint:fix": "eslint \"**/*.ts\" --fix"
   },
   "dependencies": {
+    "chalk": "^5.4.1",
     "chokidar": "^4.0.3",
     "commander": "^13.1.0"
   },
