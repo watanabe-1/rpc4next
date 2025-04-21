@@ -12,10 +12,7 @@ const baseOptions: BuildOptions = {
   tsconfig: "tsconfig.build.json",
 };
 
-const entriesForCli = await glob([
-  "src/rpc/cli/**/index.ts",
-  "!src/**/*.test.ts",
-]);
+const entriesForCli = await glob(["src/rpc/cli/index.ts"]);
 const pkg = JSON.parse(readFileSync("./package.json", "utf8"));
 const externals = [
   ...Object.keys(pkg.dependencies || {}),
@@ -32,6 +29,8 @@ await build({
 const entriesForNext = await glob([
   "src/rpc/**/*.ts",
   "!src/rpc/cli/**",
+  "!src/**/types.ts",
+  "!src/**/*-types.ts",
   "!src/**/*.test.ts",
 ]);
 await build({
