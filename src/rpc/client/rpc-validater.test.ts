@@ -11,7 +11,7 @@ import {
 } from "vitest";
 import { z } from "zod";
 import { routeHandlerFactory } from "../server";
-import { createRpcClient } from "./rpc";
+import { createRpcClient } from "./rpc-client";
 import { ClientOptions, Endpoint } from "./types";
 import { zodValidator } from "../server/validators/zod";
 

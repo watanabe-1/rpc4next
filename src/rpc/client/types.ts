@@ -183,3 +183,13 @@ export type DynamicPathProxyAsProperty<T> = Omit<
   },
   QueryKey | OptionalQueryKey | ParamsKey
 >;
+
+export type RpcHandler = (
+  key: string,
+  context: {
+    paths: string[];
+    params: FuncParams;
+    dynamicKeys: string[];
+    options: ClientOptions;
+  }
+) => unknown | undefined;
