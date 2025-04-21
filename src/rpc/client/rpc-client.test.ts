@@ -10,13 +10,13 @@ import {
   expectTypeOf,
   it,
 } from "vitest";
-import { createRpcClient } from "./rpc";
 import {
   ContentType,
   HttpStatusCode,
   routeHandlerFactory,
   TypedNextResponse,
 } from "../server";
+import { createRpcClient } from "./rpc-client";
 import { ParamsKey, Endpoint, QueryKey } from "./types";
 
 const createRouteHandler = routeHandlerFactory();
@@ -447,14 +447,12 @@ describe("createRpcClient", () => {
 
       // calling dynamic param without argument
       expect(() => client._fuga(undefined as unknown as string)).toThrow(
-        "An argument is required when calling the function for paramKey: _fuga"
+        "Missing value for dynamic parameter: _fuga"
       );
 
       // calling static path segment as a function
       const hoge = client.hoge as unknown as (value: string) => "";
-      expect(() => hoge("")).toThrow(
-        "paramKey: hoge is not a dynamic parameter and cannot be called as a function"
-      );
+      expect(() => hoge("")).toThrow("hoge is not dynamic");
     });
   });
 

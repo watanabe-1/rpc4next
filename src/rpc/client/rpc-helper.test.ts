@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { createRpcHelper } from "./rpc";
-import { Endpoint, ParamsKey } from "./types";
+import { createRpcHelper } from "./rpc-helper";
+import type { Endpoint, ParamsKey } from "./types";
 
 type PathStructure = Endpoint & {
   fuga: Endpoint & {
