@@ -1,7 +1,7 @@
 import { build } from "esbuild";
 import type { BuildOptions } from "esbuild";
 import glob from "fast-glob";
-import { readFileSync } from "fs";
+import pkg from "./package.json";
 
 const baseOptions: BuildOptions = {
   outbase: "src",
@@ -13,7 +13,6 @@ const baseOptions: BuildOptions = {
 };
 
 const entriesForCli = await glob(["src/rpc/cli/index.ts"]);
-const pkg = JSON.parse(readFileSync("./package.json", "utf8"));
 const externals = [
   ...Object.keys(pkg.dependencies || {}),
   ...Object.keys(pkg.peerDependencies || {}),
