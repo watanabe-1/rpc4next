@@ -58,6 +58,9 @@ jobs:
           node -v
           bun next --version
 
+      - name: Typecheck
+        run: bun run typecheck
+
       - name: Lint
         run: bun run lint
 

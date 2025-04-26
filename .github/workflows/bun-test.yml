@@ -55,6 +55,9 @@ jobs:
           bun -v
           bunx next --version
 
+      - name: Typecheck
+        run: bun run typecheck
+
       - name: Lint
         run: bun run lint
 

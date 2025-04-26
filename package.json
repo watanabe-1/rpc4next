@@ -68,7 +68,8 @@
     "test:ui": "vitest --ui --coverage.enabled true",
     "test:watch": "vitest --watch",
     "lint": "eslint \"**/*.ts\"",
-    "lint:fix": "eslint \"**/*.ts\" --fix"
+    "lint:fix": "eslint \"**/*.ts\" --fix",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "chalk": "^5.4.1",
