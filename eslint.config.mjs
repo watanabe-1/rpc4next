@@ -81,6 +81,14 @@ const config = [
         "error",
         { blankLine: "always", prev: "*", next: "return" },
       ],
+      "spaced-comment": [
+        "error",
+        "always",
+        {
+          exceptions: ["-"],
+          markers: ["!", "/"],
+        },
+      ],
     },
   },
   {
