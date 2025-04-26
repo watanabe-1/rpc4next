@@ -22,6 +22,7 @@ docs:
   - changed-files:
       - any-glob-to-any-file: "docs/**"
       - any-glob-to-any-file: "**/*.md"
+  - head-branch: ["^docs/"]
 
 test:
   - changed-files:
