@@ -28,7 +28,7 @@ export const validator = <
 >() => {
   return <TTypedNextResponse extends TypedNextResponse>(
     target: TValidationTarget,
-    validateCallBack: (
+    validateHandler: (
       value: object,
       routeContext: RouteContext<TParams, TQuery, TValidationSchema>
     ) => Promise<ValidatedData | TTypedNextResponse>
@@ -53,7 +53,7 @@ export const validator = <
         throw new Error(`Unexpected target: ${target satisfies never}`);
       })();
 
-      const result = await validateCallBack(value, rc);
+      const result = await validateHandler(value, rc);
 
       if (result instanceof Response) {
         return result;
