@@ -2,7 +2,11 @@ import { NextResponse, NextRequest } from "next/server";
 import { describe, it, expect, expectTypeOf } from "vitest";
 import { createRouteContext } from "./create-route-context";
 import type { ValidationSchema } from "./route-types";
-import type { TypedNextResponse, ValidationTarget } from "./types";
+import type {
+  TypedNextResponse,
+  ValidatedData,
+  ValidationTarget,
+} from "./types";
 
 const createRealNextRequest = (url: string): NextRequest => {
   return new NextRequest(url);
@@ -29,7 +33,10 @@ describe("createRouteContext", () => {
     const req = createRealNextRequest("http://localhost/");
     const context = createRouteContext(req, { params: Promise.resolve({}) });
 
-    context.req.addValidatedData("body" as ValidationTarget, { name: "John" });
+    context.req.addValidatedData(
+      "body" as ValidationTarget,
+      { name: "John" } as unknown as ValidatedData
+    );
     expect(context.req.valid("body" as ValidationTarget)).toEqual({
       name: "John",
     });
