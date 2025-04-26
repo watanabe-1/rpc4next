@@ -82,6 +82,8 @@ export const zodValidator = <
       if (target === "cookies") {
         return await getCookiesObject();
       }
+
+      throw new Error(`Unexpected target: ${target satisfies never}`);
     })();
 
     const result = await schema.safeParseAsync(value);

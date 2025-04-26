@@ -344,6 +344,21 @@ describe("zValidator tests", () => {
       expect(res.status).toBe(400);
     });
   });
+
+  it("should throw an error if unexpected target is provided", async () => {
+    const handler = createRouteHandler().post(
+      // @ts-expect-error - force an invalid target for testing
+      zodValidator("invalidTarget", schema),
+      async (rc) => {
+        return rc.text("never reach");
+      }
+    );
+
+    const req = new NextRequest(new URL("http://localhost"));
+    await expect(() =>
+      handler.POST(req, { params: Promise.resolve({}) })
+    ).rejects.toThrowError(new Error("Unexpected target: invalidTarget"));
+  });
 });
 
 describe("zValidator type definitions", () => {
