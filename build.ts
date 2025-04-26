@@ -23,6 +23,9 @@ await build({
   platform: "node",
   bundle: true,
   external: [...externals],
+  banner: {
+    js: "#!/usr/bin/env node",
+  },
 });
 
 const entriesForNext = await glob([
