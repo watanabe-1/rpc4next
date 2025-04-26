@@ -7,8 +7,7 @@
  * Hono is licensed under the MIT License.
  */
 
-import { createHandler } from "../../create-handler";
-import { getCookiesObject, getHeadersObject } from "../validator-utils";
+import { validator } from "../validator";
 import type { ValidationSchema } from "../../route-types";
 import type {
   RouteContext,
@@ -17,6 +16,7 @@ import type {
   TypedNextResponse,
   ConditionalValidationInput,
   ValidationTarget,
+  ValidatedData,
 } from "../../types";
 import type { z, ZodSchema } from "zod";
 
@@ -65,42 +65,24 @@ export const zodValidator = <
       }
     });
 
-  return createHandler<TParams, TQuery, TValidationSchema>()(async (rc) => {
-    const value = await (async () => {
-      if (target === "params") {
-        return await rc.req.params();
-      }
-      if (target === "query") {
-        return rc.req.query();
-      }
-      if (target === "json") {
-        return rc.req.json();
-      }
-      if (target === "headers") {
-        return await getHeadersObject();
-      }
-      if (target === "cookies") {
-        return await getCookiesObject();
+  return validator<TValidationTarget, TParams, TQuery, TValidationSchema>()(
+    target,
+    async (value, rc) => {
+      const result = await schema.safeParseAsync(value);
+
+      const hookResult = resolvedHook(result, rc);
+      if (hookResult instanceof Response) {
+        // If it's of type Response, it won't be void, so we're excluding void here
+        return hookResult as Exclude<THookReturn, void>;
       }
 
-      throw new Error(`Unexpected target: ${target satisfies never}`);
-    })();
+      if (!result.success) {
+        throw new Error(
+          "If you provide a custom hook, you must explicitly return a response when validation fails."
+        );
+      }
 
-    const result = await schema.safeParseAsync(value);
-
-    const hookResult = resolvedHook(result, rc);
-    if (hookResult instanceof Response) {
-      // If it's of type Response, it won't be void, so we're excluding void here
-      return hookResult as Exclude<THookReturn, void>;
+      return result.data as ValidatedData;
     }
-
-    if (!result.success) {
-      throw new Error(
-        "If you provide a custom hook, you must explicitly return a response when validation fails."
-      );
-    }
-
-    // If validation succeeds, register it as validatedData
-    rc.req.addValidatedData(target, result.data);
-  });
+  );
 };

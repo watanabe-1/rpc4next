@@ -141,7 +141,7 @@ export interface RouteContext<
      * @param target - The request part to associate the value with.
      * @param value - The validated data.
      */
-    addValidatedData: (target: ValidationTarget, value: object) => void;
+    addValidatedData: (target: ValidationTarget, value: ValidatedData) => void;
   };
 
   /**
@@ -199,6 +199,11 @@ export interface RouteContext<
     init?: TStatus | TypedResponseInit<TStatus, "">
   ) => TypedNextResponse<undefined, TStatus, "">;
 }
+
+declare const __validatedBrand: unique symbol;
+export type ValidatedData = {
+  [__validatedBrand]: true;
+};
 
 export type ValidationTarget =
   | "params"

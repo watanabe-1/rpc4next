@@ -8,6 +8,7 @@ import type {
   TypedNextResponse,
   TypedResponseInit,
   ValidationTarget,
+  ValidatedData,
 } from "./types";
 import type { ContentType } from "../lib/content-type-types";
 import type {
@@ -33,7 +34,7 @@ export const createRouteContext = <
       valid: (target: ValidationTarget) => {
         return validationResults[target] as never;
       },
-      addValidatedData: (target: ValidationTarget, value: object) => {
+      addValidatedData: (target: ValidationTarget, value: ValidatedData) => {
         validationResults[target] = value;
       },
     }),
