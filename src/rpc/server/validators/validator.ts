@@ -1,5 +1,5 @@
 /*!
- * Portions of this code are based on the Hono project (https://github.com/honojs/middleware/tree/main/packages/zod-validator),
+ * Portions of this code are based on the Hono project (https://github.com/honojs/hono),
  * originally created by Yusuke Wada (https://github.com/yusukebe) and developed with
  * contributions from the Hono community.
  * This code has been adapted and modified for this project.
