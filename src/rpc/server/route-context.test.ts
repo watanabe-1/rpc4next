@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import { describe, it, expect, expectTypeOf } from "vitest";
-import { createRouteContext } from "./create-route-context";
+import { createRouteContext } from "./route-context";
 import type { ValidationSchema } from "./route-types";
 import type {
   TypedNextResponse,

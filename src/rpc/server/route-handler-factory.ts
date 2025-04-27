@@ -3,7 +3,7 @@
  * particularly its routing design and handler interface.
  */
 
-import { createRouteContext } from "./create-route-context";
+import { createRouteContext } from "./route-context";
 import type {
   ValidationSchema,
   Handler,
