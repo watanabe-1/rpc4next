@@ -9,6 +9,7 @@
 
 import { createHandler } from "../handler";
 import { getCookiesObject, getHeadersObject } from "./validator-utils";
+import type { HttpMethod } from "../../lib/types";
 import type { ValidationSchema } from "../route-types";
 import type {
   Params,
@@ -21,7 +22,8 @@ import type {
 
 // I want to use currying so that the return value can be inferred.
 export const validator = <
-  TValidationTarget extends ValidationTarget,
+  THttpMethod extends HttpMethod,
+  TValidationTarget extends ValidationTarget<THttpMethod>,
   TParams extends Params,
   TQuery extends Query,
   TValidationSchema extends ValidationSchema,
@@ -33,34 +35,36 @@ export const validator = <
       routeContext: RouteContext<TParams, TQuery, TValidationSchema>
     ) => Promise<ValidatedData | TTypedNextResponse>
   ) => {
-    return createHandler<TParams, TQuery, TValidationSchema>()(async (rc) => {
-      const value = await (async () => {
-        if (target === "params") {
-          return await rc.req.params();
-        }
-        if (target === "query") {
-          return rc.req.query();
-        }
-        if (target === "json") {
-          return rc.req.json();
-        }
-        if (target === "headers") {
-          return await getHeadersObject();
-        }
-        if (target === "cookies") {
-          return await getCookiesObject();
-        }
-        throw new Error(`Unexpected target: ${target satisfies never}`);
-      })();
+    return createHandler<THttpMethod, TParams, TQuery, TValidationSchema>()(
+      async (rc) => {
+        const value = await (async () => {
+          if (target === "params") {
+            return await rc.req.params();
+          }
+          if (target === "query") {
+            return rc.req.query();
+          }
+          if (target === "json") {
+            return rc.req.json();
+          }
+          if (target === "headers") {
+            return await getHeadersObject();
+          }
+          if (target === "cookies") {
+            return await getCookiesObject();
+          }
+          throw new Error(`Unexpected target: ${target satisfies never}`);
+        })();
 
-      const result = await validateHandler(value, rc);
+        const result = await validateHandler(value, rc);
 
-      if (result instanceof Response) {
-        return result;
+        if (result instanceof Response) {
+          return result;
+        }
+
+        // If validation succeeds, register it as validatedData
+        rc.req.addValidatedData(target, result);
       }
-
-      // If validation succeeds, register it as validatedData
-      rc.req.addValidatedData(target, result);
-    });
+    );
   };
 };

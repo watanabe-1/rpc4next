@@ -6,6 +6,7 @@ import type {
   RedirectionHttpStatusCode,
   SuccessfulHttpStatusCode,
 } from "../lib/http-status-code-types";
+import type { HttpMethod } from "../lib/types";
 import type { NextResponse, NextRequest } from "next/server";
 
 /**
@@ -205,12 +206,12 @@ export type ValidatedData = {
   [__validatedBrand]: true;
 };
 
-export type ValidationTarget =
-  | "params"
-  | "query"
-  | "json"
-  | "headers"
-  | "cookies";
+type ValidationTargetKey = "params" | "query" | "json" | "headers" | "cookies";
+
+export type ValidationTarget<THttpMethod extends HttpMethod = HttpMethod> =
+  THttpMethod extends "GET" | "HEAD"
+    ? Exclude<ValidationTargetKey, "json">
+    : ValidationTargetKey;
 
 type ValidationFor<
   TDirection extends keyof ValidationSchema,

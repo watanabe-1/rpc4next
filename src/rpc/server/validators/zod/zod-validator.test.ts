@@ -362,7 +362,7 @@ describe("zValidator tests", () => {
 });
 
 describe("zValidator type definitions", () => {
-  it("should infer types correctly", async () => {
+  it("should infer params and query types correctly", async () => {
     const handler = createRouteHandler<{
       params: z.infer<typeof schema>;
       query: { name: string; age: string };
@@ -547,9 +547,7 @@ describe("zValidator type definitions", () => {
 
     expectTypeOf<typeof post>().toEqualTypeOf<ExpectedHttpFunc>();
   });
-});
 
-describe("zValidator additional type definitions for headers and cookies", () => {
   it("should infer cookie types correctly", async () => {
     const cookieSchema = z.object({ session: z.string() });
     vi.spyOn(validatorUtils, "getCookiesObject").mockResolvedValueOnce({
@@ -610,5 +608,59 @@ describe("zValidator additional type definitions for headers and cookies", () =>
     >;
 
     expectTypeOf<typeof post>().toEqualTypeOf<ExpectedHttpFunc>();
+  });
+
+  it("should infer validate type correctly", async () => {
+    createRouteHandler().get(
+      // @ts-expect-error get does not accept "json" validator
+      zValidator("json", schema2),
+      async (rc) => {
+        // @ts-expect-error get does not accept "json" validator
+        const _validated = rc.req.valid("json");
+
+        type ExpectedValid = never;
+        expectTypeOf<typeof _validated>().toEqualTypeOf<ExpectedValid>();
+
+        return rc.text("ok");
+      }
+    );
+
+    createRouteHandler().head(
+      // @ts-expect-error get does not accept "json" validator
+      zValidator("json", schema2),
+      async (rc) => {
+        // @ts-expect-error get does not accept "json" validator
+        const _validated = rc.req.valid("json");
+
+        type ExpectedValid = never;
+        expectTypeOf<typeof _validated>().toEqualTypeOf<ExpectedValid>();
+
+        return rc.text("ok");
+      }
+    );
+
+    createRouteHandler().get(zValidator("headers", schema2), async (rc) => {
+      const _valid = rc.req.valid;
+
+      type ExpectedValid = [target: "headers"];
+      expectTypeOf<Parameters<typeof _valid>>().toEqualTypeOf<ExpectedValid>();
+
+      return rc.text("ok");
+    });
+
+    createRouteHandler().get(
+      zValidator("headers", schema2),
+      zValidator("cookies", schema2),
+      async (rc) => {
+        const _valid = rc.req.valid;
+
+        type ExpectedValid = [target: "headers" | "cookies"];
+        expectTypeOf<
+          Parameters<typeof _valid>
+        >().toEqualTypeOf<ExpectedValid>();
+
+        return rc.text("ok");
+      }
+    );
   });
 });
