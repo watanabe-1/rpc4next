@@ -1,5 +1,5 @@
 import { describe, it, expect, expectTypeOf } from "vitest";
-import { createHandler } from "./create-handler";
+import { createHandler } from "./handler";
 import type { Handler, ValidationSchema } from "./route-types";
 import type { Params, Query, RouteContext, TypedNextResponse } from "./types";
 

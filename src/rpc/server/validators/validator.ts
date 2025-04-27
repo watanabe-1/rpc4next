@@ -7,7 +7,7 @@
  * Hono is licensed under the MIT License.
  */
 
-import { createHandler } from "../create-handler";
+import { createHandler } from "../handler";
 import { getCookiesObject, getHeadersObject } from "./validator-utils";
 import type { ValidationSchema } from "../route-types";
 import type {
