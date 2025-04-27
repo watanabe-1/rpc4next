@@ -7,7 +7,7 @@ import {
 import { scanAppDir } from "./route-scanner";
 import { createImport } from "./type-utils";
 
-export const generatePages = (outputPath: string, baseDir: string) => {
+export const generatePathStructure = (outputPath: string, baseDir: string) => {
   const { pathStructure, imports, paramsTypes } = scanAppDir(
     outputPath,
     baseDir
