@@ -17,10 +17,11 @@ import type { HttpMethod } from "../lib/types";
 import type { NextRequest } from "next/server";
 
 const composeHandlersWithError = <
+  THttpMethod extends HttpMethod,
   TParams extends Params,
   TQuery extends Query,
   TValidationSchema extends ValidationSchema,
-  THandlers extends Handler<TParams, TQuery, TValidationSchema>[],
+  THandlers extends Handler<THttpMethod, TParams, TQuery, TValidationSchema>[],
   TOnErrorResponse extends RequiredRouteResponse,
 >(
   handlers: THandlers,

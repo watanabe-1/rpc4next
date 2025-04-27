@@ -32,6 +32,7 @@ export interface ValidationSchema {
 }
 
 export type Handler<
+  _THttpMethod extends HttpMethod,
   TParams = Params,
   TQuery = Query,
   TValidationSchema extends ValidationSchema = ValidationSchema,
@@ -95,7 +96,7 @@ export interface MethodRouteDefinition<
     TV1 extends ValidationSchema = ValidationSchema,
     TR1 extends RequiredRouteResponse = RequiredRouteResponse,
   >(
-    handler: Handler<TParams, TQuery, TV1, TR1>
+    handler: Handler<THttpMethod, TParams, TQuery, TV1, TR1>
   ): HttpMethodMapping<THttpMethod, TParams, TR1 | TOnErrorResponse, TV1>;
 
   // 2 handlers
@@ -105,8 +106,8 @@ export interface MethodRouteDefinition<
     TR1 extends RouteResponse = RouteResponse,
     TR2 extends RequiredRouteResponse = RequiredRouteResponse,
   >(
-    handler1: Handler<TParams, TQuery, TV1, TR1>,
-    handler2: Handler<TParams, TQuery, TV2, TR2>
+    handler1: Handler<THttpMethod, TParams, TQuery, TV1, TR1>,
+    handler2: Handler<THttpMethod, TParams, TQuery, TV2, TR2>
   ): HttpMethodMapping<THttpMethod, TParams, TR1 | TR2 | TOnErrorResponse, TV2>;
 
   // 3 handlers
@@ -118,9 +119,9 @@ export interface MethodRouteDefinition<
     TR2 extends RouteResponse = RouteResponse,
     TR3 extends RequiredRouteResponse = RequiredRouteResponse,
   >(
-    handler1: Handler<TParams, TQuery, TV1, TR1>,
-    handler2: Handler<TParams, TQuery, TV2, TR2>,
-    handler3: Handler<TParams, TQuery, TV3, TR3>
+    handler1: Handler<THttpMethod, TParams, TQuery, TV1, TR1>,
+    handler2: Handler<THttpMethod, TParams, TQuery, TV2, TR2>,
+    handler3: Handler<THttpMethod, TParams, TQuery, TV3, TR3>
   ): HttpMethodMapping<
     THttpMethod,
     TParams,
@@ -139,10 +140,10 @@ export interface MethodRouteDefinition<
     TR3 extends RouteResponse = RouteResponse,
     TR4 extends RequiredRouteResponse = RequiredRouteResponse,
   >(
-    handler1: Handler<TParams, TQuery, TV1, TR1>,
-    handler2: Handler<TParams, TQuery, TV2, TR2>,
-    handler3: Handler<TParams, TQuery, TV3, TR3>,
-    handler4: Handler<TParams, TQuery, TV4, TR4>
+    handler1: Handler<THttpMethod, TParams, TQuery, TV1, TR1>,
+    handler2: Handler<THttpMethod, TParams, TQuery, TV2, TR2>,
+    handler3: Handler<THttpMethod, TParams, TQuery, TV3, TR3>,
+    handler4: Handler<THttpMethod, TParams, TQuery, TV4, TR4>
   ): HttpMethodMapping<
     THttpMethod,
     TParams,
@@ -163,11 +164,11 @@ export interface MethodRouteDefinition<
     TR4 extends RouteResponse = RouteResponse,
     TR5 extends RequiredRouteResponse = RequiredRouteResponse,
   >(
-    handler1: Handler<TParams, TQuery, TV1, TR1>,
-    handler2: Handler<TParams, TQuery, TV2, TR2>,
-    handler3: Handler<TParams, TQuery, TV3, TR3>,
-    handler4: Handler<TParams, TQuery, TV4, TR4>,
-    handler5: Handler<TParams, TQuery, TV5, TR5>
+    handler1: Handler<THttpMethod, TParams, TQuery, TV1, TR1>,
+    handler2: Handler<THttpMethod, TParams, TQuery, TV2, TR2>,
+    handler3: Handler<THttpMethod, TParams, TQuery, TV3, TR3>,
+    handler4: Handler<THttpMethod, TParams, TQuery, TV4, TR4>,
+    handler5: Handler<THttpMethod, TParams, TQuery, TV5, TR5>
   ): HttpMethodMapping<
     THttpMethod,
     TParams,
@@ -190,12 +191,12 @@ export interface MethodRouteDefinition<
     TR5 extends RouteResponse = RouteResponse,
     TR6 extends RequiredRouteResponse = RequiredRouteResponse,
   >(
-    handler1: Handler<TParams, TQuery, TV1, TR1>,
-    handler2: Handler<TParams, TQuery, TV2, TR2>,
-    handler3: Handler<TParams, TQuery, TV3, TR3>,
-    handler4: Handler<TParams, TQuery, TV4, TR4>,
-    handler5: Handler<TParams, TQuery, TV5, TR5>,
-    handler6: Handler<TParams, TQuery, TV6, TR6>
+    handler1: Handler<THttpMethod, TParams, TQuery, TV1, TR1>,
+    handler2: Handler<THttpMethod, TParams, TQuery, TV2, TR2>,
+    handler3: Handler<THttpMethod, TParams, TQuery, TV3, TR3>,
+    handler4: Handler<THttpMethod, TParams, TQuery, TV4, TR4>,
+    handler5: Handler<THttpMethod, TParams, TQuery, TV5, TR5>,
+    handler6: Handler<THttpMethod, TParams, TQuery, TV6, TR6>
   ): HttpMethodMapping<
     THttpMethod,
     TParams,

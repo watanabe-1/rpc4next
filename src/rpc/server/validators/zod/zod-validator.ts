@@ -8,6 +8,7 @@
  */
 
 import { validator } from "../validator";
+import type { HttpMethod } from "../../../lib/types";
 import type { ValidationSchema } from "../../route-types";
 import type {
   RouteContext,
@@ -21,7 +22,8 @@ import type {
 import type { z, ZodSchema } from "zod";
 
 export const zValidator = <
-  TValidationTarget extends ValidationTarget,
+  THttpMethod extends HttpMethod,
+  TValidationTarget extends ValidationTarget<THttpMethod>,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TSchema extends ZodSchema<any>,
   TParams extends ConditionalValidationInput<
@@ -65,24 +67,27 @@ export const zValidator = <
       }
     });
 
-  return validator<TValidationTarget, TParams, TQuery, TValidationSchema>()(
-    target,
-    async (value, rc) => {
-      const result = await schema.safeParseAsync(value);
+  return validator<
+    THttpMethod,
+    TValidationTarget,
+    TParams,
+    TQuery,
+    TValidationSchema
+  >()(target, async (value, rc) => {
+    const result = await schema.safeParseAsync(value);
 
-      const hookResult = resolvedHook(result, rc);
-      if (hookResult instanceof Response) {
-        // If it's of type Response, it won't be void, so we're excluding void here
-        return hookResult as Exclude<THookReturn, void>;
-      }
-
-      if (!result.success) {
-        throw new Error(
-          "If you provide a custom hook, you must explicitly return a response when validation fails."
-        );
-      }
-
-      return result.data as ValidatedData;
+    const hookResult = resolvedHook(result, rc);
+    if (hookResult instanceof Response) {
+      // If it's of type Response, it won't be void, so we're excluding void here
+      return hookResult as Exclude<THookReturn, void>;
     }
-  );
+
+    if (!result.success) {
+      throw new Error(
+        "If you provide a custom hook, you must explicitly return a response when validation fails."
+      );
+    }
+
+    return result.data as ValidatedData;
+  });
 };
