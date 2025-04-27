@@ -5,7 +5,7 @@ import {
   SUCCESS_PAD_LENGTH,
   SUCCESS_INDENT_LEVEL,
 } from "./constants";
-import { generatePages } from "./core/generate-path-structure";
+import { generatePathStructure } from "./core/generate-path-structure";
 import { relativeFromRoot } from "./core/path-utils";
 import { padMessage } from "./logger";
 import type { Logger } from "./types";
@@ -23,7 +23,10 @@ export const generate = ({
 }) => {
   logger.info("Generating types...", { event: "generate" });
 
-  const { pathStructure, paramsTypes } = generatePages(outputPath, baseDir);
+  const { pathStructure, paramsTypes } = generatePathStructure(
+    outputPath,
+    baseDir
+  );
 
   fs.writeFileSync(outputPath, pathStructure);
   logger.success(

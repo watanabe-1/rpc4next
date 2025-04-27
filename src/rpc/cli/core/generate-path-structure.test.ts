@@ -9,7 +9,7 @@ import {
   TYPE_KEY_PARAMS,
   TYPE_END_POINT,
 } from "./constants";
-import { generatePages } from "./generate-path-structure";
+import { generatePathStructure } from "./generate-path-structure";
 
 const scanAppDir = vi.hoisted(() => vi.fn());
 vi.mock("./route-scanner", () => ({
@@ -26,7 +26,7 @@ mock({
   "/[hoge]": { bar: { "route.ts": "dummy content" } },
 });
 
-describe("generatePages", () => {
+describe("generatePathStructure", () => {
   it("should generate correct type definitions and imports", () => {
     scanAppDir.mockReturnValue({
       pathStructure: `{ home: ${TYPE_END_POINT}, user: { id: ${TYPE_KEY_PARAMS} }, ${TYPE_KEY_QUERY}, ${TYPE_KEY_OPTIONAL_QUERY}}`,
@@ -47,7 +47,10 @@ describe("generatePages", () => {
 
     const outputPath = "./output";
     const baseDir = "./base";
-    const { pathStructure, paramsTypes } = generatePages(outputPath, baseDir);
+    const { pathStructure, paramsTypes } = generatePathStructure(
+      outputPath,
+      baseDir
+    );
 
     const expectedImports =
       `import type { ${TYPE_END_POINT} ,${TYPE_KEY_OPTIONAL_QUERY} ,${TYPE_KEY_PARAMS} ,${TYPE_KEY_QUERY} } from "${RPC4NEXT_CLIENT_IMPORT_PATH}"${STATEMENT_TERMINATOR}${NEWLINE}` +
@@ -75,7 +78,10 @@ describe("generatePages", () => {
 
     const outputPath = "./output";
     const baseDir = "./base";
-    const { pathStructure, paramsTypes } = generatePages(outputPath, baseDir);
+    const { pathStructure, paramsTypes } = generatePathStructure(
+      outputPath,
+      baseDir
+    );
 
     const expectedImports = `import type { ${TYPE_END_POINT} } from "${RPC4NEXT_CLIENT_IMPORT_PATH}"${STATEMENT_TERMINATOR}${NEWLINE}${NEWLINE}`;
     const expectedTypeDefinition = `export type PathStructure = { dashboard: ${TYPE_END_POINT} }${STATEMENT_TERMINATOR}`;

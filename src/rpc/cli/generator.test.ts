@@ -26,7 +26,7 @@ describe("generate", () => {
   });
 
   it("should generate types without params file", () => {
-    vi.spyOn(generatePathStructure, "generatePages").mockReturnValue({
+    vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
       pathStructure: "generated-type-content",
       paramsTypes: [],
     });
@@ -44,7 +44,7 @@ describe("generate", () => {
       event: "generate",
     });
 
-    expect(generatePathStructure.generatePages).toHaveBeenCalledWith(
+    expect(generatePathStructure.generatePathStructure).toHaveBeenCalledWith(
       outputPath,
       baseDir
     );
@@ -67,7 +67,7 @@ describe("generate", () => {
   });
 
   it("should generate types and params files when paramsFileName is provided", () => {
-    vi.spyOn(generatePathStructure, "generatePages").mockReturnValue({
+    vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
       pathStructure: "generated-type-content",
       paramsTypes: [
         { paramsType: "params-type-1", dirPath: "dir1" },
@@ -88,7 +88,7 @@ describe("generate", () => {
       event: "generate",
     });
 
-    expect(generatePathStructure.generatePages).toHaveBeenCalledWith(
+    expect(generatePathStructure.generatePathStructure).toHaveBeenCalledWith(
       outputPath,
       baseDir
     );
