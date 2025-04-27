@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { describe, it, expect, vi, expectTypeOf } from "vitest";
 import { z } from "zod";
-import { zodValidator } from "./zod-validator";
+import { zValidator } from "./zod-validator";
 import { routeHandlerFactory } from "../../route-handler-factory";
 import { RouteHandler } from "../../route-types";
 import { Params, TypedNextResponse } from "../../types";
@@ -28,10 +28,10 @@ describe("zValidator tests", () => {
       params: z.infer<typeof schema>;
       query: { name: string; age: string };
     }>().post(
-      zodValidator("params", schema, (result, rc) => {
+      zValidator("params", schema, (result, rc) => {
         if (!result.success) return rc.json(result, { status: 401 });
       }),
-      zodValidator("query", schema2),
+      zValidator("query", schema2),
       async (rc) => rc.text("ok")
     );
     const req = new NextRequest(new URL("http://localhost/?name=J&age=20"));
@@ -47,10 +47,10 @@ describe("zValidator tests", () => {
       params: z.infer<typeof schema>;
       query: { name: string; age: string };
     }>().post(
-      zodValidator("params", schema, (result, rc) => {
+      zValidator("params", schema, (result, rc) => {
         if (!result.success) return rc.json(result, { status: 401 });
       }),
-      zodValidator("query", schema2),
+      zValidator("query", schema2),
       async (rc) => rc.text("ok")
     );
     const req = new NextRequest(new URL("http://localhost/?name=J&age=20"));
@@ -65,8 +65,8 @@ describe("zValidator tests", () => {
       params: z.infer<typeof schema>;
       query: z.input<typeof schema2>;
     }>().post(
-      zodValidator("params", schema),
-      zodValidator("query", schema2),
+      zValidator("params", schema),
+      zValidator("query", schema2),
       async (rc) => rc.text("ok")
     );
 
@@ -81,7 +81,7 @@ describe("zValidator tests", () => {
   it("Should return text when only params are validated and valid", async () => {
     const handler = createRouteHandler<{
       params: z.infer<typeof schema>;
-    }>().post(zodValidator("params", schema), async (rc) =>
+    }>().post(zValidator("params", schema), async (rc) =>
       rc.text("only params")
     );
     const req = new NextRequest(new URL("http://localhost/?ignored=true"));
@@ -96,8 +96,8 @@ describe("zValidator tests", () => {
       params: z.infer<typeof schema>;
       query: { name: string; age: string };
     }>().post(
-      zodValidator("params", schema),
-      zodValidator("query", schema2),
+      zValidator("params", schema),
+      zValidator("query", schema2),
       async (rc) => rc.text("test")
     );
     const req = new NextRequest(new URL("http://localhost/?name=J&age=30"));
@@ -113,7 +113,7 @@ describe("zValidator tests", () => {
   it("Should return 200 when params are valid and no custom hook is used", async () => {
     const handler = createRouteHandler<{
       params: z.infer<typeof schema>;
-    }>().post(zodValidator("params", schema), async (rc) => rc.text("clean"));
+    }>().post(zValidator("params", schema), async (rc) => rc.text("clean"));
     const req = new NextRequest(new URL("http://localhost"));
     const res = await handler.POST(req, {
       params: Promise.resolve({ name: "B", hoge: "22" }),
@@ -124,7 +124,7 @@ describe("zValidator tests", () => {
   it("Should return 400 when params are invalid and no custom hook is used", async () => {
     const handler = createRouteHandler<{
       params: z.infer<typeof schema>;
-    }>().post(zodValidator("params", schema), async (rc) =>
+    }>().post(zValidator("params", schema), async (rc) =>
       rc.text("never reach")
     );
     const req = new NextRequest(new URL("http://localhost"));
@@ -141,7 +141,7 @@ describe("zValidator tests", () => {
     const handler = createRouteHandler<{
       params: z.infer<typeof schema>;
     }>().post(
-      zodValidator("params", schema, (_, __) => {
+      zValidator("params", schema, (_, __) => {
         // Does not return a response on failure
       }),
       async (rc) => rc.text("never reach")
@@ -164,8 +164,8 @@ describe("zValidator tests", () => {
       params: z.infer<typeof schema>;
       query: z.input<typeof schema2>;
     }>().post(
-      zodValidator("params", schema),
-      zodValidator("query", schema2),
+      zValidator("params", schema),
+      zValidator("query", schema2),
       async (rc) => {
         return rc.json({
           params: rc.req.valid("params"),
@@ -191,8 +191,8 @@ describe("zValidator tests", () => {
       params: z.infer<typeof schema>;
       query: z.input<typeof schema2>;
     }>().post(
-      zodValidator("params", schema, hook),
-      zodValidator("query", schema2, hook),
+      zValidator("params", schema, hook),
+      zValidator("query", schema2, hook),
       async (rc) => rc.text("ok")
     );
 
@@ -214,7 +214,7 @@ describe("zValidator tests", () => {
 
   it("Should return 200 when json body is valid", async () => {
     const handler = createRouteHandler().post(
-      zodValidator("json", schema),
+      zValidator("json", schema),
       async (rc) => {
         return rc.text("valid json");
       }
@@ -233,7 +233,7 @@ describe("zValidator tests", () => {
 
   it("Should return 400 when json body is invalid", async () => {
     const handler = createRouteHandler().post(
-      zodValidator("json", schema),
+      zValidator("json", schema),
       async (rc) => {
         return rc.text("never reach");
       }
@@ -257,7 +257,7 @@ describe("zValidator tests", () => {
       });
 
       const handler = createRouteHandler().post(
-        zodValidator("headers", headerSchema),
+        zValidator("headers", headerSchema),
         async (rc) => {
           return rc.json({ header: rc.req.valid("headers") });
         }
@@ -287,7 +287,7 @@ describe("zValidator tests", () => {
       });
 
       const handler = createRouteHandler().post(
-        zodValidator("headers", headerSchema),
+        zValidator("headers", headerSchema),
         async (rc) => rc.text("never reach")
       );
 
@@ -305,7 +305,7 @@ describe("zValidator tests", () => {
       });
 
       const handler = createRouteHandler().post(
-        zodValidator("cookies", cookieSchema),
+        zValidator("cookies", cookieSchema),
         async (rc) => {
           return rc.json({ cookie: rc.req.valid("cookies") });
         }
@@ -335,7 +335,7 @@ describe("zValidator tests", () => {
       });
 
       const handler = createRouteHandler().post(
-        zodValidator("cookies", cookieSchema),
+        zValidator("cookies", cookieSchema),
         async (rc) => rc.text("never reach")
       );
 
@@ -348,7 +348,7 @@ describe("zValidator tests", () => {
   it("should throw an error if unexpected target is provided", async () => {
     const handler = createRouteHandler().post(
       // @ts-expect-error - force an invalid target for testing
-      zodValidator("invalidTarget", schema),
+      zValidator("invalidTarget", schema),
       async (rc) => {
         return rc.text("never reach");
       }
@@ -367,10 +367,10 @@ describe("zValidator type definitions", () => {
       params: z.infer<typeof schema>;
       query: { name: string; age: string };
     }>().post(
-      zodValidator("params", schema, (result, rc) => {
+      zValidator("params", schema, (result, rc) => {
         if (!result.success) return rc.json(result, { status: 401 });
       }),
-      zodValidator("query", schema2),
+      zValidator("query", schema2),
       async (rc) => {
         const _validParams = rc.req.valid("params");
         const _validQuery = rc.req.valid("query");
@@ -425,7 +425,7 @@ describe("zValidator type definitions", () => {
 
   it("should infer json types correctly", async () => {
     const handler = createRouteHandler().post(
-      zodValidator("json", schema2),
+      zValidator("json", schema2),
       async (rc) => {
         const _validJson = rc.req.valid("json");
         type ExpectedJson = z.output<typeof schema2>;
@@ -492,7 +492,7 @@ describe("zValidator type definitions", () => {
       "x-custom": "not a number",
     });
     const handler = createRouteHandler().post(
-      zodValidator("headers", headerSchema),
+      zValidator("headers", headerSchema),
       async (rc) => {
         const _validHeaders = rc.req.valid("headers");
         type ExpectedHeader = z.output<typeof headerSchema>;
@@ -556,7 +556,7 @@ describe("zValidator additional type definitions for headers and cookies", () =>
       session: "abc",
     });
     const handler = createRouteHandler().post(
-      zodValidator("cookies", cookieSchema),
+      zValidator("cookies", cookieSchema),
       async (rc) => {
         const _validCookies = rc.req.valid("cookies");
         type ExpectedCookie = z.output<typeof cookieSchema>;
