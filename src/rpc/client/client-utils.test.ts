@@ -4,7 +4,7 @@ import {
   isCatchAllOrOptional,
   isHttpMethod,
   deepMerge,
-} from "./utils";
+} from "./client-utils";
 import {
   DYNAMIC_PREFIX,
   CATCH_ALL_PREFIX,

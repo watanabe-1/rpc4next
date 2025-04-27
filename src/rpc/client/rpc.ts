@@ -4,7 +4,7 @@
  * particularly their routing structures and developer experience.
  */
 
-import { isDynamic } from "./utils";
+import { isDynamic } from "./client-utils";
 import type { FuncParams, ClientOptions, RpcHandler } from "./types";
 
 const createProxy = <T>(
