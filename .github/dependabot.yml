@@ -5,5 +5,16 @@ updates:
     schedule:
       interval: "daily"
     versioning-strategy: increase
-    # Disable version updates for npm dependencies
-    open-pull-requests-limit: 0
+    groups:
+      bun:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
