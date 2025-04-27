@@ -32,6 +32,7 @@ export interface ValidationSchema {
 }
 
 export type Handler<
+  // _THttpMethod is used to propagate the current HttpMethod type to the Handler.
   _THttpMethod extends HttpMethod,
   TParams = Params,
   TQuery = Query,
