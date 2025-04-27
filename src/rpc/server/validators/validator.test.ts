@@ -135,7 +135,10 @@ describe("validator", () => {
           async (v) => schema2.parseAsync(v) as unknown as ValidatedData
         ),
         async (rc) =>
-          rc.json({ p: rc.req.valid("params"), q: rc.req.valid("query") })
+          rc.json({
+            p: rc.req.valid("params" as never),
+            q: rc.req.valid("query" as never),
+          })
       );
 
       const res = await handler.POST(
@@ -193,7 +196,7 @@ describe("validator", () => {
 
           return parsed.data as unknown as ValidatedData;
         }),
-        async (rc) => rc.json({ body: rc.req.valid("json") })
+        async (rc) => rc.json({ body: rc.req.valid("json" as never) })
       );
 
       const res = await handler.POST(
@@ -226,7 +229,7 @@ describe("validator", () => {
 
           return parsed.data as unknown as ValidatedData;
         }),
-        async (rc) => rc.json({ header: rc.req.valid("headers") })
+        async (rc) => rc.json({ header: rc.req.valid("headers" as never) })
       );
 
       const res = await handler.POST(
@@ -278,7 +281,7 @@ describe("validator", () => {
 
           return parsed.data as unknown as ValidatedData;
         }),
-        async (rc) => rc.json({ cookie: rc.req.valid("cookies") })
+        async (rc) => rc.json({ cookie: rc.req.valid("cookies" as never) })
       );
 
       const res = await handler.POST(

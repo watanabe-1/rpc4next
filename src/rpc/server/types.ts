@@ -131,7 +131,7 @@ export interface RouteContext<
      * @returns The validation result of the target.
      */
     valid: <TValidationTarget extends ValidationTarget>(
-      target: TValidationTarget
+      target: Extract<TValidationTarget, keyof TValidationSchema["output"]>
     ) => ValidationOutputFor<TValidationTarget, TValidationSchema>;
 
     /**
