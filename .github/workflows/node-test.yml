@@ -30,15 +30,10 @@ jobs:
         with:
           node-version-file: .tool-versions
 
-      - name: Read bun version from .tool-versions
-        id: bun-version
-        run: |
-          echo "version=$(grep '^bun ' .tool-versions | awk '{print $2}')" >> "$GITHUB_OUTPUT"
-
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: "${{ steps.bun-version.outputs.version }}"
+          bun-version-file: .tool-versions
 
       - name: Install base dependencies
         run: bun install --frozen-lockfile
