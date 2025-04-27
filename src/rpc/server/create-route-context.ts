@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { searchParamsToObject } from "./search-params-to-object";
+import { searchParamsToObject } from "./server-utils";
 import type { ValidationSchema } from "./route-types";
 import type {
   RouteContext,
