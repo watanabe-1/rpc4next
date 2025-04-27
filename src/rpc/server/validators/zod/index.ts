@@ -1,1 +1,1 @@
-export { zodValidator } from "./zod-validator";
+export { zValidator } from "./zod-validator";

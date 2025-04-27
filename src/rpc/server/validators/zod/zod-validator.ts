@@ -20,7 +20,7 @@ import type {
 } from "../../types";
 import type { z, ZodSchema } from "zod";
 
-export const zodValidator = <
+export const zValidator = <
   TValidationTarget extends ValidationTarget,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TSchema extends ZodSchema<any>,

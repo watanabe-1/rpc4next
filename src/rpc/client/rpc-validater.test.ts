@@ -13,7 +13,7 @@ import { z } from "zod";
 import { routeHandlerFactory } from "../server";
 import { createRpcClient } from "./rpc-client";
 import { ClientOptions, Endpoint } from "./types";
-import { zodValidator } from "../server/validators/zod";
+import { zValidator } from "../server/validators/zod/zod-validator";
 
 const schema = z.object({
   name: z.string(),
@@ -25,24 +25,24 @@ const createRouteHandler = routeHandlerFactory();
 const { GET: _get_1 } = createRouteHandler().get((rc) => rc.text("text"));
 
 const { POST: _post_1 } = createRouteHandler().post(
-  zodValidator("json", schema),
+  zValidator("json", schema),
   (rc) => rc.text("text")
 );
 
 const { POST: _post_2 } = createRouteHandler().post(
-  zodValidator("headers", schema),
+  zValidator("headers", schema),
   (rc) => rc.text("text")
 );
 
 const { POST: _post_3 } = createRouteHandler().post(
-  zodValidator("cookies", schema),
+  zValidator("cookies", schema),
   (rc) => rc.text("text")
 );
 
 const { POST: _post_4 } = createRouteHandler().post(
-  zodValidator("json", schema),
-  zodValidator("headers", schema),
-  zodValidator("cookies", schema),
+  zValidator("json", schema),
+  zValidator("headers", schema),
+  zValidator("cookies", schema),
   (rc) => rc.text("text")
 );
 
