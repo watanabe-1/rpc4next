@@ -37,7 +37,7 @@ describe("createRouteContext", () => {
       "body" as ValidationTarget,
       { name: "John" } as unknown as ValidatedData
     );
-    expect(context.req.valid("body" as ValidationTarget)).toEqual({
+    expect(context.req.valid("body" as never)).toEqual({
       name: "John",
     });
   });
