@@ -1,5 +1,5 @@
+import { deepMerge } from "./client-utils";
 import { createUrl } from "./url";
-import { deepMerge } from "./utils";
 import type {
   FuncParams,
   UrlOptions,

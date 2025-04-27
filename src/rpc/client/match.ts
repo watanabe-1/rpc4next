@@ -1,5 +1,5 @@
+import { isCatchAllOrOptional } from "./client-utils";
 import { replaceDynamicSegments } from "./url";
-import { isCatchAllOrOptional } from "./utils";
 
 export const matchPath = (paths: string[], dynamicKeys: string[]) => {
   return (path: string) => {

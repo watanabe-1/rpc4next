@@ -1,7 +1,7 @@
+import { isHttpMethod } from "./client-utils";
 import { httpMethod } from "./http-method";
 import { makeCreateRpc } from "./rpc";
 import { createUrl } from "./url";
-import { isHttpMethod } from "./utils";
 import type { ClientOptions, DynamicPathProxyAsFunction } from "./types";
 
 /**
