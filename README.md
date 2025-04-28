@@ -169,7 +169,7 @@ const paramsSchema = z.object({
 });
 
 // バリデーション付きルートハンドラを作成
-export const handler = createRouteHandler<{
+export const { GET } = createRouteHandler<{
   params: z.infer<typeof paramsSchema>;
 }>().get(
   zValidator("params", paramsSchema), // paramsを検証
@@ -180,31 +180,41 @@ export const handler = createRouteHandler<{
 );
 ```
 
+## ✅ サポートされているバリデーションターゲット
+
+サーバー側では，次のリクエスト部分を型安全に検証できます：
+
+| ターゲット | 説明                                                |
+| :--------- | :-------------------------------------------------- |
+| `params`   | URLパラメータ ( `/user/:id` の `id`など)            |
+| `query`    | クエリパラメータ (`?q=xxx&page=1`など)              |
+| `headers`  | リクエストヘッダー                                  |
+| `cookies`  | クッキー                                            |
+| `json`     | リクエストボディ (Content-Type: `application/json`) |
+
 ---
 
-### ✅ サポートされているバリデーションターゲット
-
-次のリクエスト部分に対して、個別に型付け・バリデーションが可能です：
-
-- `params`
-- `query`
-- `headers`
-- `cookies`
-- `json`
-
-#### 例：複数ターゲットを検証する
+### 🔥 複数ターゲットを同時に検証する例
 
 ```ts
+import { createRouteHandler } from "@/path/to/createRouteHandler";
+import { zValidator } from "@/path/to/zValidator";
+import { z } from "zod";
+
+export type Query = {
+  page: string;
+};
+
 const querySchema = z.object({
   page: z.string().regex(/^\d+$/),
-});
+}) as z.ZodType<Query>;
 
 const jsonSchema = z.object({
   name: z.string(),
   age: z.number(),
 });
 
-export const handler = createRouteHandler<{
+export const { POST } = createRouteHandler<{
   query: z.infer<typeof querySchema>;
 }>().post(
   zValidator("query", querySchema),
@@ -216,6 +226,13 @@ export const handler = createRouteHandler<{
   }
 );
 ```
+
+- `query`と`json`を別々のスキーマで検証
+- **成功時は型安全に取得可能** (`rc.req.valid('query')`, `rc.req.valid('json')`)
+
+---
+
+これにより，クライアント側とサーバー側が、全面的に**型でつながる**ので，ミスを何次も防げ，開発体験を大幅に向上できます。
 
 ---
 
@@ -233,6 +250,64 @@ zValidator("params", paramsSchema, (result, rc) => {
 ```
 
 > （フック内でレスポンスを返さない場合は、通常通り例外がスローされます）
+
+---
+
+## 📡 クライアント側での使い方
+
+`rpc4next`で作成したクライアントは、`createRouteHandler` と `zValidator` で作成したルートハンドラの内容にしたがって　**params, query, headers, cookies, json** を型安全に送信できます。
+
+例：
+
+```ts
+import { createRpcClient } from "@/path/to/rpc-client";
+import type { PathStructure } from "@/path/to/generated-types";
+
+const client = createRpcClient<PathStructure>("http://localhost:3000");
+
+async function callUserApi() {
+  const res = await client.api.menu.test.$post({
+    body: { json: { age: 20, name: "foo" } },
+    url: { query: { page: "1" } },
+  });
+
+  if (res.ok) {
+    const json = await res.json();
+
+    // ✅ 正常時は次の型が推論されます
+    // const json: {
+    //   query: {
+    //     page: string;
+    //   };
+    //   body: {
+    //     name: string;
+    //     age: number;
+    //   };
+    // }
+  } else {
+    const error = await res.json();
+
+    // ⚠️ バリデーションエラー時は次の型が推論されます
+    // const error:
+    //   | SafeParseError<{
+    //       page: string;
+    //     }>
+    //   | SafeParseError<{
+    //       name: string;
+    //       age: number;
+    //     }>;
+  }
+}
+```
+
+- エディタの補完機能により、送信できるターゲットが明示されます
+- サーバー側の型定義に基づいて、**型のズレを防止**できます
+
+---
+
+これらのように、リクエスト時にはさまざまなターゲット (`params`, `query`, `headers`, `cookies`, `json`) を送信できます。
+
+さらに、サーバー側では、これらを**個別に型付け、バリデーション**できます。
 
 ---
 
