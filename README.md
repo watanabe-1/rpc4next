@@ -134,7 +134,7 @@ export default async function Page() {
    - `status`, `content-type`, `json()`, `text()` などが適切に補完される
 
 3. **サーバー側 params / query も型安全**
-   - `routeHandlerFactory()` を使えば、`params`, `query` も型推論可能
+   - `createRouteHandler()` + `zValidator()` を使えば、`params`, `query`, `headers`, `cookies`, `json` も型推論・バリデーション可能
 
 ---
 
@@ -148,7 +148,93 @@ const createRouteHandler = routeHandlerFactory((err, rc) =>
 const { POST } = createRouteHandler().post(async (rc) => rc.text("plain text"));
 ```
 
-これだけで、POST リクエストの返り値が、responseの内容(json,textなど)、status,contenttypeが型付けされるようになります。
+これだけで、POSTリクエストの返り値に、レスポンスの内容 (`json`, `text`など)、`status`, `content-type` が型付けされるようになります。
+
+---
+
+### 👤 サーバー側でのより型安全なルート作成
+
+`createRouteHandler()` と `zValidator()` を使うことで、各リクエストパーツに対して **型安全なバリデーション** をかけられます。
+
+#### シンプルな例
+
+```ts
+import { createRouteHandler } from "@/path/to/createRouteHandler";
+import { zValidator } from "@/path/to/zValidator";
+import { z } from "zod";
+
+// Zodスキーマを定義
+const paramsSchema = z.object({
+  userId: z.string(),
+});
+
+// バリデーション付きルートハンドラを作成
+export const handler = createRouteHandler<{
+  params: z.infer<typeof paramsSchema>;
+}>().get(
+  zValidator("params", paramsSchema), // paramsを検証
+  async (rc) => {
+    const params = rc.req.valid("params"); // バリデーション済みparamsを取得
+    return rc.json({ message: `User ID is ${params.userId}` });
+  }
+);
+```
+
+---
+
+### ✅ サポートされているバリデーションターゲット
+
+次のリクエスト部分に対して、個別に型付け・バリデーションが可能です：
+
+- `params`
+- `query`
+- `headers`
+- `cookies`
+- `json`
+
+#### 例：複数ターゲットを検証する
+
+```ts
+const querySchema = z.object({
+  page: z.string().regex(/^\d+$/),
+});
+
+const jsonSchema = z.object({
+  name: z.string(),
+  age: z.number(),
+});
+
+export const handler = createRouteHandler<{
+  query: z.infer<typeof querySchema>;
+}>().post(
+  zValidator("query", querySchema),
+  zValidator("json", jsonSchema),
+  async (rc) => {
+    const query = rc.req.valid("query");
+    const body = rc.req.valid("json");
+    return rc.json({ query, body });
+  }
+);
+```
+
+---
+
+### ⚡ バリデーション失敗時のカスタムエラーハンドリング
+
+- デフォルトでは、バリデーション失敗時に自動で `400 Bad Request` を返します。
+- 必要に応じて、**カスタムフック**でエラー対応を制御できます。
+
+```ts
+zValidator("params", paramsSchema, (result, rc) => {
+  if (!result.success) {
+    return rc.json({ error: result.error.errors }, { status: 422 });
+  }
+});
+```
+
+> （フック内でレスポンスを返さない場合は、通常通り例外がスローされます）
+
+---
 
 ## 🚧 Requirements
 
