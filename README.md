@@ -120,9 +120,7 @@ export default async function Page() {
 
 ---
 
-## ✅ さらに型安全にしたい場合 `honolike` + `createRouteHandler` による Next.js の型安全強化
-
-さらに `honolike` をベースとした `createRouteHandler()` を組み合わせることで、
+## ✅ さらに型安全にしたい場合 `createRouteHandler` による Next.js の型安全強化
 
 ### 📌 主なメリット
 
