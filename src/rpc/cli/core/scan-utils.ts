@@ -1,10 +1,6 @@
 import fs from "fs";
 import { createImportAlias } from "./alias";
-import {
-  QUERY_TYPES,
-  TYPE_KEY_QUERY,
-  TYPE_KEY_OPTIONAL_QUERY,
-} from "./constants";
+import { QUERY_TYPES, TYPE_KEY_QUERY } from "./constants";
 import { createRelativeImportPath } from "./path-utils";
 import { createImport, createRecodeType, createObjectType } from "./type-utils";
 import { HttpMethod } from "../../lib/types";
@@ -45,10 +41,7 @@ export const scanQuery = (outputFile: string, inputFile: string) => {
         )
       );
     },
-    (type, importAlias) =>
-      type === "Query"
-        ? createRecodeType(TYPE_KEY_QUERY, importAlias)
-        : createRecodeType(TYPE_KEY_OPTIONAL_QUERY, importAlias)
+    (_, importAlias) => createRecodeType(TYPE_KEY_QUERY, importAlias)
   );
 };
 

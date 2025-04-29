@@ -52,9 +52,13 @@ const { DELETE: _delete_1 } = createRouteHandler().delete(async (rc) => {
 type PathStructure = Endpoint & {
   fuga: Endpoint & {
     _foo: Endpoint &
-      Record<ParamsKey, { foo: string }> & {
+      Record<ParamsKey, { foo: string }> &
+      Record<QueryKey, { baz: string }> & {
         _piyo: Endpoint;
       };
+  };
+  hoge: Endpoint & {
+    _foo: Endpoint;
   };
   api: {
     hoge: {
@@ -107,20 +111,20 @@ describe("createRpcClient", () => {
   describe("createRpcClient basic behavior", () => {
     it("should generate correct URL", () => {
       const client = createRpcClient<PathStructure>("http://localhost:3000");
-      const urlResult = client.fuga._foo("test").$url();
-      expect(urlResult.path).toBe("http://localhost:3000/fuga/test");
-      expect(urlResult.relativePath).toBe("/fuga/test");
-      expect(urlResult.pathname).toBe("/fuga/[foo]");
+      const urlResult = client.hoge._foo("test").$url();
+      expect(urlResult.path).toBe("http://localhost:3000/hoge/test");
+      expect(urlResult.relativePath).toBe("/hoge/test");
+      expect(urlResult.pathname).toBe("/hoge/[foo]");
       expect(urlResult.params).toEqual({ foo: "test" });
     });
 
     it("should generate URL with query and hash parameters", () => {
       const client = createRpcClient<PathStructure>("");
       const urlResult = client.fuga._foo("test").$url({
-        query: { foo: "bar" },
+        query: { baz: "bar" },
         hash: "section",
       });
-      expect(urlResult.path).toBe("/fuga/test?foo=bar#section");
+      expect(urlResult.path).toBe("/fuga/test?baz=bar#section");
     });
 
     it("should successfully perform GET request", async () => {
