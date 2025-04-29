@@ -27,7 +27,7 @@ npm install rpc4next
 ### 2. Define API Routes in Next.js
 
 Next.js プロジェクト内の既存の `app/**/route.ts` と `app/**/page.tsx` ファイルをそのまま利用できます。
-さらに、クエリパラメータ（searchParams）の型安全性を有効にするには、対象のファイル内で `Query` または `OptionalQuery` 型を定義し、`export` してください。
+さらに、クエリパラメータ（searchParams）の型安全性を有効にするには、対象のファイル内で `Query` 型を定義し、`export` してください。
 
 ```ts
 // app/api/user/[id]/route.ts
@@ -135,6 +135,7 @@ export default async function Page() {
 
 3. **サーバー側 params / query も型安全**
    - `createRouteHandler()` + `zValidator()` を使えば、`params`, `query`, `headers`, `cookies`, `json` も型推論・バリデーション可能
+   - `createRouteHandler()` + `zValidator()` を使えば、`Query` 型もexportする必要なし
 
 ---
 
@@ -201,13 +202,9 @@ import { createRouteHandler } from "@/path/to/createRouteHandler";
 import { zValidator } from "@/path/to/zValidator";
 import { z } from "zod";
 
-export type Query = {
-  page: string;
-};
-
 const querySchema = z.object({
   page: z.string().regex(/^\d+$/),
-}) as z.ZodType<Query>;
+});
 
 const jsonSchema = z.object({
   name: z.string(),
