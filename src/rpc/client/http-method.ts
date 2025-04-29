@@ -72,9 +72,11 @@ export const httpMethod = (
     const defaultInit = defaultOptions.init ?? {};
     const innerInit = options?.init ?? {};
 
-    const defaultHeaders = normalizeHeaders(defaultInit.headers);
+    const defaultHeaders = normalizeHeaders(
+      defaultInit.headers ?? defaultInit.headersInit
+    );
     const innerHeaders = normalizeHeaders(
-      methodParamHeaders ?? innerInit.headers
+      methodParamHeaders ?? innerInit.headers ?? innerInit.headersInit
     );
     const mergedHeaders: Record<string, string> = {
       ...defaultHeaders,
@@ -91,13 +93,22 @@ export const httpMethod = (
         .join("; ");
     }
 
-    const { headers: _defaultHeaders, ...defaultInitWithoutHeaders } =
-      defaultInit;
-    const { headers: _innerHeaders, ...innerInitWithoutHeaders } = innerInit;
+    const {
+      headers: _defHeaders,
+      headersInit: _defHeadersInit,
+      ...defaultInitWithoutHeaders
+    } = defaultInit;
+    const {
+      headers: _innHeaders,
+      headersInit: _innHeadersInit,
+      ...innerInitWithoutHeaders
+    } = innerInit;
+
     const mergedInit: TypedRequestInit = deepMerge(
       defaultInitWithoutHeaders,
       innerInitWithoutHeaders
     );
+
     mergedInit.method = method;
 
     if (Object.keys(mergedHeaders).length > 0) {

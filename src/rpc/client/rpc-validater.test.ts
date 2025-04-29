@@ -378,7 +378,7 @@ describe("createHandler type definitions", () => {
           };
         };
       },
-      option?: ClientOptions<never, "headers">,
+      option?: ClientOptions<never, "headers" | "headersInit">,
     ];
 
     expectTypeOf<
@@ -495,7 +495,10 @@ describe("createHandler type definitions", () => {
           };
         };
       },
-      option?: ClientOptions<"Cookie" | "Content-Type", "headers" | "body">,
+      option?: ClientOptions<
+        "Cookie" | "Content-Type",
+        "headers" | "headersInit" | "body"
+      >,
     ];
 
     expectTypeOf<

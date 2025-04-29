@@ -309,6 +309,88 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     await expect(requestFn()).rejects.toThrow(errorMessage);
   });
 
+  it("should correctly merge default Headers instance with client headers object", async () => {
+    const key = "$get";
+    const paths = ["http://example.com", "api", "headersTest"];
+    const params = {};
+    const dynamicKeys: string[] = [];
+
+    let calledInit: CapturedInit | undefined = {};
+    global.fetch = ((_input: RequestInfo | URL, _init?: RequestInit) => {
+      calledInit = _init as CapturedInit | undefined;
+
+      return Promise.resolve(new Response(null, { status: 200 }));
+    }) as typeof fetch;
+
+    const defaultHeaders = new Headers();
+    defaultHeaders.append("X-Default", "defaultValue");
+    const clientHeaders = { "x-custom": "customValue" };
+
+    const defaultOptions = {
+      init: { headersInit: defaultHeaders },
+    };
+
+    const requestFn = httpMethod(
+      key,
+      paths,
+      params,
+      dynamicKeys,
+      defaultOptions
+    );
+
+    const clientOptions = {
+      init: { headers: clientHeaders },
+    };
+
+    await requestFn(undefined, clientOptions);
+
+    expect(calledInit?.headers).toEqual({
+      "x-default": "defaultValue",
+      "x-custom": "customValue",
+    });
+  });
+
+  it("should correctly merge default headers object with client Headers instance", async () => {
+    const key = "$get";
+    const paths = ["http://example.com", "api", "headersTest"];
+    const params = {};
+    const dynamicKeys: string[] = [];
+
+    let calledInit: CapturedInit | undefined = {};
+    global.fetch = ((_input: RequestInfo | URL, _init?: RequestInit) => {
+      calledInit = _init as CapturedInit | undefined;
+
+      return Promise.resolve(new Response(null, { status: 200 }));
+    }) as typeof fetch;
+
+    const clientHeaders = new Headers();
+    clientHeaders.append("X-Default", "defaultValue");
+    const defaultHeaders = { "x-custom": "customValue" };
+
+    const defaultOptions = {
+      init: { headersInit: clientHeaders },
+    };
+
+    const requestFn = httpMethod(
+      key,
+      paths,
+      params,
+      dynamicKeys,
+      defaultOptions
+    );
+
+    const clientOptions = {
+      init: { headers: defaultHeaders },
+    };
+
+    await requestFn(undefined, clientOptions);
+
+    expect(calledInit?.headers).toEqual({
+      "x-default": "defaultValue",
+      "x-custom": "customValue",
+    });
+  });
+
   it("should correctly merge Headers passed as a Headers instance and an array", async () => {
     const key = "$get";
     const paths = ["http://example.com", "api", "headersTest"];
@@ -329,7 +411,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     const clientHeaders: [string, string][] = [["X-Custom", "customValue"]];
 
     const defaultOptions = {
-      init: { headers: defaultHeaders },
+      init: { headersInit: defaultHeaders },
     };
 
     const requestFn = httpMethod(
@@ -341,7 +423,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     );
 
     const clientOptions = {
-      init: { headers: clientHeaders },
+      init: { headersInit: clientHeaders },
     };
 
     await requestFn(undefined, clientOptions);
@@ -372,7 +454,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     clientHeaders.append("X-Test", "client");
 
     const defaultOptions = {
-      init: { headers: defaultHeaders },
+      init: { headersInit: defaultHeaders },
     };
 
     const requestFn = httpMethod(
@@ -384,7 +466,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     );
 
     const clientOptions = {
-      init: { headers: clientHeaders },
+      init: { headersInit: clientHeaders },
     };
 
     await requestFn(undefined, clientOptions);

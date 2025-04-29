@@ -15,23 +15,35 @@ import type {
 import type { TypedNextResponse, ValidationInputFor } from "../server/types";
 import type { NextResponse } from "next/server";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type DistributeOmit<T, K extends keyof any> = T extends any
+  ? Omit<T, K>
+  : never;
+
 /**
  * Extension of the standard `RequestInit` interface with strongly typed headers.
  */
-export interface TypedRequestInit<
-  TWithoutHeaders extends "Content-Type" | "Cookie" = never,
-> extends RequestInit {
-  headers?:
-    | (Omit<HttpRequestHeaders, TWithoutHeaders> & Record<string, string>)
-    | HeadersInit;
-}
+export type TypedRequestInit<
+  TWithoutHeaders extends keyof HttpRequestHeaders = never,
+> = Omit<RequestInit, "headers"> &
+  (
+    | {
+        headers?: Omit<HttpRequestHeaders, TWithoutHeaders> &
+          Record<string, string>;
+        headersInit?: never;
+      }
+    | {
+        headers?: never;
+        headersInit?: HeadersInit;
+      }
+  );
 
 export type ClientOptions<
   TWithoutHeaders extends "Content-Type" | "Cookie" = never,
-  TWithoutInit extends "body" | "headers" = never,
+  TWithoutInit extends "body" | "headers" | "headersInit" = never,
 > = {
   fetch?: typeof fetch;
-  init?: Omit<TypedRequestInit<TWithoutHeaders>, TWithoutInit>;
+  init?: DistributeOmit<TypedRequestInit<TWithoutHeaders>, TWithoutInit>;
 };
 
 declare const __proxy: unique symbol;
@@ -123,7 +135,7 @@ type HttpMethodsArgs<
     | (IsNever<TJson> extends true ? never : "Content-Type")
     | (IsNever<TCookies> extends true ? never : "Cookie"),
     | (IsNever<TJson> extends true ? never : "body")
-    | (IsNever<THeaders> extends true ? never : "headers")
+    | (IsNever<THeaders> extends true ? never : "headers" | "headersInit")
   >,
 ];
 
