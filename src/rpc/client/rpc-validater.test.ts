@@ -3,21 +3,27 @@ import { setupServer } from "msw/node";
 import {
   describe,
   it,
-  expectTypeOf,
   afterAll,
   afterEach,
   beforeAll,
   expect,
+  expectTypeOf,
 } from "vitest";
 import { z } from "zod";
 import { routeHandlerFactory } from "../server";
 import { createRpcClient } from "./rpc-client";
 import { ClientOptions, Endpoint } from "./types";
+import { searchParamsToObject } from "../server/server-utils";
 import { zValidator } from "../server/validators/zod/zod-validator";
 
 const schema = z.object({
   name: z.string(),
   hoge: z.string(),
+});
+
+const optionalSchema = z.object({
+  name: z.string().optional(),
+  hoge: z.string().optional(),
 });
 
 const createRouteHandler = routeHandlerFactory();
@@ -39,10 +45,21 @@ const { POST: _post_3 } = createRouteHandler().post(
   (rc) => rc.text("text")
 );
 
-const { POST: _post_4 } = createRouteHandler().post(
+const { POST: _post_4 } = createRouteHandler<{
+  query: z.input<typeof schema>;
+}>().post(zValidator("query", schema), (rc) => rc.text("text"));
+
+const { POST: _post_5 } = createRouteHandler<{
+  query: z.input<typeof optionalSchema>;
+}>().post(zValidator("query", optionalSchema), (rc) => rc.text("text"));
+
+const { POST: _post_all } = createRouteHandler<{
+  query: z.input<typeof schema>;
+}>().post(
   zValidator("json", schema),
   zValidator("headers", schema),
   zValidator("cookies", schema),
+  zValidator("query", schema),
   (rc) => rc.text("text")
 );
 
@@ -56,18 +73,19 @@ type PathStructure = Endpoint & {
         _json: { $post: typeof _post_1 } & Endpoint;
         headers: { $post: typeof _post_2 } & Endpoint;
         cookies: { $post: typeof _post_3 } & Endpoint;
-        all: { $post: typeof _post_4 } & Endpoint;
+        query: { $post: typeof _post_4 } & Endpoint;
+        optionalQuery: { $post: typeof _post_5 } & Endpoint;
+        all: { $post: typeof _post_all } & Endpoint;
       };
   };
 };
 
 describe("createRpcClient", () => {
-  describe("createRpcClient basic behavior", () => {
-    // MSW lifecycle setup
-    beforeAll(() => server.listen());
-    afterEach(() => server.resetHandlers());
-    afterAll(() => server.close());
+  beforeAll(() => server.listen());
+  afterEach(() => server.resetHandlers());
+  afterAll(() => server.close());
 
+  describe("createRpcClient basic behavior", () => {
     it("should send correct JSON body and receive expected response", async () => {
       server.use(
         http.post(
@@ -101,12 +119,6 @@ describe("createRpcClient", () => {
       });
     });
   });
-});
-
-describe("Headers and Cookies validation", () => {
-  beforeAll(() => server.listen());
-  afterEach(() => server.resetHandlers());
-  afterAll(() => server.close());
 
   it("should validate headers correctly", async () => {
     server.use(
@@ -172,7 +184,61 @@ describe("Headers and Cookies validation", () => {
     expect(json).toStrictEqual({ cookies: { hoge: "hogehoge", name: "foo" } });
   });
 
-  it("should validate json, headers and cookies together correctly", async () => {
+  it("should validate query correctly", async () => {
+    server.use(
+      http.post("http://localhost:3000/api/none/query", async ({ request }) => {
+        const url = new URL(request.url);
+        const query = searchParamsToObject(url.searchParams);
+        const result = schema.safeParse(query);
+        if (!result.success) {
+          return HttpResponse.json(
+            { error: "Invalid query", issues: result.error.format() },
+            { status: 400 }
+          );
+        }
+
+        return HttpResponse.json({ query: result.data });
+      })
+    );
+
+    const client = createRpcClient<PathStructure>("http://localhost:3000");
+    const response = await client.api.none.query.$post({
+      url: { query: { hoge: "hogehoge", name: "foo" } },
+    });
+
+    const json = await response.json();
+    expect(json).toStrictEqual({ query: { hoge: "hogehoge", name: "foo" } });
+  });
+
+  it("should validate optionalQuery correctly", async () => {
+    server.use(
+      http.post(
+        "http://localhost:3000/api/none/optionalQuery",
+        async ({ request }) => {
+          const url = new URL(request.url);
+          const query = searchParamsToObject(url.searchParams);
+
+          const result = optionalSchema.safeParse(query);
+          if (!result.success) {
+            return HttpResponse.json(
+              { error: "Invalid query", issues: result.error.format() },
+              { status: 400 }
+            );
+          }
+
+          return HttpResponse.json({ query: result.data });
+        }
+      )
+    );
+
+    const client = createRpcClient<PathStructure>("http://localhost:3000");
+    const response = await client.api.none.optionalQuery.$post();
+
+    const json = await response.json();
+    expect(json).toStrictEqual({ query: {} });
+  });
+
+  it("should validate query, json, headers and cookies together correctly", async () => {
     server.use(
       http.post("http://localhost:3000/api/none/all", async ({ request }) => {
         const contentType = request.headers.get("Content-Type");
@@ -190,14 +256,18 @@ describe("Headers and Cookies validation", () => {
             cookiesData[key] = value;
           }
         });
+        const url = new URL(request.url);
+        const query = searchParamsToObject(url.searchParams);
 
         const jsonResult = schema.safeParse(jsonData);
         const headersResult = schema.safeParse(headersData);
         const cookiesResult = schema.safeParse(cookiesData);
+        const queryResult = schema.safeParse(query);
         if (
           !jsonResult.success ||
           !headersResult.success ||
-          !cookiesResult.success
+          !cookiesResult.success ||
+          !queryResult.success
         ) {
           return HttpResponse.json(
             {
@@ -212,6 +282,9 @@ describe("Headers and Cookies validation", () => {
                 cookies: cookiesResult.success
                   ? undefined
                   : cookiesResult.error.format(),
+                query: queryResult.success
+                  ? undefined
+                  : queryResult.error.format(),
               },
             },
             { status: 400 }
@@ -222,6 +295,7 @@ describe("Headers and Cookies validation", () => {
           json: jsonResult.data,
           headers: headersResult.data,
           cookies: cookiesResult.data,
+          query: queryResult.data,
           contentType,
         });
       })
@@ -229,6 +303,7 @@ describe("Headers and Cookies validation", () => {
 
     const client = createRpcClient<PathStructure>("http://localhost:3000");
     const response = await client.api.none.all.$post({
+      url: { query: { hoge: "hogehoge", name: "foo" } },
       body: { json: { hoge: "hogehoge", name: "foo" } },
       requestHeaders: {
         headers: { hoge: "hogehoge", name: "foo" },
@@ -240,6 +315,7 @@ describe("Headers and Cookies validation", () => {
       json: { hoge: "hogehoge", name: "foo" },
       headers: { hoge: "hogehoge", name: "foo" },
       cookies: { hoge: "hogehoge", name: "foo" },
+      query: { hoge: "hogehoge", name: "foo" },
       contentType: "application/json",
     });
   });
@@ -257,7 +333,6 @@ describe("createHandler type definitions", () => {
     type ExpectedNonJsonParameters = [
       methodParam?: {
         url?: {
-          query?: Record<string, string | number>;
           hash?: string;
         };
       },
@@ -271,7 +346,6 @@ describe("createHandler type definitions", () => {
     type ExpectedJsonParameters = [
       methodParam: {
         url?: {
-          query?: Record<string, string | number>;
           hash?: string;
         };
       } & {
@@ -294,7 +368,6 @@ describe("createHandler type definitions", () => {
     type ExpectedHeadersParameters = [
       methodParam: {
         url?: {
-          query?: Record<string, string | number>;
           hash?: string;
         };
       } & {
@@ -315,7 +388,6 @@ describe("createHandler type definitions", () => {
     type ExpectedCookiesParameters = [
       methodParam: {
         url?: {
-          query?: Record<string, string | number>;
           hash?: string;
         };
       } & {
@@ -333,10 +405,75 @@ describe("createHandler type definitions", () => {
       Parameters<typeof client.api.none.cookies.$post>
     >().toEqualTypeOf<ExpectedCookiesParameters>();
 
+    type ExpectedQueryParameters = [
+      methodParam: {
+        url: {
+          query: {
+            name: string;
+            hoge: string;
+          };
+          hash?: string;
+        };
+      },
+      option?: ClientOptions<never, never>,
+    ];
+
+    expectTypeOf<
+      Parameters<typeof client.api.none.query.$post>
+    >().toEqualTypeOf<ExpectedQueryParameters>();
+
+    type ExpectedQueryUrlParameters = [
+      url: {
+        query: {
+          name: string;
+          hoge: string;
+        };
+        hash?: string;
+      },
+    ];
+
+    expectTypeOf<
+      Parameters<typeof client.api.none.query.$url>
+    >().toEqualTypeOf<ExpectedQueryUrlParameters>();
+
+    type ExpectedOptionalQueryParameters = [
+      methodParam?: {
+        url?: {
+          query?: {
+            name?: string;
+            hoge?: string;
+          };
+          hash?: string;
+        };
+      },
+      option?: ClientOptions<never, never>,
+    ];
+
+    expectTypeOf<
+      Parameters<typeof client.api.none.optionalQuery.$post>
+    >().toEqualTypeOf<ExpectedOptionalQueryParameters>();
+
+    type ExpectedOptionalQueryUrlParameters = [
+      url?: {
+        query?: {
+          name?: string | undefined;
+          hoge?: string | undefined;
+        };
+        hash?: string;
+      },
+    ];
+
+    expectTypeOf<
+      Parameters<typeof client.api.none.optionalQuery.$url>
+    >().toEqualTypeOf<ExpectedOptionalQueryUrlParameters>();
+
     type ExpectedAllParameters = [
       methodParam: {
-        url?: {
-          query?: Record<string, string | number>;
+        url: {
+          query: {
+            name: string;
+            hoge: string;
+          };
           hash?: string;
         };
       } & {

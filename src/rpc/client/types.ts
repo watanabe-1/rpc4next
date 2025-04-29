@@ -41,8 +41,6 @@ export type ParamsKey = "__params";
 type IsParams = Record<ParamsKey, unknown>;
 export type QueryKey = "__query";
 type IsQuery = Record<QueryKey, unknown>;
-export type OptionalQueryKey = "__op_query";
-type IsOptionalQuery = Record<OptionalQueryKey, unknown>;
 
 export type HttpMethodFuncKey = (typeof HTTP_METHOD_FUNC_KEYS)[number];
 type IsHttpMethod = {
@@ -56,17 +54,20 @@ type IsDynamic = `${typeof DYNAMIC_PREFIX}${string}`;
 export type FuncParams<
   T = Record<string, string | number | string[] | undefined>,
 > = T;
-type QueryParams<T = Record<string, string | number>> = T;
 
 type Params<T = unknown> = T extends IsParams
   ? T[ParamsKey]
   : Record<string, string>;
 
-export type UrlOptions<T = unknown> = T extends IsQuery
-  ? { query: T[QueryKey]; hash?: string }
-  : T extends IsOptionalQuery
-    ? { query?: T[OptionalQueryKey]; hash?: string }
-    : { query?: QueryParams; hash?: string };
+export type UrlOptions<T = unknown, TQuery = unknown> = T extends IsQuery
+  ? AllOptional<T[QueryKey]> extends true
+    ? { query?: T[QueryKey]; hash?: string }
+    : { query: T[QueryKey]; hash?: string }
+  : IsNever<TQuery> extends true
+    ? { hash?: string }
+    : AllOptional<TQuery> extends true
+      ? { query?: TQuery; hash?: string }
+      : { query: TQuery; hash?: string };
 
 export type UrlResult<T = unknown> = {
   pathname: string;
@@ -78,12 +79,14 @@ export type UrlResult<T = unknown> = {
 type IsNever<T> = [T] extends [never] ? true : false;
 type AllOptional<T> = Partial<T> extends T ? true : false;
 
-type UrlArgs<T> = T extends IsQuery
-  ? [url: UrlOptions<T>]
-  : [url?: UrlOptions<T>];
-type UrlArgsObj<T> = T extends IsQuery
-  ? { url: UrlOptions<T> }
-  : { url?: UrlOptions<T> };
+type UrlArgs<T, TQuery, TUrlOptions = UrlOptions<T, TQuery>> =
+  AllOptional<TUrlOptions> extends true
+    ? [url?: TUrlOptions]
+    : [url: TUrlOptions];
+type UrlArgsObj<T, TQuery, TUrlOptions = UrlOptions<T, TQuery>> =
+  AllOptional<TUrlOptions> extends true
+    ? { url?: TUrlOptions }
+    : { url: TUrlOptions };
 
 export type BodyOptions<TJson = unknown> = { json: TJson };
 type BodyArgsObj<TJson> =
@@ -105,10 +108,11 @@ type HeadersArgsObj<THeaders = unknown, TCookies = unknown> =
 type HttpMethodsArgs<
   T,
   TValidationSchema extends ValidationSchema,
+  TQuery = ValidationInputFor<"query", TValidationSchema>,
   TJson = ValidationInputFor<"json", TValidationSchema>,
   THeaders = ValidationInputFor<"headers", TValidationSchema>,
   TCookies = ValidationInputFor<"cookies", TValidationSchema>,
-  TBaseArgs = UrlArgsObj<T> &
+  TBaseArgs = UrlArgsObj<T, TQuery> &
     BodyArgsObj<TJson> &
     HeadersArgsObj<THeaders, TCookies>,
 > = [
@@ -128,6 +132,12 @@ type InferHttpMethods<T extends IsHttpMethod> = {
     ...args: HttpMethodsArgs<T, InferValidationSchema<T[K]>>
   ) => Promise<InferTypedNextResponseType<T[K]>>;
 };
+
+type InferHttpMethodValidationSchema<T> = {
+  [K in keyof T]: K extends HttpMethodFuncKey
+    ? InferValidationSchema<T[K]>
+    : never;
+}[keyof T & HttpMethodFuncKey];
 
 type InferValidationSchema<T> = T extends (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -152,8 +162,13 @@ type InferTypedNextResponseType<T> = T extends (
 
 type PathProxyAsProperty<T> = { $match: (path: string) => Params<T> | null };
 
+type InferQuery<T> = ValidationInputFor<
+  "query",
+  InferHttpMethodValidationSchema<T>
+>;
+
 type PathProxyAsFunction<T> = {
-  $url: (...args: UrlArgs<T>) => UrlResult<T>;
+  $url: (...args: UrlArgs<T, InferQuery<T>>) => UrlResult<T>;
 } & (T extends IsHttpMethod ? InferHttpMethods<T> : unknown);
 
 type ParamFunction<T, TParamArgs extends unknown[]> = (
@@ -172,7 +187,7 @@ export type DynamicPathProxyAsFunction<T> = Omit<
           ? ParamFunction<T[K], [value: string | number]>
           : DynamicPathProxyAsFunction<T[K]>;
   },
-  QueryKey | OptionalQueryKey | ParamsKey
+  QueryKey | ParamsKey
 >;
 
 export type DynamicPathProxyAsProperty<T> = Omit<
@@ -181,7 +196,7 @@ export type DynamicPathProxyAsProperty<T> = Omit<
       ? DynamicPathProxyAsProperty<T[K]>
       : DynamicPathProxyAsProperty<T[K]>;
   },
-  QueryKey | OptionalQueryKey | ParamsKey
+  QueryKey | ParamsKey
 >;
 
 export type RpcHandler = (
