@@ -49,7 +49,7 @@ export async function GET(
 }
 ```
 
-🚩 Query or OptionalQuery 型を export することで、searchParams の型も自動的にクライアントに反映されます。
+🚩 Query 型を export することで、searchParams の型も自動的にクライアントに反映されます。
 
 - **RPCとしてresponseの戻り値の推論が機能するのは、対象となる `route.ts` の HTTPメソッドハンドラ内で`NextResponse.json()` をしている関数のみになります**
 

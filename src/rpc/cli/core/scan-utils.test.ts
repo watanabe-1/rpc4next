@@ -35,19 +35,17 @@ describe("scanQuery", () => {
 
   it("should return a query definition for an exported type alias", () => {
     mock({
-      "input.ts": "export type OptionalQuery = { id: number; }",
+      "input.ts": "export type Query = { id: number; }",
     });
 
     const result = scanQuery("output.ts", "input.ts");
     expect(result).toBeDefined();
-    expect(result?.importName).toBe("OptionalQuery_d6b34eab427491f5");
+    expect(result?.importName).toBe("Query_da299b9577978fcd");
     expect(result?.importPath).toBe("./input");
     expect(result?.importStatement).toBe(
-      "import type { OptionalQuery as OptionalQuery_d6b34eab427491f5 } from './input';"
+      "import type { Query as Query_da299b9577978fcd } from './input';"
     );
-    expect(result?.type).toBe(
-      "Record<OptionalQueryKey, OptionalQuery_d6b34eab427491f5>"
-    );
+    expect(result?.type).toBe("Record<QueryKey, Query_da299b9577978fcd>");
   });
 
   it("should return undefined when no relevant query definition exists", () => {

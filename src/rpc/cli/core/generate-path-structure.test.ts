@@ -3,7 +3,6 @@ import { describe, it, expect, vi } from "vitest";
 import {
   STATEMENT_TERMINATOR,
   NEWLINE,
-  TYPE_KEY_OPTIONAL_QUERY,
   TYPE_KEY_QUERY,
   RPC4NEXT_CLIENT_IMPORT_PATH,
   TYPE_KEY_PARAMS,
@@ -29,7 +28,7 @@ mock({
 describe("generatePathStructure", () => {
   it("should generate correct type definitions and imports", () => {
     scanAppDir.mockReturnValue({
-      pathStructure: `{ home: ${TYPE_END_POINT}, user: { id: ${TYPE_KEY_PARAMS} }, ${TYPE_KEY_QUERY}, ${TYPE_KEY_OPTIONAL_QUERY}}`,
+      pathStructure: `{ home: ${TYPE_END_POINT}, user: { id: ${TYPE_KEY_PARAMS} }, ${TYPE_KEY_QUERY}}`,
       imports: [
         {
           path: "./routes/home",
@@ -53,10 +52,10 @@ describe("generatePathStructure", () => {
     );
 
     const expectedImports =
-      `import type { ${TYPE_END_POINT} ,${TYPE_KEY_OPTIONAL_QUERY} ,${TYPE_KEY_PARAMS} ,${TYPE_KEY_QUERY} } from "${RPC4NEXT_CLIENT_IMPORT_PATH}"${STATEMENT_TERMINATOR}${NEWLINE}` +
+      `import type { ${TYPE_END_POINT} ,${TYPE_KEY_PARAMS} ,${TYPE_KEY_QUERY} } from "${RPC4NEXT_CLIENT_IMPORT_PATH}"${STATEMENT_TERMINATOR}${NEWLINE}` +
       `import Home from './routes/home';${NEWLINE}import User from './routes/user';`;
 
-    const expectedTypeDefinition = `export type PathStructure = { home: ${TYPE_END_POINT}, user: { id: ${TYPE_KEY_PARAMS} }, ${TYPE_KEY_QUERY}, ${TYPE_KEY_OPTIONAL_QUERY}}${STATEMENT_TERMINATOR}`;
+    const expectedTypeDefinition = `export type PathStructure = { home: ${TYPE_END_POINT}, user: { id: ${TYPE_KEY_PARAMS} }, ${TYPE_KEY_QUERY}}${STATEMENT_TERMINATOR}`;
 
     expect(pathStructure).toBe(
       `${expectedImports}${NEWLINE}${NEWLINE}${expectedTypeDefinition}`
