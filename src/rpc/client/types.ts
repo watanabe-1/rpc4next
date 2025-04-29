@@ -172,7 +172,7 @@ type PathProxyAsFunction<T> = {
 } & (T extends IsHttpMethod ? InferHttpMethods<T> : unknown);
 
 type ParamFunction<T, TParamArgs extends unknown[]> = (
-  ...args: [...TParamArgs]
+  ...args: TParamArgs
 ) => DynamicPathProxyAsFunction<T>;
 
 type NonEmptyArray<T> = [T, ...T[]];
