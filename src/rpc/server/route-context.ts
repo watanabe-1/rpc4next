@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { searchParamsToObject } from "./server-utils";
+import { normalizeHeaders } from "../lib/headers";
 import type { ValidationSchema } from "./route-types";
 import type {
   RouteContext,
@@ -16,6 +17,31 @@ import type {
   RedirectionHttpStatusCode,
 } from "../lib/http-status-code-types";
 import type { NextRequest } from "next/server";
+
+const isHttpStatusCode = (value: unknown): value is HttpStatusCode => {
+  return typeof value === "number" && !Number.isNaN(value);
+};
+
+const resolvedHeaders = (
+  init?: TypedResponseInit<HttpStatusCode, ContentType>
+) => {
+  if (!init) return init;
+
+  const headers = init.headers ?? normalizeHeaders(init.headersInit);
+
+  const {
+    headers: _headers,
+    headersInit: _headersInit,
+    ...initWithoutHeaders
+  } = init;
+
+  const resolvedInit = {
+    ...initWithoutHeaders,
+    headers,
+  };
+
+  return resolvedInit as TypedResponseInit<HttpStatusCode, ContentType>;
+};
 
 export const createRouteContext = <
   TParams extends Params,
@@ -47,7 +73,7 @@ export const createRouteContext = <
       data: TData,
       init?: TypedResponseInit<TStatus, TContentType>
     ) =>
-      new NextResponse<TData>(data, init) as TypedNextResponse<
+      new NextResponse<TData>(data, resolvedHeaders(init)) as TypedNextResponse<
         TData,
         TStatus,
         TContentType
@@ -57,29 +83,36 @@ export const createRouteContext = <
       data: TData,
       init?: TypedResponseInit<TStatus, "application/json">
     ) =>
-      NextResponse.json<TData>(data, init) as TypedNextResponse<
-        TData,
-        TStatus,
-        "application/json"
-      >,
+      NextResponse.json<TData>(
+        data,
+        resolvedHeaders(init)
+      ) as TypedNextResponse<TData, TStatus, "application/json">,
 
     text: <TData extends string, TStatus extends HttpStatusCode = 200>(
       data: TData,
       init?: TypedResponseInit<TStatus, "text/plain">
-    ) =>
-      new NextResponse<TData>(data, {
-        ...init,
-        headers: { "Content-Type": "text/plain", ...init?.headers },
-      }) as TypedNextResponse<TData, TStatus, "text/plain">,
+    ) => {
+      const resolvedInit = resolvedHeaders(init);
 
-    redirect: <TStatus extends RedirectionHttpStatusCode = 302>(
+      return new NextResponse<TData>(data, {
+        ...resolvedInit,
+        headers: { ...resolvedInit?.headers, "Content-Type": "text/plain" },
+      }) as TypedNextResponse<TData, TStatus, "text/plain">;
+    },
+
+    redirect: <TStatus extends RedirectionHttpStatusCode = 307>(
       url: string,
       init?: TStatus | TypedResponseInit<TStatus, "">
-    ) =>
-      NextResponse.redirect(url, init) as TypedNextResponse<
+    ) => {
+      const resolvedInit = isHttpStatusCode(init)
+        ? init
+        : resolvedHeaders(init);
+
+      return NextResponse.redirect(url, resolvedInit) as TypedNextResponse<
         undefined,
         TStatus,
         ""
-      >,
+      >;
+    },
   };
 };

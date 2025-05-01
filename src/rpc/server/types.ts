@@ -33,13 +33,20 @@ type HttpStatus<T extends HttpStatusCode> = T extends SuccessfulHttpStatusCode
  * @template TStatus - The HTTP status code.
  * @template TContentType - The content type of the response.
  */
-export interface TypedResponseInit<
+export type TypedResponseInit<
   TStatus extends HttpStatusCode,
   TContentType extends ContentType,
-> extends ResponseInit {
-  headers?: HttpResponseHeaders<TContentType> | HeadersInit;
-  status?: TStatus;
-}
+> =
+  | ({
+      headers?: HttpResponseHeaders<TContentType> & Record<string, string>;
+      headersInit?: never;
+    } & Omit<ResponseInit, "headers">)
+  | (({
+      headers?: never;
+      headersInit?: HeadersInit;
+    } & Omit<ResponseInit, "headers">) & {
+      status?: TStatus;
+    });
 
 /**
  * A strongly typed wrapper around the standard Next.js `NextResponse` object,
@@ -192,10 +199,10 @@ export interface RouteContext<
    * Internally wraps `NextResponse.redirect(...)`.
    *
    * @param url - The URL to redirect to.
-   * @param init - Optional redirect status code (default: 302).
+   * @param init - Optional redirect status code (default: 307).
    * @returns A redirect response.
    */
-  redirect: <TStatus extends RedirectionHttpStatusCode = 302>(
+  redirect: <TStatus extends RedirectionHttpStatusCode = 307>(
     url: string,
     init?: TStatus | TypedResponseInit<TStatus, "">
   ) => TypedNextResponse<undefined, TStatus, "">;

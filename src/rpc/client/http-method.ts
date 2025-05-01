@@ -1,5 +1,6 @@
 import { deepMerge } from "./client-utils";
 import { createUrl } from "./url";
+import { normalizeHeaders } from "../lib/headers";
 import type {
   FuncParams,
   UrlOptions,
@@ -9,30 +10,6 @@ import type {
   HeadersOptions,
 } from "./types";
 import type { ContentType } from "../lib/content-type-types";
-
-const normalizeHeaders = (headers?: HeadersInit): Record<string, string> => {
-  const result: Record<string, string> = {};
-  if (!headers) return result;
-  if (headers instanceof Headers) {
-    headers.forEach((value, key) => {
-      result[key.toLowerCase()] = value;
-    });
-
-    return result;
-  }
-  if (Array.isArray(headers)) {
-    headers.forEach(([key, value]) => {
-      result[key.toLowerCase()] = value;
-    });
-
-    return result;
-  }
-  Object.entries(headers).forEach(([key, value]) => {
-    result[key.toLowerCase()] = value;
-  });
-
-  return result;
-};
 
 export const httpMethod = (
   key: string,
