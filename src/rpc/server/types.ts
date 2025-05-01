@@ -166,7 +166,7 @@ export interface RouteContext<
     TStatus extends HttpStatusCode = 200,
   >(
     data: TData,
-    init?: TypedResponseInit<TStatus, TContentType>
+    init?: TStatus | TypedResponseInit<TStatus, TContentType>
   ) => TypedNextResponse<TData, TStatus, TContentType>;
 
   /**
@@ -178,7 +178,7 @@ export interface RouteContext<
    */
   json: <TData, TStatus extends HttpStatusCode = 200>(
     data: TData,
-    init?: TypedResponseInit<TStatus, "application/json">
+    init?: TStatus | TypedResponseInit<TStatus, "application/json">
   ) => TypedNextResponse<TData, TStatus, "application/json">;
 
   /**
@@ -191,7 +191,7 @@ export interface RouteContext<
    */
   text: <TData extends string, TStatus extends HttpStatusCode = 200>(
     data: TData,
-    init?: TypedResponseInit<TStatus, "text/plain">
+    init?: TStatus | TypedResponseInit<TStatus, "text/plain">
   ) => TypedNextResponse<TData, TStatus, "text/plain">;
 
   /**

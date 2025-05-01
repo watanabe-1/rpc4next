@@ -7,6 +7,7 @@ import type {
   ValidatedData,
   ValidationTarget,
 } from "./types";
+import type { ContentType } from "../lib/content-type-types";
 
 const createRealNextRequest = (url: string): NextRequest => {
   return new NextRequest(url);
@@ -272,6 +273,49 @@ describe("createRouteContext", () => {
     expect(response.status).toBe(307); // default redirect status
     expect(response.headers.get("Location")).toBe("http://localhost/next-page");
   });
+
+  it("should return a body response with only status code", () => {
+    const req = createRealNextRequest("http://localhost/");
+    const context = createRouteContext(req, { params: Promise.resolve({}) });
+
+    const response = context.body("status-body", 201);
+
+    expect(response instanceof NextResponse).toBe(true);
+    expect(response.status).toBe(201);
+  });
+
+  it("should return a json response with only status code", () => {
+    const req = createRealNextRequest("http://localhost/");
+    const context = createRouteContext(req, { params: Promise.resolve({}) });
+
+    const response = context.json({ ok: true }, 202);
+
+    expect(response instanceof NextResponse).toBe(true);
+    expect(response.status).toBe(202);
+    expect(response.headers.get("content-type")).toContain("application/json");
+  });
+
+  it("should return a text response with only status code", () => {
+    const req = createRealNextRequest("http://localhost/");
+    const context = createRouteContext(req, { params: Promise.resolve({}) });
+
+    const response = context.text("status-text", 203);
+
+    expect(response instanceof NextResponse).toBe(true);
+    expect(response.status).toBe(203);
+    expect(response.headers.get("content-type")).toContain("text/plain");
+  });
+
+  it("should return a redirect response with only status code", () => {
+    const req = createRealNextRequest("http://localhost/");
+    const context = createRouteContext(req, { params: Promise.resolve({}) });
+
+    const response = context.redirect("http://localhost/next", 308);
+
+    expect(response instanceof NextResponse).toBe(true);
+    expect(response.status).toBe(308);
+    expect(response.headers.get("location")).toBe("http://localhost/next");
+  });
 });
 
 describe("createRouteContext type definitions", () => {
@@ -345,6 +389,34 @@ describe("createRouteContext type definitions", () => {
     type InferredRedirect = typeof _redirectResponse;
     type ExpectedRedirect = TypedNextResponse<undefined, 307, "">;
     expectTypeOf<InferredRedirect>().toEqualTypeOf<ExpectedRedirect>();
+  });
+
+  it("should infer correct response types when status is passed as a number", () => {
+    const req = new NextRequest("http://localhost/");
+    const context = createRouteContext(req, { params: Promise.resolve({}) });
+
+    const _jsonResponse = context.json({ message: "ok" }, 200 as const);
+    expectTypeOf(_jsonResponse).toEqualTypeOf<
+      TypedNextResponse<{ message: string }, 200, "application/json">
+    >();
+
+    const _textResponse = context.text("text", 201 as const);
+    expectTypeOf(_textResponse).toEqualTypeOf<
+      TypedNextResponse<"text", 201, "text/plain">
+    >();
+
+    const _bodyResponse = context.body("body", 202 as const);
+    expectTypeOf(_bodyResponse).toEqualTypeOf<
+      TypedNextResponse<"body", 202, ContentType>
+    >();
+
+    const _redirectResponse = context.redirect(
+      "http://localhost",
+      301 as const
+    );
+    expectTypeOf(_redirectResponse).toEqualTypeOf<
+      TypedNextResponse<undefined, 301, "">
+    >();
   });
 
   // eslint-disable-next-line vitest/expect-expect
