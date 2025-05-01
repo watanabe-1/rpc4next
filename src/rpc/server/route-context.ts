@@ -23,9 +23,13 @@ const isHttpStatusCode = (value: unknown): value is HttpStatusCode => {
 };
 
 const resolvedHeaders = (
-  init?: TypedResponseInit<HttpStatusCode, ContentType>
+  init?: HttpStatusCode | TypedResponseInit<HttpStatusCode, ContentType>
 ) => {
   if (!init) return init;
+
+  if (isHttpStatusCode(init)) {
+    return { status: init };
+  }
 
   const headers = init.headers ?? normalizeHeaders(init.headersInit);
 
@@ -71,7 +75,7 @@ export const createRouteContext = <
       TStatus extends HttpStatusCode = 200,
     >(
       data: TData,
-      init?: TypedResponseInit<TStatus, TContentType>
+      init?: TStatus | TypedResponseInit<TStatus, TContentType>
     ) =>
       new NextResponse<TData>(data, resolvedHeaders(init)) as TypedNextResponse<
         TData,
@@ -81,7 +85,7 @@ export const createRouteContext = <
 
     json: <TData, TStatus extends HttpStatusCode = 200>(
       data: TData,
-      init?: TypedResponseInit<TStatus, "application/json">
+      init?: TStatus | TypedResponseInit<TStatus, "application/json">
     ) =>
       NextResponse.json<TData>(
         data,
@@ -90,7 +94,7 @@ export const createRouteContext = <
 
     text: <TData extends string, TStatus extends HttpStatusCode = 200>(
       data: TData,
-      init?: TypedResponseInit<TStatus, "text/plain">
+      init?: TStatus | TypedResponseInit<TStatus, "text/plain">
     ) => {
       const resolvedInit = resolvedHeaders(init);
 
