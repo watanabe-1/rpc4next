@@ -12,6 +12,7 @@ export type HttpResponseHeaders<TContentType extends ContentType> = Partial<{
   Expires: string;
   ETag: string;
   "Last-Modified": string;
+  Age: string;
 
   // Content information
   "Content-Type": TContentType;
@@ -20,26 +21,28 @@ export type HttpResponseHeaders<TContentType extends ContentType> = Partial<{
   "Content-Language": string;
   "Content-Location": string;
   "Content-Disposition": string;
+  "Content-Range": string;
+  "Content-Digest": string;
+  "Content-Security-Policy": string;
+  "Content-Security-Policy-Report-Only": string;
 
-  // CORS (Cross-Origin Resource Sharing)
+  // CORS-related
   "Access-Control-Allow-Origin": string;
   "Access-Control-Allow-Credentials": string;
   "Access-Control-Allow-Headers": string;
   "Access-Control-Allow-Methods": string;
   "Access-Control-Expose-Headers": string;
+  "Access-Control-Max-Age": string;
 
   // Authentication
   "WWW-Authenticate": string;
-  Authorization: string;
+  "Proxy-Authenticate": string;
 
   // Security
   "Strict-Transport-Security": string;
-  "Content-Security-Policy": string;
   "X-Content-Type-Options": string;
   "X-Frame-Options": string;
-  "X-XSS-Protection": string;
   "Referrer-Policy": string;
-  "Permissions-Policy": string;
   "Cross-Origin-Opener-Policy": string;
   "Cross-Origin-Embedder-Policy": string;
   "Cross-Origin-Resource-Policy": string;
@@ -47,7 +50,7 @@ export type HttpResponseHeaders<TContentType extends ContentType> = Partial<{
   // Cookies
   "Set-Cookie": string;
 
-  // Redirect
+  // Redirects
   Location: string;
 
   // Connection and communication
@@ -56,9 +59,33 @@ export type HttpResponseHeaders<TContentType extends ContentType> = Partial<{
   "Transfer-Encoding": string;
   Upgrade: string;
   Vary: string;
+  Trailer: string;
+  "Upgrade-Insecure-Requests": string;
 
   // Server information
   Date: string;
   Server: string;
-  "X-Powered-By": string;
+
+  // Client hints
+  "Accept-CH": string;
+  "Accept-Patch": string;
+  "Accept-Post": string;
+  "Accept-Ranges": string;
+
+  // Others
+  Allow: string;
+  "Alt-Svc": string;
+  "Alt-Used": string;
+  "Clear-Site-Data": string;
+  Link: string;
+  "Origin-Agent-Cluster": string;
+  "Preference-Applied": string;
+  Priority: string;
+  "Reporting-Endpoints": string;
+  "Retry-After": string;
+  "Server-Timing": string;
+  SourceMap: string;
+  "Timing-Allow-Origin": string;
+  "Want-Content-Digest": string;
+  "Want-Repr-Digest": string;
 }>;

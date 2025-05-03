@@ -5,9 +5,10 @@ import type { ContentType } from "../server";
  * This type includes general request headers, CORS/security-related headers, and client-specific headers.
  */
 export type HttpRequestHeaders = Partial<{
-  // General information
+  // General headers
   Accept: string;
   "Accept-Charset": string;
+  "Accept-Datetime": string;
   "Accept-Encoding": string;
   "Accept-Language": string;
   Authorization: string;
@@ -28,26 +29,34 @@ export type HttpRequestHeaders = Partial<{
   "If-Unmodified-Since": string;
   "Max-Forwards": string;
   Origin: string;
-  Pragma: string;
   Range: string;
   Referer: string;
   TE: string;
   Trailer: string;
   "Transfer-Encoding": string;
   Upgrade: string;
+  "Upgrade-Insecure-Requests": string;
   "User-Agent": string;
   Via: string;
-  Warning: string;
 
-  // CORS / Security-related
+  // CORS and security-related headers
   "Access-Control-Request-Method": string;
   "Access-Control-Request-Headers": string;
-  DNT: string; // Do Not Track
   "Sec-Fetch-Dest": string;
   "Sec-Fetch-Mode": string;
   "Sec-Fetch-Site": string;
   "Sec-Fetch-User": string;
-  "Sec-CH-UA": string;
-  "Sec-CH-UA-Platform": string;
-  "Sec-CH-UA-Mobile": string;
+  "Sec-Purpose": string;
+
+  // Client hints
+  "Device-Memory": string;
+
+  // Others
+  Priority: string;
+  "Origin-Agent-Cluster": string;
+  "Service-Worker": string;
+  "Service-Worker-Allowed": string;
+  "Service-Worker-Navigation-Preload": string;
+  "Set-Login": string;
+  SourceMap: string;
 }>;
