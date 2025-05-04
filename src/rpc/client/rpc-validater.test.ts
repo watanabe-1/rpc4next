@@ -13,7 +13,7 @@ import { z } from "zod";
 import { routeHandlerFactory } from "../server";
 import { createRpcClient } from "./rpc-client";
 import { ClientOptions, Endpoint } from "./types";
-import { searchParamsToObject } from "../lib/searchParams";
+import { searchParamsToObject } from "../lib/search-params";
 import { zValidator } from "../server/validators/zod/zod-validator";
 
 const schema = z.object({

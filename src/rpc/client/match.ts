@@ -1,6 +1,6 @@
 import { isCatchAllOrOptional } from "./client-utils";
 import { replaceDynamicSegments } from "./url";
-import { searchParamsToObject } from "../lib/searchParams";
+import { searchParamsToObject } from "../lib/search-params";
 
 export const matchPath = (paths: string[], dynamicKeys: string[]) => {
   return (input: string) => {
