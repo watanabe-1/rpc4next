@@ -1,34 +1,43 @@
 import { isCatchAllOrOptional } from "./client-utils";
 import { replaceDynamicSegments } from "./url";
+import { searchParamsToObject } from "../lib/searchParams";
 
 export const matchPath = (paths: string[], dynamicKeys: string[]) => {
-  return (path: string) => {
-    const basePath = `/${paths.slice(1).join("/")}`;
+  return (input: string) => {
+    const url = new URL(input, "http://dummy");
+    const pathname = url.pathname;
 
+    const basePath = `/${paths.slice(1).join("/")}`;
     const regexPattern = replaceDynamicSegments(basePath, {
       optionalCatchAll: "(?:/(.*))?",
       catchAll: "/([^/]+(?:/[^/]+)*)",
       dynamic: "/([^/]+)",
     });
 
-    // Add optional trailing slash
-    const match = new RegExp(`^${regexPattern}/?$`).exec(path);
+    const match = new RegExp(`^${regexPattern}/?$`).exec(pathname);
     if (!match) return null;
 
-    return dynamicKeys.reduce<Record<string, string | string[] | undefined>>(
-      (acc, key, index) => {
-        const paramKey = key.replace(/^_+/, "");
-        const matchValue = match[index + 1];
+    const params = dynamicKeys.reduce<
+      Record<string, string | string[] | undefined>
+    >((acc, key, index) => {
+      const paramKey = key.replace(/^_+/, "");
+      const matchValue = match[index + 1];
 
-        const paramValue = isCatchAllOrOptional(key)
-          ? matchValue === undefined || matchValue === ""
-            ? undefined
-            : matchValue.split("/").filter(Boolean).map(decodeURIComponent)
-          : decodeURIComponent(matchValue);
+      const paramValue = isCatchAllOrOptional(key)
+        ? matchValue === undefined || matchValue === ""
+          ? undefined
+          : matchValue.split("/").filter(Boolean).map(decodeURIComponent)
+        : decodeURIComponent(matchValue);
 
-        return { ...acc, [paramKey]: paramValue };
-      },
-      {}
-    );
+      return { ...acc, [paramKey]: paramValue };
+    }, {});
+
+    const query = searchParamsToObject(url.searchParams);
+
+    return {
+      params,
+      query,
+      hash: url.hash ? decodeURIComponent(url.hash.slice(1)) : undefined,
+    };
   };
 };
