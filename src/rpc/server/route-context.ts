@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { searchParamsToObject } from "./server-utils";
 import { normalizeHeaders } from "../lib/headers";
+import { searchParamsToObject } from "../lib/searchParams";
 import type { ValidationSchema } from "./route-types";
 import type {
   RouteContext,

@@ -172,7 +172,13 @@ type InferTypedNextResponseType<T> = T extends (
   ? Awaited<ReturnType<T>>
   : TypedNextResponse<InferNextResponseType<T>, HttpStatusCode, ContentType>;
 
-type PathProxyAsProperty<T> = { $match: (path: string) => Params<T> | null };
+type PathProxyAsProperty<T> = {
+  $match: (path: string) =>
+    | ({
+        params: Params<T>;
+      } & Partial<UrlOptions<T, InferQuery<T>>>)
+    | null;
+};
 
 type InferQuery<T> = ValidationInputFor<
   "query",
