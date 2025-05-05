@@ -14,15 +14,15 @@ const baseOptions: BuildOptions = {
 
 const entriesForCli = await glob(["src/rpc/cli/index.ts"]);
 const externals = [
-  ...Object.keys(pkg.dependencies || {}),
-  ...Object.keys(pkg.peerDependencies || {}),
+  ...Object.keys(pkg.dependencies),
+  ...Object.keys(pkg.peerDependencies),
 ];
 await build({
   ...baseOptions,
   entryPoints: entriesForCli,
   platform: "node",
   bundle: true,
-  external: [...externals],
+  external: externals,
   banner: {
     js: "#!/usr/bin/env node",
   },
