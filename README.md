@@ -1,5 +1,7 @@
 # rpc4next
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/watanabe-1/rpc4next)
+
 Lightweight, type-safe RPC system for Next.js App Router projects.
 
 Inspired by Hono RPC and Pathpida, **rpc4next** automatically generates a type-safe client for your existing `route.ts` **and** `page.tsx` files, enabling seamless server-client communication with full type inference.
