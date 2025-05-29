@@ -77,9 +77,9 @@
     "commander": "^14.0.0"
   },
   "devDependencies": {
-    "@types/node": "^22.15.19",
+    "@types/node": "^22.15.21",
     "@vitest/coverage-v8": "^3.1.4",
-    "@vitest/eslint-plugin": "^1.2.0",
+    "@vitest/eslint-plugin": "^1.2.1",
     "@vitest/ui": "^3.1.4",
     "esbuild": "^0.25.4",
     "eslint": "^9.27.0",
@@ -93,7 +93,7 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.32.1",
     "vitest": "^3.1.4",
-    "zod": "^3.25.6"
+    "zod": "^3.25.28"
   },
   "peerDependencies": {
     "next": "^14.0.0 || ^15.0.0"
