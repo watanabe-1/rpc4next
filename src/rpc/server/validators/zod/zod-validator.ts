@@ -47,7 +47,7 @@ export const zValidator = <
     output: Record<TValidationTarget, TOutput>;
   },
   THookReturn extends TypedNextResponse | void = TypedNextResponse<
-    z.SafeParseError<TInput>,
+    z.ZodSafeParseError<TInput>,
     400,
     "application/json"
   > | void,
@@ -55,7 +55,7 @@ export const zValidator = <
   target: TValidationTarget,
   schema: TSchema,
   hook?: (
-    result: z.SafeParseReturnType<TInput, TOutput>,
+    result: z.ZodSafeParseResult<TOutput>,
     routeContext: RouteContext<TParams, TQuery, TValidationSchema>
   ) => THookReturn
 ) => {
