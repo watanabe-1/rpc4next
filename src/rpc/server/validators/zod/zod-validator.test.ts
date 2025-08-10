@@ -394,7 +394,7 @@ describe("zValidator type definitions", () => {
     });
 
     type ExpectedHookDefaultResponse = TypedNextResponse<
-      z.SafeParseError<{
+      z.ZodSafeParseError<{
         name: string;
         age: string;
       }>,
@@ -403,7 +403,7 @@ describe("zValidator type definitions", () => {
     >;
 
     type ExpectedHookResponse = TypedNextResponse<
-      z.SafeParseError<{
+      z.ZodSafeParseError<{
         name: string;
         hoge: string;
       }>,
@@ -445,7 +445,7 @@ describe("zValidator type definitions", () => {
     });
 
     type ExpectedHookDefaultResponse = TypedNextResponse<
-      z.SafeParseError<{
+      z.ZodSafeParseError<{
         name: string;
         age: string;
       }>,
@@ -506,7 +506,7 @@ describe("zValidator type definitions", () => {
     const _res = await post(req, { params: Promise.resolve({}) });
 
     type ExpectedHookDefaultResponse = TypedNextResponse<
-      z.SafeParseError<{
+      z.ZodSafeParseError<{
         "x-custom": string;
       }>,
       400,
@@ -568,7 +568,7 @@ describe("zValidator type definitions", () => {
     const _res = await post(req, { params: Promise.resolve({}) });
 
     type ExpectedHookDefaultResponse = TypedNextResponse<
-      z.SafeParseError<{
+      z.ZodSafeParseError<{
         session: string;
       }>,
       400,
