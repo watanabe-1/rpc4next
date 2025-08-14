@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
+      actions: read
       pull-requests: write
 
     steps:
@@ -19,6 +20,8 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ github.event.workflow_run.id }}
+          name: coverage
+          path: coverage
       - name: "Report Coverage"
         uses: davelosert/vitest-coverage-report-action@v2
         with:
