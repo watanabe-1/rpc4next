@@ -11,29 +11,22 @@ describe("httpMethod (integration test without excessive mocks)", () => {
   let originalFetch: typeof fetch;
 
   beforeEach(() => {
-    // Save the global fetch before test begins
     originalFetch = global.fetch;
   });
 
   afterEach(() => {
-    // Restore the global fetch after test ends
     global.fetch = originalFetch;
   });
 
-  it("should use $get method with url options (query and hash) and merge init correctly", async () => {
+  it("uses $get with url options (query/hash) and merges init correctly", async () => {
     const key = "$get";
     const paths = ["http://example.com", "api", "users"];
     const params = { id: "123" };
     const dynamicKeys: string[] = [];
 
-    // Variables to capture fetch arguments
     let calledUrl: RequestInfo | URL | null = null;
     let calledInit: CapturedInit | undefined = {};
-    const customFetch: typeof fetch = (
-      _input: RequestInfo | URL,
-      _init?: RequestInit
-    ) => {
-      // Assert init as CapturedInit type
+    const customFetch: typeof fetch = (_input, _init) => {
       calledUrl = _input;
       calledInit = _init as CapturedInit | undefined;
 
@@ -53,16 +46,13 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       defaultOptions
     );
 
-    // Specify query and hash as URL options
     const urlOptions = { query: { foo: "bar", baz: "qux" }, hash: "section1" };
-    // Specify additional init on client side (e.g., add Authorization header)
     const clientOptions = {
       init: { headers: { Authorization: "Bearer token" } },
     };
 
     await requestFn({ url: urlOptions }, clientOptions);
 
-    // Assume createUrl generates paths.join('/') + query + hash
     const expectedBase = paths.join("/");
     const searchParams = new URLSearchParams(urlOptions.query).toString();
     const expectedUrl =
@@ -71,16 +61,14 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       (urlOptions.hash ? "#" + urlOptions.hash : "");
     expect(calledUrl).toBe(expectedUrl);
 
-    // Verify method is uppercase and $ is removed
     expect(calledInit?.method).toBe("GET");
-    // Verify headers are merged between defaultOptions.init and clientOptions.init
     expect(calledInit?.headers).toEqual({
       "content-type": "application/json",
       authorization: "Bearer token",
     });
   });
 
-  it("should use $post method without url options and with only defaultOptions (global fetch override)", async () => {
+  it("uses $post with body.json and sets inferred content-type when none provided", async () => {
     const key = "$post";
     const paths = ["http://example.com", "api", "posts"];
     const params = { postId: "456" };
@@ -88,8 +76,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
 
     let calledUrl: RequestInfo | URL | null = null;
     let calledInit: CapturedInit | undefined = {};
-    // Override global.fetch for testing to capture arguments
-    global.fetch = ((_input: RequestInfo | URL, _init?: RequestInit) => {
+    global.fetch = ((_input, _init) => {
       calledUrl = _input;
       calledInit = _init as CapturedInit | undefined;
 
@@ -97,8 +84,8 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     }) as typeof fetch;
 
     const defaultOptions = {
-      // If defaultOptions.fetch is not set, global.fetch is used
-      init: { headers: { "Content-Type": "application/json" } },
+      // No default content-type here to test inference
+      init: {},
     };
 
     const requestFn = httpMethod(
@@ -117,18 +104,14 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     expect(calledInit?.body).toBe(JSON.stringify(params));
   });
 
-  it("should prefer options.fetch over defaultOptions.fetch and global fetch", async () => {
+  it("prefers options.fetch over defaultOptions.fetch and global fetch", async () => {
     const key = "$put";
     const paths = ["http://example.com", "api", "update"];
     const params = { item: "789" };
     const dynamicKeys: string[] = [];
 
-    // defaultOptions.fetch (should NOT be called)
     let defaultFetchCalled = false;
-    const defaultFetch: typeof fetch = (
-      _input: RequestInfo | URL,
-      _init?: RequestInit
-    ) => {
+    const defaultFetch: typeof fetch = (_input, _init) => {
       defaultFetchCalled = true;
 
       return Promise.resolve(new Response(null, { status: 200 }));
@@ -139,14 +122,10 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       init: { headers: { "Content-Type": "application/json" } },
     };
 
-    // Override options.fetch (this one should be used)
     let optionsFetchCalled = false;
     let calledUrl: RequestInfo | URL | null = null;
     let calledInit: CapturedInit | undefined = {};
-    const optionsFetch: typeof fetch = (
-      _input: RequestInfo | URL,
-      _init?: RequestInit
-    ) => {
+    const optionsFetch: typeof fetch = (_input, _init) => {
       optionsFetchCalled = true;
       calledUrl = _input;
       calledInit = _init as CapturedInit | undefined;
@@ -181,7 +160,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     expect(calledInit?.body).toBe(JSON.stringify(params));
   });
 
-  it("should allow empty clientOptions and URL options, using defaults", async () => {
+  it("allows empty clientOptions and URL options, using defaults", async () => {
     const key = "$delete";
     const paths = ["http://example.com", "api", "delete"];
     const params = {};
@@ -189,7 +168,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
 
     let calledUrl: RequestInfo | URL | null = null;
     let calledInit: CapturedInit | undefined = {};
-    global.fetch = ((_input: RequestInfo | URL, _init?: RequestInit) => {
+    global.fetch = ((_input, _init) => {
       calledUrl = _input;
       calledInit = _init as CapturedInit | undefined;
 
@@ -207,7 +186,6 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       dynamicKeys,
       defaultOptions
     );
-    // Omit URL options and clientOptions
     await requestFn({ body: { json: params } });
 
     const expectedUrl = paths.join("/");
@@ -220,7 +198,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     expect(calledInit?.body).toBe(JSON.stringify(params));
   });
 
-  it("should correctly replace dynamic keys in URL", async () => {
+  it("replaces dynamic keys in URL", async () => {
     const key = "$get";
     const paths = ["http://example.com", "api", "users", "_id"];
     const params = { _id: "123" };
@@ -228,7 +206,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
 
     let calledUrl: RequestInfo | URL | null = null;
     let calledInit: CapturedInit | undefined = {};
-    global.fetch = ((_input: RequestInfo | URL, _init?: RequestInit) => {
+    global.fetch = ((_input, _init) => {
       calledUrl = _input;
       calledInit = _init as CapturedInit | undefined;
 
@@ -253,7 +231,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     expect(calledInit?.method).toBe("GET");
   });
 
-  it("should work with method key without $ prefix", async () => {
+  it("works with method key without $ prefix", async () => {
     const key = "patch";
     const paths = ["http://example.com", "api", "patchTest"];
     const params = {};
@@ -261,16 +239,14 @@ describe("httpMethod (integration test without excessive mocks)", () => {
 
     let calledUrl: RequestInfo | URL | null = null;
     let calledInit: CapturedInit | undefined = {};
-    global.fetch = ((_input: RequestInfo | URL, _init?: RequestInit) => {
+    global.fetch = ((_input, _init) => {
       calledUrl = _input;
       calledInit = _init as CapturedInit | undefined;
 
       return Promise.resolve(new Response(null, { status: 200 }));
     }) as typeof fetch;
 
-    const defaultOptions = {
-      init: { headers: {} },
-    };
+    const defaultOptions = { init: { headers: {} } };
     const requestFn = httpMethod(
       key,
       paths,
@@ -286,14 +262,14 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     expect(calledInit?.body).toBe(JSON.stringify(params));
   });
 
-  it("should propagate errors from fetch", async () => {
+  it("propagates errors from fetch (with helpful message)", async () => {
     const key = "$get";
     const paths = ["http://example.com", "api", "error"];
     const params = {};
     const dynamicKeys: string[] = [];
     const errorMessage = "Fetch failed";
 
-    global.fetch = ((_input: RequestInfo | URL, _init?: RequestInit) => {
+    global.fetch = ((_input, _init) => {
       return Promise.reject(new Error(errorMessage));
     }) as typeof fetch;
 
@@ -309,14 +285,14 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     await expect(requestFn()).rejects.toThrow(errorMessage);
   });
 
-  it("should correctly merge default Headers instance with client headers object", async () => {
+  it("merges default Headers instance with client headers object", async () => {
     const key = "$get";
     const paths = ["http://example.com", "api", "headersTest"];
     const params = {};
     const dynamicKeys: string[] = [];
 
     let calledInit: CapturedInit | undefined = {};
-    global.fetch = ((_input: RequestInfo | URL, _init?: RequestInit) => {
+    global.fetch = ((_input, _init) => {
       calledInit = _init as CapturedInit | undefined;
 
       return Promise.resolve(new Response(null, { status: 200 }));
@@ -326,10 +302,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     defaultHeaders.append("X-Default", "defaultValue");
     const clientHeaders = { "x-custom": "customValue" };
 
-    const defaultOptions = {
-      init: { headersInit: defaultHeaders },
-    };
-
+    const defaultOptions = { init: { headersInit: defaultHeaders } };
     const requestFn = httpMethod(
       key,
       paths,
@@ -338,10 +311,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       defaultOptions
     );
 
-    const clientOptions = {
-      init: { headers: clientHeaders },
-    };
-
+    const clientOptions = { init: { headers: clientHeaders } };
     await requestFn(undefined, clientOptions);
 
     expect(calledInit?.headers).toEqual({
@@ -350,14 +320,14 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     });
   });
 
-  it("should correctly merge default headers object with client Headers instance", async () => {
+  it("merges default headers object with client Headers instance", async () => {
     const key = "$get";
     const paths = ["http://example.com", "api", "headersTest"];
     const params = {};
     const dynamicKeys: string[] = [];
 
     let calledInit: CapturedInit | undefined = {};
-    global.fetch = ((_input: RequestInfo | URL, _init?: RequestInit) => {
+    global.fetch = ((_input, _init) => {
       calledInit = _init as CapturedInit | undefined;
 
       return Promise.resolve(new Response(null, { status: 200 }));
@@ -367,10 +337,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     clientHeaders.append("X-Default", "defaultValue");
     const defaultHeaders = { "x-custom": "customValue" };
 
-    const defaultOptions = {
-      init: { headersInit: clientHeaders },
-    };
-
+    const defaultOptions = { init: { headersInit: clientHeaders } };
     const requestFn = httpMethod(
       key,
       paths,
@@ -379,10 +346,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       defaultOptions
     );
 
-    const clientOptions = {
-      init: { headers: defaultHeaders },
-    };
-
+    const clientOptions = { init: { headers: defaultHeaders } };
     await requestFn(undefined, clientOptions);
 
     expect(calledInit?.headers).toEqual({
@@ -391,29 +355,24 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     });
   });
 
-  it("should correctly merge Headers passed as a Headers instance and an array", async () => {
+  it("merges Headers passed as a Headers instance and an array", async () => {
     const key = "$get";
     const paths = ["http://example.com", "api", "headersTest"];
     const params = {};
     const dynamicKeys: string[] = [];
 
     let calledInit: CapturedInit | undefined = {};
-    global.fetch = ((_input: RequestInfo | URL, _init?: RequestInit) => {
+    global.fetch = ((_input, _init) => {
       calledInit = _init as CapturedInit | undefined;
 
       return Promise.resolve(new Response(null, { status: 200 }));
     }) as typeof fetch;
 
-    // defaultOptions.headers: Headers instance
     const defaultHeaders = new Headers();
     defaultHeaders.append("X-Default", "defaultValue");
-    // clientOptions.headers: array of [string, string]
     const clientHeaders: [string, string][] = [["X-Custom", "customValue"]];
 
-    const defaultOptions = {
-      init: { headersInit: defaultHeaders },
-    };
-
+    const defaultOptions = { init: { headersInit: defaultHeaders } };
     const requestFn = httpMethod(
       key,
       paths,
@@ -422,10 +381,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       defaultOptions
     );
 
-    const clientOptions = {
-      init: { headersInit: clientHeaders },
-    };
-
+    const clientOptions = { init: { headersInit: clientHeaders } };
     await requestFn(undefined, clientOptions);
 
     expect(calledInit?.headers).toEqual({
@@ -434,29 +390,24 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     });
   });
 
-  it("should override default headers with client headers when keys overlap using different HeadersInit forms", async () => {
+  it("overrides default headers with client headers when keys overlap using different HeadersInit forms", async () => {
     const key = "$get";
     const paths = ["http://example.com", "api", "headersOverride"];
     const params = {};
     const dynamicKeys: string[] = [];
 
     let calledInit: CapturedInit | undefined = {};
-    global.fetch = ((_input: RequestInfo | URL, _init?: RequestInit) => {
+    global.fetch = ((_input, _init) => {
       calledInit = _init as CapturedInit | undefined;
 
       return Promise.resolve(new Response(null, { status: 200 }));
     }) as typeof fetch;
 
-    // defaultOptions.headers: array form
     const defaultHeaders: [string, string][] = [["X-Test", "default"]];
-    // clientOptions.headers: Headers instance overriding the same key
     const clientHeaders = new Headers();
     clientHeaders.append("X-Test", "client");
 
-    const defaultOptions = {
-      init: { headersInit: defaultHeaders },
-    };
-
+    const defaultOptions = { init: { headersInit: defaultHeaders } };
     const requestFn = httpMethod(
       key,
       paths,
@@ -465,23 +416,20 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       defaultOptions
     );
 
-    const clientOptions = {
-      init: { headersInit: clientHeaders },
-    };
-
+    const clientOptions = { init: { headersInit: clientHeaders } };
     await requestFn(undefined, clientOptions);
 
     expect(calledInit?.headers).toEqual({ "x-test": "client" });
   });
 
-  it("should prioritize body.json over clientOptions and defaultOptions body", async () => {
+  it("does NOT override user-provided content-type even when body.json is present (defaultOptions provided)", async () => {
     const key = "$post";
     const paths = ["http://example.com", "api", "priority"];
     const params = {};
     const dynamicKeys: string[] = [];
 
     let calledInit: CapturedInit | undefined = {};
-    global.fetch = ((_input: RequestInfo | URL, _init?: RequestInit) => {
+    global.fetch = ((_input, _init) => {
       calledInit = _init as CapturedInit | undefined;
 
       return Promise.resolve(new Response(null, { status: 200 }));
@@ -489,7 +437,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
 
     const defaultOptions = {
       init: {
-        headers: { "Content-Type": "default-type" },
+        headers: { "Content-Type": "custom/type" },
         body: "default-body",
       },
     };
@@ -510,31 +458,78 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       dynamicKeys,
       defaultOptions
     );
-
     await requestFn({ body: { json: jsonBody } }, clientOptions);
 
+    // Body should use JSON string
     expect(calledInit?.body).toBe(JSON.stringify(jsonBody));
-
+    // content-type should remain user-provided ("custom/type"), not forced to application/json
     expect(calledInit?.headers).toEqual({
-      "content-type": "application/json",
+      "content-type": "custom/type",
       authorization: "Bearer xyz",
     });
   });
-  it("should prioritize methodParam.requestHeaders.headers over options.init.headers", async () => {
-    const key = "$get";
-    const paths = ["http://example.com", "api", "priorityHeaders"];
+
+  it("sets inferred content-type when body.json is present and user has NOT provided content-type", async () => {
+    const key = "$post";
+    const paths = ["http://example.com", "api", "priority"];
     const params = {};
     const dynamicKeys: string[] = [];
 
     let calledInit: CapturedInit | undefined = {};
-    global.fetch = ((_input: RequestInfo | URL, _init?: RequestInit) => {
+    global.fetch = ((_input, _init) => {
       calledInit = _init as CapturedInit | undefined;
 
       return Promise.resolve(new Response(null, { status: 200 }));
     }) as typeof fetch;
 
     const defaultOptions = {
-      init: { headers: { "X-Default": "default" } },
+      init: {
+        // No content-type here
+        headers: { Accept: "application/json" },
+      },
+    };
+
+    const clientOptions = {
+      init: {
+        // Still no content-type
+        headers: { Authorization: "Bearer xyz" },
+      },
+    };
+
+    const jsonBody = { hello: "world" };
+
+    const requestFn = httpMethod(
+      key,
+      paths,
+      params,
+      dynamicKeys,
+      defaultOptions
+    );
+    await requestFn({ body: { json: jsonBody } }, clientOptions);
+
+    expect(calledInit?.body).toBe(JSON.stringify(jsonBody));
+    expect(calledInit?.headers).toEqual({
+      accept: "application/json",
+      authorization: "Bearer xyz",
+      "content-type": "application/json",
+    });
+  });
+
+  it("merges existing Cookie header with requestHeaders.cookies", async () => {
+    const key = "$get";
+    const paths = ["http://example.com", "api", "withCookies"];
+    const params = {};
+    const dynamicKeys: string[] = [];
+
+    let calledInit: CapturedInit | undefined = {};
+    global.fetch = ((_input, _init) => {
+      calledInit = _init as CapturedInit | undefined;
+
+      return Promise.resolve(new Response(null, { status: 200 }));
+    }) as typeof fetch;
+
+    const defaultOptions = {
+      init: { headers: { Cookie: "a=1" } },
     };
 
     const requestFn = httpMethod(
@@ -547,39 +542,94 @@ describe("httpMethod (integration test without excessive mocks)", () => {
 
     const methodParam = {
       requestHeaders: {
-        headers: { "X-Default": "overridden", "X-New": "new" },
-        cookies: undefined,
+        cookies: { b: "2" },
+        headers: undefined,
       },
-    };
+    } as const;
 
-    const clientOptions = {
-      init: { headers: { "X-Default": "client" } },
-    };
-
-    await requestFn(methodParam, clientOptions);
+    await requestFn(methodParam);
 
     expect(calledInit?.headers).toEqual({
-      "x-default": "overridden",
-      "x-new": "new",
+      cookie: "a=1; b=2",
     });
   });
-  it("should include cookies from requestHeaders.cookies into the Cookie header", async () => {
+
+  it("does not attach body for GET/HEAD even if body.json is provided", async () => {
+    const key = "$get";
+    const paths = ["http://example.com", "api", "nobody"];
+    const params = {};
+    const dynamicKeys: string[] = [];
+
+    let calledInit: CapturedInit | undefined = {};
+    global.fetch = ((_input, _init) => {
+      calledInit = _init as CapturedInit | undefined;
+
+      return Promise.resolve(new Response(null, { status: 200 }));
+    }) as typeof fetch;
+
+    const defaultOptions = { init: {} };
+    const requestFn = httpMethod(
+      key,
+      paths,
+      params,
+      dynamicKeys,
+      defaultOptions
+    );
+
+    await requestFn({ body: { json: { should: "be-ignored" } } });
+
+    expect(calledInit?.method).toBe("GET");
+    expect(calledInit?.body).toBeUndefined();
+  });
+
+  it("does not set content-type for FormData (let the browser set multipart boundary)", async () => {
+    const key = "$post";
+    const paths = ["http://example.com", "api", "upload"];
+    const params = {};
+    const dynamicKeys: string[] = [];
+
+    let calledInit: CapturedInit | undefined = {};
+    global.fetch = ((_input, _init) => {
+      calledInit = _init as CapturedInit | undefined;
+
+      return Promise.resolve(new Response(null, { status: 200 }));
+    }) as typeof fetch;
+
+    const fd = new FormData();
+    fd.append("file", new Blob(["abc"]), "a.txt");
+
+    const defaultOptions = { init: {} };
+    const requestFn = httpMethod(
+      key,
+      paths,
+      params,
+      dynamicKeys,
+      defaultOptions
+    );
+
+    await requestFn({ body: { formData: fd, json: undefined } });
+
+    expect(calledInit?.method).toBe("POST");
+    // No explicit content-type here
+    expect(calledInit?.headers).toEqual(undefined);
+    // Body is the FormData object (opaque to equality, but presence is enough)
+    expect(calledInit?.body).toBeDefined();
+  });
+
+  it("includes cookies from requestHeaders.cookies into the Cookie header", async () => {
     const key = "$get";
     const paths = ["http://example.com", "api", "withCookies"];
     const params = {};
     const dynamicKeys: string[] = [];
 
     let calledInit: CapturedInit | undefined = {};
-    global.fetch = ((_input: RequestInfo | URL, _init?: RequestInit) => {
+    global.fetch = ((_input, _init) => {
       calledInit = _init as CapturedInit | undefined;
 
       return Promise.resolve(new Response(null, { status: 200 }));
     }) as typeof fetch;
 
-    const defaultOptions = {
-      init: {},
-    };
-
+    const defaultOptions = { init: {} };
     const requestFn = httpMethod(
       key,
       paths,
@@ -603,5 +653,155 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     expect(calledInit?.headers).toEqual({
       cookie: "sessionId=abc123; theme=dark",
     });
+  });
+
+  it("sets inferred content-type for text body when user has NOT provided one", async () => {
+    const key = "$post";
+    const paths = ["http://example.com", "api", "textBody"];
+    const params = {};
+    const dynamicKeys: string[] = [];
+
+    let calledInit: CapturedInit | undefined = {};
+    global.fetch = ((_input, _init) => {
+      calledInit = _init as CapturedInit | undefined;
+
+      return Promise.resolve(new Response(null, { status: 200 }));
+    }) as typeof fetch;
+
+    const defaultOptions = { init: {} };
+    const requestFn = httpMethod(
+      key,
+      paths,
+      params,
+      dynamicKeys,
+      defaultOptions
+    );
+
+    await requestFn({ body: { text: "hello", json: undefined } });
+
+    expect(calledInit?.method).toBe("POST");
+    expect(calledInit?.body).toBe("hello");
+    expect(calledInit?.headers).toEqual({
+      "content-type": "text/plain; charset=utf-8",
+    });
+  });
+
+  it("sets inferred content-type for URLSearchParams body", async () => {
+    const key = "$post";
+    const paths = ["http://example.com", "api", "urlencoded"];
+    const params = {};
+    const dynamicKeys: string[] = [];
+
+    let calledInit: CapturedInit | undefined = {};
+    global.fetch = ((_input, _init) => {
+      calledInit = _init as CapturedInit | undefined;
+
+      return Promise.resolve(new Response(null, { status: 200 }));
+    }) as typeof fetch;
+
+    const usp = new URLSearchParams();
+    usp.set("a", "1");
+    usp.set("b", "2");
+
+    const defaultOptions = { init: {} };
+    const requestFn = httpMethod(
+      key,
+      paths,
+      params,
+      dynamicKeys,
+      defaultOptions
+    );
+
+    await requestFn({ body: { urlencoded: usp, json: undefined } });
+
+    expect(calledInit?.method).toBe("POST");
+    // Body instance identity is kept
+    expect(calledInit?.body).toBe(usp);
+    expect(calledInit?.headers).toEqual({
+      "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+    });
+  });
+
+  it("does not set content-type for raw body", async () => {
+    const key = "$put";
+    const paths = ["http://example.com", "api", "raw"];
+    const params = {};
+    const dynamicKeys: string[] = [];
+
+    let calledInit: CapturedInit | undefined = {};
+    global.fetch = ((_input, _init) => {
+      calledInit = _init as CapturedInit | undefined;
+
+      return Promise.resolve(new Response(null, { status: 204 }));
+    }) as typeof fetch;
+
+    const payload = new Uint8Array([1, 2, 3]).buffer;
+
+    const defaultOptions = { init: {} };
+    const requestFn = httpMethod(
+      key,
+      paths,
+      params,
+      dynamicKeys,
+      defaultOptions
+    );
+
+    await requestFn({ body: { raw: payload, json: undefined } });
+
+    expect(calledInit?.method).toBe("PUT");
+    expect(calledInit?.body).toBe(payload);
+    expect(calledInit?.headers ?? {}).not.toHaveProperty("content-type");
+  });
+
+  it("does not attach body for HEAD even if body is provided", async () => {
+    const key = "$head";
+    const paths = ["http://example.com", "api", "head"];
+    const params = {};
+    const dynamicKeys: string[] = [];
+
+    let calledInit: CapturedInit | undefined = {};
+    global.fetch = ((_input, _init) => {
+      calledInit = _init as CapturedInit | undefined;
+
+      return Promise.resolve(new Response(null, { status: 200 }));
+    }) as typeof fetch;
+
+    const defaultOptions = { init: {} };
+    const requestFn = httpMethod(
+      key,
+      paths,
+      params,
+      dynamicKeys,
+      defaultOptions
+    );
+
+    await requestFn({ body: { json: { will: "be-ignored" } } });
+
+    expect(calledInit?.method).toBe("HEAD");
+    expect(calledInit?.body).toBeUndefined();
+  });
+
+  it("wraps non-Error rejections with helpful message", async () => {
+    const key = "$get";
+    const paths = ["http://example.com", "api", "boom"];
+    const params = {};
+    const dynamicKeys: string[] = [];
+
+    global.fetch = ((_input, _init) => {
+      return Promise.reject("string-failure"); // not an Error
+    }) as typeof fetch;
+
+    const defaultOptions = { init: {} };
+    const requestFn = httpMethod(
+      key,
+      paths,
+      params,
+      dynamicKeys,
+      defaultOptions
+    );
+
+    await expect(requestFn()).rejects.toThrow(
+      "[httpMethod] GET http://example.com/api/boom failed: string-failure"
+    );
   });
 });
