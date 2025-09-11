@@ -440,6 +440,52 @@ describe("createRpcClient", () => {
     });
   });
 
+  describe("proxy traps / edge cases", () => {
+    it("is not thenable and ignores symbols; chaining still works", async () => {
+      const client = createRpcClient<PathStructure>("http://localhost:3000");
+
+      // Triggers key === "then"
+      expect(Reflect.get(client as object, "then")).toBeUndefined();
+
+      // Triggers typeof key === "symbol"
+      const tag = Reflect.get(client as object, Symbol.toStringTag);
+      expect(tag).toBeUndefined();
+
+      // Another symbol access, still safe
+      void Reflect.get(client as object, Symbol.iterator);
+
+      // Chaining remains functional after symbol accesses
+      const res = await client.api.hoge.$post();
+      expect(res.status).toBe(200);
+
+      // Awaiting the proxy should not treat it as a Promise
+      const awaited: unknown = await (client as unknown);
+      expect(awaited).toBe(client);
+    });
+
+    it("keeps dynamic placeholders in pathname after applying values", () => {
+      const client = createRpcClient<PathStructure>("http://localhost:3000");
+      const url = client.api.hoge._foo("A")._bar("B").$url();
+      expect(url.pathname).toBe("/api/hoge/[foo]/[bar]");
+      expect(url.params).toEqual({ foo: "A", bar: "B" });
+    });
+
+    it('throws when calling the root proxy as a function ("/" is not dynamic)', () => {
+      const client = createRpcClient<PathStructure>("/");
+      expect(() => (client as unknown as (v: string) => void)("x")).toThrow(
+        'Cannot apply a value: "/" is not a dynamic segment.'
+      );
+    });
+
+    it("throws when a dynamic parameter is called without an argument", () => {
+      type FailurePath = Endpoint & { _fuga: Endpoint };
+      const client = createRpcClient<FailurePath>("");
+      expect(() => (client._fuga as unknown as (v?: string) => void)()).toThrow(
+        "Missing value for dynamic parameter: _fuga"
+      );
+    });
+  });
+
   type FalierPathStructure = Endpoint & {
     _fuga: Endpoint;
     hoge: Endpoint;
@@ -456,7 +502,9 @@ describe("createRpcClient", () => {
 
       // calling static path segment as a function
       const hoge = client.hoge as unknown as (value: string) => "";
-      expect(() => hoge("")).toThrow("hoge is not dynamic");
+      expect(() => hoge("")).toThrow(
+        'Cannot apply a value: "hoge" is not a dynamic segment.'
+      );
     });
   });
 
