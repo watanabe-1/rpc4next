@@ -14,48 +14,73 @@ const createProxy = <T>(
   params: FuncParams,
   dynamicKeys: string[]
 ): T => {
-  return new Proxy(
-    (value?: string | number) => {
-      const lastPath = paths.at(-1)!;
-      const lastKey = dynamicKeys.at(-1)!;
+  // We keep a callable target but route all calls through the `apply` trap.
+  /* c8 ignore next */ // never executed (apply trap intercepts calls)
+  const target = function noop() {}; // required to make the proxy callable
+
+  const proxy = new Proxy(target, {
+    // Calling the proxy supplies a value for the most recent dynamic segment.
+    apply(_t, _thisArg, argArray: unknown[]) {
+      const value = argArray[0] as string | number | undefined;
+      const lastPath = paths[paths.length - 1];
+      const lastKey = dynamicKeys[dynamicKeys.length - 1];
+
+      if (!lastPath || !isDynamic(lastPath)) {
+        // Guard: someone called the proxy when the tail isn't dynamic.
+        throw new Error(
+          `Cannot apply a value: "${lastPath ?? ""}" is not a dynamic segment.`
+        );
+      }
       if (value === undefined) {
-        throw new Error(`Missing value for dynamic parameter: ${lastKey}`);
-      }
-      if (lastPath && lastKey && isDynamic(lastPath)) {
-        return createProxy(
-          handler,
-          options,
-          [...paths],
-          { ...params, [lastKey]: value },
-          dynamicKeys
+        const label = lastKey ?? lastPath;
+        throw new Error(
+          `Missing value for dynamic parameter: ${String(label)}`
         );
       }
-      throw new Error(`${lastPath} is not dynamic`);
+
+      // Note: we keep the dynamic placeholder in `paths`.
+      // The `handler` should substitute using `params`.
+      return createProxy(
+        handler,
+        options,
+        paths,
+        { ...params, [lastKey]: value },
+        dynamicKeys
+      );
     },
-    {
-      get(_, key: string) {
-        const handled = handler(key, { paths, params, dynamicKeys, options });
-        if (handled !== undefined) {
-          return handled;
-        }
 
-        if (isDynamic(key)) {
-          return createProxy(handler, options, [...paths, key], params, [
-            ...dynamicKeys,
-            key,
-          ]);
-        }
+    // Property access either:
+    // 1) lets `handler` short-circuit and return something, or
+    // 2) appends a dynamic or static path segment and returns another proxy.
+    get(_t, key: string | symbol) {
+      // Avoid Promise-thenable pitfalls and handle symbols gracefully.
+      if (key === "then" || typeof key === "symbol") {
+        // Returning undefined prevents accidental thenable behavior and
+        // satisfies introspection (e.g., util.inspect).
+        return undefined as unknown as T;
+      }
 
-        return createProxy(
-          handler,
-          options,
-          [...paths, key],
-          params,
-          dynamicKeys
-        );
-      },
-    }
-  ) as T;
+      const k = String(key);
+
+      // Give the handler a chance to produce a terminal value or a method.
+      const handled = handler(k, { paths, params, dynamicKeys, options });
+      if (handled !== undefined) {
+        return handled as T;
+      }
+
+      // Extend the chain with either a dynamic or static segment.
+      if (isDynamic(k)) {
+        return createProxy(handler, options, [...paths, k], params, [
+          ...dynamicKeys,
+          k,
+        ]);
+      }
+
+      return createProxy(handler, options, [...paths, k], params, dynamicKeys);
+    },
+  });
+
+  return proxy as unknown as T;
 };
 
 export const makeCreateRpc =
