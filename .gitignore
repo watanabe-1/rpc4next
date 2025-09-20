@@ -56,7 +56,6 @@ next-env.d.ts
 
 # git
 generated-prompt.txt
-generatePromptFromGitDiff.mjs
 
 # rpc4next
 /dist
