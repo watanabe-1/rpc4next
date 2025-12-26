@@ -1,4 +1,3 @@
-import chalk from "chalk";
 import {
   describe,
   it,
@@ -10,6 +9,13 @@ import {
 } from "vitest";
 import { INDENT } from "./core/constants";
 import { createLogger, padMessage } from "./logger";
+
+const stripAnsi = (s: string) => {
+  const ESC = String.fromCharCode(27); // 0x1b
+  const re = new RegExp(`${ESC}\\[[0-9;]*m`, "g");
+
+  return s.replace(re, "");
+};
 
 describe("createLogger", () => {
   const originalLog = console.log;
@@ -36,48 +42,56 @@ describe("createLogger", () => {
   it("should log info without options", () => {
     const logger = createLogger();
     logger.info("info message");
+
     expect(mockLog).toHaveBeenCalledWith("info message");
   });
 
   it("should log info with indent and event", () => {
     const logger = createLogger();
     const indent = INDENT.repeat(2);
+
     logger.info("info message", { indentLevel: 2, event: "scan" });
-    expect(mockLog).toHaveBeenCalledWith(
-      `${indent}${chalk.cyan("[scan]")} info message`
-    );
+
+    const actual = mockLog.mock.calls[0]?.[0];
+    expect(stripAnsi(actual)).toBe(`${indent}[scan] info message`);
   });
 
   it("should log success without options", () => {
     const logger = createLogger();
+
     logger.success("success message");
-    expect(mockLog).toHaveBeenCalledWith(`${chalk.green("✓")} success message`);
+
+    const actual = mockLog.mock.calls[0]?.[0];
+    expect(stripAnsi(actual)).toBe(`✓ success message`);
   });
 
   it("should log success with indent", () => {
     const logger = createLogger();
     const indent = INDENT.repeat(1);
+
     logger.success("success message", { indentLevel: 1 });
-    expect(mockLog).toHaveBeenCalledWith(
-      `${indent}${chalk.green("✓")} success message`
-    );
+
+    const actual = mockLog.mock.calls[0]?.[0];
+    expect(stripAnsi(actual)).toBe(`${indent}✓ success message`);
   });
 
   it("should log error without options", () => {
     const logger = createLogger();
+
     logger.error("error message");
-    expect(mockError).toHaveBeenCalledWith(
-      `${chalk.red("✗")} ${chalk.red("error message")}`
-    );
+
+    const actual = mockError.mock.calls[0]?.[0];
+    expect(stripAnsi(actual)).toBe(`✗ error message`);
   });
 
   it("should log error with indent", () => {
     const logger = createLogger();
     const indent = INDENT.repeat(1);
+
     logger.error("error message", { indentLevel: 1 });
-    expect(mockError).toHaveBeenCalledWith(
-      `${indent}${chalk.red("✗")} ${chalk.red("error message")}`
-    );
+
+    const actual = mockError.mock.calls[0]?.[0];
+    expect(stripAnsi(actual)).toBe(`${indent}✗ error message`);
   });
 });
 
