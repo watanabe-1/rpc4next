@@ -73,7 +73,6 @@
     "diff2prompt": "diff2prompt --exclude=bun.lock --excludeFile=.gitignore"
   },
   "dependencies": {
-    "chalk": "^5.6.2",
     "chokidar": "^4.0.3",
     "commander": "^14.0.1"
   },
