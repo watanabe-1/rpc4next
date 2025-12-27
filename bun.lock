@@ -28,6 +28,9 @@
     "packages/rpc4next": {
       "name": "rpc4next",
       "version": "0.4.0",
+      "dependencies": {
+        "rpc4next-shared": "workspace:*",
+      },
       "peerDependencies": {
         "next": "^14.0.0 || ^15.0.0",
       },
@@ -42,7 +45,12 @@
         "chokidar": "^4.0.3",
         "commander": "^14.0.1",
         "rpc4next": "workspace:*",
+        "rpc4next-shared": "workspace:*",
       },
+    },
+    "packages/rpc4next-shared": {
+      "name": "rpc4next-shared",
+      "version": "0.4.0",
     },
   },
   "packages": {
@@ -799,6 +807,8 @@
     "rpc4next": ["rpc4next@workspace:packages/rpc4next"],
 
     "rpc4next-cli": ["rpc4next-cli@workspace:packages/rpc4next-cli"],
+
+    "rpc4next-shared": ["rpc4next-shared@workspace:packages/rpc4next-shared"],
 
     "run-parallel": ["run-parallel@1.2.0", "", { "dependencies": { "queue-microtask": "^1.2.2" } }, "sha512-5l4VyZR86LZ/lDxZTR6jqL8AFE2S0IFLMP26AbjsLVADxHdhB/c0GUsH+y39UfCi3dzz8OlQuPmnaJOMoDHQBA=="],
 

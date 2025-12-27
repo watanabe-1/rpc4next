@@ -6,11 +6,11 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "bun run --cwd packages/rpc4next build && bun run --cwd packages/rpc4next-cli build",
-    "clean": "bun run --cwd packages/rpc4next clean && bun run --cwd packages/rpc4next-cli clean",
-    "typecheck": "bun run --cwd packages/rpc4next typecheck && bun run --cwd packages/rpc4next-cli typecheck",
-    "lint": "bun run --cwd packages/rpc4next lint && bun run --cwd packages/rpc4next-cli lint",
-    "lint:fix": "bun run --cwd packages/rpc4next lint:fix && bun run --cwd packages/rpc4next-cli lint:fix",
+    "build": "bun run --cwd packages/rpc4next-shared build && bun run --cwd packages/rpc4next build && bun run --cwd packages/rpc4next-cli build",
+    "clean": "bun run --cwd packages/rpc4next-shared clean && bun run --cwd packages/rpc4next clean && bun run --cwd packages/rpc4next-cli clean",
+    "typecheck": "bun run --cwd packages/rpc4next-shared typecheck && bun run --cwd packages/rpc4next typecheck && bun run --cwd packages/rpc4next-cli typecheck",
+    "lint": "bun run --cwd packages/rpc4next-shared lint && bun run --cwd packages/rpc4next lint && bun run --cwd packages/rpc4next-cli lint",
+    "lint:fix": "bun run --cwd packages/rpc4next-shared lint:fix && bun run --cwd packages/rpc4next lint:fix && bun run --cwd packages/rpc4next-cli lint:fix",
     "test": "bun run --cwd packages/rpc4next test && bun run --cwd packages/rpc4next-cli test",
     "test:coverage": "bun run --cwd packages/rpc4next test:coverage && bun run --cwd packages/rpc4next-cli test:coverage",
     "test:ui": "bun run --cwd packages/rpc4next test:ui && bun run --cwd packages/rpc4next-cli test:ui",

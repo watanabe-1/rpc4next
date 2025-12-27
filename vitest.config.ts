@@ -17,6 +17,14 @@ export default defineConfig({
         find: /^rpc4next$/,
         replacement: path.resolve(workspaceRoot, "packages/rpc4next/src/index.ts"),
       },
+      {
+        find: /^rpc4next-shared\/(.*)$/,
+        replacement: path.resolve(workspaceRoot, "packages/rpc4next-shared/src/$1"),
+      },
+      {
+        find: /^rpc4next-shared$/,
+        replacement: path.resolve(workspaceRoot, "packages/rpc4next-shared/src/index.ts"),
+      },
     ],
   },
   test: {

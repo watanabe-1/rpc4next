@@ -87,7 +87,7 @@
   },
   "scripts": {
     "build": "bun run clean && bun build.ts && bun run build:types",
-    "build:types": "tsc -p tsconfig.build-types.json",
+    "build:types": "tsc -b tsconfig.build-types.json",
     "clean": "bun -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage.enabled true",
@@ -96,6 +96,9 @@
     "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "rpc4next-shared": "workspace:*"
   },
   "peerDependencies": {
     "next": "^14.0.0 || ^15.0.0"

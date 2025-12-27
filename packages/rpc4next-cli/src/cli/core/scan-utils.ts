@@ -1,5 +1,5 @@
 import fs from "fs";
-import { HttpMethod } from "rpc4next/lib/types";
+import { HttpMethod } from "rpc4next-shared/types";
 import { createImportAlias } from "./alias";
 import { QUERY_TYPES, TYPE_KEY_QUERY } from "./constants";
 import { createRelativeImportPath } from "./path-utils";

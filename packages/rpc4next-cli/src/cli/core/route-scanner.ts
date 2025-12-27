@@ -11,8 +11,8 @@ import {
   CATCH_ALL_PREFIX,
   DYNAMIC_PREFIX,
   HTTP_METHODS_EXCLUDE_OPTIONS,
-} from "rpc4next/lib/constants";
-import type { HttpMethod } from "rpc4next/lib/types";
+} from "rpc4next-shared/constants";
+import type { HttpMethod } from "rpc4next-shared/types";
 import { scanAppDirCache, visitedDirsCache } from "./cache";
 import { INDENT, TYPE_END_POINT, TYPE_KEY_PARAMS, NEWLINE } from "./constants";
 import { scanQuery, scanRoute } from "./scan-utils";

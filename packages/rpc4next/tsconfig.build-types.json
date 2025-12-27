@@ -1,6 +1,10 @@
 {
   "extends": "./tsconfig.build.json",
   "compilerOptions": {
-    "emitDeclarationOnly": true
-  }
+    "emitDeclarationOnly": true,
+    "rootDir": "./src",
+    "composite": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.d.ts"],
+  "references": [{ "path": "../rpc4next-shared" }]
 }

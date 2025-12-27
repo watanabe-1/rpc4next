@@ -1,6 +1,7 @@
 {
   "files": [],
   "references": [
+    { "path": "./packages/rpc4next-shared" },
     { "path": "./packages/rpc4next" },
     { "path": "./packages/rpc4next-cli" }
   ]

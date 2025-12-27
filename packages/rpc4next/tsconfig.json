@@ -1,13 +1,18 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "rootDir": "./src",
+    "rootDir": "..",
     "outDir": "./dist",
-    "composite": true
+    "composite": true,
+    "paths": {
+      "rpc4next-shared": ["../rpc4next-shared/src/index.ts"],
+      "rpc4next-shared/*": ["../rpc4next-shared/src/*"]
+    }
   },
   "include": [
     "src/**/*.ts",
     "src/**/*.d.ts",
-    "../../tests/**/*.d.ts"
+    "../../tests/**/*.d.ts",
+    "../rpc4next-shared/src/**/*.ts"
   ]
 }
