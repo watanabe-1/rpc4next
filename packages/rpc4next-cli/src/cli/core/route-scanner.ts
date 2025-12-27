@@ -7,19 +7,19 @@ import fs from "fs";
 import path from "path";
 
 import {
-  OPTIONAL_CATCH_ALL_PREFIX,
   CATCH_ALL_PREFIX,
   DYNAMIC_PREFIX,
   HTTP_METHODS_EXCLUDE_OPTIONS,
+  OPTIONAL_CATCH_ALL_PREFIX,
 } from "rpc4next-shared/constants";
-import type { HttpMethod } from "rpc4next-shared/types";
+import { END_POINT_FILE_NAMES } from "../constants";
 import { scanAppDirCache, visitedDirsCache } from "./cache";
-import { INDENT, TYPE_END_POINT, TYPE_KEY_PARAMS, NEWLINE } from "./constants";
+import { INDENT, NEWLINE, TYPE_END_POINT, TYPE_KEY_PARAMS } from "./constants";
+import { toPosixPath } from "./path-utils";
 import { scanQuery, scanRoute } from "./scan-utils";
 import { createObjectType, createRecodeType } from "./type-utils";
-import { END_POINT_FILE_NAMES } from "../constants";
-import { toPosixPath } from "./path-utils";
 import type { EndPointFileNames } from "../types";
+import type { HttpMethod } from "rpc4next-shared/types";
 
 type ImportObj = {
   statement: string;

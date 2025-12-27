@@ -1,0 +1,4 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["./src/constants.d.ts", "./src/types.d.ts"]
+}

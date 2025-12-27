@@ -1,21 +1,19 @@
 import { build } from "esbuild";
-import type { BuildOptions } from "esbuild";
-import glob from "fast-glob";
+import {
+  globEntryPoints,
+  libraryBuildOptions,
+  mergeBuildOptions,
+} from "../build-utils";
 
-const baseOptions: BuildOptions = {
-  outbase: "src",
-  outdir: "dist",
-  target: "ES2022",
-  format: "esm",
-  minify: true,
-  tsconfig: "tsconfig.build.json",
-};
+const entryPoints = await globEntryPoints(["src/**/*.ts", "!src/**/*.test.ts"]);
 
-const entryPoints = await glob(["src/**/*.ts", "!src/**/*.test.ts"]);
-
-await build({
-  ...baseOptions,
-  entryPoints,
-  platform: "neutral",
-  bundle: false,
-});
+await build(
+  mergeBuildOptions(
+    {
+      entryPoints,
+      platform: "neutral",
+      bundle: false,
+    },
+    libraryBuildOptions,
+  ),
+);
