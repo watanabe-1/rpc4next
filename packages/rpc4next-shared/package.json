@@ -43,8 +43,8 @@
   },
   "scripts": {
     "build": "bun run clean && bun build.ts && bun run build:types",
-    "build:types": "tsc -p tsconfig.build-types.json",
-    "clean": "bun -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build:types": "tsc -b --force tsconfig.build-types.json",
+    "clean": "bun -e \"const fs=require('fs'); fs.rmSync('dist',{recursive:true,force:true}); fs.rmSync('tsconfig.build-types.tsbuildinfo',{force:true}); fs.rmSync('tsconfig.tsbuildinfo',{force:true});\"",
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix",

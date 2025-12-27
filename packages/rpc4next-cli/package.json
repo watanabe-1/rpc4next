@@ -13,7 +13,7 @@
   ],
   "scripts": {
     "build": "bun run clean && bun build.ts",
-    "clean": "bun -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
+    "clean": "bun -e \"const fs=require('fs'); fs.rmSync('dist',{recursive:true,force:true}); fs.rmSync('tsconfig.tsbuildinfo',{force:true});\"",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage.enabled true",
     "test:ui": "vitest --ui --coverage.enabled true",
