@@ -1,8 +1,5 @@
 {
   "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "rootDir": "./src"
-  },
   "include": ["src/**/*.ts", "src/**/*.d.ts"],
-  "exclude": ["src/**/*.test.ts", "../rpc4next-shared/src/**"]
+  "exclude": ["src/**/*.test.ts"]
 }

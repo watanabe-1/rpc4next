@@ -9,7 +9,6 @@
 
 import { createHandler } from "../handler";
 import { getCookiesObject, getHeadersObject } from "./validator-utils";
-import type { HttpMethod } from "../../lib/types";
 import type { ValidationSchema } from "../route-types";
 import type {
   Params,
@@ -19,6 +18,7 @@ import type {
   ValidatedData,
   ValidationTarget,
 } from "../types";
+import type { HttpMethod } from "rpc4next-shared";
 
 // I want to use currying so that the return value can be inferred.
 export const validator = <

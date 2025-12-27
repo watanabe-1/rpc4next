@@ -1,9 +1,3 @@
-import type {
-  OPTIONAL_CATCH_ALL_PREFIX,
-  CATCH_ALL_PREFIX,
-  DYNAMIC_PREFIX,
-  HTTP_METHOD_FUNC_KEYS,
-} from "../lib/constants";
 import type { ContentType } from "../lib/content-type-types";
 import type { HttpRequestHeaders } from "../lib/http-request-headers-types";
 import type { HttpStatusCode } from "../lib/http-status-code-types";
@@ -14,6 +8,12 @@ import type {
 } from "../server/route-types";
 import type { TypedNextResponse, ValidationInputFor } from "../server/types";
 import type { NextResponse } from "next/server";
+import type {
+  OPTIONAL_CATCH_ALL_PREFIX,
+  CATCH_ALL_PREFIX,
+  DYNAMIC_PREFIX,
+  HTTP_METHOD_FUNC_KEYS,
+} from "rpc4next-shared";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type DistributeOmit<T, K extends keyof any> = T extends any

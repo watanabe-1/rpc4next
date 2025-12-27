@@ -1,3 +1,9 @@
+import {
+  DYNAMIC_PREFIX,
+  CATCH_ALL_PREFIX,
+  OPTIONAL_CATCH_ALL_PREFIX,
+  HTTP_METHOD_FUNC_KEYS,
+} from "rpc4next-shared";
 import { describe, it, expect } from "vitest";
 import {
   isDynamic,
@@ -5,12 +11,6 @@ import {
   isHttpMethod,
   deepMerge,
 } from "./client-utils";
-import {
-  DYNAMIC_PREFIX,
-  CATCH_ALL_PREFIX,
-  OPTIONAL_CATCH_ALL_PREFIX,
-  HTTP_METHOD_FUNC_KEYS,
-} from "../lib/constants";
 
 describe("isDynamic", () => {
   it("returns true if the string starts with DYNAMIC_PREFIX", () => {

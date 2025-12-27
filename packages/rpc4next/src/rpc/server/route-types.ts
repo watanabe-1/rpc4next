@@ -8,8 +8,8 @@
  */
 
 import type { TypedNextResponse, Query, RouteContext, Params } from "./types";
-import type { HttpMethod } from "../lib/types";
 import type { NextRequest } from "next/server";
+import type { HttpMethod } from "rpc4next-shared";
 
 export type RouteResponse =
   | TypedNextResponse

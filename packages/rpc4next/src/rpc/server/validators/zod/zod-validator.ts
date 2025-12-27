@@ -8,7 +8,6 @@
  */
 
 import { validator } from "../validator";
-import type { HttpMethod } from "../../../lib/types";
 import type { ValidationSchema } from "../../route-types";
 import type {
   RouteContext,
@@ -19,6 +18,7 @@ import type {
   ValidationTarget,
   ValidatedData,
 } from "../../types";
+import type { HttpMethod } from "rpc4next-shared";
 import type { z, ZodSchema } from "zod";
 
 export const zValidator = <

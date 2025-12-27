@@ -1,1 +1,1 @@
-export type { HttpMethod } from "rpc4next-shared/types";
+export type { HttpMethod } from "rpc4next-shared";

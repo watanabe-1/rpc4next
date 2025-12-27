@@ -1,6 +1,6 @@
 import type { ValidationSchema, RouteResponse, Handler } from "./route-types";
 import type { Params, Query } from "./types";
-import type { HttpMethod } from "../lib/types";
+import type { HttpMethod } from "rpc4next-shared";
 
 // I want to use currying so that the return value can be inferred.
 export const createHandler = <

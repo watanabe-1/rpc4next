@@ -13,8 +13,8 @@ import type {
   MethodRouteDefinition,
 } from "./route-types";
 import type { Query, Params } from "./types";
-import type { HttpMethod } from "../lib/types";
 import type { NextRequest } from "next/server";
+import type { HttpMethod } from "rpc4next-shared";
 
 const composeHandlersWithError = <
   THttpMethod extends HttpMethod,

@@ -95,7 +95,7 @@
     "test:watch": "vitest --watch",
     "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc -b tsconfig.build.json --noEmit"
   },
   "dependencies": {
     "rpc4next-shared": "workspace:*"

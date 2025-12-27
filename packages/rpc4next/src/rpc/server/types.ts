@@ -6,8 +6,8 @@ import type {
   RedirectionHttpStatusCode,
   SuccessfulHttpStatusCode,
 } from "../lib/http-status-code-types";
-import type { HttpMethod } from "../lib/types";
 import type { NextResponse, NextRequest } from "next/server";
+import type { HttpMethod } from "rpc4next-shared";
 
 /**
  * Represents the result of an HTTP response status check.
