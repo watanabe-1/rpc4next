@@ -1,0 +1,30 @@
+{
+  "name": "rpc4next-cli",
+  "version": "0.4.0",
+  "description": "Command line interface for rpc4next. Generates RPC client type definitions from Next.js routes.",
+  "author": "watanabe-1",
+  "license": "MIT",
+  "bin": {
+    "rpc4next": "dist/index.js"
+  },
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "bun run clean && bun build.ts",
+    "clean": "bun -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage.enabled true",
+    "test:ui": "vitest --ui --coverage.enabled true",
+    "test:watch": "vitest --watch",
+    "lint": "eslint \"src/**/*.ts\"",
+    "lint:fix": "eslint \"src/**/*.ts\" --fix",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "chokidar": "^4.0.3",
+    "commander": "^14.0.1",
+    "rpc4next": "workspace:*"
+  }
+}

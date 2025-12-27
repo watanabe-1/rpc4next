@@ -1,0 +1,27 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "baseUrl": ".",
+    "composite": true,
+    "paths": {
+      "rpc4next": ["../rpc4next/src/index.ts"],
+      "rpc4next/client": ["../rpc4next/src/rpc/client/index.ts"],
+      "rpc4next/server": ["../rpc4next/src/rpc/server/index.ts"],
+      "rpc4next/lib/constants": ["../rpc4next/src/rpc/lib/constants.ts"],
+      "rpc4next/lib/types": ["../rpc4next/src/rpc/lib/types.ts"],
+      "rpc4next/*": ["../rpc4next/src/rpc/*"]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "../../tests/**/*.d.ts"
+  ],
+  "references": [
+    {
+      "path": "../rpc4next"
+    }
+  ]
+}

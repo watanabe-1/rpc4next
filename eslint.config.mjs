@@ -18,13 +18,16 @@ const config = [
       "**/.next",
       "**/eslint.config.mjs",
       "**/vitest.config.ts",
-      "./build.ts",
+      "**/build.ts",
     ],
   },
   {
     languageOptions: {
       parserOptions: {
-        project: "./tsconfig.json",
+        project: [
+          "./packages/rpc4next/tsconfig.json",
+          "./packages/rpc4next-cli/tsconfig.json",
+        ],
       },
     },
   },

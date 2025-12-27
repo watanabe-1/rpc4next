@@ -6,16 +6,17 @@
 import fs from "fs";
 import path from "path";
 
-import { scanAppDirCache, visitedDirsCache } from "./cache";
-import { INDENT, TYPE_END_POINT, TYPE_KEY_PARAMS, NEWLINE } from "./constants";
-import { scanQuery, scanRoute } from "./scan-utils";
-import { createObjectType, createRecodeType } from "./type-utils";
 import {
   OPTIONAL_CATCH_ALL_PREFIX,
   CATCH_ALL_PREFIX,
   DYNAMIC_PREFIX,
   HTTP_METHODS_EXCLUDE_OPTIONS,
-} from "../../lib/constants";
+} from "rpc4next/lib/constants";
+import type { HttpMethod } from "rpc4next/lib/types";
+import { scanAppDirCache, visitedDirsCache } from "./cache";
+import { INDENT, TYPE_END_POINT, TYPE_KEY_PARAMS, NEWLINE } from "./constants";
+import { scanQuery, scanRoute } from "./scan-utils";
+import { createObjectType, createRecodeType } from "./type-utils";
 import { END_POINT_FILE_NAMES } from "../constants";
 import { toPosixPath } from "./path-utils";
 import type { EndPointFileNames } from "../types";
@@ -220,7 +221,7 @@ export const scanAppDir = (
       }
 
       // Process routes for each HTTP method (excluding OPTIONS)
-      HTTP_METHODS_EXCLUDE_OPTIONS.forEach((method) => {
+      HTTP_METHODS_EXCLUDE_OPTIONS.forEach((method: HttpMethod) => {
         const routeDef = scanRoute(output, fullPath, method);
         if (routeDef) {
           const { importStatement, importPath, type } = routeDef;

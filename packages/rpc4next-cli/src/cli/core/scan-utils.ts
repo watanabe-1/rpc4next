@@ -1,9 +1,9 @@
 import fs from "fs";
+import { HttpMethod } from "rpc4next/lib/types";
 import { createImportAlias } from "./alias";
 import { QUERY_TYPES, TYPE_KEY_QUERY } from "./constants";
 import { createRelativeImportPath } from "./path-utils";
 import { createImport, createRecodeType, createObjectType } from "./type-utils";
-import { HttpMethod } from "../../lib/types";
 
 export const scanFile = <T extends string | undefined>(
   outputFile: string,
