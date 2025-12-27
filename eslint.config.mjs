@@ -25,7 +25,6 @@ const config = [
       parserOptions: {
         project: [
           "./packages/rpc4next-shared/tsconfig.json",
-          "./packages/rpc4next-shared/tsconfig.declarations.json",
           "./packages/rpc4next/tsconfig.json",
           "./packages/rpc4next-cli/tsconfig.json",
           "./packages/tsconfig.eslint.json",
