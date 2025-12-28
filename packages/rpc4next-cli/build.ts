@@ -18,6 +18,6 @@ await build(
         js: "#!/usr/bin/env node",
       },
     },
-    baseBuildOptions,
-  ),
+    baseBuildOptions
+  )
 );

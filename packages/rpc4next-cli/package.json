@@ -25,7 +25,9 @@
   "dependencies": {
     "chokidar": "^4.0.3",
     "commander": "^14.0.1",
-    "rpc4next": "workspace:*",
     "rpc4next-shared": "workspace:*"
+  },
+  "peerDependencies": {
+    "next": "^14.0.0 || ^15.0.0"
   }
 }
