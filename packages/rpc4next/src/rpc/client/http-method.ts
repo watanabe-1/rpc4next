@@ -20,22 +20,22 @@ type ExtendedBodyOptions = BodyOptions & {
 };
 
 /** Remove headers/headersInit from a RequestInit-like object (typed, no any). */
-function stripHeaders(
-  init?: TypedRequestInit
-): Omit<TypedRequestInit, "headers" | "headersInit"> {
+const stripHeaders = (
+  init?: TypedRequestInit,
+): Omit<TypedRequestInit, "headers" | "headersInit"> => {
   if (!init) return {};
   const { headers: _h, headersInit: _hi, ...rest } = init;
 
   return rest;
-}
+};
 
 /** Whether the user already set Content-Type (case-insensitive). */
-function hasUserContentType(h: Record<string, string>): boolean {
+const hasUserContentType = (h: Record<string, string>): boolean => {
   // normalizeHeaders lowercases keys, but be defensive:
   if ("content-type" in h) return true;
 
   return Object.keys(h).some((k) => k.toLowerCase() === "content-type");
-}
+};
 
 /**
  * Build a typed HTTP method invoker.
@@ -50,7 +50,7 @@ export const httpMethod = (
   paths: string[],
   params: FuncParams,
   dynamicKeys: string[],
-  defaultOptions: ClientOptions
+  defaultOptions: ClientOptions,
 ) => {
   return async (
     methodParam?: {
@@ -58,7 +58,7 @@ export const httpMethod = (
       body?: ExtendedBodyOptions;
       requestHeaders?: HeadersOptions;
     },
-    options?: ClientOptions
+    options?: ClientOptions,
   ) => {
     // Resolve method (e.g. "$get" -> "GET")
     const method = key.replace(/^\$/, "").toUpperCase();
@@ -74,13 +74,15 @@ export const httpMethod = (
     const innerInit = options?.init;
 
     const defaultHeaders = normalizeHeaders(
-      defaultInit?.headers ?? defaultInit?.headersInit
+      defaultInit?.headers ?? defaultInit?.headersInit,
     );
     const innerHeaders = normalizeHeaders(
-      innerInit?.headers ?? innerInit?.headersInit
+      innerInit?.headers ?? innerInit?.headersInit,
     );
     const methodParamHeaders = normalizeHeaders(
-      methodParam?.requestHeaders?.headers as Record<string, string> | undefined
+      methodParam?.requestHeaders?.headers as
+        | Record<string, string>
+        | undefined,
     );
 
     // Start from low precedence and overlay higher precedence
@@ -138,7 +140,7 @@ export const httpMethod = (
     // --- Build final init
     const mergedInit: TypedRequestInit = deepMerge(
       stripHeaders(defaultInit),
-      stripHeaders(innerInit)
+      stripHeaders(innerInit),
     );
     mergedInit.method = method;
 
