@@ -41,6 +41,49 @@ export const buildUrlSuffix = (url?: UrlOptions) => {
   return query + hash;
 };
 
+/**
+ * Replaces dynamic route segment markers in a base path string.
+ *
+ * This utility transforms special placeholder patterns in `basePath`
+ * into concrete replacement strings.
+ *
+ * It supports three types of dynamic segments:
+ *
+ * - **Optional catch-all**: `"/_____<name>"` (5 underscores)
+ * - **Catch-all**: `"/___<name>"` (3 underscores)
+ * - **Dynamic segment**: `"/_<name>"` (1 underscore)
+ *
+ * Each matched segment (including its leading slash) is replaced
+ * with the corresponding value from the `replacements` object.
+ *
+ * Replacement is performed in the following order:
+ * 1. optionalCatchAll
+ * 2. catchAll
+ * 3. dynamic
+ *
+ * This ordering ensures that longer patterns are processed before
+ * shorter ones to avoid partial matching.
+ *
+ * @example
+ * ```ts
+ * replaceDynamicSegments(
+ *   "/users/_id/posts/___slug/files/_____path",
+ *   {
+ *     dynamic: ":id",
+ *     catchAll: "*",
+ *     optionalCatchAll: "**",
+ *   }
+ * );
+ * ```
+ *
+ * @param basePath - The path string containing dynamic segment markers.
+ * @param replacements - Replacement strings for each dynamic segment type.
+ * @param replacements.optionalCatchAll - Replacement for `"/_____<name>"` segments.
+ * @param replacements.catchAll - Replacement for `"/___<name>"` segments.
+ * @param replacements.dynamic - Replacement for `"/_<name>"` segments.
+ *
+ * @returns A new path string with all dynamic segment markers replaced.
+ */
 export const replaceDynamicSegments = (
   basePath: string,
   replacements: {
