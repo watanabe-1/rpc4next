@@ -1,5 +1,6 @@
 version: 2
 updates:
+  # --- root ---
   - package-ecosystem: "bun"
     directory: "/"
     schedule:
@@ -13,6 +14,49 @@ updates:
       prefix: "fix"
       include: "scope"
 
+  # --- packages/rpc4next ---
+  - package-ecosystem: "bun"
+    directory: "/packages/rpc4next"
+    schedule:
+      interval: "weekly"
+    versioning-strategy: increase
+    groups:
+      bun:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "fix"
+      include: "scope"
+
+  # --- packages/rpc4next-cli ---
+  - package-ecosystem: "bun"
+    directory: "/packages/rpc4next-cli"
+    schedule:
+      interval: "weekly"
+    versioning-strategy: increase
+    groups:
+      bun:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "fix"
+      include: "scope"
+
+  # --- packages/rpc4next-shared ---
+  - package-ecosystem: "bun"
+    directory: "/packages/rpc4next-shared"
+    schedule:
+      interval: "weekly"
+    versioning-strategy: increase
+    groups:
+      bun:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "fix"
+      include: "scope"
+
+  # --- GitHub Actions (root only) ---
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
