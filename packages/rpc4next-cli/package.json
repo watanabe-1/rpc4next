@@ -1,13 +1,20 @@
 {
   "name": "rpc4next-cli",
-  "version": "0.4.0",
   "description": "Command line interface for rpc4next. Generates RPC client type definitions from Next.js routes.",
   "author": "watanabe-1",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/watanabe-1/rpc4next.git",
+    "directory": "packages/rpc4next-cli"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
   "bin": {
     "rpc4next": "dist/index.js"
   },
-  "type": "module",
   "files": [
     "dist"
   ],

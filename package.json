@@ -2,6 +2,10 @@
   "name": "rpc4next-monorepo",
   "private": true,
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/watanabe-1/rpc4next.git"
+  },
   "workspaces": [
     "packages/*"
   ],
