@@ -4,7 +4,7 @@ import { searchParamsToObject } from "../lib/search-params";
 
 type ParamValue = string | string[] | undefined;
 
-function safeDecode(value: string | undefined | null): string | undefined {
+const safeDecode = (value: string | undefined | null): string | undefined => {
   if (value === null || value === undefined) return undefined;
   try {
     return decodeURIComponent(value);
@@ -12,15 +12,15 @@ function safeDecode(value: string | undefined | null): string | undefined {
     // Fallback to raw value if malformed percent-encoding is present.
     return value;
   }
-}
+};
 
-function normalizeBasePath(segments: string[]): string {
+const normalizeBasePath = (segments: string[]): string => {
   // Join with '/', ensure exactly one leading slash and no trailing slash.
   const joined = segments.join("/").replace(/\/+/g, "/");
   const withLeading = joined.startsWith("/") ? joined : `/${joined}`;
 
   return withLeading.replace(/\/+$/, "") || "/";
-}
+};
 
 /**
  * Match a URL (string) against a pre-defined path pattern array.
