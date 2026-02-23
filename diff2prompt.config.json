@@ -1,0 +1,4 @@
+{
+  "promptTemplateFile": "conventional-commit.tpl.md",
+  "exclude": ["bun.lock"]
+}
