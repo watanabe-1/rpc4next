@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.6](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.4.5...rpc4next-v0.4.6) (2026-02-23)
+
+
+### Bug Fixes
+
+* **client:** add TSDoc for replaceDynamicSegments ([#211](https://github.com/watanabe-1/rpc4next/issues/211)) ([5d13bd5](https://github.com/watanabe-1/rpc4next/commit/5d13bd56d6d59ef35867672020e6ed0c50a19784))
+
 ## [0.4.5](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.4.4...rpc4next-v0.4.5) (2026-02-23)
 
 
