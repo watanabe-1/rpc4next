@@ -19,7 +19,7 @@
     "test:coverage": "bun run --cwd packages/rpc4next test:coverage && bun run --cwd packages/rpc4next-cli test:coverage",
     "test:ui": "bun run --cwd packages/rpc4next test:ui && bun run --cwd packages/rpc4next-cli test:ui",
     "test:watch": "bun run --cwd packages/rpc4next test:watch && bun run --cwd packages/rpc4next-cli test:watch",
-    "diff2prompt": "diff2prompt --exclude=bun.lock --excludeFile=.gitignore"
+    "diff2prompt": "diff2prompt --excludeFile=.gitignore"
   },
   "devDependencies": {
     "@types/node": "^24.5.2",
