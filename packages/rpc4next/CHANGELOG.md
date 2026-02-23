@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.3](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.4.2...rpc4next-v0.4.3) (2026-02-23)
+
+
+### Bug Fixes
+
+* **rpc:** Add TSDoc for safeDecode ([#204](https://github.com/watanabe-1/rpc4next/issues/204)) ([afce916](https://github.com/watanabe-1/rpc4next/commit/afce916473f82e886bcce3413c4b617cb9a1a6ea))
+
 ## [0.4.2](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.4.1...rpc4next-v0.4.2) (2026-02-23)
 
 
