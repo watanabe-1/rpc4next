@@ -63,27 +63,23 @@ jobs:
       - name: Upgrade npm (for provenance)
         run: npm i -g npm@latest
 
-      - name: Publish released packages with provenance
+      - name: Publish released packages
         env:
           PATHS_RELEASED: ${{ needs.release-please.outputs.paths_released }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # Trusted Publishingに移行したら削除
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
-          echo "paths_released=${PATHS_RELEASED}"
+          npm config set registry https://registry.npmjs.org/
+          npm whoami --registry=https://registry.npmjs.org/
 
           node - <<'NODE'
           const { execSync } = require("node:child_process");
 
           const paths = JSON.parse(process.env.PATHS_RELEASED || "[]");
-          if (!Array.isArray(paths) || paths.length === 0) {
-            console.log("No released paths. Exit.");
-            process.exit(0);
-          }
-
           for (const p of paths) {
             console.log(`\n==> Publishing ${p}`);
-            execSync("npm publish --provenance --access public", {
+            execSync("npm publish --registry=https://registry.npmjs.org/ --access public --provenance", {
               cwd: p,
               stdio: "inherit",
               env: process.env,
