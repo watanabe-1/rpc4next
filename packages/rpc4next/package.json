@@ -10,9 +10,6 @@
     "directory": "packages/rpc4next"
   },
   "homepage": "https://github.com/watanabe-1/rpc4next#readme",
-  "bugs": {
-    "url": "https://github.com/watanabe-1/rpc4next/issues"
-  },
   "publishConfig": {
     "access": "public"
   },
