@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.9](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.4.8...rpc4next-v0.4.9) (2026-02-23)
+
+
+### Bug Fixes
+
+* **rpc:** Add TSDoc for catch-all key helper ([#219](https://github.com/watanabe-1/rpc4next/issues/219)) ([cc27113](https://github.com/watanabe-1/rpc4next/commit/cc27113aa8e93292ad5e410387bacb6239a83806))
+
 ## [0.4.8](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.4.7...rpc4next-v0.4.8) (2026-02-23)
 
 
