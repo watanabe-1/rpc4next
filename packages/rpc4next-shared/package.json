@@ -3,12 +3,12 @@
   "version": "0.1.3",
   "description": "Shared constants and types for rpc4next core and CLI packages.",
   "license": "MIT",
+  "homepage": "https://github.com/watanabe-1/rpc4next#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/watanabe-1/rpc4next.git",
     "directory": "packages/rpc4next-shared"
   },
-  "homepage": "https://github.com/watanabe-1/rpc4next#readme",
   "publishConfig": {
     "access": "public"
   },
