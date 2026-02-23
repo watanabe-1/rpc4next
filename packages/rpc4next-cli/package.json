@@ -1,0 +1,40 @@
+{
+  "name": "rpc4next-cli",
+  "description": "Command line interface for rpc4next. Generates RPC client type definitions from Next.js routes.",
+  "author": "watanabe-1",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/watanabe-1/rpc4next.git",
+    "directory": "packages/rpc4next-cli"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "bin": {
+    "rpc4next": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "bun run clean && bun build.ts",
+    "clean": "bun -e \"const fs=require('fs'); fs.rmSync('dist',{recursive:true,force:true}); fs.rmSync('tsconfig.tsbuildinfo',{force:true});\"",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage.enabled true",
+    "test:ui": "vitest --ui --coverage.enabled true",
+    "test:watch": "vitest --watch",
+    "lint": "eslint \"src/**/*.ts\"",
+    "lint:fix": "eslint \"src/**/*.ts\" --fix",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "chokidar": "^4.0.3",
+    "commander": "^14.0.1",
+    "rpc4next-shared": "workspace:*"
+  },
+  "peerDependencies": {
+    "next": "^14.0.0 || ^15.0.0"
+  }
+}

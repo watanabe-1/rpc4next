@@ -18,13 +18,17 @@ const config = [
       "**/.next",
       "**/eslint.config.mjs",
       "**/vitest.config.ts",
-      "./build.ts",
     ],
   },
   {
     languageOptions: {
       parserOptions: {
-        project: "./tsconfig.json",
+        project: [
+          "./packages/rpc4next-shared/tsconfig.json",
+          "./packages/rpc4next/tsconfig.json",
+          "./packages/rpc4next-cli/tsconfig.json",
+          "./packages/tsconfig.eslint.json",
+        ],
       },
     },
   },
@@ -92,7 +96,7 @@ const config = [
     },
   },
   {
-    files: ["src/**/*.test.ts"],
+    files: ["**/*.test.ts"],
     plugins: {
       vitest: eslintPluginVitest,
     },

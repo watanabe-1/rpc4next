@@ -1,0 +1,5 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "references": [{ "path": "../rpc4next-shared" }],
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "../../tests/**/*.d.ts"]
+}

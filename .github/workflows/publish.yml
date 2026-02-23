@@ -1,0 +1,92 @@
+name: Publish (npm + provenance)
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write # GitHub Release 作成（release-pleaseが使う）
+  pull-requests: write
+  id-token: write # npm provenance に必要
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      releases_created: ${{ steps.rp.outputs.releases_created }}
+      paths_released: ${{ steps.rp.outputs.paths_released }}
+    steps:
+      - name: Release Please
+        id: rp
+        uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          include-component-in-tag: true
+
+  publish:
+    needs: release-please
+    runs-on: ubuntu-latest
+    if: needs.release-please.outputs.releases_created == 'true'
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .tool-versions
+          registry-url: https://registry.npmjs.org/
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .tool-versions
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build (all packages)
+        run: bun run build
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Upgrade npm (for provenance)
+        run: npm i -g npm@latest
+
+      - name: Publish released packages with provenance
+        env:
+          PATHS_RELEASED: ${{ needs.release-please.outputs.paths_released }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # Trusted Publishingに移行したら削除
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "paths_released=${PATHS_RELEASED}"
+
+          node - <<'NODE'
+          const { execSync } = require("node:child_process");
+
+          const paths = JSON.parse(process.env.PATHS_RELEASED || "[]");
+          if (!Array.isArray(paths) || paths.length === 0) {
+            console.log("No released paths. Exit.");
+            process.exit(0);
+          }
+
+          for (const p of paths) {
+            console.log(`\n==> Publishing ${p}`);
+            execSync("npm publish --provenance --access public", {
+              cwd: p,
+              stdio: "inherit",
+              env: process.env,
+            });
+          }
+          NODE

@@ -1,0 +1,19 @@
+{
+  "packages": {
+    "packages/rpc4next": {
+      "release-type": "node",
+      "package-name": "rpc4next",
+      "component": "rpc4next"
+    },
+    "packages/rpc4next-cli": {
+      "release-type": "node",
+      "package-name": "rpc4next-cli",
+      "component": "rpc4next-cli"
+    },
+    "packages/rpc4next-shared": {
+      "release-type": "node",
+      "package-name": "rpc4next-shared",
+      "component": "rpc4next-shared"
+    }
+  }
+}

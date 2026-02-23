@@ -310,6 +310,15 @@ async function callUserApi() {
 
 ---
 
+## 🧭 Monorepo Layout
+
+- `packages/rpc4next`: Core library modules (client, server, validators, shared types)
+- `packages/rpc4next-cli`: CLI generator that exposes the `rpc4next` binary
+- Install once at the repo root: `bun install`
+- Build everything: `bun run build`
+- Run all tests: `bun run test`
+- Lint all packages: `bun run lint`
+
 ## 🚧 Requirements
 
 - Next.js 14+ (App Router 使用)

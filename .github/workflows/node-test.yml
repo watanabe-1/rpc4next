@@ -53,14 +53,14 @@ jobs:
           node -v
           bun next --version
 
+      - name: Build (all packages)
+        run: bun run build
+
       - name: Typecheck
         run: bun run typecheck
 
       - name: Lint
         run: bun run lint
-
-      - name: Build
-        run: bun run build
 
       - name: Test
         run: |

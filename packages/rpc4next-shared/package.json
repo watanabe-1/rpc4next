@@ -1,0 +1,60 @@
+{
+  "name": "rpc4next-shared",
+  "description": "Shared constants and types for rpc4next core and CLI packages.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/watanabe-1/rpc4next.git",
+    "directory": "packages/rpc4next-shared"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "default": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    },
+    "./constants": {
+      "import": {
+        "types": "./dist/constants.d.ts",
+        "default": "./dist/constants.js"
+      },
+      "default": {
+        "types": "./dist/constants.d.ts",
+        "default": "./dist/constants.js"
+      }
+    },
+    "./types": {
+      "import": {
+        "types": "./dist/types.d.ts",
+        "default": "./dist/types.js"
+      },
+      "default": {
+        "types": "./dist/types.d.ts",
+        "default": "./dist/types.js"
+      }
+    }
+  },
+  "scripts": {
+    "build": "bun run clean && bun build.ts && bun run build:types",
+    "build:types": "tsc -b --force tsconfig.build-types.json",
+    "clean": "bun -e \"const fs=require('fs'); fs.rmSync('dist',{recursive:true,force:true}); fs.rmSync('tsconfig.build-types.tsbuildinfo',{force:true}); fs.rmSync('tsconfig.tsbuildinfo',{force:true});\"",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint \"src/**/*.ts\"",
+    "lint:fix": "eslint \"src/**/*.ts\" --fix",
+    "test": "vitest run"
+  }
+}
