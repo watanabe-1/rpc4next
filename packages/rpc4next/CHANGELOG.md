@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.13](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.4.12...rpc4next-v0.4.13) (2026-02-23)
+
+
+### Bug Fixes
+
+* **build:** Normalize homepage field placement in package manifests ([#231](https://github.com/watanabe-1/rpc4next/issues/231)) ([2f20f6b](https://github.com/watanabe-1/rpc4next/commit/2f20f6bdaccd32c654fd85910ac52b1d6fb12956))
+
 ## [0.4.12](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.4.11...rpc4next-v0.4.12) (2026-02-23)
 
 
