@@ -3,6 +3,7 @@
   "description": "Command line interface for rpc4next. Generates RPC client type definitions from Next.js routes.",
   "author": "watanabe-1",
   "license": "MIT",
+  "version": "0.0.1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/watanabe-1/rpc4next.git",
