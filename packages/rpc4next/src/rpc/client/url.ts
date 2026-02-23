@@ -100,6 +100,50 @@ export const replaceDynamicSegments = (
     // dynamic
     .replace(/\/_(\w+)/g, replacements.dynamic);
 
+/**
+ * Creates a URL builder for a route definition.
+ *
+ * This function takes a list of path segments (e.g. `["api", "users", "[id]"]`),
+ * a params object, and a list of dynamic keys used in the path, then returns a
+ * function that can build a concrete URL string plus related metadata.
+ *
+ * Dynamic segments are replaced using `dynamicKeys`:
+ * - If `params[key]` is an array, it is treated as a catch-all segment and each
+ *   element is URL-encoded then joined by `/`.
+ * - If `params[key]` is `undefined`, the segment is removed (useful for optional
+ *   segments).
+ * - Otherwise, the value is URL-encoded and substituted into the segment.
+ *
+ * The returned builder optionally appends a suffix (e.g. query/hash) via
+ * `buildUrlSuffix(url)` and also produces a Next.js-style `pathname` by converting
+ * dynamic markers using `replaceDynamicSegments`.
+ *
+ * In addition, params keys are normalized by removing leading underscores
+ * (e.g. `__id` -> `id`) in the returned `params`.
+ *
+ * @param paths - Path segments. The first element is treated as an optional base
+ * URL, and the remaining segments form the route path.
+ * @param params - Parameters used to replace dynamic segments. Values may be
+ * `string`, `string[]`, or `undefined` depending on the segment type.
+ * @param dynamicKeys - Keys representing dynamic segments present in the path,
+ * used to substitute values from `params`.
+ * @returns A builder function that accepts URL options and returns a `UrlResult`.
+ *
+ * @example
+ * ```ts
+ * const build = createUrl(
+ *   ["https://example.com", "users", "id"],
+ *   { id: "a b" },
+ *   ["id"],
+ * );
+ *
+ * const result = build({ query: { page: "1" } });
+ * // result.path: "https://example.com/users/a%20b?page=1"
+ * // result.relativePath: "/users/a%20b?page=1"
+ * // result.pathname: "/users/[$1]" (depending on replaceDynamicSegments behavior)
+ * // result.params: { id: "a b" }
+ * ```
+ */
 export const createUrl = (
   paths: string[],
   params: FuncParams,
