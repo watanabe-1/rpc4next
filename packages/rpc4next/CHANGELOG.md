@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.10](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.4.9...rpc4next-v0.4.10) (2026-02-23)
+
+
+### Bug Fixes
+
+* **release:** add explicit package versions ([#221](https://github.com/watanabe-1/rpc4next/issues/221)) ([eaec4e3](https://github.com/watanabe-1/rpc4next/commit/eaec4e3b71dcc7aefc99b023dbc7b0ba584e5128))
+
 ## [0.4.9](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.4.8...rpc4next-v0.4.9) (2026-02-23)
 
 
