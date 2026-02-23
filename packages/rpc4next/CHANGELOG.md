@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.7](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.4.6...rpc4next-v0.4.7) (2026-02-23)
+
+
+### Bug Fixes
+
+* **client:** Add createUrl TSDoc ([#214](https://github.com/watanabe-1/rpc4next/issues/214)) ([3440717](https://github.com/watanabe-1/rpc4next/commit/3440717351e36c52e229adb45d882a660f16d2af))
+
 ## [0.4.6](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.4.5...rpc4next-v0.4.6) (2026-02-23)
 
 
