@@ -14,6 +14,31 @@ const safeDecode = (value: string | undefined | null): string | undefined => {
   }
 };
 
+/**
+ * Normalize path segments into a canonical base path string.
+ *
+ * This function:
+ * - Joins the given segments with `/`
+ * - Collapses duplicate slashes into a single `/`
+ * - Ensures **exactly one leading slash**
+ * - Removes any trailing slash (except when the result is the root path)
+ * - Returns `/` if the normalized result would otherwise be empty
+ *
+ * @example
+ * ```ts
+ * normalizeBasePath(["api", "v1", "users"]);
+ * // "/api/v1/users"
+ *
+ * normalizeBasePath(["/api/", "/v1/", "users/"]);
+ * // "/api/v1/users"
+ *
+ * normalizeBasePath([]);
+ * // "/"
+ * ```
+ *
+ * @param segments - Path segments to be combined into a base path.
+ * @returns A normalized base path starting with a single `/` and without a trailing slash (unless root).
+ */
 const normalizeBasePath = (segments: string[]): string => {
   // Join with '/', ensure exactly one leading slash and no trailing slash.
   const joined = segments.join("/").replace(/\/+/g, "/");
