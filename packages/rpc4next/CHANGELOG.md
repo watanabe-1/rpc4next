@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.8](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.4.7...rpc4next-v0.4.8) (2026-02-23)
+
+
+### Bug Fixes
+
+* Add TSDoc for isDynamic ([#217](https://github.com/watanabe-1/rpc4next/issues/217)) ([c395f28](https://github.com/watanabe-1/rpc4next/commit/c395f289ea9c3ad32da964f8d2bbf14a1319f64d))
+
 ## [0.4.7](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.4.6...rpc4next-v0.4.7) (2026-02-23)
 
 
