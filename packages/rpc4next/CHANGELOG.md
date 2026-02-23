@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.12](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.4.11...rpc4next-v0.4.12) (2026-02-23)
+
+
+### Bug Fixes
+
+* **build:** reorder version field in package manifests ([#227](https://github.com/watanabe-1/rpc4next/issues/227)) ([cfe7827](https://github.com/watanabe-1/rpc4next/commit/cfe7827ee5d08a791a7425b4c9ea6759e10ec05d))
+
 ## [0.4.11](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.4.10...rpc4next-v0.4.11) (2026-02-23)
 
 
