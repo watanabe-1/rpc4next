@@ -6,6 +6,9 @@ import {
 } from "rpc4next-shared";
 import type { HttpMethodFuncKey } from "./types";
 
+/**
+ * Returns true if the given key represents a dynamic segment.
+ */
 export const isDynamic = (key: string) => key.startsWith(DYNAMIC_PREFIX);
 
 export const isCatchAllOrOptional = (key: string) =>
@@ -22,7 +25,7 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> => {
 
 export const deepMerge = <T extends object, U extends object>(
   target: T,
-  source: U
+  source: U,
 ): T => {
   const result = { ...target } as T & U;
 
@@ -34,7 +37,7 @@ export const deepMerge = <T extends object, U extends object>(
       if (isPlainObject(targetValue) && isPlainObject(sourceValue)) {
         (result as Record<string, unknown>)[key] = deepMerge(
           targetValue,
-          sourceValue
+          sourceValue,
         );
       } else {
         result[key as keyof (T & U)] = sourceValue as (T & U)[keyof (T & U)];
