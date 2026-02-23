@@ -11,6 +11,9 @@ import type { HttpMethodFuncKey } from "./types";
  */
 export const isDynamic = (key: string) => key.startsWith(DYNAMIC_PREFIX);
 
+/**
+ * Returns true if the key represents a catch-all or optional catch-all segment.
+ */
 export const isCatchAllOrOptional = (key: string) =>
   key.startsWith(CATCH_ALL_PREFIX) || key.startsWith(OPTIONAL_CATCH_ALL_PREFIX);
 
