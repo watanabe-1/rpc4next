@@ -10,7 +10,7 @@ updates:
         patterns:
           - "*"
     commit-message:
-      prefix: "fix(deps)"
+      prefix: "fix"
       include: "scope"
 
   - package-ecosystem: "github-actions"
@@ -22,5 +22,5 @@ updates:
         patterns:
           - "*"
     commit-message:
-      prefix: "fix(deps)"
+      prefix: "fix"
       include: "scope"
