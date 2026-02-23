@@ -8,7 +8,7 @@ import tseslint from "typescript-eslint";
 /** @type {import("eslint").Linter.Config[]} */
 const config = [
   {
-    files: ["*.ts"],
+    files: ["**/*.ts"],
   },
   {
     ignores: [
@@ -24,6 +24,7 @@ const config = [
     languageOptions: {
       parserOptions: {
         project: [
+          "./scripts/tsconfig.json",
           "./packages/rpc4next-shared/tsconfig.json",
           "./packages/rpc4next/tsconfig.json",
           "./packages/rpc4next-cli/tsconfig.json",

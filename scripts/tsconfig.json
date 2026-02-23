@@ -1,0 +1,10 @@
+{
+  "extends": "../packages/tsconfig.eslint.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "module": "nodenext",
+    "moduleResolution": "nodenext"
+  },
+  "include": ["./**/*.ts"],
+  "exclude": ["../node_modules", "../**/dist", "../**/.next"]
+}

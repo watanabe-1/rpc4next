@@ -52,6 +52,9 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Replace workspace deps
+        run: bun scripts/replace-workspace-deps.ts
+
       - name: Build (all packages)
         run: bun run build
 
@@ -74,85 +77,11 @@ jobs:
           npm config set registry https://registry.npmjs.org/
 
           node - <<'NODE'
-          const fs = require("node:fs");
-          const path = require("node:path");
           const { execSync } = require("node:child_process");
 
-          const repoRoot = process.cwd();
           const paths = JSON.parse(process.env.PATHS_RELEASED || "[]");
-
-          const manifest = JSON.parse(
-            fs.readFileSync(".release-please-manifest.json", "utf8")
-          );
-
-          // Build name -> version map from manifest
-          const nameToVersion = new Map();
-          for (const pkgDir of Object.keys(manifest)) {
-            const srcPkg = JSON.parse(
-              fs.readFileSync(path.join(repoRoot, pkgDir, "package.json"), "utf8")
-            );
-            nameToVersion.set(srcPkg.name, manifest[pkgDir]);
-          }
-
-          const depFields = ["dependencies", "peerDependencies", "optionalDependencies"];
-
-          function rewriteWorkspaceDeps(distPkgJsonPath) {
-            const pkg = JSON.parse(fs.readFileSync(distPkgJsonPath, "utf8"));
-            let changed = false;
-
-            console.log(`-- Checking workspace deps in: ${distPkgJsonPath}`);
-
-            for (const field of depFields) {
-              const deps = pkg[field];
-              if (!deps) continue;
-
-              for (const [depName, spec] of Object.entries(deps)) {
-                if (typeof spec !== "string") continue;
-                if (!spec.startsWith("workspace:")) continue;
-
-                const v = nameToVersion.get(depName);
-                if (!v) {
-                  console.log(
-                    `   [skip] ${depName} uses workspace protocol but is not in manifest`
-                  );
-                  continue;
-                }
-
-                const suffix = spec.slice("workspace:".length).trim();
-
-                let prefix = "^";
-                if (suffix === "~") prefix = "~";
-                else if (suffix === "^") prefix = "^";
-                else if (suffix === "*" || suffix === "") prefix = "^";
-
-                const next = `${prefix}${v}`;
-
-                console.log(
-                  `   [rewrite] ${pkg.name} → ${depName}: ${spec} → ${next}`
-                );
-
-                deps[depName] = next;
-                changed = true;
-              }
-            }
-
-            if (changed) {
-              fs.writeFileSync(distPkgJsonPath, JSON.stringify(pkg, null, 2) + "\n");
-              console.log(`   ✔ Updated ${distPkgJsonPath}`);
-            } else {
-              console.log(`   no workspace dependencies to rewrite`);
-            }
-          }
-
           for (const p of paths) {
-            const distPkgJsonPath = path.join(repoRoot, p, "dist", "package.json");
-
-            // Rewrite workspace deps inside dist/package.json
-            rewriteWorkspaceDeps(distPkgJsonPath);
-
             console.log(`\n==> Publishing ${p}`);
-
-            // publish
             execSync("npm publish", {
               cwd: p,
               stdio: "inherit",
