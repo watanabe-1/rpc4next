@@ -1,5 +1,36 @@
 import type { UrlOptions, UrlResult, FuncParams } from "./types";
 
+/**
+ * Builds a URL suffix string from optional query and hash values.
+ *
+ * This utility generates the trailing portion of a URL, consisting of:
+ * - A query string (e.g. `?key=value&foo=bar`)
+ * - A hash fragment (e.g. `#section`)
+ *
+ * If both are present, they are concatenated in the order:
+ * `?query#hash`.
+ *
+ * If `url` is `undefined` or neither `query` nor `hash` is provided,
+ * an empty string is returned.
+ *
+ * @example
+ * buildUrlSuffix({
+ *   query: { page: "1", sort: "asc" },
+ *   hash: "top"
+ * });
+ * // => "?page=1&sort=asc#top"
+ *
+ * @example
+ * buildUrlSuffix({ hash: "section" });
+ * // => "#section"
+ *
+ * @example
+ * buildUrlSuffix();
+ * // => ""
+ *
+ * @param url - Optional URL options containing query parameters and/or a hash fragment.
+ * @returns A URL suffix string beginning with `?` and/or `#`, or an empty string if none exist.
+ */
 export const buildUrlSuffix = (url?: UrlOptions) => {
   if (!url) return "";
   const query = url.query
@@ -16,7 +47,7 @@ export const replaceDynamicSegments = (
     optionalCatchAll: string;
     catchAll: string;
     dynamic: string;
-  }
+  },
 ): string =>
   basePath
     // optionalCatchAll
@@ -29,7 +60,7 @@ export const replaceDynamicSegments = (
 export const createUrl = (
   paths: string[],
   params: FuncParams,
-  dynamicKeys: string[]
+  dynamicKeys: string[],
 ) => {
   const baseUrl = paths.shift();
   const basePath = `/${paths.join("/")}`;
@@ -40,7 +71,7 @@ export const createUrl = (
     if (Array.isArray(param)) {
       return acc.replace(
         `/${key}`,
-        `/${param.map(encodeURIComponent).join("/")}`
+        `/${param.map(encodeURIComponent).join("/")}`,
       );
     }
 
