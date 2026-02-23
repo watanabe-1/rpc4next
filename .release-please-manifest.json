@@ -1,5 +1,5 @@
 {
-  "packages/rpc4next": "0.4.10",
-  "packages/rpc4next-cli": "0.1.1",
-  "packages/rpc4next-shared": "0.1.1"
+  "packages/rpc4next": "0.4.11",
+  "packages/rpc4next-cli": "0.1.2",
+  "packages/rpc4next-shared": "0.1.2"
 }
