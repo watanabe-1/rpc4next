@@ -27,7 +27,6 @@ jobs:
   publish:
     needs: release-please
     runs-on: ubuntu-latest
-
     if: needs.release-please.outputs.paths_released != '[]'
 
     permissions:
@@ -62,18 +61,17 @@ jobs:
       - name: Lint
         run: bun run lint
 
-      - name: Upgrade npm (for provenance)
+      # Trusted Publishing requires recent npm (OIDC support).
+      - name: Upgrade npm
         run: npm i -g npm@latest
 
       - name: Publish released packages
         env:
           PATHS_RELEASED: ${{ needs.release-please.outputs.paths_released }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
           npm config set registry https://registry.npmjs.org/
-          npm whoami --registry=https://registry.npmjs.org/
 
           node - <<'NODE'
           const { execSync } = require("node:child_process");
@@ -81,13 +79,10 @@ jobs:
           const paths = JSON.parse(process.env.PATHS_RELEASED || "[]");
           for (const p of paths) {
             console.log(`\n==> Publishing ${p}`);
-            execSync(
-              "npm publish --registry=https://registry.npmjs.org/ --access public --provenance",
-              {
-                cwd: p,
-                stdio: "inherit",
-                env: process.env,
-              }
-            );
+            execSync("npm publish", {
+              cwd: p,
+              stdio: "inherit",
+              env: process.env,
+            });
           }
           NODE
