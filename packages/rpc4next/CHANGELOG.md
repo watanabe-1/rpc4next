@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.4](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.4.3...rpc4next-v0.4.4) (2026-02-23)
+
+
+### Bug Fixes
+
+* **rpc:** Add TSDoc for normalizeHeaders ([#206](https://github.com/watanabe-1/rpc4next/issues/206)) ([804ec84](https://github.com/watanabe-1/rpc4next/commit/804ec84ab47781132755a429e18a02e55246c129))
+
 ## [0.4.3](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.4.2...rpc4next-v0.4.3) (2026-02-23)
 
 
