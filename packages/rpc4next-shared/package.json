@@ -1,8 +1,8 @@
 {
   "name": "rpc4next-shared",
+  "version": "0.1.2",
   "description": "Shared constants and types for rpc4next core and CLI packages.",
   "license": "MIT",
-  "version": "0.1.2",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/watanabe-1/rpc4next.git",
