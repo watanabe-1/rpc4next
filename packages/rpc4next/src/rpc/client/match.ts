@@ -4,6 +4,26 @@ import { searchParamsToObject } from "../lib/search-params";
 
 type ParamValue = string | string[] | undefined;
 
+/**
+ * Safely decodes a URI component.
+ *
+ * This function attempts to decode the given string using `decodeURIComponent`.
+ * If the input is `null` or `undefined`, it returns `undefined`.
+ * If decoding fails due to malformed percent-encoding, the original value is returned.
+ *
+ * @param value - The URI component string to decode. Can be `string`, `null`, or `undefined`.
+ * @returns The decoded string if successful, the original string if decoding fails,
+ * or `undefined` if the input is `null` or `undefined`.
+ *
+ * @example
+ * safeDecode("hello%20world"); // "hello world"
+ *
+ * @example
+ * safeDecode("%E0%A4%A"); // "%E0%A4%A" (malformed, returns original)
+ *
+ * @example
+ * safeDecode(undefined); // undefined
+ */
 const safeDecode = (value: string | undefined | null): string | undefined => {
   if (value === null || value === undefined) return undefined;
   try {
