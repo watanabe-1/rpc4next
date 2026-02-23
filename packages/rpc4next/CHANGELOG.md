@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.11](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.4.10...rpc4next-v0.4.11) (2026-02-23)
+
+
+### Bug Fixes
+
+* **release:** align package homepage metadata ([#224](https://github.com/watanabe-1/rpc4next/issues/224)) ([be1f29c](https://github.com/watanabe-1/rpc4next/commit/be1f29c5467db2e42592f92a143c93a716fe9846))
+
 ## [0.4.10](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.4.9...rpc4next-v0.4.10) (2026-02-23)
 
 
