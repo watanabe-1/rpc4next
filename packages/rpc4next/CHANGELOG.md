@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.5](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.4.4...rpc4next-v0.4.5) (2026-02-23)
+
+
+### Bug Fixes
+
+* **rpc:** Add TSDoc for buildUrlSuffix ([#209](https://github.com/watanabe-1/rpc4next/issues/209)) ([6561b29](https://github.com/watanabe-1/rpc4next/commit/6561b2960316f96abc24df6e63cf777b12db2650))
+
 ## [0.4.4](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.4.3...rpc4next-v0.4.4) (2026-02-23)
 
 
