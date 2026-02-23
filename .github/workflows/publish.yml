@@ -5,9 +5,9 @@ on:
     branches: [main]
 
 permissions:
-  contents: write # GitHub Release 作成（release-pleaseが使う）
+  contents: write
   pull-requests: write
-  id-token: write # npm provenance に必要
+  id-token: write
 
 jobs:
   release-please:
@@ -27,7 +27,9 @@ jobs:
   publish:
     needs: release-please
     runs-on: ubuntu-latest
-    if: needs.release-please.outputs.releases_created == 'true'
+
+    if: needs.release-please.outputs.paths_released != '[]'
+
     permissions:
       contents: read
       id-token: write
@@ -79,10 +81,13 @@ jobs:
           const paths = JSON.parse(process.env.PATHS_RELEASED || "[]");
           for (const p of paths) {
             console.log(`\n==> Publishing ${p}`);
-            execSync("npm publish --registry=https://registry.npmjs.org/ --access public --provenance", {
-              cwd: p,
-              stdio: "inherit",
-              env: process.env,
-            });
+            execSync(
+              "npm publish --registry=https://registry.npmjs.org/ --access public --provenance",
+              {
+                cwd: p,
+                stdio: "inherit",
+                env: process.env,
+              }
+            );
           }
           NODE
