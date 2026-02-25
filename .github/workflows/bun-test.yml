@@ -16,14 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Setup Bun (from matrix)
-        if: matrix.bun-version != 'tool-versions'
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: ${{ matrix.bun-version }}
-
-      - name: Setup Bun (from .tool-versions)
-        if: matrix.bun-version == 'tool-versions'
+      - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: .tool-versions
@@ -59,6 +52,21 @@ jobs:
 
       - name: Lint
         run: bun run lint
+
+      # --- Restore Bun back to matrix for the rest ---
+      - name: Restore Bun (from matrix)
+        if: matrix.bun-version != 'tool-versions'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ matrix.bun-version }}
+
+      - name: Install deps for Test (matrix Bun)
+        run: |
+          if [ "${{ matrix.bun-version }}" = "tool-versions" ]; then
+            bun install --frozen-lockfile
+          else
+            bun install
+          fi
 
       - name: Test
         run: bun run test
