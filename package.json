@@ -15,10 +15,10 @@
     "typecheck": "bun run --cwd packages/rpc4next-shared typecheck && bun run --cwd packages/rpc4next typecheck && bun run --cwd packages/rpc4next-cli typecheck",
     "lint": "bun run --cwd packages/rpc4next-shared lint && bun run --cwd packages/rpc4next lint && bun run --cwd packages/rpc4next-cli lint",
     "lint:fix": "bun run --cwd packages/rpc4next-shared lint:fix && bun run --cwd packages/rpc4next lint:fix && bun run --cwd packages/rpc4next-cli lint:fix",
-    "test": "bun run --cwd packages/rpc4next test && bun run --cwd packages/rpc4next-cli test",
-    "test:coverage": "bun run --cwd packages/rpc4next test:coverage && bun run --cwd packages/rpc4next-cli test:coverage",
-    "test:ui": "bun run --cwd packages/rpc4next test:ui && bun run --cwd packages/rpc4next-cli test:ui",
-    "test:watch": "bun run --cwd packages/rpc4next test:watch && bun run --cwd packages/rpc4next-cli test:watch",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage.enabled true",
+    "test:ui": "vitest --ui --coverage.enabled true",
+    "test:watch": "vitest --watch",
     "diff2prompt": "diff2prompt --excludeFile=.gitignore"
   },
   "devDependencies": {
