@@ -10,11 +10,11 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "bun run --cwd packages/rpc4next-shared build && bun run --cwd packages/rpc4next build && bun run --cwd packages/rpc4next-cli build",
-    "clean": "bun run --cwd packages/rpc4next-shared clean && bun run --cwd packages/rpc4next clean && bun run --cwd packages/rpc4next-cli clean",
-    "typecheck": "bun run --cwd packages/rpc4next-shared typecheck && bun run --cwd packages/rpc4next typecheck && bun run --cwd packages/rpc4next-cli typecheck",
-    "lint": "bun run --cwd packages/rpc4next-shared lint && bun run --cwd packages/rpc4next lint && bun run --cwd packages/rpc4next-cli lint",
-    "lint:fix": "bun run --cwd packages/rpc4next-shared lint:fix && bun run --cwd packages/rpc4next lint:fix && bun run --cwd packages/rpc4next-cli lint:fix",
+    "build": "bun --filter \"./packages/*\" --if-present build",
+    "clean": "bun --filter \"./packages/*\" --if-present clean",
+    "typecheck": "bun --filter \"./packages/*\" --if-present typecheck",
+    "lint": "bun --filter \"./packages/*\" --if-present lint",
+    "lint:fix": "bun --filter \"./packages/*\" --if-present lint:fix",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage.enabled true",
     "test:ui": "vitest --ui --coverage.enabled true",
