@@ -157,7 +157,9 @@ export const httpMethod = (
     } catch (err) {
       // Surface method and URL for easier debugging
       const msg = err instanceof Error ? err.message : String(err);
-      throw new Error(`[httpMethod] ${method} ${urlObj.path} failed: ${msg}`);
+      throw new Error(`[httpMethod] ${method} ${urlObj.path} failed: ${msg}`, {
+        cause: err,
+      });
     }
   };
 };

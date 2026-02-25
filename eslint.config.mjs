@@ -4,6 +4,11 @@ import eslintConfigPrettier from "eslint-config-prettier";
 import eslintPluginImport from "eslint-plugin-import";
 import eslintPluginUnusedImports from "eslint-plugin-unused-imports";
 import tseslint from "typescript-eslint";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /** @type {import("eslint").Linter.Config[]} */
 const config = [
@@ -23,6 +28,7 @@ const config = [
   {
     languageOptions: {
       parserOptions: {
+        tsconfigRootDir: __dirname,
         project: [
           "./scripts/tsconfig.json",
           "./packages/rpc4next-shared/tsconfig.json",

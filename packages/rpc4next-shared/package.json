@@ -55,8 +55,8 @@
     "build:types": "tsc -b --force tsconfig.build-types.json",
     "clean": "bun -e \"const fs=require('fs'); fs.rmSync('dist',{recursive:true,force:true}); fs.rmSync('tsconfig.build-types.tsbuildinfo',{force:true}); fs.rmSync('tsconfig.tsbuildinfo',{force:true});\"",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint \"src/**/*.ts\"",
-    "lint:fix": "eslint \"src/**/*.ts\" --fix",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
     "test": "vitest run"
   }
 }
