@@ -59,14 +59,8 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
 
-      - name: Lint (shared)
-        run: bun run --cwd packages/rpc4next-shared lint
-
-      - name: Lint (rpc4next)
-        run: bun run --cwd packages/rpc4next lint
-
-      - name: Lint (cli)
-        run: bun run --cwd packages/rpc4next-cli lint
+      - name: Lint
+        run: bun run lint
 
       - name: Test
         run: |
