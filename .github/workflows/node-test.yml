@@ -12,7 +12,7 @@ jobs:
       contents: read
     strategy:
       matrix:
-        node-version: [18, 20, 22, tool-versions]
+        node-version: [20.9.0, 22, tool-versions]
         next-version: ["14.0.0", "15.0.0", "from-package"]
 
     steps:

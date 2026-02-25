@@ -43,7 +43,7 @@ export type Query = {
 
 export async function GET(
   req: NextRequest,
-  segmentData: { params: Promise<{ id: string }> }
+  segmentData: { params: Promise<{ id: string }> },
 ) {
   const { id } = await segmentData.params;
   const q = req.nextUrl.searchParams.get("q");
@@ -127,12 +127,10 @@ export default async function Page() {
 ### 📌 主なメリット
 
 1. **レスポンス型安全**
-
    - ステータス、Content-Type、Body がすべて型で保証される
    - クライアントは受け取るレスポンス型を完全に推論可能
 
 2. **クライアント側補完強化**
-
    - `status`, `content-type`, `json()`, `text()` などが適切に補完される
 
 3. **サーバー側 params / query も型安全**
@@ -145,7 +143,7 @@ export default async function Page() {
 
 ```ts
 const createRouteHandler = routeHandlerFactory((err, rc) =>
-  rc.text("error", { status: 400 })
+  rc.text("error", { status: 400 }),
 );
 
 const { POST } = createRouteHandler().post(async (rc) => rc.text("plain text"));
@@ -179,7 +177,7 @@ export const { GET } = createRouteHandler<{
   async (rc) => {
     const params = rc.req.valid("params"); // バリデーション済みparamsを取得
     return rc.json({ message: `User ID is ${params.userId}` });
-  }
+  },
 );
 ```
 
@@ -222,7 +220,7 @@ export const { POST } = createRouteHandler<{
     const query = rc.req.valid("query");
     const body = rc.req.valid("json");
     return rc.json({ query, body });
-  }
+  },
 );
 ```
 
@@ -322,7 +320,7 @@ async function callUserApi() {
 ## 🚧 Requirements
 
 - Next.js 14+ (App Router 使用)
-- Node.js 18+
+- Node.js 20.9.0+
 
 ---
 
