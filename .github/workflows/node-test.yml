@@ -59,6 +59,24 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
 
+      - name: Debug lint paths
+        run: |
+          set -euxo pipefail
+          echo "repo root: $(pwd)"
+          ls -la
+          echo "---- rpc4next-shared ----"
+          ls -la packages/rpc4next-shared || true
+          ls -la packages/rpc4next-shared/src || true
+          find packages/rpc4next-shared/src -maxdepth 5 -type f -name "*.ts" | head -n 50 || true
+          echo "---- rpc4next ----"
+          ls -la packages/rpc4next || true
+          ls -la packages/rpc4next/src || true
+          find packages/rpc4next/src -maxdepth 5 -type f -name "*.ts" | head -n 50 || true
+          echo "---- rpc4next-cli ----"
+          ls -la packages/rpc4next-cli || true
+          ls -la packages/rpc4next-cli/src || true
+          find packages/rpc4next-cli/src -maxdepth 7 -type f -name "*.ts" | head -n 50 || true
+
       - name: Lint
         run: bun run lint
 
