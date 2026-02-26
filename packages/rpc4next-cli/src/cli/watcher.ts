@@ -10,8 +10,8 @@ import type { Logger } from "./types";
 
 export const setupWatcher = (
   baseDir: string,
-  onGenerate: () => void,
-  logger: Logger
+  onGenerate: () => Promise<void> | void,
+  logger: Logger,
 ) => {
   logger.info(`${relativeFromRoot(baseDir)}`, {
     event: "watch",
@@ -22,17 +22,21 @@ export const setupWatcher = (
 
   const changedPaths = new Set<string>();
 
-  // Once the debounced function starts executing, no new watcher events will be processed until it completes.
-  // This is due to JavaScript's single-threaded event loop: the current debounced function runs to completion,
-  // and any new change events are queued until the execution finishes.
-  const debouncedGenerate = debounceOnceRunningWithTrailing(() => {
-    changedPaths.forEach((path) => {
-      clearVisitedDirsCacheAbove(path);
-      clearScanAppDirCacheAbove(path);
-    });
+  // debounceOnceRunningWithTrailing prevents overlapping runs of the generate task.
+  // While `onGenerate` is running, further calls are coalesced into a single trailing run.
+  // Watcher events may still be handled in the meantime unless the event loop is blocked
+  // by heavy synchronous work.
+  const debouncedGenerate = debounceOnceRunningWithTrailing(async () => {
+    // Snapshot current batch to make this run deterministic.
+    const paths = Array.from(changedPaths);
     changedPaths.clear();
 
-    onGenerate();
+    for (const path of paths) {
+      clearVisitedDirsCacheAbove(path);
+      clearScanAppDirCacheAbove(path);
+    }
+
+    await onGenerate();
   }, 300);
 
   const watcher = chokidar.watch(baseDir, {
