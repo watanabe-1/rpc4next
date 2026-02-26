@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5](https://github.com/watanabe-1/rpc4next/compare/rpc4next-shared-v0.1.4...rpc4next-shared-v0.1.5) (2026-02-26)
+
+
+### Bug Fixes
+
+* **deps:** bump the bun group with 16 updates ([#196](https://github.com/watanabe-1/rpc4next/issues/196)) ([c2f5560](https://github.com/watanabe-1/rpc4next/commit/c2f5560c0db83baeafc9a1503cbcc48ff2300d92))
+
 ## [0.1.4](https://github.com/watanabe-1/rpc4next/compare/rpc4next-shared-v0.1.3...rpc4next-shared-v0.1.4) (2026-02-23)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "rpc4next-cli",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Command line interface for rpc4next. Generates RPC client type definitions from Next.js routes.",
   "author": "watanabe-1",
   "license": "MIT",

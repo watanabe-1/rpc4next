@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.14](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.4.13...rpc4next-v0.4.14) (2026-02-26)
+
+
+### Bug Fixes
+
+* **deps:** bump the bun group with 16 updates ([#196](https://github.com/watanabe-1/rpc4next/issues/196)) ([c2f5560](https://github.com/watanabe-1/rpc4next/commit/c2f5560c0db83baeafc9a1503cbcc48ff2300d92))
+
 ## [0.4.13](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.4.12...rpc4next-v0.4.13) (2026-02-23)
 
 
