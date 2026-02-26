@@ -89,4 +89,14 @@ describe("deepMerge", () => {
     deepMerge(target, source);
     expect(target).toEqual(copy);
   });
+
+  it("should ignore inherited enumerable properties in source", () => {
+    const proto = { inherited: "skip-me" };
+    const source = Object.create(proto) as Record<string, unknown>;
+    source.own = "take-me";
+
+    const result = deepMerge({}, source);
+
+    expect(result).toEqual({ own: "take-me" });
+  });
 });
