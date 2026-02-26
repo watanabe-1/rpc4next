@@ -15,8 +15,9 @@ const createProxy = <T>(
   dynamicKeys: string[]
 ): T => {
   // We keep a callable target but route all calls through the `apply` trap.
-  /* c8 ignore next */ // never executed (apply trap intercepts calls)
+  /* c8 ignore start */ // intentionally unreachable (apply trap intercepts calls)
   const target = function noop() {}; // required to make the proxy callable
+  /* c8 ignore stop */
 
   const proxy = new Proxy(target, {
     // Calling the proxy supplies a value for the most recent dynamic segment.

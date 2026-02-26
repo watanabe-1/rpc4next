@@ -80,6 +80,15 @@ describe("chaining, dynamic params, and handler short-circuit", () => {
   };
   const create = makeCreateRpc(handler);
 
+  it("uses default base and options when omitted", () => {
+    const api = create<ChainWithCtx>();
+    const ctx = api.__ctx;
+
+    expect(ctx.paths).toEqual(["/"]);
+    expect(ctx.dynamicKeys).toEqual([]);
+    expect(ctx.params).toEqual({});
+  });
+
   it("accumulates paths and dynamic params; keeps placeholders in paths", () => {
     const api = create<ChainWithCtx>("/", {});
     const ctx = api.users._id(123).__ctx;
