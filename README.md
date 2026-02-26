@@ -20,10 +20,11 @@ Inspired by Hono RPC and Pathpida, **rpc4next** automatically generates a type-s
 
 ## 🚀 Getting Started
 
-### 1. Install rpc4next
+### 1. Install Packages
 
 ```bash
 npm install rpc4next
+npm install -D rpc4next-cli
 ```
 
 ### 2. Define API Routes in Next.js
@@ -64,6 +65,8 @@ CLI を利用して、Next.js のルート構造から型安全な RPC クライ
 ```bash
 npx rpc4next <baseDir> <outputPath>
 ```
+
+`rpc4next` command is provided by the `rpc4next-cli` package.
 
 - `<baseDir>`: Next.js の Appルータが配置されたベースディレクトリ
 - `<outputPath>`: 生成された型定義ファイルの出力先
