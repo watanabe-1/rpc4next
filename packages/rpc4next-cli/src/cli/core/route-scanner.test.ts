@@ -144,7 +144,7 @@ describe("scanAppDir", () => {
 }`;
     const { pathStructure, imports, paramsTypes } = scanAppDir(
       "/output",
-      "/testApp"
+      "/testApp",
     );
 
     expect(pathStructure).equals(expectPathStructure);
@@ -190,7 +190,7 @@ describe("scanAppDir", () => {
     });
 
     expect(imports.every((imp) => !imp.statement.includes("OPTIONS"))).toBe(
-      true
+      true,
     );
 
     // Parameter types
@@ -355,6 +355,48 @@ describe("scanAppDir", () => {
 }`;
     const { pathStructure } = scanAppDir("/output", "/testApp");
     expect(pathStructure).equals(expectPathStructure);
+  });
+
+  it("should ignore non-object child path structure for grouped routes", () => {
+    mock({
+      "/testApp": {
+        group: {
+          "(user)": {
+            "page.tsx": "export function Home() {};",
+          },
+        },
+      },
+    });
+
+    const expectPathStructure = `{
+  "group": Endpoint
+}`;
+    const { pathStructure } = scanAppDir("/output", "/testApp");
+    expect(pathStructure).equals(expectPathStructure);
+  });
+
+  it("should throw when grouped route child path structure is empty", () => {
+    mock({
+      "/testApp": {
+        group: {
+          "(user)": {
+            "page.tsx": "export function Home() {};",
+          },
+        },
+      },
+    });
+
+    // Force grouped child scan result to be empty so the falsy branch is covered.
+    visitedDirsCache.set("/testApp/group/(user)", true);
+    scanAppDirCache.set("/testApp/group/(user)", {
+      pathStructure: "   ",
+      imports: [],
+      paramsTypes: [],
+    });
+
+    expect(() => scanAppDir("/output", "/testApp")).toThrow(
+      "Invalid empty child path structure in grouped/parallel route: /testApp/group/(user)",
+    );
   });
 
   it("should scan directory with parallel routes and generate path structure", () => {

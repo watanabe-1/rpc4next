@@ -203,8 +203,16 @@ export const scanAppDir = (
       if (isSkipDir) {
         // Extract only the inner part inside `{}` from the child output
         const match = childPathStructure.match(/^\s*\{([\s\S]*)\}\s*$/);
+        const trimmedChildPathStructure = childPathStructure.trim();
         if (match) {
           pathStructures.push(`${currentIndent}${match[1].trim()}`);
+        } else if (trimmedChildPathStructure) {
+          // Preserve non-object child structures (e.g. "Endpoint")
+          typeFragments.push(trimmedChildPathStructure);
+        } else {
+          throw new Error(
+            `Invalid empty child path structure in grouped/parallel route: ${fullPath}`
+          );
         }
       } else {
         pathStructures.push(
