@@ -49,7 +49,7 @@ export default defineConfig({
       reporter: ["text", "html", "json", "json-summary"],
       reportOnFailure: true,
       reportsDirectory: "./coverage",
-      include: ["packages/**/src/**/*.ts"],
+      include: ["packages/**/src/**/*.ts", "scripts/**/*.ts"],
       exclude: [
         ...coverageConfigDefaults.exclude,
         "packages/**/src/**/index.ts",

@@ -88,20 +88,18 @@ export function replaceWorkspaceDepsFromManifest(
 
         const next = `${prefix}${version}`;
 
-        if (deps[depName] !== next) {
-          console.log(
-            `[replace] ${pkg.name}: ${field}.${depName} ${deps[depName]} -> ${next}`,
-          );
+        console.log(
+          `[replace] ${pkg.name}: ${field}.${depName} ${deps[depName]} -> ${next}`,
+        );
 
-          result.changes.push({
-            packageName: pkg.name,
-            depName,
-            from: deps[depName],
-            to: next,
-          });
-          deps[depName] = next;
-          changed = true;
-        }
+        result.changes.push({
+          packageName: pkg.name,
+          depName,
+          from: deps[depName],
+          to: next,
+        });
+        deps[depName] = next;
+        changed = true;
       }
     }
 
@@ -114,7 +112,11 @@ export function replaceWorkspaceDepsFromManifest(
   return result;
 }
 
-// CLI entry point (used by CI)
-if (import.meta.main) {
-  replaceWorkspaceDepsFromManifest({ repoRoot: process.cwd() });
+export function runCli(cwd = process.cwd()): ReplaceResult {
+  return replaceWorkspaceDepsFromManifest({ repoRoot: cwd });
 }
+
+// CLI entry point (used by CI)
+/* c8 ignore start */
+if (import.meta.main) runCli();
+/* c8 ignore end */
