@@ -1,7 +1,19 @@
-import { describe, it, vi, expect, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runCli } from "./cli";
 import * as cliHandler from "./cli-handler";
+import { EXIT_FAILURE } from "./constants";
 import * as loggerModule from "./logger";
+
+const flushAsync = async () => {
+  await Promise.resolve();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+};
+
+class ExitSignal extends Error {
+  constructor(readonly code: number | undefined) {
+    super(`process.exit(${String(code)})`);
+  }
+}
 
 describe("runCli", () => {
   const mockLogger = {
@@ -11,91 +23,193 @@ describe("runCli", () => {
   };
 
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.spyOn(loggerModule, "createLogger").mockReturnValue(mockLogger);
-    vi.spyOn(process, "exit").mockImplementation((() => {}) as () => never);
+    vi.spyOn(process, "exit").mockImplementation((() => undefined) as never);
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it("should call handleCli and process.exit when not watching", () => {
-    const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockReturnValue(0);
+  it("calls handleCli with required positionals", async () => {
+    const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
 
-    const argv = ["node", "script", "src", "types.ts"];
-    runCli(argv);
+    runCli(["node", "cli", "src", "types.ts"]);
+    await flushAsync();
 
     expect(handleCliSpy).toHaveBeenCalledWith(
       "src",
       "types.ts",
-      { watch: false, paramsFile: undefined }, // or { watch: false }
+      { watch: false },
       mockLogger,
     );
   });
 
-  it("should not call process.exit when watch is true", () => {
-    const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockReturnValue(0);
-    const argv = ["node", "script", "src", "types.ts", "--watch"];
+  it("exits with failure and prints help when required args are missing", () => {
+    const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(
+      ((code?: number) => {
+        throw new ExitSignal(code);
+      }) as never,
+    );
 
-    runCli(argv);
+    expect(() => runCli(["node", "cli", "src"])).toThrow(ExitSignal);
+
+    expect(handleCliSpy).not.toHaveBeenCalled();
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      "Missing required arguments: <baseDir> <outputPath>",
+    );
+    expect(mockLogger.info).toHaveBeenCalled();
+    expect(exitSpy).toHaveBeenCalledWith(EXIT_FAILURE);
+  });
+
+  it("exits with returned code when --watch is not set", async () => {
+    vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
+
+    runCli(["node", "cli", "src", "types.ts"]);
+    await flushAsync();
+
+    expect(process.exit).toHaveBeenCalledWith(0);
+  });
+
+  it("does not call process.exit when --watch is set", async () => {
+    const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
+
+    runCli(["node", "cli", "src", "types.ts", "--watch"]);
+    await flushAsync();
 
     expect(handleCliSpy).toHaveBeenCalledWith(
       "src",
       "types.ts",
-      { watch: true, paramsFile: undefined },
+      { watch: true },
       mockLogger,
     );
     expect(process.exit).not.toHaveBeenCalled();
   });
 
-  it("should pass params-file option correctly", () => {
-    const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockReturnValue(0);
-    const argv = [
-      "node",
-      "script",
-      "src",
-      "types.ts",
-      "--params-file",
-      "myparams",
-    ];
+  it.each([
+    { argv: ["node", "cli", "src", "types.ts", "-p"], expected: true },
+    {
+      argv: ["node", "cli", "src", "types.ts", "-p", "foo.ts"],
+      expected: "foo.ts",
+    },
+    {
+      argv: ["node", "cli", "src", "types.ts", "--params-file"],
+      expected: true,
+    },
+    {
+      argv: ["node", "cli", "src", "types.ts", "--params-file", "foo.ts"],
+      expected: "foo.ts",
+    },
+    {
+      argv: ["node", "cli", "src", "types.ts", "--params-file=foo.ts"],
+      expected: "foo.ts",
+    },
+  ])("parses params-file option: $argv", async ({ argv, expected }) => {
+    const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
 
     runCli(argv);
+    await flushAsync();
 
     expect(handleCliSpy).toHaveBeenCalledWith(
       "src",
       "types.ts",
-      { paramsFile: "myparams", watch: false },
+      { watch: false, paramsFile: expected },
       mockLogger,
     );
   });
 
-  it("should log error with Error instance and exit", async () => {
-    vi.spyOn(cliHandler, "handleCli").mockImplementation(() => {
-      throw new Error("Something went wrong");
-    });
+  it("normalizes argv shape from process.argv and user-args-only", async () => {
+    const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
 
-    const argv = ["node", "script", "src", "types.ts"];
-    runCli(argv);
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    runCli(["node", "cli", "src", "types.ts"]);
+    runCli(["src", "types.ts"]);
+    await flushAsync();
+
+    expect(handleCliSpy).toHaveBeenNthCalledWith(
+      1,
+      "src",
+      "types.ts",
+      { watch: false },
+      mockLogger,
+    );
+    expect(handleCliSpy).toHaveBeenNthCalledWith(
+      2,
+      "src",
+      "types.ts",
+      { watch: false },
+      mockLogger,
+    );
+  });
+
+  it.each([
+    ["-h"],
+    ["--help"],
+  ])("exits 0 and skips handleCli on help: %s", (helpFlag) => {
+    const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(
+      ((code?: number) => {
+        throw new ExitSignal(code);
+      }) as never,
+    );
+
+    expect(() => runCli(["node", "cli", helpFlag])).toThrow(ExitSignal);
+
+    expect(handleCliSpy).not.toHaveBeenCalled();
+    expect(mockLogger.info).toHaveBeenCalled();
+    expect(exitSpy).toHaveBeenCalledWith(0);
+  });
+
+  it("exits with failure on unknown option", () => {
+    const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
+
+    runCli(["node", "cli", "src", "types.ts", "--unknown"]);
+
+    expect(handleCliSpy).not.toHaveBeenCalled();
+    expect(mockLogger.error).toHaveBeenCalledTimes(1);
+    expect(mockLogger.info).toHaveBeenCalledTimes(1);
+    expect(process.exit).toHaveBeenCalledWith(EXIT_FAILURE);
+  });
+
+  it("treats `-p --watch` as paramsFile=true and watch=true", async () => {
+    const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
+
+    runCli(["node", "cli", "src", "types.ts", "-p", "--watch"]);
+    await flushAsync();
+
+    expect(handleCliSpy).toHaveBeenCalledWith(
+      "src",
+      "types.ts",
+      { watch: true, paramsFile: true },
+      mockLogger,
+    );
+    expect(process.exit).not.toHaveBeenCalled();
+  });
+
+  it("logs and exits when handleCli throws Error", async () => {
+    vi.spyOn(cliHandler, "handleCli").mockRejectedValue(
+      new Error("Something went wrong"),
+    );
+
+    runCli(["node", "cli", "src", "types.ts"]);
+    await flushAsync();
 
     expect(mockLogger.error).toHaveBeenCalledWith(
       "Unexpected error occurred:Something went wrong",
     );
-    expect(process.exit).toHaveBeenCalledWith(1);
+    expect(process.exit).toHaveBeenCalledWith(EXIT_FAILURE);
   });
 
-  it("should log error with non-Error and exit", async () => {
-    vi.spyOn(cliHandler, "handleCli").mockImplementation(() => {
-      throw "plain string error";
-    });
+  it("logs and exits when handleCli throws non-Error", async () => {
+    vi.spyOn(cliHandler, "handleCli").mockRejectedValue("plain string error");
 
-    const argv = ["node", "script", "src", "types.ts"];
-    runCli(argv);
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    runCli(["node", "cli", "src", "types.ts"]);
+    await flushAsync();
 
     expect(mockLogger.error).toHaveBeenCalledWith(
       "Unexpected error occurred:plain string error",
     );
-    expect(process.exit).toHaveBeenCalledWith(1);
+    expect(process.exit).toHaveBeenCalledWith(EXIT_FAILURE);
   });
 });

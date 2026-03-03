@@ -15,9 +15,22 @@ function normalizeUserArgs(argv: string[]): string[] {
   // If the first arg starts with "-" it's almost certainly already user args.
   if (argv[0].startsWith("-")) return argv;
 
-  // Otherwise assume process.argv style and drop ["node", "script"].
-  // This matches how commander is commonly used.
-  return argv.slice(2);
+  // Only strip the first two tokens when argv clearly looks like process.argv.
+  // Keep plain user args like ["src", "types.ts"] as-is.
+  const runtimeToken = argv[0].toLowerCase();
+  const knownRuntimes = new Set([
+    "node",
+    "node.exe",
+    "bun",
+    "bun.exe",
+    "deno",
+    "deno.exe",
+  ]);
+  if (knownRuntimes.has(runtimeToken) && argv.length >= 2) {
+    return argv.slice(2);
+  }
+
+  return argv;
 }
 
 function printHelp(logger: Logger) {
@@ -60,19 +73,22 @@ function extractOptionalValueFlag(
     const a = args[i];
 
     // Support --params-file=foo
+    let consumedByEqualsForm = false;
     for (const k of keys) {
       if (a.startsWith(k + "=")) {
         value = a.slice((k + "=").length) || true;
+        consumedByEqualsForm = true;
         // do not push this arg (consumed)
-        continue;
+        break;
       }
     }
+    if (consumedByEqualsForm) continue;
 
     if (keys.includes(a)) {
       const next = args[i + 1];
 
       // If next token exists and is not another option, treat as value.
-      if (next !== null && !next.startsWith("-")) {
+      if (typeof next === "string" && !next.startsWith("-")) {
         value = next;
         i++; // consume next
       } else {
