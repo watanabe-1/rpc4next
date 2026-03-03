@@ -1,5 +1,5 @@
-import { parseArgs } from "node:util";
 import path from "node:path";
+import { parseArgs } from "node:util";
 import { handleCli } from "./cli-handler";
 import { EXIT_FAILURE } from "./constants";
 import { createLogger } from "./logger";
