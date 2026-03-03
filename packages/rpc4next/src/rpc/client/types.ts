@@ -15,7 +15,7 @@ import type {
 } from "../server/route-types";
 import type { TypedNextResponse, ValidationInputFor } from "../server/types";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
 type DistributeOmit<T, K extends keyof any> = T extends any
   ? Omit<T, K>
   : never;
@@ -152,21 +152,21 @@ type InferHttpMethodValidationSchema<T> = {
 }[keyof T & HttpMethodFuncKey];
 
 type InferValidationSchema<T> = T extends (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
   ...args: any[]
 ) => RouteHandlerResponse<RouteResponse, infer TValidationSchema>
   ? TValidationSchema
   : ValidationSchema;
 
 type InferNextResponseType<T> = T extends (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
   ...args: any[]
 ) => Promise<NextResponse<infer U>>
   ? U
   : never;
 
 type InferTypedNextResponseType<T> = T extends (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
   ...args: any[]
 ) => Promise<TypedNextResponse>
   ? Awaited<ReturnType<T>>

@@ -8,7 +8,7 @@ import {
 import { hasTargetFiles, scanAppDir } from "./route-scanner";
 
 vi.mock("./alias", () => ({
-  createImportAlias: vi.fn((path: string, name: string) => `${name}_asmocked`),
+  createImportAlias: vi.fn((_path: string, name: string) => `${name}_asmocked`),
 }));
 
 // ----------------------

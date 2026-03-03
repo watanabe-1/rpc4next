@@ -57,8 +57,8 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     const searchParams = new URLSearchParams(urlOptions.query).toString();
     const expectedUrl =
       expectedBase +
-      (searchParams ? "?" + searchParams : "") +
-      (urlOptions.hash ? "#" + urlOptions.hash : "");
+      (searchParams ? `?${searchParams}` : "") +
+      (urlOptions.hash ? `#${urlOptions.hash}` : "");
     expect(calledUrl).toBe(expectedUrl);
 
     expect(calledInit?.method).toBe("GET");

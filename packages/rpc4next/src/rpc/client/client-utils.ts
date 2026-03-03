@@ -33,7 +33,7 @@ export const deepMerge = <T extends object, U extends object>(
   const result = { ...target } as T & U;
 
   for (const key in source) {
-    if (Object.prototype.hasOwnProperty.call(source, key)) {
+    if (Object.hasOwn(source, key)) {
       const targetValue = (target as Record<string, unknown>)[key];
       const sourceValue = (source as Record<string, unknown>)[key];
 

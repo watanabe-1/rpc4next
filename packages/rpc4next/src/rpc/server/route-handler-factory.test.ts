@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import { routeHandlerFactory } from "./route-handler-factory";
-import { TypedNextResponse } from "./types";
+import type { TypedNextResponse } from "./types";
 
 describe("routeHandlerFactory", () => {
   it("should return the response from the first handler that returns a Response", async () => {
@@ -44,7 +44,7 @@ describe("routeHandlerFactory", () => {
   });
 
   it("should use the global error handler when provided", async () => {
-    const globalErrorHandler = vi.fn(async (error, rc) => {
+    const globalErrorHandler = vi.fn(async (_error, rc) => {
       // In the global error handler, return a response using rc.text
       return rc.text("global error handled", { status: 500 });
     });

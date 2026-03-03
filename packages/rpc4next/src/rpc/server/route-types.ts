@@ -13,7 +13,7 @@ import type { Params, Query, RouteContext, TypedNextResponse } from "./types";
 
 export type RouteResponse =
   | TypedNextResponse
-  | Promise<TypedNextResponse | void>;
+  | Promise<TypedNextResponse | undefined>;
 
 export type RequiredRouteResponse =
   | TypedNextResponse
@@ -25,9 +25,9 @@ export interface RouteBindings {
 }
 
 export interface ValidationSchema {
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  // biome-ignore lint/complexity/noBannedTypes: empty object contract is intentional
   input: {};
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  // biome-ignore lint/complexity/noBannedTypes: empty object contract is intentional
   output: {};
 }
 
@@ -58,7 +58,7 @@ export type RouteHandlerResponse<
   _TValidationSchema extends ValidationSchema,
 > =
   // Exclude void | undefined because a response is always returned or an error is thrown internally
-  Promise<Exclude<Awaited<TRouteResponse>, void | undefined>>;
+  Promise<Exclude<Awaited<TRouteResponse>, undefined | undefined>>;
 
 export type RouteHandler<
   TParams extends RouteBindings["params"],

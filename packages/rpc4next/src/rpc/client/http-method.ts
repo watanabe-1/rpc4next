@@ -93,13 +93,13 @@ export const httpMethod = (
     };
 
     // ---- Cookies: merge (existing cookie header + methodParam cookies map)
-    const existingCookie = mergedHeaders["cookie"];
+    const existingCookie = mergedHeaders.cookie;
     const methodParamCookies = methodParam?.requestHeaders?.cookies;
     if (methodParamCookies && Object.keys(methodParamCookies).length > 0) {
       const cookieFromMap = Object.entries(methodParamCookies)
         .map(([k, v]) => `${k}=${v}`)
         .join("; ");
-      mergedHeaders["cookie"] = existingCookie
+      mergedHeaders.cookie = existingCookie
         ? `${existingCookie}; ${cookieFromMap}`
         : cookieFromMap;
     }

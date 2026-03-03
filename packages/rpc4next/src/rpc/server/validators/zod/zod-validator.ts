@@ -24,7 +24,7 @@ import { validator } from "../validator";
 export const zValidator = <
   THttpMethod extends HttpMethod,
   TValidationTarget extends ValidationTarget<THttpMethod>,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
   TSchema extends ZodSchema<any>,
   TParams extends ConditionalValidationInput<
     TValidationTarget,
@@ -46,11 +46,9 @@ export const zValidator = <
     input: Record<TValidationTarget, TInput>;
     output: Record<TValidationTarget, TOutput>;
   },
-  THookReturn extends TypedNextResponse | void = TypedNextResponse<
-    z.ZodSafeParseError<TInput>,
-    400,
-    "application/json"
-  > | void,
+  THookReturn extends TypedNextResponse | undefined =
+    | TypedNextResponse<z.ZodSafeParseError<TInput>, 400, "application/json">
+    | undefined,
 >(
   target: TValidationTarget,
   schema: TSchema,

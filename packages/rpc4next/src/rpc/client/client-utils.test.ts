@@ -14,7 +14,7 @@ import {
 
 describe("isDynamic", () => {
   it("returns true if the string starts with DYNAMIC_PREFIX", () => {
-    const key = DYNAMIC_PREFIX + "test";
+    const key = `${DYNAMIC_PREFIX}test`;
     expect(isDynamic(key)).toBe(true);
   });
 
@@ -26,12 +26,12 @@ describe("isDynamic", () => {
 
 describe("isCatchAllOrOptional", () => {
   it("returns true if the string starts with CATCH_ALL_PREFIX", () => {
-    const key = CATCH_ALL_PREFIX + "test";
+    const key = `${CATCH_ALL_PREFIX}test`;
     expect(isCatchAllOrOptional(key)).toBe(true);
   });
 
   it("returns true if the string starts with OPTIONAL_CATCH_ALL_PREFIX", () => {
-    const key = OPTIONAL_CATCH_ALL_PREFIX + "test";
+    const key = `${OPTIONAL_CATCH_ALL_PREFIX}test`;
     expect(isCatchAllOrOptional(key)).toBe(true);
   });
 

@@ -2,8 +2,8 @@ import { NextRequest } from "next/server";
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import { z } from "zod";
 import { routeHandlerFactory } from "../../route-handler-factory";
-import { RouteHandler } from "../../route-types";
-import { Params, TypedNextResponse } from "../../types";
+import type { RouteHandler } from "../../route-types";
+import type { Params, TypedNextResponse } from "../../types";
 import * as validatorUtils from "../validator-utils";
 import { zValidator } from "./zod-validator";
 

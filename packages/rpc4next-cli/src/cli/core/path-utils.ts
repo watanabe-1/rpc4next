@@ -1,4 +1,4 @@
-import path from "path";
+import path from "node:path";
 
 export const createRelativeImportPath = (
   outputFile: string,
@@ -10,7 +10,7 @@ export const createRelativeImportPath = (
 
   // Add "./" if the file is in the same directory
   if (!relativePath.startsWith("../")) {
-    relativePath = "./" + relativePath;
+    relativePath = `./${relativePath}`;
   }
 
   return relativePath;

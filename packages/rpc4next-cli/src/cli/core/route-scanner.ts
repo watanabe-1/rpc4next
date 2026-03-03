@@ -3,8 +3,8 @@
  * especially the design and UX of its CLI.
  */
 
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 import type { HttpMethod } from "rpc4next-shared";
 import {
   CATCH_ALL_PREFIX,
@@ -33,7 +33,8 @@ type ParamsType = {
 const endPointFileNames = new Set(END_POINT_FILE_NAMES);
 
 export const hasTargetFiles = (dirPath: string): boolean => {
-  if (visitedDirsCache.has(dirPath)) return visitedDirsCache.get(dirPath)!;
+  const cachedHasTargetFiles = visitedDirsCache.get(dirPath);
+  if (cachedHasTargetFiles !== undefined) return cachedHasTargetFiles;
 
   const entries = fs.readdirSync(dirPath, { withFileTypes: true });
   for (const entry of entries) {
@@ -122,7 +123,8 @@ export const scanAppDir = (
   imports: ImportObj[];
   paramsTypes: ParamsType[];
 } => {
-  if (scanAppDirCache.has(input)) return scanAppDirCache.get(input)!;
+  const cachedScanResult = scanAppDirCache.get(input);
+  if (cachedScanResult !== undefined) return cachedScanResult;
 
   const previousIndent = indent;
   const currentIndent = indent + INDENT;

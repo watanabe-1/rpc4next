@@ -1,4 +1,4 @@
-import path from "path";
+import path from "node:path";
 import { EXIT_FAILURE, EXIT_SUCCESS } from "./constants";
 import { toPosixPath } from "./core/path-utils";
 import { generate } from "./generator";

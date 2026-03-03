@@ -24,7 +24,9 @@ type ParamValue = string | string[] | undefined;
  * @example
  * safeDecode(undefined); // undefined
  */
-const safeDecode = (value: string | undefined | null): string | undefined => {
+function safeDecode(value: string): string;
+function safeDecode(value: undefined | null): undefined;
+function safeDecode(value: string | undefined | null): string | undefined {
   if (value === null || value === undefined) return undefined;
   try {
     return decodeURIComponent(value);
@@ -32,7 +34,7 @@ const safeDecode = (value: string | undefined | null): string | undefined => {
     // Fallback to raw value if malformed percent-encoding is present.
     return value;
   }
-};
+}
 
 /**
  * Normalize path segments into a canonical base path string.
@@ -115,7 +117,7 @@ export const matchPath = (paths: string[], dynamicKeys: string[]) => {
           const parts = captured
             .split("/")
             .filter(Boolean)
-            .map((p) => safeDecode(p)!)
+            .map((p) => safeDecode(p))
             .filter((p): p is string => p !== undefined);
           params[paramKey] = parts;
         }

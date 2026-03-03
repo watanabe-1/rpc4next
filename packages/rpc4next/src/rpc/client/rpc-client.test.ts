@@ -1,6 +1,6 @@
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import {
   afterAll,
   afterEach,
@@ -11,13 +11,13 @@ import {
   it,
 } from "vitest";
 import {
-  ContentType,
-  HttpStatusCode,
+  type ContentType,
+  type HttpStatusCode,
   routeHandlerFactory,
-  TypedNextResponse,
+  type TypedNextResponse,
 } from "../server";
 import { createRpcClient } from "./rpc-client";
-import { Endpoint, ParamsKey, QueryKey } from "./types";
+import type { Endpoint, ParamsKey, QueryKey } from "./types";
 
 const createRouteHandler = routeHandlerFactory();
 
@@ -180,7 +180,7 @@ describe("createRpcClient", () => {
     it("should use only client-level options when only client options are specified", async () => {
       let capturedInit: RequestInit | undefined;
       const customFetch = async (
-        input: RequestInfo | URL,
+        _input: RequestInfo | URL,
         init?: RequestInit,
       ) => {
         capturedInit = init;
@@ -198,15 +198,15 @@ describe("createRpcClient", () => {
 
       await client.api.hoge.$delete();
       expect(capturedInit).toBeDefined();
-      expect(capturedInit!.method).toBe("DELETE");
-      expect(capturedInit!.mode).toBe("cors");
-      expect(capturedInit!.headers).toEqual({ "x-client": "client-header" });
+      expect(capturedInit?.method).toBe("DELETE");
+      expect(capturedInit?.mode).toBe("cors");
+      expect(capturedInit?.headers).toEqual({ "x-client": "client-header" });
     });
 
     it("should use only method-level options when only method options are specified", async () => {
       let capturedInit: RequestInit | undefined;
       const customFetch = async (
-        input: RequestInfo | URL,
+        _input: RequestInfo | URL,
         init?: RequestInit,
       ) => {
         capturedInit = init;
@@ -226,15 +226,15 @@ describe("createRpcClient", () => {
       });
 
       expect(capturedInit).toBeDefined();
-      expect(capturedInit!.method).toBe("DELETE");
-      expect(capturedInit!.cache).toBe("no-cache");
-      expect(capturedInit!.headers).toEqual({ "x-method": "method-header" });
+      expect(capturedInit?.method).toBe("DELETE");
+      expect(capturedInit?.cache).toBe("no-cache");
+      expect(capturedInit?.headers).toEqual({ "x-method": "method-header" });
     });
 
     it("should correctly merge client and method options", async () => {
       let capturedInit: RequestInit | undefined;
       const customFetch = async (
-        input: RequestInfo | URL,
+        _input: RequestInfo | URL,
         init?: RequestInit,
       ) => {
         capturedInit = init;
@@ -259,11 +259,11 @@ describe("createRpcClient", () => {
       });
 
       expect(capturedInit).toBeDefined();
-      expect(capturedInit!.method).toBe("DELETE");
-      expect(capturedInit!.mode).toBe("cors");
-      expect(capturedInit!.credentials).toBe("include");
-      expect(capturedInit!.cache).toBe("no-cache");
-      expect(capturedInit!.headers).toEqual({
+      expect(capturedInit?.method).toBe("DELETE");
+      expect(capturedInit?.mode).toBe("cors");
+      expect(capturedInit?.credentials).toBe("include");
+      expect(capturedInit?.cache).toBe("no-cache");
+      expect(capturedInit?.headers).toEqual({
         "x-client": "client-header",
         common: "method",
         "x-method": "method-header",
@@ -273,7 +273,7 @@ describe("createRpcClient", () => {
     it("should work when init options have no headers", async () => {
       let capturedInit: RequestInit | undefined;
       const customFetch = async (
-        input: RequestInfo | URL,
+        _input: RequestInfo | URL,
         init?: RequestInit,
       ) => {
         capturedInit = init;
@@ -293,14 +293,14 @@ describe("createRpcClient", () => {
       });
 
       expect(capturedInit).toBeDefined();
-      expect(capturedInit!.method).toBe("DELETE");
-      expect(capturedInit!.headers).toEqual({ "x-only": "only-header" });
+      expect(capturedInit?.method).toBe("DELETE");
+      expect(capturedInit?.headers).toEqual({ "x-only": "only-header" });
     });
 
     it("should merge non-conflicting options from client and method", async () => {
       let capturedInit: RequestInit | undefined;
       const customFetch = async (
-        input: RequestInfo | URL,
+        _input: RequestInfo | URL,
         init?: RequestInit,
       ) => {
         capturedInit = init;
@@ -322,9 +322,9 @@ describe("createRpcClient", () => {
       });
 
       expect(capturedInit).toBeDefined();
-      expect(capturedInit!.method).toBe("DELETE");
-      expect(capturedInit!.mode).toBe("cors");
-      expect(capturedInit!.cache).toBe("no-store");
+      expect(capturedInit?.method).toBe("DELETE");
+      expect(capturedInit?.mode).toBe("cors");
+      expect(capturedInit?.cache).toBe("no-store");
     });
 
     it("should propagate network errors", async () => {
@@ -342,7 +342,7 @@ describe("createRpcClient", () => {
     });
 
     it("should correctly pass request body for POST requests", async () => {
-      let capturedBody;
+      let capturedBody: BodyInit | null | undefined;
       const customFetch = async (_: RequestInfo | URL, init?: RequestInit) => {
         capturedBody = init?.body;
 
@@ -362,7 +362,7 @@ describe("createRpcClient", () => {
     });
 
     it("should correctly merge multiple header values", async () => {
-      let capturedHeaders;
+      let capturedHeaders: HeadersInit | undefined;
       const customFetch = async (_: RequestInfo | URL, init?: RequestInit) => {
         capturedHeaders = init?.headers;
 
@@ -436,7 +436,7 @@ describe("createRpcClient", () => {
       const json = await response.json();
       expect(json["x-client"]).toBe("client-header");
       expect(json["x-method"]).toBe("method-header");
-      expect(json["common"]).toBe("method");
+      expect(json.common).toBe("method");
     });
   });
 

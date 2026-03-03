@@ -34,7 +34,7 @@ import type { FuncParams, UrlOptions, UrlResult } from "./types";
 export const buildUrlSuffix = (url?: UrlOptions) => {
   if (!url) return "";
   const query = url.query
-    ? "?" + new URLSearchParams(url.query as Record<string, string>).toString()
+    ? `?${new URLSearchParams(url.query as Record<string, string>).toString()}`
     : "";
   const hash = url.hash ? `#${url.hash}` : "";
 

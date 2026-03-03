@@ -74,7 +74,7 @@ export const routeHandlerFactory =
     const defineRouteForMethod = <THttpMethod extends HttpMethod>(
       method: THttpMethod,
     ) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
       return ((...handlers: any[]) => {
         const resolvedOnError =
           onError ??

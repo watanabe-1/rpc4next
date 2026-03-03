@@ -1,5 +1,5 @@
 export const debounceOnceRunningWithTrailing = <
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
   T extends (...args: any[]) => Promise<void> | void,
 >(
   func: T,

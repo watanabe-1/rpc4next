@@ -1,5 +1,5 @@
-import chokidar, { FSWatcher } from "chokidar";
-import * as path from "path";
+import * as path from "node:path";
+import chokidar, { type FSWatcher } from "chokidar";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as cacheModule from "./core/cache";
 import * as debounceModule from "./debounce";
@@ -209,7 +209,7 @@ describe("setupWatcher", () => {
     );
 
     setupWatcher("/base/dir", onGenerate, logger);
-    await handlers["SIGINT"]?.();
+    await handlers.SIGINT?.();
 
     expect(mockClose).toHaveBeenCalled();
     expect(logger.info).toHaveBeenCalledWith("Watcher closed.", {
@@ -232,7 +232,7 @@ describe("setupWatcher", () => {
     setupWatcher("/base/dir", onGenerate, logger);
 
     const flushPromises = () => new Promise(setImmediate);
-    await handlers["SIGTERM"]?.();
+    await handlers.SIGTERM?.();
     // Ensure the async catch() is executed
     await flushPromises();
 

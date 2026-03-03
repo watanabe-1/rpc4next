@@ -419,7 +419,6 @@ describe("createRouteContext type definitions", () => {
     >();
   });
 
-  // eslint-disable-next-line vitest/expect-expect
   it("should cause a type error when both headers and headersInit are provided", () => {
     const req = createRealNextRequest("http://localhost/");
     const context = createRouteContext(req, { params: Promise.resolve({}) });

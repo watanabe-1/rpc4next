@@ -11,7 +11,7 @@ const readJson = <T>(file: string): T =>
   JSON.parse(fs.readFileSync(file, "utf8"));
 
 const writeJson = (file: string, obj: unknown) =>
-  fs.writeFileSync(file, JSON.stringify(obj, null, 2) + "\n", "utf8");
+  fs.writeFileSync(file, `${JSON.stringify(obj, null, 2)}\n`, "utf8");
 
 const mkdirp = (p: string) => fs.mkdirSync(p, { recursive: true });
 
@@ -60,7 +60,7 @@ describe("replaceWorkspaceDepsFromManifest", () => {
 
     const res = replaceWorkspaceDepsFromManifest({ repoRoot: tmpDir });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
     const core = readJson<any>(path.join(pCore, "package.json"));
     expect(core.dependencies["rpc4next-shared"]).toBe("^1.7.3");
     expect(core.peerDependencies["rpc4next-shared"]).toBe("^1.7.3");
@@ -95,7 +95,7 @@ describe("replaceWorkspaceDepsFromManifest", () => {
 
     const res = replaceWorkspaceDepsFromManifest({ repoRoot: tmpDir });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
     const core = readJson<any>(path.join(pCore, "package.json"));
     expect(core.dependencies["some-other-pkg"]).toBe("workspace:*");
     expect(res.updatedFiles.length).toBe(0);
@@ -137,7 +137,7 @@ describe("replaceWorkspaceDepsFromManifest", () => {
         "rpc4next-shared": "workspace:",
         "non-workspace": "^1.0.0",
         // Intentionally invalid type to hit runtime guard.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
         "non-string": 123 as any,
       },
     });
@@ -148,7 +148,7 @@ describe("replaceWorkspaceDepsFromManifest", () => {
       defaultRange: "~",
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
     const core = readJson<any>(path.join(pCore, "package.json"));
     expect(core.dependencies["rpc4next-shared"]).toBe("~1.7.3");
     expect(core.optionalDependencies["rpc4next-shared"]).toBe("~1.7.3");
@@ -192,7 +192,7 @@ describe("replaceWorkspaceDepsFromManifest", () => {
       defaultRange: "~",
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
     const core = readJson<any>(path.join(pCore, "package.json"));
     expect(core.dependencies["rpc4next-shared"]).toBe("~1.7.3");
     expect(res.changes.map((c) => `${c.depName}:${c.from}->${c.to}`)).toEqual([
@@ -228,7 +228,7 @@ describe("replaceWorkspaceDepsFromManifest", () => {
 
     const res = runCli(tmpDir);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
     const core = readJson<any>(path.join(pCore, "package.json"));
     expect(core.dependencies["rpc4next-shared"]).toBe("^1.7.3");
     expect(res.updatedFiles.length).toBe(1);

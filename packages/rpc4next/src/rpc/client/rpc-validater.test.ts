@@ -14,7 +14,7 @@ import { searchParamsToObject } from "../lib/search-params";
 import { routeHandlerFactory } from "../server";
 import { zValidator } from "../server/validators/zod/zod-validator";
 import { createRpcClient } from "./rpc-client";
-import { ClientOptions, Endpoint } from "./types";
+import type { ClientOptions, Endpoint } from "./types";
 
 const schema = z.object({
   name: z.string(),
