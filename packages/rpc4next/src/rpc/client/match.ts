@@ -25,6 +25,8 @@ type ParamValue = string | string[] | undefined;
  * safeDecode(undefined); // undefined
  */
 function safeDecode(value: string): string;
+function safeDecode(value: string | undefined): string | undefined;
+function safeDecode(value: string | null): string | undefined;
 function safeDecode(value: undefined | null): undefined;
 function safeDecode(value: string | undefined | null): string | undefined {
   if (value === null || value === undefined) return undefined;
