@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { matchPath } from "./match";
 
 describe("matchPath", () => {
@@ -13,7 +13,7 @@ describe("matchPath", () => {
         hash: undefined,
       });
       expect(
-        matcher("/users/%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF")
+        matcher("/users/%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF"),
       ).toEqual({
         params: { id: "こんにちは" },
         query: {},
@@ -90,7 +90,7 @@ describe("matchPath", () => {
         hash: undefined,
       });
       expect(
-        matcher("/blog/%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF/05")
+        matcher("/blog/%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF/05"),
       ).toEqual({
         params: { slug: ["こんにちは", "05"] },
         query: {},
@@ -185,8 +185,8 @@ describe("matchPath", () => {
     it("Decodes query and hash", () => {
       expect(
         matcher(
-          "/users/%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF?x=%E3%83%86%E3%82%B9%E3%83%88#%E3%83%8F%E3%83%83%E3%82%B7%E3%83%A5"
-        )
+          "/users/%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF?x=%E3%83%86%E3%82%B9%E3%83%88#%E3%83%8F%E3%83%83%E3%82%B7%E3%83%A5",
+        ),
       ).toEqual({
         params: { id: "こんにちは" },
         query: { x: "テスト" },

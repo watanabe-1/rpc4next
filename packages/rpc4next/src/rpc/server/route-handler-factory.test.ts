@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { describe, it, expect, vi, expectTypeOf } from "vitest";
+import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import { routeHandlerFactory } from "./route-handler-factory";
 import { TypedNextResponse } from "./types";
 
@@ -17,7 +17,7 @@ describe("routeHandlerFactory", () => {
       async (rc) => {
         // The third handler (should not be executed)
         return rc.text("should not be reached");
-      }
+      },
     );
 
     const req = new NextRequest("http://localhost");
@@ -34,12 +34,12 @@ describe("routeHandlerFactory", () => {
       async (_) => {
         // Also does not return a Response
         return undefined as unknown as TypedNextResponse;
-      }
+      },
     );
 
     const req = new NextRequest("http://localhost");
     await expect(
-      handler.GET(req, { params: Promise.resolve({}) })
+      handler.GET(req, { params: Promise.resolve({}) }),
     ).rejects.toThrow("No handler returned a response");
   });
 
@@ -73,7 +73,7 @@ describe("routeHandlerFactory", () => {
         // Handler that returns nothing
       },
       spyHandler,
-      secondHandler // This handler should not be executed
+      secondHandler, // This handler should not be executed
     );
 
     const req = new NextRequest("http://localhost");
@@ -91,7 +91,7 @@ describe("routeHandlerFactory", () => {
       post: createRouteHandler.post(async (rc) => rc.text("POST response")),
       put: createRouteHandler.put(async (rc) => rc.text("PUT response")),
       delete: createRouteHandler.delete(async (rc) =>
-        rc.text("DELETE response")
+        rc.text("DELETE response"),
       ),
       patch: createRouteHandler.patch(async (rc) => rc.text("PATCH response")),
       head: createRouteHandler.head(async (rc) => {
@@ -139,7 +139,7 @@ describe("routeHandlerFactory", () => {
     expect(await headRes.text()).toBe(""); // HEAD responses are expected to have empty bodies
     expect(optionsRes.status).toBe(204);
     expect(optionsRes.headers.get("Allow")).toBe(
-      "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS"
+      "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS",
     );
   });
 
@@ -272,7 +272,7 @@ describe("routeHandlerFactory type definitions", () => {
       (rc) => {
         // Synchronous normal handler: returns a response via rc.text
         return rc.text("sync ok");
-      }
+      },
     );
 
     type ExpectedResponse =

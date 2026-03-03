@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
-import { describe, it, expect, vi, expectTypeOf } from "vitest";
+import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import { z } from "zod";
-import { zValidator } from "./zod-validator";
 import { routeHandlerFactory } from "../../route-handler-factory";
 import { RouteHandler } from "../../route-types";
 import { Params, TypedNextResponse } from "../../types";
 import * as validatorUtils from "../validator-utils";
+import { zValidator } from "./zod-validator";
 
 const createRouteHandler = routeHandlerFactory();
 
@@ -32,7 +32,7 @@ describe("zValidator tests", () => {
         if (!result.success) return rc.json(result, { status: 401 });
       }),
       zValidator("query", schema2),
-      async (rc) => rc.text("ok")
+      async (rc) => rc.text("ok"),
     );
     const req = new NextRequest(new URL("http://localhost/?name=J&age=20"));
     const res = await handler.POST(req, {
@@ -51,7 +51,7 @@ describe("zValidator tests", () => {
         if (!result.success) return rc.json(result, { status: 401 });
       }),
       zValidator("query", schema2),
-      async (rc) => rc.text("ok")
+      async (rc) => rc.text("ok"),
     );
     const req = new NextRequest(new URL("http://localhost/?name=J&age=20"));
     const res = await handler.POST(req, {
@@ -67,7 +67,7 @@ describe("zValidator tests", () => {
     }>().post(
       zValidator("params", schema),
       zValidator("query", schema2),
-      async (rc) => rc.text("ok")
+      async (rc) => rc.text("ok"),
     );
 
     const req = new NextRequest(new URL("http://localhost/?name=J&age=abc")); // invalid because age can't be converted
@@ -82,7 +82,7 @@ describe("zValidator tests", () => {
     const handler = createRouteHandler<{
       params: z.infer<typeof schema>;
     }>().post(zValidator("params", schema), async (rc) =>
-      rc.text("only params")
+      rc.text("only params"),
     );
     const req = new NextRequest(new URL("http://localhost/?ignored=true"));
     const res = await handler.POST(req, {
@@ -98,7 +98,7 @@ describe("zValidator tests", () => {
     }>().post(
       zValidator("params", schema),
       zValidator("query", schema2),
-      async (rc) => rc.text("test")
+      async (rc) => rc.text("test"),
     );
     const req = new NextRequest(new URL("http://localhost/?name=J&age=30"));
     const res = await handler.POST(req, {
@@ -125,7 +125,7 @@ describe("zValidator tests", () => {
     const handler = createRouteHandler<{
       params: z.infer<typeof schema>;
     }>().post(zValidator("params", schema), async (rc) =>
-      rc.text("never reach")
+      rc.text("never reach"),
     );
     const req = new NextRequest(new URL("http://localhost"));
     const res = await handler.POST(req, {
@@ -144,7 +144,7 @@ describe("zValidator tests", () => {
       zValidator("params", schema, (_, __) => {
         // Does not return a response on failure
       }),
-      async (rc) => rc.text("never reach")
+      async (rc) => rc.text("never reach"),
     );
     const req = new NextRequest(new URL("http://localhost"));
     await expect(() =>
@@ -153,9 +153,9 @@ describe("zValidator tests", () => {
           name: 100 as unknown as string,
           hoge: "valid",
         }),
-      })
+      }),
     ).rejects.toThrow(
-      "If you provide a custom hook, you must explicitly return a response when validation fails."
+      "If you provide a custom hook, you must explicitly return a response when validation fails.",
     );
   });
 
@@ -171,7 +171,7 @@ describe("zValidator tests", () => {
           params: rc.req.valid("params"),
           query: rc.req.valid("query"),
         });
-      }
+      },
     );
     const req = new NextRequest(new URL("http://localhost/?name=J&age=20"));
     const res = await handler.POST(req, {
@@ -193,7 +193,7 @@ describe("zValidator tests", () => {
     }>().post(
       zValidator("params", schema, hook),
       zValidator("query", schema2, hook),
-      async (rc) => rc.text("ok")
+      async (rc) => rc.text("ok"),
     );
 
     const req = new NextRequest(new URL("http://localhost/?name=J&age=20"));
@@ -217,7 +217,7 @@ describe("zValidator tests", () => {
       zValidator("json", schema),
       async (rc) => {
         return rc.text("valid json");
-      }
+      },
     );
 
     const req = new NextRequest(new URL("http://localhost"), {
@@ -236,7 +236,7 @@ describe("zValidator tests", () => {
       zValidator("json", schema),
       async (rc) => {
         return rc.text("never reach");
-      }
+      },
     );
 
     const req = new NextRequest(new URL("http://localhost"), {
@@ -260,7 +260,7 @@ describe("zValidator tests", () => {
         zValidator("headers", headerSchema),
         async (rc) => {
           return rc.json({ header: rc.req.valid("headers") });
-        }
+        },
       );
 
       const req = new NextRequest(new URL("http://localhost"));
@@ -288,7 +288,7 @@ describe("zValidator tests", () => {
 
       const handler = createRouteHandler().post(
         zValidator("headers", headerSchema),
-        async (rc) => rc.text("never reach")
+        async (rc) => rc.text("never reach"),
       );
 
       const req = new NextRequest(new URL("http://localhost"));
@@ -308,7 +308,7 @@ describe("zValidator tests", () => {
         zValidator("cookies", cookieSchema),
         async (rc) => {
           return rc.json({ cookie: rc.req.valid("cookies") });
-        }
+        },
       );
 
       const req = new NextRequest(new URL("http://localhost"));
@@ -336,7 +336,7 @@ describe("zValidator tests", () => {
 
       const handler = createRouteHandler().post(
         zValidator("cookies", cookieSchema),
-        async (rc) => rc.text("never reach")
+        async (rc) => rc.text("never reach"),
       );
 
       const req = new NextRequest(new URL("http://localhost"));
@@ -351,12 +351,12 @@ describe("zValidator tests", () => {
       zValidator("invalidTarget", schema),
       async (rc) => {
         return rc.text("never reach");
-      }
+      },
     );
 
     const req = new NextRequest(new URL("http://localhost"));
     await expect(() =>
-      handler.POST(req, { params: Promise.resolve({}) })
+      handler.POST(req, { params: Promise.resolve({}) }),
     ).rejects.toThrowError(new Error("Unexpected target: invalidTarget"));
   });
 });
@@ -386,7 +386,7 @@ describe("zValidator type definitions", () => {
         }
 
         return rc.text("ok2");
-      }
+      },
     );
     const req = new NextRequest(new URL("http://localhost/?name=J&age=20"));
     const _res = await handler.POST(req, {
@@ -433,7 +433,7 @@ describe("zValidator type definitions", () => {
         expectTypeOf<typeof _validJson>().toEqualTypeOf<ExpectedJson>();
 
         return rc.text("ok");
-      }
+      },
     );
     const req = new NextRequest(new URL("http://localhost/?name=J&age=20"), {
       method: "post",
@@ -499,7 +499,7 @@ describe("zValidator type definitions", () => {
         expectTypeOf<typeof _validHeaders>().toEqualTypeOf<ExpectedHeader>();
 
         return rc.text("header ok");
-      }
+      },
     );
     const req = new NextRequest(new URL("http://localhost"));
     const post = await handler.POST;
@@ -561,7 +561,7 @@ describe("zValidator type definitions", () => {
         expectTypeOf<typeof _validCookies>().toEqualTypeOf<ExpectedCookie>();
 
         return rc.text("cookie ok");
-      }
+      },
     );
     const req = new NextRequest(new URL("http://localhost"));
     const post = await handler.POST;
@@ -622,7 +622,7 @@ describe("zValidator type definitions", () => {
         expectTypeOf<typeof _validated>().toEqualTypeOf<ExpectedValid>();
 
         return rc.text("ok");
-      }
+      },
     );
 
     createRouteHandler().head(
@@ -636,7 +636,7 @@ describe("zValidator type definitions", () => {
         expectTypeOf<typeof _validated>().toEqualTypeOf<ExpectedValid>();
 
         return rc.text("ok");
-      }
+      },
     );
 
     createRouteHandler().get(zValidator("headers", schema2), async (rc) => {
@@ -660,7 +660,7 @@ describe("zValidator type definitions", () => {
         >().toEqualTypeOf<ExpectedValid>();
 
         return rc.text("ok");
-      }
+      },
     );
   });
 });

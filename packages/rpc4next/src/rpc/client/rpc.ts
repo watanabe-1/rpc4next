@@ -5,14 +5,14 @@
  */
 
 import { isDynamic } from "./client-utils";
-import type { FuncParams, ClientOptions, RpcHandler } from "./types";
+import type { ClientOptions, FuncParams, RpcHandler } from "./types";
 
 const createProxy = <T>(
   handler: RpcHandler,
   options: ClientOptions,
   paths: string[],
   params: FuncParams,
-  dynamicKeys: string[]
+  dynamicKeys: string[],
 ): T => {
   // We keep a callable target but route all calls through the `apply` trap.
   /* c8 ignore start */ // intentionally unreachable (apply trap intercepts calls)
@@ -29,13 +29,13 @@ const createProxy = <T>(
       if (!lastPath || !isDynamic(lastPath)) {
         // Guard: someone called the proxy when the tail isn't dynamic.
         throw new Error(
-          `Cannot apply a value: "${lastPath ?? ""}" is not a dynamic segment.`
+          `Cannot apply a value: "${lastPath ?? ""}" is not a dynamic segment.`,
         );
       }
       if (value === undefined) {
         const label = lastKey ?? lastPath;
         throw new Error(
-          `Missing value for dynamic parameter: ${String(label)}`
+          `Missing value for dynamic parameter: ${String(label)}`,
         );
       }
 
@@ -46,7 +46,7 @@ const createProxy = <T>(
         options,
         paths,
         { ...params, [lastKey]: value },
-        dynamicKeys
+        dynamicKeys,
       );
     },
 

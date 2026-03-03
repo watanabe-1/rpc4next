@@ -1,4 +1,5 @@
-import type { ValidationSchema } from "./route-types";
+import type { NextRequest, NextResponse } from "next/server";
+import type { HttpMethod } from "rpc4next-shared";
 import type { ContentType } from "../lib/content-type-types";
 import type { HttpResponseHeaders } from "../lib/http-response-headers-types";
 import type {
@@ -6,8 +7,7 @@ import type {
   RedirectionHttpStatusCode,
   SuccessfulHttpStatusCode,
 } from "../lib/http-status-code-types";
-import type { NextResponse, NextRequest } from "next/server";
-import type { HttpMethod } from "rpc4next-shared";
+import type { ValidationSchema } from "./route-types";
 
 /**
  * Represents the result of an HTTP response status check.
@@ -139,7 +139,7 @@ export interface RouteContext<
      * @returns The validation result of the target.
      */
     valid: <TValidationTarget extends ValidationTarget>(
-      target: Extract<TValidationTarget, keyof TValidationSchema["output"]>
+      target: Extract<TValidationTarget, keyof TValidationSchema["output"]>,
     ) => ValidationOutputFor<TValidationTarget, TValidationSchema>;
 
     /**
@@ -166,7 +166,7 @@ export interface RouteContext<
     TStatus extends HttpStatusCode = 200,
   >(
     data: TData,
-    init?: TStatus | TypedResponseInit<TStatus, TContentType>
+    init?: TStatus | TypedResponseInit<TStatus, TContentType>,
   ) => TypedNextResponse<TData, TStatus, TContentType>;
 
   /**
@@ -178,7 +178,7 @@ export interface RouteContext<
    */
   json: <TData, TStatus extends HttpStatusCode = 200>(
     data: TData,
-    init?: TStatus | TypedResponseInit<TStatus, "application/json">
+    init?: TStatus | TypedResponseInit<TStatus, "application/json">,
   ) => TypedNextResponse<TData, TStatus, "application/json">;
 
   /**
@@ -191,7 +191,7 @@ export interface RouteContext<
    */
   text: <TData extends string, TStatus extends HttpStatusCode = 200>(
     data: TData,
-    init?: TStatus | TypedResponseInit<TStatus, "text/plain">
+    init?: TStatus | TypedResponseInit<TStatus, "text/plain">,
   ) => TypedNextResponse<TData, TStatus, "text/plain">;
 
   /**
@@ -204,7 +204,7 @@ export interface RouteContext<
    */
   redirect: <TStatus extends RedirectionHttpStatusCode = 307>(
     url: string,
-    init?: TStatus | TypedResponseInit<TStatus, "">
+    init?: TStatus | TypedResponseInit<TStatus, "">,
   ) => TypedNextResponse<undefined, TStatus, "">;
 }
 

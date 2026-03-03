@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { TYPE_SEPARATOR, STATEMENT_TERMINATOR } from "./constants";
-import { createRecodeType, createObjectType, createImport } from "./type-utils";
+import { describe, expect, it } from "vitest";
+import { STATEMENT_TERMINATOR, TYPE_SEPARATOR } from "./constants";
+import { createImport, createObjectType, createRecodeType } from "./type-utils";
 
 describe("createRecodeType", () => {
   it("should create a valid Record type", () => {
@@ -17,7 +17,7 @@ describe("createRecodeType", () => {
 describe("createObjectType", () => {
   it("should create a valid object type with one field", () => {
     expect(createObjectType([{ name: "id", type: "number" }])).toBe(
-      `{ "id": number }`
+      `{ "id": number }`,
     );
   });
 
@@ -26,7 +26,7 @@ describe("createObjectType", () => {
       createObjectType([
         { name: "id", type: "number" },
         { name: "name", type: "string" },
-      ])
+      ]),
     ).toBe(`{ "id": number${TYPE_SEPARATOR} "name": string${TYPE_SEPARATOR} }`);
   });
 
@@ -37,7 +37,7 @@ describe("createObjectType", () => {
       createObjectType([
         { name: "id", type: "number" },
         { name: "", type: "string" },
-      ])
+      ]),
     ).toBe("");
   });
 
@@ -49,13 +49,13 @@ describe("createObjectType", () => {
 describe("createImport", () => {
   it("should create a valid import statement with alias", () => {
     expect(createImport("User", "./types", "UserType")).toBe(
-      `import type { User as UserType } from "./types"${STATEMENT_TERMINATOR}`
+      `import type { User as UserType } from "./types"${STATEMENT_TERMINATOR}`,
     );
   });
 
   it("should create a valid import statement without alias", () => {
     expect(createImport("User", "./types")).toBe(
-      `import type { User } from "./types"${STATEMENT_TERMINATOR}`
+      `import type { User } from "./types"${STATEMENT_TERMINATOR}`,
     );
   });
 
@@ -67,11 +67,11 @@ describe("createImport", () => {
 
   it("should handle different module paths", () => {
     expect(createImport("Data", "../models/data", "DataType")).toBe(
-      `import type { Data as DataType } from "../models/data"${STATEMENT_TERMINATOR}`
+      `import type { Data as DataType } from "../models/data"${STATEMENT_TERMINATOR}`,
     );
 
     expect(createImport("Data", "../models/data")).toBe(
-      `import type { Data } from "../models/data"${STATEMENT_TERMINATOR}`
+      `import type { Data } from "../models/data"${STATEMENT_TERMINATOR}`,
     );
   });
 });

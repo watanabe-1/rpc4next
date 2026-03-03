@@ -1,8 +1,8 @@
-import { describe, it, expect, expectTypeOf } from "vitest";
+import type { HttpMethod } from "rpc4next-shared";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import { createHandler } from "./handler";
 import type { Handler, ValidationSchema } from "./route-types";
 import type { Params, Query, RouteContext, TypedNextResponse } from "./types";
-import type { HttpMethod } from "rpc4next-shared";
 
 describe("createHandler", () => {
   it("should return the same handler function", () => {
@@ -10,7 +10,7 @@ describe("createHandler", () => {
       return c.text("test");
     };
     const result = createHandler<HttpMethod, Params, Query, ValidationSchema>()(
-      handler
+      handler,
     );
 
     expect(result).toBe(handler);

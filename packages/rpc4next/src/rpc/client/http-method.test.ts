@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { httpMethod } from "./http-method";
 
 // Type for capturing init (explicitly indicating presence of method and headers properties)
@@ -43,7 +43,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       paths,
       params,
       dynamicKeys,
-      defaultOptions
+      defaultOptions,
     );
 
     const urlOptions = { query: { foo: "bar", baz: "qux" }, hash: "section1" };
@@ -93,7 +93,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       paths,
       params,
       dynamicKeys,
-      defaultOptions
+      defaultOptions,
     );
     await requestFn({ body: { json: params } });
 
@@ -138,7 +138,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       paths,
       params,
       dynamicKeys,
-      defaultOptions
+      defaultOptions,
     );
 
     const clientOptions = {
@@ -184,7 +184,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       paths,
       params,
       dynamicKeys,
-      defaultOptions
+      defaultOptions,
     );
     await requestFn({ body: { json: params } });
 
@@ -222,7 +222,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       paths,
       params,
       dynamicKeys,
-      defaultOptions
+      defaultOptions,
     );
     await requestFn();
 
@@ -252,7 +252,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       paths,
       params,
       dynamicKeys,
-      defaultOptions
+      defaultOptions,
     );
     await requestFn({ body: { json: params } });
 
@@ -279,7 +279,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       paths,
       params,
       dynamicKeys,
-      defaultOptions
+      defaultOptions,
     );
 
     await expect(requestFn()).rejects.toThrow(errorMessage);
@@ -308,7 +308,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       paths,
       params,
       dynamicKeys,
-      defaultOptions
+      defaultOptions,
     );
 
     const clientOptions = { init: { headers: clientHeaders } };
@@ -343,7 +343,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       paths,
       params,
       dynamicKeys,
-      defaultOptions
+      defaultOptions,
     );
 
     const clientOptions = { init: { headers: defaultHeaders } };
@@ -378,7 +378,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       paths,
       params,
       dynamicKeys,
-      defaultOptions
+      defaultOptions,
     );
 
     const clientOptions = { init: { headersInit: clientHeaders } };
@@ -413,7 +413,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       paths,
       params,
       dynamicKeys,
-      defaultOptions
+      defaultOptions,
     );
 
     const clientOptions = { init: { headersInit: clientHeaders } };
@@ -456,7 +456,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       paths,
       params,
       dynamicKeys,
-      defaultOptions
+      defaultOptions,
     );
     await requestFn({ body: { json: jsonBody } }, clientOptions);
 
@@ -503,7 +503,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       paths,
       params,
       dynamicKeys,
-      defaultOptions
+      defaultOptions,
     );
     await requestFn({ body: { json: jsonBody } }, clientOptions);
 
@@ -537,7 +537,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       paths,
       params,
       dynamicKeys,
-      defaultOptions
+      defaultOptions,
     );
 
     const methodParam = {
@@ -573,7 +573,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       paths,
       params,
       dynamicKeys,
-      defaultOptions
+      defaultOptions,
     );
 
     await requestFn({ body: { json: { should: "be-ignored" } } });
@@ -604,7 +604,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       paths,
       params,
       dynamicKeys,
-      defaultOptions
+      defaultOptions,
     );
 
     await requestFn({ body: { formData: fd, json: undefined } });
@@ -635,7 +635,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       paths,
       params,
       dynamicKeys,
-      defaultOptions
+      defaultOptions,
     );
 
     const methodParam = {
@@ -674,7 +674,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       paths,
       params,
       dynamicKeys,
-      defaultOptions
+      defaultOptions,
     );
 
     await requestFn({ body: { text: "hello", json: undefined } });
@@ -709,7 +709,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       paths,
       params,
       dynamicKeys,
-      defaultOptions
+      defaultOptions,
     );
 
     await requestFn({ body: { urlencoded: usp, json: undefined } });
@@ -743,7 +743,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       paths,
       params,
       dynamicKeys,
-      defaultOptions
+      defaultOptions,
     );
 
     await requestFn({ body: { raw: payload, json: undefined } });
@@ -772,7 +772,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       paths,
       params,
       dynamicKeys,
-      defaultOptions
+      defaultOptions,
     );
 
     await requestFn({ body: { json: { will: "be-ignored" } } });
@@ -797,11 +797,11 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       paths,
       params,
       dynamicKeys,
-      defaultOptions
+      defaultOptions,
     );
 
     await expect(requestFn()).rejects.toThrow(
-      "[httpMethod] GET http://example.com/api/boom failed: string-failure"
+      "[httpMethod] GET http://example.com/api/boom failed: string-failure",
     );
   });
 });

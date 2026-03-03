@@ -1,9 +1,9 @@
 import fs from "fs";
 import path from "path";
 import {
-  SUCCESS_SEPARATOR,
-  SUCCESS_PAD_LENGTH,
   SUCCESS_INDENT_LEVEL,
+  SUCCESS_PAD_LENGTH,
+  SUCCESS_SEPARATOR,
 } from "./constants";
 import { generatePathStructure } from "./core/generate-path-structure";
 import { relativeFromRoot } from "./core/path-utils";
@@ -25,7 +25,7 @@ export const generate = ({
 
   const { pathStructure, paramsTypes } = generatePathStructure(
     outputPath,
-    baseDir
+    baseDir,
   );
 
   fs.writeFileSync(outputPath, pathStructure);
@@ -34,9 +34,9 @@ export const generate = ({
       "Path structure type",
       relativeFromRoot(outputPath),
       SUCCESS_SEPARATOR,
-      SUCCESS_PAD_LENGTH
+      SUCCESS_PAD_LENGTH,
     ),
-    { indentLevel: SUCCESS_INDENT_LEVEL }
+    { indentLevel: SUCCESS_INDENT_LEVEL },
   );
 
   if (paramsFileName) {
@@ -49,11 +49,11 @@ export const generate = ({
         "Params types",
         paramsFileName,
         SUCCESS_SEPARATOR,
-        SUCCESS_PAD_LENGTH
+        SUCCESS_PAD_LENGTH,
       ),
       {
         indentLevel: SUCCESS_INDENT_LEVEL,
-      }
+      },
     );
   }
 };

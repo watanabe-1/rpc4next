@@ -1,20 +1,20 @@
-import { http, HttpResponse } from "msw";
+import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import {
-  describe,
-  it,
   afterAll,
   afterEach,
   beforeAll,
+  describe,
   expect,
   expectTypeOf,
+  it,
 } from "vitest";
 import { z } from "zod";
+import { searchParamsToObject } from "../lib/search-params";
 import { routeHandlerFactory } from "../server";
+import { zValidator } from "../server/validators/zod/zod-validator";
 import { createRpcClient } from "./rpc-client";
 import { ClientOptions, Endpoint } from "./types";
-import { searchParamsToObject } from "../lib/search-params";
-import { zValidator } from "../server/validators/zod/zod-validator";
 
 const schema = z.object({
   name: z.string(),
@@ -32,17 +32,17 @@ const { GET: _get_1 } = createRouteHandler().get((rc) => rc.text("text"));
 
 const { POST: _post_1 } = createRouteHandler().post(
   zValidator("json", schema),
-  (rc) => rc.text("text")
+  (rc) => rc.text("text"),
 );
 
 const { POST: _post_2 } = createRouteHandler().post(
   zValidator("headers", schema),
-  (rc) => rc.text("text")
+  (rc) => rc.text("text"),
 );
 
 const { POST: _post_3 } = createRouteHandler().post(
   zValidator("cookies", schema),
-  (rc) => rc.text("text")
+  (rc) => rc.text("text"),
 );
 
 const { POST: _post_4 } = createRouteHandler<{
@@ -60,7 +60,7 @@ const { POST: _post_all } = createRouteHandler<{
   zValidator("headers", schema),
   zValidator("cookies", schema),
   zValidator("query", schema),
-  (rc) => rc.text("text")
+  (rc) => rc.text("text"),
 );
 
 const server = setupServer();
@@ -98,13 +98,13 @@ describe("createRpcClient", () => {
             if (!result.success) {
               return HttpResponse.json(
                 { error: "Invalid JSON", issues: result.error.format() },
-                { status: 400 }
+                { status: 400 },
               );
             }
 
             return HttpResponse.json({ json: result.data, contentType });
-          }
-        )
+          },
+        ),
       );
 
       const client = createRpcClient<PathStructure>("http://localhost:3000");
@@ -133,13 +133,13 @@ describe("createRpcClient", () => {
           if (!result.success) {
             return HttpResponse.json(
               { error: "Invalid headers", issues: result.error.format() },
-              { status: 400 }
+              { status: 400 },
             );
           }
 
           return HttpResponse.json({ headers: result.data });
-        }
-      )
+        },
+      ),
     );
 
     const client = createRpcClient<PathStructure>("http://localhost:3000");
@@ -167,13 +167,13 @@ describe("createRpcClient", () => {
           if (!result.success) {
             return HttpResponse.json(
               { error: "Invalid cookies", issues: result.error.format() },
-              { status: 400 }
+              { status: 400 },
             );
           }
 
           return HttpResponse.json({ cookies: result.data });
-        }
-      )
+        },
+      ),
     );
 
     const client = createRpcClient<PathStructure>("http://localhost:3000");
@@ -193,12 +193,12 @@ describe("createRpcClient", () => {
         if (!result.success) {
           return HttpResponse.json(
             { error: "Invalid query", issues: result.error.format() },
-            { status: 400 }
+            { status: 400 },
           );
         }
 
         return HttpResponse.json({ query: result.data });
-      })
+      }),
     );
 
     const client = createRpcClient<PathStructure>("http://localhost:3000");
@@ -222,13 +222,13 @@ describe("createRpcClient", () => {
           if (!result.success) {
             return HttpResponse.json(
               { error: "Invalid query", issues: result.error.format() },
-              { status: 400 }
+              { status: 400 },
             );
           }
 
           return HttpResponse.json({ query: result.data });
-        }
-      )
+        },
+      ),
     );
 
     const client = createRpcClient<PathStructure>("http://localhost:3000");
@@ -287,7 +287,7 @@ describe("createRpcClient", () => {
                   : queryResult.error.format(),
               },
             },
-            { status: 400 }
+            { status: 400 },
           );
         }
 
@@ -298,7 +298,7 @@ describe("createRpcClient", () => {
           query: queryResult.data,
           contentType,
         });
-      })
+      }),
     );
 
     const client = createRpcClient<PathStructure>("http://localhost:3000");

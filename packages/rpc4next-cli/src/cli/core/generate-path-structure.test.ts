@@ -1,12 +1,12 @@
 import mock from "mock-fs";
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
-  STATEMENT_TERMINATOR,
   NEWLINE,
-  TYPE_KEY_QUERY,
   RPC4NEXT_CLIENT_IMPORT_PATH,
-  TYPE_KEY_PARAMS,
+  STATEMENT_TERMINATOR,
   TYPE_END_POINT,
+  TYPE_KEY_PARAMS,
+  TYPE_KEY_QUERY,
 } from "./constants";
 import { generatePathStructure } from "./generate-path-structure";
 
@@ -17,7 +17,7 @@ vi.mock("./route-scanner", () => ({
 
 vi.mock("./type-utils", () => ({
   createImport: vi.fn(
-    (type, path) => `import type { ${type} } from "${path}";`
+    (type, path) => `import type { ${type} } from "${path}";`,
   ),
 }));
 
@@ -48,7 +48,7 @@ describe("generatePathStructure", () => {
     const baseDir = "./base";
     const { pathStructure, paramsTypes } = generatePathStructure(
       outputPath,
-      baseDir
+      baseDir,
     );
 
     const expectedImports =
@@ -58,7 +58,7 @@ describe("generatePathStructure", () => {
     const expectedTypeDefinition = `export type PathStructure = { home: ${TYPE_END_POINT}, user: { id: ${TYPE_KEY_PARAMS} }, ${TYPE_KEY_QUERY}}${STATEMENT_TERMINATOR}`;
 
     expect(pathStructure).toBe(
-      `${expectedImports}${NEWLINE}${NEWLINE}${expectedTypeDefinition}`
+      `${expectedImports}${NEWLINE}${NEWLINE}${expectedTypeDefinition}`,
     );
     expect(paramsTypes).toStrictEqual([
       {
@@ -79,14 +79,14 @@ describe("generatePathStructure", () => {
     const baseDir = "./base";
     const { pathStructure, paramsTypes } = generatePathStructure(
       outputPath,
-      baseDir
+      baseDir,
     );
 
     const expectedImports = `import type { ${TYPE_END_POINT} } from "${RPC4NEXT_CLIENT_IMPORT_PATH}"${STATEMENT_TERMINATOR}${NEWLINE}${NEWLINE}`;
     const expectedTypeDefinition = `export type PathStructure = { dashboard: ${TYPE_END_POINT} }${STATEMENT_TERMINATOR}`;
 
     expect(pathStructure).toBe(
-      `${expectedImports}${NEWLINE}${expectedTypeDefinition}`
+      `${expectedImports}${NEWLINE}${expectedTypeDefinition}`,
     );
     expect(paramsTypes).toStrictEqual([]);
   });

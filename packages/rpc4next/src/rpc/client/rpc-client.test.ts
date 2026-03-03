@@ -1,10 +1,10 @@
-import { http, HttpResponse } from "msw";
+import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import { NextRequest, NextResponse } from "next/server";
 import {
-  beforeAll,
-  afterEach,
   afterAll,
+  afterEach,
+  beforeAll,
   describe,
   expect,
   expectTypeOf,
@@ -17,28 +17,28 @@ import {
   TypedNextResponse,
 } from "../server";
 import { createRpcClient } from "./rpc-client";
-import { ParamsKey, Endpoint, QueryKey } from "./types";
+import { Endpoint, ParamsKey, QueryKey } from "./types";
 
 const createRouteHandler = routeHandlerFactory();
 
 const { POST: _post_0 } = createRouteHandler().post(async (rc) =>
-  rc.text("post")
+  rc.text("post"),
 );
 
 const { GET: _get_0 } = createRouteHandler().get(async (rc) =>
-  rc.json({ method: "get" })
+  rc.json({ method: "get" }),
 );
 
 const { DELETE: _delete_0 } = createRouteHandler().delete(async (rc) =>
-  rc.text("delete")
+  rc.text("delete"),
 );
 
 const { HEAD: _head_0 } = createRouteHandler().head(async (rc) =>
-  rc.text("head")
+  rc.text("head"),
 );
 
 const { PATCH: _patch_0 } = createRouteHandler().patch(async (rc) =>
-  rc.text("patch")
+  rc.text("patch"),
 );
 
 const { PUT: _put_0 } = createRouteHandler().put(async (rc) => rc.text("put"));
@@ -99,7 +99,7 @@ const server = setupServer(
     const headers = Object.fromEntries(resInfo.request.headers.entries());
 
     return HttpResponse.json(headers);
-  })
+  }),
 );
 
 describe("createRpcClient", () => {
@@ -181,7 +181,7 @@ describe("createRpcClient", () => {
       let capturedInit: RequestInit | undefined;
       const customFetch = async (
         input: RequestInfo | URL,
-        init?: RequestInit
+        init?: RequestInit,
       ) => {
         capturedInit = init;
 
@@ -207,7 +207,7 @@ describe("createRpcClient", () => {
       let capturedInit: RequestInit | undefined;
       const customFetch = async (
         input: RequestInfo | URL,
-        init?: RequestInit
+        init?: RequestInit,
       ) => {
         capturedInit = init;
 
@@ -235,7 +235,7 @@ describe("createRpcClient", () => {
       let capturedInit: RequestInit | undefined;
       const customFetch = async (
         input: RequestInfo | URL,
-        init?: RequestInit
+        init?: RequestInit,
       ) => {
         capturedInit = init;
 
@@ -274,7 +274,7 @@ describe("createRpcClient", () => {
       let capturedInit: RequestInit | undefined;
       const customFetch = async (
         input: RequestInfo | URL,
-        init?: RequestInit
+        init?: RequestInit,
       ) => {
         capturedInit = init;
 
@@ -301,7 +301,7 @@ describe("createRpcClient", () => {
       let capturedInit: RequestInit | undefined;
       const customFetch = async (
         input: RequestInfo | URL,
-        init?: RequestInit
+        init?: RequestInit,
       ) => {
         capturedInit = init;
 
@@ -337,7 +337,7 @@ describe("createRpcClient", () => {
       });
 
       await expect(client.api.hoge.$delete()).rejects.toThrow(
-        "Network failure"
+        "Network failure",
       );
     });
 
@@ -473,7 +473,7 @@ describe("createRpcClient", () => {
     it('throws when calling the root proxy as a function ("/" is not dynamic)', () => {
       const client = createRpcClient<PathStructure>("/");
       expect(() => (client as unknown as (v: string) => void)("x")).toThrow(
-        'Cannot apply a value: "/" is not a dynamic segment.'
+        'Cannot apply a value: "/" is not a dynamic segment.',
       );
     });
 
@@ -481,7 +481,7 @@ describe("createRpcClient", () => {
       type FailurePath = Endpoint & { _fuga: Endpoint };
       const client = createRpcClient<FailurePath>("");
       expect(() => (client._fuga as unknown as (v?: string) => void)()).toThrow(
-        "Missing value for dynamic parameter: _fuga"
+        "Missing value for dynamic parameter: _fuga",
       );
     });
   });
@@ -497,25 +497,25 @@ describe("createRpcClient", () => {
 
       // calling dynamic param without argument
       expect(() => client._fuga(undefined as unknown as string)).toThrow(
-        "Missing value for dynamic parameter: _fuga"
+        "Missing value for dynamic parameter: _fuga",
       );
 
       // calling static path segment as a function
       const hoge = client.hoge as unknown as (value: string) => "";
       expect(() => hoge("")).toThrow(
-        'Cannot apply a value: "hoge" is not a dynamic segment.'
+        'Cannot apply a value: "hoge" is not a dynamic segment.',
       );
     });
   });
 
   const { POST: _post_1 } = createRouteHandler().post(
     async (rc) => rc.json("json"),
-    async (rc) => rc.text("text")
+    async (rc) => rc.text("text"),
   );
 
   const { POST: _get_1 } = createRouteHandler().post(
     async (rc) => rc.text("error", { status: 400 }),
-    async (rc) => rc.json({ ok: true }, { status: 200 })
+    async (rc) => rc.json({ ok: true }, { status: 200 }),
   );
 
   async function _get_2(_: NextRequest) {

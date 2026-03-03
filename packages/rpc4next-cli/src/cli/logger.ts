@@ -6,7 +6,7 @@ export const padMessage = (
   label: string,
   value: string,
   separator = "→",
-  targetLength = 24
+  targetLength = 24,
 ) => {
   return label.padEnd(targetLength) + ` ${separator} ${value}`;
 };

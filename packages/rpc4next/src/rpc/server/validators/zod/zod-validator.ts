@@ -7,19 +7,19 @@
  * Hono is licensed under the MIT License.
  */
 
-import { validator } from "../validator";
+import type { HttpMethod } from "rpc4next-shared";
+import type { ZodSchema, z } from "zod";
 import type { ValidationSchema } from "../../route-types";
 import type {
-  RouteContext,
+  ConditionalValidationInput,
   Params,
   Query,
+  RouteContext,
   TypedNextResponse,
-  ConditionalValidationInput,
-  ValidationTarget,
   ValidatedData,
+  ValidationTarget,
 } from "../../types";
-import type { HttpMethod } from "rpc4next-shared";
-import type { z, ZodSchema } from "zod";
+import { validator } from "../validator";
 
 export const zValidator = <
   THttpMethod extends HttpMethod,
@@ -56,8 +56,8 @@ export const zValidator = <
   schema: TSchema,
   hook?: (
     result: z.ZodSafeParseResult<TOutput>,
-    routeContext: RouteContext<TParams, TQuery, TValidationSchema>
-  ) => THookReturn
+    routeContext: RouteContext<TParams, TQuery, TValidationSchema>,
+  ) => THookReturn,
 ) => {
   const resolvedHook =
     hook ??
@@ -84,7 +84,7 @@ export const zValidator = <
 
     if (!result.success) {
       throw new Error(
-        "If you provide a custom hook, you must explicitly return a response when validation fails."
+        "If you provide a custom hook, you must explicitly return a response when validation fails.",
       );
     }
 

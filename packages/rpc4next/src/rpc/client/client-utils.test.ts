@@ -1,15 +1,15 @@
 import {
-  DYNAMIC_PREFIX,
   CATCH_ALL_PREFIX,
-  OPTIONAL_CATCH_ALL_PREFIX,
+  DYNAMIC_PREFIX,
   HTTP_METHOD_FUNC_KEYS,
+  OPTIONAL_CATCH_ALL_PREFIX,
 } from "rpc4next-shared";
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  isDynamic,
-  isCatchAllOrOptional,
-  isHttpMethod,
   deepMerge,
+  isCatchAllOrOptional,
+  isDynamic,
+  isHttpMethod,
 } from "./client-utils";
 
 describe("isDynamic", () => {

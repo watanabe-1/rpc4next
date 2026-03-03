@@ -1,5 +1,5 @@
 import mock from "mock-fs";
-import { describe, beforeEach, afterEach, it, expect, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   clearScanAppDirCacheAbove,
   scanAppDirCache,

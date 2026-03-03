@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
-import { validator } from "./validator";
 import { routeHandlerFactory } from "../route-handler-factory";
-import * as validatorUtils from "./validator-utils";
 import type { ValidatedData } from "../types";
+import { validator } from "./validator";
+import * as validatorUtils from "./validator-utils";
 
 const createRouteHandler = routeHandlerFactory();
 
@@ -37,7 +37,7 @@ describe("validator", () => {
 
           return parsed.data as unknown as ValidatedData;
         }),
-        async (rc) => rc.text("ok")
+        async (rc) => rc.text("ok"),
       );
 
       const req = new NextRequest(new URL("http://localhost/?name=J&age=20"));
@@ -59,14 +59,14 @@ describe("validator", () => {
 
           return parsed.data as unknown as ValidatedData;
         }),
-        async (rc) => rc.text("ok")
+        async (rc) => rc.text("ok"),
       );
 
       const res = await handler.POST(
         new NextRequest(new URL("http://localhost")),
         {
           params: Promise.resolve({ name: "J", hoge: 30 as unknown as string }),
-        }
+        },
       );
 
       expect(res.status).toBe(401);
@@ -89,12 +89,12 @@ describe("validator", () => {
 
           return parsed.data as unknown as ValidatedData;
         }),
-        async (rc) => rc.text("ok")
+        async (rc) => rc.text("ok"),
       );
 
       const res = await handler.POST(
         new NextRequest(new URL("http://localhost/?name=J&age=abc")),
-        { params: Promise.resolve({ name: "J", hoge: "30" }) }
+        { params: Promise.resolve({ name: "J", hoge: "30" }) },
       );
 
       expect(res.status).toBe(400);
@@ -110,12 +110,12 @@ describe("validator", () => {
 
           return parsed.data as unknown as ValidatedData;
         }),
-        async (rc) => rc.text("only params")
+        async (rc) => rc.text("only params"),
       );
 
       const res = await handler.POST(
         new NextRequest(new URL("http://localhost/?ignored=true")),
-        { params: Promise.resolve({ name: "A", hoge: "18" }) }
+        { params: Promise.resolve({ name: "A", hoge: "18" }) },
       );
 
       expect(await res.text()).toBe("only params");
@@ -128,22 +128,22 @@ describe("validator", () => {
       }>().post(
         validator()(
           "params",
-          async (v) => schema.parseAsync(v) as unknown as ValidatedData
+          async (v) => schema.parseAsync(v) as unknown as ValidatedData,
         ),
         validator()(
           "query",
-          async (v) => schema2.parseAsync(v) as unknown as ValidatedData
+          async (v) => schema2.parseAsync(v) as unknown as ValidatedData,
         ),
         async (rc) =>
           rc.json({
             p: rc.req.valid("params" as never),
             q: rc.req.valid("query" as never),
-          })
+          }),
       );
 
       const res = await handler.POST(
         new NextRequest(new URL("http://localhost/?name=J&age=20")),
-        { params: Promise.resolve({ name: "J", hoge: "30" }) }
+        { params: Promise.resolve({ name: "J", hoge: "30" }) },
       );
       const json = await res.json();
 
@@ -164,7 +164,7 @@ describe("validator", () => {
 
           return parsed.data as unknown as ValidatedData;
         }),
-        async (rc) => rc.text("valid json")
+        async (rc) => rc.text("valid json"),
       );
 
       return handler.POST(
@@ -173,7 +173,7 @@ describe("validator", () => {
           body: JSON.stringify(body),
           headers: { "Content-Type": "application/json" },
         }),
-        { params: Promise.resolve({}) }
+        { params: Promise.resolve({}) },
       );
     };
 
@@ -196,7 +196,7 @@ describe("validator", () => {
 
           return parsed.data as unknown as ValidatedData;
         }),
-        async (rc) => rc.json({ body: rc.req.valid("json" as never) })
+        async (rc) => rc.json({ body: rc.req.valid("json" as never) }),
       );
 
       const res = await handler.POST(
@@ -205,7 +205,7 @@ describe("validator", () => {
           body: JSON.stringify({ name: "J", hoge: "30" }),
           headers: { "Content-Type": "application/json" },
         }),
-        { params: Promise.resolve({}) }
+        { params: Promise.resolve({}) },
       );
       const json = await res.json();
 
@@ -229,12 +229,12 @@ describe("validator", () => {
 
           return parsed.data as unknown as ValidatedData;
         }),
-        async (rc) => rc.json({ header: rc.req.valid("headers" as never) })
+        async (rc) => rc.json({ header: rc.req.valid("headers" as never) }),
       );
 
       const res = await handler.POST(
         new NextRequest(new URL("http://localhost")),
-        { params: Promise.resolve({}) }
+        { params: Promise.resolve({}) },
       );
       const json = await res.json();
 
@@ -255,7 +255,7 @@ describe("validator", () => {
 
             return parsed.data as unknown as ValidatedData;
           }),
-          async (rc) => rc.text("never reach")
+          async (rc) => rc.text("never reach"),
         )
         .POST(new NextRequest(new URL("http://localhost")), {
           params: Promise.resolve({}),
@@ -281,12 +281,12 @@ describe("validator", () => {
 
           return parsed.data as unknown as ValidatedData;
         }),
-        async (rc) => rc.json({ cookie: rc.req.valid("cookies" as never) })
+        async (rc) => rc.json({ cookie: rc.req.valid("cookies" as never) }),
       );
 
       const res = await handler.POST(
         new NextRequest(new URL("http://localhost")),
-        { params: Promise.resolve({}) }
+        { params: Promise.resolve({}) },
       );
       const json = await res.json();
 
@@ -307,7 +307,7 @@ describe("validator", () => {
 
             return parsed.data as unknown as ValidatedData;
           }),
-          async (rc) => rc.text("never reach")
+          async (rc) => rc.text("never reach"),
         )
         .POST(new NextRequest(new URL("http://localhost")), {
           params: Promise.resolve({}),
@@ -324,15 +324,15 @@ describe("validator", () => {
         // @ts-expect-error - force an invalid target for testing
         validator()<ValidatedData>(
           "invalid",
-          async () => ({}) as ValidatedData
+          async () => ({}) as ValidatedData,
         ),
-        async (rc) => rc.text("should not reach")
+        async (rc) => rc.text("should not reach"),
       );
 
       await expect(
         handler.POST(new NextRequest(new URL("http://localhost")), {
           params: Promise.resolve({}),
-        })
+        }),
       ).rejects.toThrowError("Unexpected target: invalid");
     });
   });

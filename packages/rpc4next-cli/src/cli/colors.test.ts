@@ -1,5 +1,5 @@
-import { describe, it, expect, afterEach } from "vitest";
-import { red, cyan, green, __testing } from "./colors";
+import { afterEach, describe, expect, it } from "vitest";
+import { __testing, cyan, green, red } from "./colors";
 
 describe("colors", () => {
   afterEach(() => {

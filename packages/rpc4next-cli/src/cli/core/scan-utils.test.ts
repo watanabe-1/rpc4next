@@ -1,15 +1,16 @@
 import mock from "mock-fs";
-import { describe, it, expect, afterEach, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { scanQuery, scanRoute } from "./scan-utils";
 
 vi.mock("./type-utils", () => ({
   createImport: vi.fn(
-    (type, path, alias) => `import type { ${type} as ${alias} } from '${path}';`
+    (type, path, alias) =>
+      `import type { ${type} as ${alias} } from '${path}';`,
   ),
   createRecodeType: vi.fn((key, alias) => `Record<${key}, ${alias}>`),
   createObjectType: vi.fn(
     (entries) =>
-      `{ ${entries.map((e: { name: string; type: string }) => `"${e.name}": ${e.type}`).join(",")} }`
+      `{ ${entries.map((e: { name: string; type: string }) => `"${e.name}": ${e.type}`).join(",")} }`,
   ),
 }));
 
@@ -28,7 +29,7 @@ describe("scanQuery", () => {
     expect(result?.importName).toBe("Query_da299b9577978fcd");
     expect(result?.importPath).toBe("./input");
     expect(result?.importStatement).toBe(
-      "import type { Query as Query_da299b9577978fcd } from './input';"
+      "import type { Query as Query_da299b9577978fcd } from './input';",
     );
     expect(result?.type).toBe("Record<QueryKey, Query_da299b9577978fcd>");
   });
@@ -43,7 +44,7 @@ describe("scanQuery", () => {
     expect(result?.importName).toBe("Query_da299b9577978fcd");
     expect(result?.importPath).toBe("./input");
     expect(result?.importStatement).toBe(
-      "import type { Query as Query_da299b9577978fcd } from './input';"
+      "import type { Query as Query_da299b9577978fcd } from './input';",
     );
     expect(result?.type).toBe("Record<QueryKey, Query_da299b9577978fcd>");
   });
@@ -70,7 +71,7 @@ describe("scanRoute", () => {
     expect(result?.importName).toBe("GET_84a33c1aab9019d2");
     expect(result?.importPath).toBe("./input");
     expect(result?.importStatement).toBe(
-      "import type { GET as GET_84a33c1aab9019d2 } from './input';"
+      "import type { GET as GET_84a33c1aab9019d2 } from './input';",
     );
     expect(result?.type).toBe('{ "$get": typeof GET_84a33c1aab9019d2 }');
   });
@@ -85,7 +86,7 @@ describe("scanRoute", () => {
     expect(result?.importName).toBe("PATCH_2fb9d0ae6e8b8cfc");
     expect(result?.importPath).toBe("./input");
     expect(result?.importStatement).toBe(
-      "import type { PATCH as PATCH_2fb9d0ae6e8b8cfc } from './input';"
+      "import type { PATCH as PATCH_2fb9d0ae6e8b8cfc } from './input';",
     );
     expect(result?.type).toBe('{ "$patch": typeof PATCH_2fb9d0ae6e8b8cfc }');
   });
@@ -101,7 +102,7 @@ describe("scanRoute", () => {
     expect(result?.importName).toBe("POST_8393a35405bb7d7f");
     expect(result?.importPath).toBe("./input");
     expect(result?.importStatement).toBe(
-      "import type { POST as POST_8393a35405bb7d7f } from './input';"
+      "import type { POST as POST_8393a35405bb7d7f } from './input';",
     );
     expect(result?.type).toBe('{ "$post": typeof POST_8393a35405bb7d7f }');
   });
@@ -116,7 +117,7 @@ describe("scanRoute", () => {
     expect(result?.importName).toBe("DELETE_bacf7eb8c865f8b9");
     expect(result?.importPath).toBe("./input");
     expect(result?.importStatement).toBe(
-      "import type { DELETE as DELETE_bacf7eb8c865f8b9 } from './input';"
+      "import type { DELETE as DELETE_bacf7eb8c865f8b9 } from './input';",
     );
     expect(result?.type).toBe('{ "$delete": typeof DELETE_bacf7eb8c865f8b9 }');
   });
@@ -131,7 +132,7 @@ describe("scanRoute", () => {
     expect(result?.importName).toBe("PUT_203d1825e2307ab2");
     expect(result?.importPath).toBe("./input");
     expect(result?.importStatement).toBe(
-      "import type { PUT as PUT_203d1825e2307ab2 } from './input';"
+      "import type { PUT as PUT_203d1825e2307ab2 } from './input';",
     );
     expect(result?.type).toBe('{ "$put": typeof PUT_203d1825e2307ab2 }');
 
@@ -140,7 +141,7 @@ describe("scanRoute", () => {
     expect(result2?.importName).toBe("PUT_203d1825e2307ab2");
     expect(result2?.importPath).toBe("./input");
     expect(result2?.importStatement).toBe(
-      "import type { PUT as PUT_203d1825e2307ab2 } from './input';"
+      "import type { PUT as PUT_203d1825e2307ab2 } from './input';",
     );
     expect(result2?.type).toBe('{ "$put": typeof PUT_203d1825e2307ab2 }');
   });

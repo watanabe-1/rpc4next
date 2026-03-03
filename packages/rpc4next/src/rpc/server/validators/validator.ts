@@ -7,8 +7,8 @@
  * Hono is licensed under the MIT License.
  */
 
+import type { HttpMethod } from "rpc4next-shared";
 import { createHandler } from "../handler";
-import { getCookiesObject, getHeadersObject } from "./validator-utils";
 import type { ValidationSchema } from "../route-types";
 import type {
   Params,
@@ -18,7 +18,7 @@ import type {
   ValidatedData,
   ValidationTarget,
 } from "../types";
-import type { HttpMethod } from "rpc4next-shared";
+import { getCookiesObject, getHeadersObject } from "./validator-utils";
 
 // I want to use currying so that the return value can be inferred.
 export const validator = <
@@ -32,8 +32,8 @@ export const validator = <
     target: TValidationTarget,
     validateHandler: (
       value: object,
-      routeContext: RouteContext<TParams, TQuery, TValidationSchema>
-    ) => Promise<ValidatedData | TTypedNextResponse>
+      routeContext: RouteContext<TParams, TQuery, TValidationSchema>,
+    ) => Promise<ValidatedData | TTypedNextResponse>,
   ) => {
     return createHandler<THttpMethod, TParams, TQuery, TValidationSchema>()(
       async (rc) => {
@@ -64,7 +64,7 @@ export const validator = <
 
         // If validation succeeds, register it as validatedData
         rc.req.addValidatedData(target, result);
-      }
+      },
     );
   };
 };

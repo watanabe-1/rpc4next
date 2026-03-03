@@ -1,4 +1,4 @@
-import type { UrlOptions, UrlResult, FuncParams } from "./types";
+import type { FuncParams, UrlOptions, UrlResult } from "./types";
 
 /**
  * Builds a URL suffix string from optional query and hash values.

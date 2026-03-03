@@ -8,7 +8,7 @@ export const scanAppDirCache = new Map<string, ReturnType<typeof scanAppDir>>();
 // Generic function to clear cache entries above a target path
 const clearCacheAbove = (
   cache: Map<string, unknown>,
-  targetPath: string
+  targetPath: string,
 ): void => {
   const basePath = path.resolve(targetPath);
 

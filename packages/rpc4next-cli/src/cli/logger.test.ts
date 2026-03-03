@@ -1,11 +1,11 @@
 import {
-  describe,
-  it,
-  expect,
-  vi,
-  beforeAll,
   afterAll,
+  beforeAll,
   beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
 } from "vitest";
 import { INDENT } from "./core/constants";
 import { createLogger, padMessage } from "./logger";

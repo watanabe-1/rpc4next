@@ -1,29 +1,29 @@
+import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { normalizeHeaders } from "../lib/headers";
-import { searchParamsToObject } from "../lib/search-params";
-import type { ValidationSchema } from "./route-types";
-import type {
-  RouteContext,
-  Query,
-  Params,
-  TypedNextResponse,
-  TypedResponseInit,
-  ValidationTarget,
-  ValidatedData,
-} from "./types";
 import type { ContentType } from "../lib/content-type-types";
+import { normalizeHeaders } from "../lib/headers";
 import type {
   HttpStatusCode,
   RedirectionHttpStatusCode,
 } from "../lib/http-status-code-types";
-import type { NextRequest } from "next/server";
+import { searchParamsToObject } from "../lib/search-params";
+import type { ValidationSchema } from "./route-types";
+import type {
+  Params,
+  Query,
+  RouteContext,
+  TypedNextResponse,
+  TypedResponseInit,
+  ValidatedData,
+  ValidationTarget,
+} from "./types";
 
 const isHttpStatusCode = (value: unknown): value is HttpStatusCode => {
   return typeof value === "number" && !Number.isNaN(value);
 };
 
 const resolvedHeaders = (
-  init?: HttpStatusCode | TypedResponseInit<HttpStatusCode, ContentType>
+  init?: HttpStatusCode | TypedResponseInit<HttpStatusCode, ContentType>,
 ) => {
   if (!init) return init;
 
@@ -53,7 +53,7 @@ export const createRouteContext = <
   TValidationSchema extends ValidationSchema,
 >(
   req: NextRequest,
-  segmentData: { params: Promise<TParams> }
+  segmentData: { params: Promise<TParams> },
 ): RouteContext<TParams, TQuery, TValidationSchema> => {
   const validationResults = {} as Record<ValidationTarget, unknown>;
 
@@ -75,7 +75,7 @@ export const createRouteContext = <
       TStatus extends HttpStatusCode = 200,
     >(
       data: TData,
-      init?: TStatus | TypedResponseInit<TStatus, TContentType>
+      init?: TStatus | TypedResponseInit<TStatus, TContentType>,
     ) =>
       new NextResponse<TData>(data, resolvedHeaders(init)) as TypedNextResponse<
         TData,
@@ -85,16 +85,16 @@ export const createRouteContext = <
 
     json: <TData, TStatus extends HttpStatusCode = 200>(
       data: TData,
-      init?: TStatus | TypedResponseInit<TStatus, "application/json">
+      init?: TStatus | TypedResponseInit<TStatus, "application/json">,
     ) =>
       NextResponse.json<TData>(
         data,
-        resolvedHeaders(init)
+        resolvedHeaders(init),
       ) as TypedNextResponse<TData, TStatus, "application/json">,
 
     text: <TData extends string, TStatus extends HttpStatusCode = 200>(
       data: TData,
-      init?: TStatus | TypedResponseInit<TStatus, "text/plain">
+      init?: TStatus | TypedResponseInit<TStatus, "text/plain">,
     ) => {
       const resolvedInit = resolvedHeaders(init);
 
@@ -106,7 +106,7 @@ export const createRouteContext = <
 
     redirect: <TStatus extends RedirectionHttpStatusCode = 307>(
       url: string,
-      init?: TStatus | TypedResponseInit<TStatus, "">
+      init?: TStatus | TypedResponseInit<TStatus, "">,
     ) => {
       const resolvedInit = isHttpStatusCode(init)
         ? init

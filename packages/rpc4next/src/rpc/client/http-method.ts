@@ -1,15 +1,15 @@
-import { deepMerge } from "./client-utils";
-import { createUrl } from "./url";
-import { normalizeHeaders } from "../lib/headers";
-import type {
-  FuncParams,
-  UrlOptions,
-  ClientOptions,
-  TypedRequestInit,
-  BodyOptions,
-  HeadersOptions,
-} from "./types";
 import type { ContentType } from "../lib/content-type-types";
+import { normalizeHeaders } from "../lib/headers";
+import { deepMerge } from "./client-utils";
+import type {
+  BodyOptions,
+  ClientOptions,
+  FuncParams,
+  HeadersOptions,
+  TypedRequestInit,
+  UrlOptions,
+} from "./types";
+import { createUrl } from "./url";
 
 /** Local, non-breaking extension for future body shapes */
 type ExtendedBodyOptions = BodyOptions & {

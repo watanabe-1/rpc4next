@@ -15,6 +15,9 @@
     "typecheck": "bun --filter \"./packages/*\" --if-present typecheck",
     "lint": "bun --filter \"./packages/*\" --if-present lint",
     "lint:fix": "bun --filter \"./packages/*\" --if-present lint:fix",
+    "lint:repo": "biome check .",
+    "lint:repo:fix": "biome check --write .",
+    "format": "biome format --write .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage.enabled true",
     "test:ui": "vitest --ui --coverage.enabled true",
@@ -22,6 +25,7 @@
     "diff2prompt": "diff2prompt --excludeFile=.gitignore"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.0.6",
     "@eslint/js": "^10.0.1",
     "@types/node": "^25.3.3",
     "@vitest/coverage-v8": "^4.0.18",

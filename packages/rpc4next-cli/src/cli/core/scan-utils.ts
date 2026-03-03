@@ -3,13 +3,13 @@ import { HttpMethod } from "rpc4next-shared";
 import { createImportAlias } from "./alias";
 import { QUERY_TYPES, TYPE_KEY_QUERY } from "./constants";
 import { createRelativeImportPath } from "./path-utils";
-import { createImport, createRecodeType, createObjectType } from "./type-utils";
+import { createImport, createObjectType, createRecodeType } from "./type-utils";
 
 export const scanFile = <T extends string | undefined>(
   outputFile: string,
   inputFile: string,
   findCallBack: (fileContents: string) => T,
-  typeCallBack: (type: NonNullable<T>, importAlias: string) => string
+  typeCallBack: (type: NonNullable<T>, importAlias: string) => string,
 ) => {
   const fileContents = fs.readFileSync(inputFile, "utf8");
 
@@ -37,11 +37,11 @@ export const scanQuery = (outputFile: string, inputFile: string) => {
     (fileContents) => {
       return QUERY_TYPES.find((type) =>
         new RegExp(`export (interface ${type} ?{|type ${type} ?=)`).test(
-          fileContents
-        )
+          fileContents,
+        ),
       );
     },
-    (_, importAlias) => createRecodeType(TYPE_KEY_QUERY, importAlias)
+    (_, importAlias) => createRecodeType(TYPE_KEY_QUERY, importAlias),
   );
 };
 
@@ -49,7 +49,7 @@ export const scanQuery = (outputFile: string, inputFile: string) => {
 export const scanRoute = (
   outputFile: string,
   inputFile: string,
-  httpMethod: HttpMethod
+  httpMethod: HttpMethod,
 ) => {
   return scanFile(
     outputFile,
@@ -57,13 +57,13 @@ export const scanRoute = (
     (fileContents) => {
       return [httpMethod].find((method) =>
         new RegExp(
-          `export (async )?(function ${method} ?\\(|const ${method} ?=|\\{[^}]*\\b${method}\\b[^}]*\\} ?=|const \\{[^}]*\\b${method}\\b[^}]*\\} ?=|\\{[^}]*\\b${method}\\b[^}]*\\} from)`
-        ).test(fileContents)
+          `export (async )?(function ${method} ?\\(|const ${method} ?=|\\{[^}]*\\b${method}\\b[^}]*\\} ?=|const \\{[^}]*\\b${method}\\b[^}]*\\} ?=|\\{[^}]*\\b${method}\\b[^}]*\\} from)`,
+        ).test(fileContents),
       );
     },
     (type, importAlias) =>
       createObjectType([
         { name: `$${type.toLowerCase()}`, type: `typeof ${importAlias}` },
-      ])
+      ]),
   );
 };

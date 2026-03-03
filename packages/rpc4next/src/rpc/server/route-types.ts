@@ -7,9 +7,9 @@
  * Hono is licensed under the MIT License.
  */
 
-import type { TypedNextResponse, Query, RouteContext, Params } from "./types";
 import type { NextRequest } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
+import type { Params, Query, RouteContext, TypedNextResponse } from "./types";
 
 export type RouteResponse =
   | TypedNextResponse
@@ -39,7 +39,7 @@ export type Handler<
   TValidationSchema extends ValidationSchema = ValidationSchema,
   TRouteResponse extends RouteResponse = RouteResponse,
 > = (
-  routeContext: RouteContext<TParams, TQuery, TValidationSchema>
+  routeContext: RouteContext<TParams, TQuery, TValidationSchema>,
 ) => TRouteResponse;
 
 export type ErrorHandler<
@@ -49,7 +49,7 @@ export type ErrorHandler<
   TValidationSchema extends ValidationSchema = ValidationSchema,
 > = (
   error: unknown,
-  routeContext: RouteContext<TParams, TQuery, TValidationSchema>
+  routeContext: RouteContext<TParams, TQuery, TValidationSchema>,
 ) => TRouteResponse;
 
 export type RouteHandlerResponse<
@@ -66,7 +66,7 @@ export type RouteHandler<
   TValidationSchema extends ValidationSchema,
 > = (
   req: NextRequest,
-  segmentData: { params: Promise<TParams> }
+  segmentData: { params: Promise<TParams> },
 ) => RouteHandlerResponse<TRouteResponse, TValidationSchema>;
 
 type HttpMethodMapping<
@@ -97,7 +97,7 @@ export interface MethodRouteDefinition<
     TV1 extends ValidationSchema = ValidationSchema,
     TR1 extends RequiredRouteResponse = RequiredRouteResponse,
   >(
-    handler: Handler<THttpMethod, TParams, TQuery, TV1, TR1>
+    handler: Handler<THttpMethod, TParams, TQuery, TV1, TR1>,
   ): HttpMethodMapping<THttpMethod, TParams, TR1 | TOnErrorResponse, TV1>;
 
   // 2 handlers
@@ -108,7 +108,7 @@ export interface MethodRouteDefinition<
     TR2 extends RequiredRouteResponse = RequiredRouteResponse,
   >(
     handler1: Handler<THttpMethod, TParams, TQuery, TV1, TR1>,
-    handler2: Handler<THttpMethod, TParams, TQuery, TV2, TR2>
+    handler2: Handler<THttpMethod, TParams, TQuery, TV2, TR2>,
   ): HttpMethodMapping<THttpMethod, TParams, TR1 | TR2 | TOnErrorResponse, TV2>;
 
   // 3 handlers
@@ -122,7 +122,7 @@ export interface MethodRouteDefinition<
   >(
     handler1: Handler<THttpMethod, TParams, TQuery, TV1, TR1>,
     handler2: Handler<THttpMethod, TParams, TQuery, TV2, TR2>,
-    handler3: Handler<THttpMethod, TParams, TQuery, TV3, TR3>
+    handler3: Handler<THttpMethod, TParams, TQuery, TV3, TR3>,
   ): HttpMethodMapping<
     THttpMethod,
     TParams,
@@ -144,7 +144,7 @@ export interface MethodRouteDefinition<
     handler1: Handler<THttpMethod, TParams, TQuery, TV1, TR1>,
     handler2: Handler<THttpMethod, TParams, TQuery, TV2, TR2>,
     handler3: Handler<THttpMethod, TParams, TQuery, TV3, TR3>,
-    handler4: Handler<THttpMethod, TParams, TQuery, TV4, TR4>
+    handler4: Handler<THttpMethod, TParams, TQuery, TV4, TR4>,
   ): HttpMethodMapping<
     THttpMethod,
     TParams,
@@ -169,7 +169,7 @@ export interface MethodRouteDefinition<
     handler2: Handler<THttpMethod, TParams, TQuery, TV2, TR2>,
     handler3: Handler<THttpMethod, TParams, TQuery, TV3, TR3>,
     handler4: Handler<THttpMethod, TParams, TQuery, TV4, TR4>,
-    handler5: Handler<THttpMethod, TParams, TQuery, TV5, TR5>
+    handler5: Handler<THttpMethod, TParams, TQuery, TV5, TR5>,
   ): HttpMethodMapping<
     THttpMethod,
     TParams,
@@ -197,7 +197,7 @@ export interface MethodRouteDefinition<
     handler3: Handler<THttpMethod, TParams, TQuery, TV3, TR3>,
     handler4: Handler<THttpMethod, TParams, TQuery, TV4, TR4>,
     handler5: Handler<THttpMethod, TParams, TQuery, TV5, TR5>,
-    handler6: Handler<THttpMethod, TParams, TQuery, TV6, TR6>
+    handler6: Handler<THttpMethod, TParams, TQuery, TV6, TR6>,
   ): HttpMethodMapping<
     THttpMethod,
     TParams,

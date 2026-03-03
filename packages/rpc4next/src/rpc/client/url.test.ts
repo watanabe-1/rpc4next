@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { buildUrlSuffix, replaceDynamicSegments, createUrl } from "./url";
+import { describe, expect, it } from "vitest";
+import { buildUrlSuffix, createUrl, replaceDynamicSegments } from "./url";
 
 describe("buildUrlSuffix", () => {
   it("returns an empty string when no URL is provided", () => {

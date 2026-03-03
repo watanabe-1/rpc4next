@@ -1,6 +1,6 @@
+import { searchParamsToObject } from "../lib/search-params";
 import { isCatchAllOrOptional } from "./client-utils";
 import { replaceDynamicSegments } from "./url";
-import { searchParamsToObject } from "../lib/search-params";
 
 type ParamValue = string | string[] | undefined;
 

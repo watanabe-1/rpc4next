@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { createImportAlias } from "./alias";
 
 describe("createImportAlias", () => {
@@ -43,7 +43,7 @@ describe("createImportAlias", () => {
     // This ensures that for a known input, the output is fixed.
     // If the algorithm, concatenation rule, or hash changes, the test will fail.
     expect(createImportAlias("src/utils", "myModule")).toBe(
-      "myModule_334f774bfd7c3a9c"
+      "myModule_334f774bfd7c3a9c",
     );
   });
 
