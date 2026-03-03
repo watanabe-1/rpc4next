@@ -88,6 +88,21 @@ describe("runCli", () => {
     expect(process.exit).not.toHaveBeenCalled();
   });
 
+  it("supports short watch flag (-w) for README-like usage", async () => {
+    const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
+
+    runCli(["node", "cli", "app", "src/types/rpc.ts", "-w"]);
+    await flushAsync();
+
+    expect(handleCliSpy).toHaveBeenCalledWith(
+      "app",
+      "src/types/rpc.ts",
+      { watch: true },
+      mockLogger,
+    );
+    expect(process.exit).not.toHaveBeenCalled();
+  });
+
   it.each([
     { argv: ["node", "cli", "src", "types.ts", "-p"], expected: true },
     {
