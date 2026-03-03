@@ -84,7 +84,7 @@ npx rpc4next <baseDir> <outputPath>
   各ルートに対して個別のパラメータ型定義ファイルを生成する場合は、`--params-file` or `-p` オプションにファイル名を指定します。
 
   ```bash
-  npx rpc4next <baseDir> <outputPath> --generate-params-types <paramsFileName>
+  npx rpc4next <baseDir> <outputPath> --params-file <paramsFileName>
   ```
 
 ---
