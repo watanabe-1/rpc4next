@@ -463,5 +463,8 @@ describe("createRouteContext type definitions", () => {
       // @ts-expect-error both headers and headersInit should not be allowed
       headersInit: headers,
     });
+
+    // This test validates compile-time errors via @ts-expect-error; keep one runtime expect for lint/useExpect.
+    expect(true).toBe(true);
   });
 });

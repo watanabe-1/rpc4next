@@ -23,14 +23,32 @@
   "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
     "enabled": true,
+    "domains": {
+      "test": "recommended"
+    },
     "rules": {
       "recommended": true,
+      "complexity": {
+        "noExcessiveNestedTestSuites": "warn"
+      },
       "suspicious": {
-        "noDoubleEquals": "error"
+        "noDoubleEquals": "error",
+        "noFocusedTests": "error",
+        "noSkippedTests": "error",
+        "noDuplicateTestHooks": "error",
+        "noExportsInTest": "error",
+        "noMisplacedAssertion": "error"
       },
       "correctness": {
         "noUnusedImports": "error",
         "noUnusedVariables": "error"
+      },
+      "style": {
+        "noDoneCallback": "error"
+      },
+      "nursery": {
+        "useExpect": "error",
+        "noConditionalExpect": "error"
       }
     }
   },

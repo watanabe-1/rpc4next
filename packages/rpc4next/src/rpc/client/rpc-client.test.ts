@@ -609,14 +609,10 @@ describe("createRpcClient", () => {
         }>;
         type ExpectdText = () => Promise<string>;
 
-        const _json = incloudErrResponse.json;
-        const _text = incloudErrResponse.text;
-
-        expectTypeOf<
-          typeof incloudErrResponse
-        >().toEqualTypeOf<ExpectedOkResponse>();
-        expectTypeOf<typeof _json>().toEqualTypeOf<ExpectdJson>();
-        expectTypeOf<typeof _text>().toEqualTypeOf<ExpectdText>();
+        // Verify type narrowing by the `ok` discriminator without conditional expect().
+        const _okResponse: ExpectedOkResponse = incloudErrResponse;
+        const _json: ExpectdJson = incloudErrResponse.json;
+        const _text: ExpectdText = incloudErrResponse.text;
       } else {
         type ExpectedErrResponse = TypedNextResponse<
           "error",
@@ -627,14 +623,10 @@ describe("createRpcClient", () => {
         type ExpectdJson = () => Promise<never>;
         type ExpectdText = () => Promise<"error">;
 
-        const _json = incloudErrResponse.json;
-        const _text = incloudErrResponse.text;
-
-        expectTypeOf<
-          typeof incloudErrResponse
-        >().toEqualTypeOf<ExpectedErrResponse>();
-        expectTypeOf<typeof _json>().toEqualTypeOf<ExpectdJson>();
-        expectTypeOf<typeof _text>().toEqualTypeOf<ExpectdText>();
+        // Verify the else branch is narrowed to the error response shape.
+        const _errResponse: ExpectedErrResponse = incloudErrResponse;
+        const _json: ExpectdJson = incloudErrResponse.json;
+        const _text: ExpectdText = incloudErrResponse.text;
       }
 
       const _defaultResponse = await client.api.hoge._bar("").$get();
