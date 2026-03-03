@@ -158,6 +158,25 @@ describe("runCli", () => {
     );
   });
 
+  it("normalizes argv when runtime token is a full executable path", async () => {
+    const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
+
+    runCli([
+      "C:\\Program Files\\nodejs\\node.exe",
+      "C:\\projects\\ts\\rpc4next\\packages\\rpc4next-cli\\dist\\index.js",
+      "src",
+      "types.ts",
+    ]);
+    await flushAsync();
+
+    expect(handleCliSpy).toHaveBeenCalledWith(
+      "src",
+      "types.ts",
+      { watch: false },
+      mockLogger,
+    );
+  });
+
   it.each([
     ["-h"],
     ["--help"],

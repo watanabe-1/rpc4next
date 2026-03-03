@@ -1,4 +1,5 @@
 import { parseArgs } from "node:util";
+import path from "node:path";
 import { handleCli } from "./cli-handler";
 import { EXIT_FAILURE } from "./constants";
 import { createLogger } from "./logger";
@@ -17,7 +18,7 @@ function normalizeUserArgs(argv: string[]): string[] {
 
   // Only strip the first two tokens when argv clearly looks like process.argv.
   // Keep plain user args like ["src", "types.ts"] as-is.
-  const runtimeToken = argv[0].toLowerCase();
+  const runtimeToken = path.basename(argv[0]).toLowerCase();
   const knownRuntimes = new Set([
     "node",
     "node.exe",
