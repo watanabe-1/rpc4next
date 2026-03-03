@@ -1,5 +1,9 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "plugins": [
+    "./biome/no-vitest-test.grit",
+    "./biome/require-top-level-describe.grit"
+  ],
   "files": {
     "includes": [
       "**/*.ts",
@@ -13,7 +17,8 @@
       "!**/dist",
       "!**/bin",
       "!**/.next",
-      "!**/coverage"
+      "!**/coverage",
+      "!biome/tests"
     ]
   },
   "formatter": {
