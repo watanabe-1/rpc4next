@@ -121,6 +121,10 @@ describe("runCli", () => {
       argv: ["node", "cli", "src", "types.ts", "--params-file=foo.ts"],
       expected: "foo.ts",
     },
+    {
+      argv: ["node", "cli", "src", "types.ts", "--params-file="],
+      expected: true,
+    },
   ])("parses params-file option: $argv", async ({ argv, expected }) => {
     const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
 
@@ -177,6 +181,21 @@ describe("runCli", () => {
     );
   });
 
+  it("accepts user-args-only help flag that starts with '-'", () => {
+    const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(
+      ((code?: number) => {
+        throw new ExitSignal(code);
+      }) as never,
+    );
+
+    expect(() => runCli(["--help"])).toThrow(ExitSignal);
+
+    expect(handleCliSpy).not.toHaveBeenCalled();
+    expect(mockLogger.info).toHaveBeenCalled();
+    expect(exitSpy).toHaveBeenCalledWith(0);
+  });
+
   it.each([
     ["-h"],
     ["--help"],
@@ -204,6 +223,23 @@ describe("runCli", () => {
     expect(mockLogger.error).toHaveBeenCalledTimes(1);
     expect(mockLogger.info).toHaveBeenCalledTimes(1);
     expect(process.exit).toHaveBeenCalledWith(EXIT_FAILURE);
+  });
+
+  it("exits with failure when argv is empty", () => {
+    const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(
+      ((code?: number) => {
+        throw new ExitSignal(code);
+      }) as never,
+    );
+
+    expect(() => runCli([])).toThrow(ExitSignal);
+
+    expect(handleCliSpy).not.toHaveBeenCalled();
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      "Missing required arguments: <baseDir> <outputPath>",
+    );
+    expect(exitSpy).toHaveBeenCalledWith(EXIT_FAILURE);
   });
 
   it("treats `-p --watch` as paramsFile=true and watch=true", async () => {
@@ -245,5 +281,23 @@ describe("runCli", () => {
       "Unexpected error occurred:plain string error",
     );
     expect(process.exit).toHaveBeenCalledWith(EXIT_FAILURE);
+  });
+
+  it("logs invalid arguments when non-Error is thrown in outer try block", () => {
+    const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(
+      ((code?: number) => {
+        if (code === 0) throw "EXIT_NON_ERROR";
+        throw new ExitSignal(code);
+      }) as never,
+    );
+
+    expect(() => runCli(["--help"])).toThrow(ExitSignal);
+
+    expect(handleCliSpy).not.toHaveBeenCalled();
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      "Invalid arguments: EXIT_NON_ERROR",
+    );
+    expect(exitSpy).toHaveBeenLastCalledWith(EXIT_FAILURE);
   });
 });
