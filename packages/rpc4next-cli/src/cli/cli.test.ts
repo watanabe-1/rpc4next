@@ -166,8 +166,8 @@ describe("runCli", () => {
     const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
 
     runCli([
-      "C:\\Program Files\\nodejs\\node.exe",
-      "C:\\projects\\ts\\rpc4next\\packages\\rpc4next-cli\\dist\\index.js",
+      "/usr/local/bin/node",
+      "/work/rpc4next/packages/rpc4next-cli/dist/index.js",
       "src",
       "types.ts",
     ]);
