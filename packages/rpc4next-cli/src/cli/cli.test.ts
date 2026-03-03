@@ -28,8 +28,8 @@ describe("runCli", () => {
     expect(handleCliSpy).toHaveBeenCalledWith(
       "src",
       "types.ts",
-      {},
-      mockLogger
+      { watch: false, paramsFile: undefined }, // or { watch: false }
+      mockLogger,
     );
   });
 
@@ -43,7 +43,7 @@ describe("runCli", () => {
       "src",
       "types.ts",
       { watch: true, paramsFile: undefined },
-      mockLogger
+      mockLogger,
     );
     expect(process.exit).not.toHaveBeenCalled();
   });
@@ -64,8 +64,8 @@ describe("runCli", () => {
     expect(handleCliSpy).toHaveBeenCalledWith(
       "src",
       "types.ts",
-      { paramsFile: "myparams" },
-      mockLogger
+      { paramsFile: "myparams", watch: false },
+      mockLogger,
     );
   });
 
@@ -79,7 +79,7 @@ describe("runCli", () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(mockLogger.error).toHaveBeenCalledWith(
-      "Unexpected error occurred:Something went wrong"
+      "Unexpected error occurred:Something went wrong",
     );
     expect(process.exit).toHaveBeenCalledWith(1);
   });
@@ -94,7 +94,7 @@ describe("runCli", () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(mockLogger.error).toHaveBeenCalledWith(
-      "Unexpected error occurred:plain string error"
+      "Unexpected error occurred:plain string error",
     );
     expect(process.exit).toHaveBeenCalledWith(1);
   });
