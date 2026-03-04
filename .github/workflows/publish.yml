@@ -52,6 +52,9 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Copy root files
+        run: bun scripts/copy-root-files.ts
+
       - name: Replace workspace deps
         run: bun scripts/replace-workspace-deps.ts
 
