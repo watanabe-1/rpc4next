@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.2.0...rpc4next-cli-v0.3.0) (2026-03-04)
+
+
+### Features
+
+* **ci:** copy root files before publish ([#252](https://github.com/watanabe-1/rpc4next/issues/252)) ([408fd0c](https://github.com/watanabe-1/rpc4next/commit/408fd0c9b562d2f07a4dbf43697aae5c8e366da8))
+
 ## [0.2.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.1.5...rpc4next-cli-v0.2.0) (2026-03-03)
 
 
