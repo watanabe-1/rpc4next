@@ -48,11 +48,11 @@ describe("runCli", () => {
 
   it("exits with failure and prints help when required args are missing", () => {
     const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(
-      ((code?: number) => {
-        throw new ExitSignal(code);
-      }) as never,
-    );
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+      code?: number,
+    ) => {
+      throw new ExitSignal(code);
+    }) as never);
 
     expect(() => runCli(["node", "cli", "src"])).toThrow(ExitSignal);
 
@@ -183,11 +183,11 @@ describe("runCli", () => {
 
   it("accepts user-args-only help flag that starts with '-'", () => {
     const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(
-      ((code?: number) => {
-        throw new ExitSignal(code);
-      }) as never,
-    );
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+      code?: number,
+    ) => {
+      throw new ExitSignal(code);
+    }) as never);
 
     expect(() => runCli(["--help"])).toThrow(ExitSignal);
 
@@ -201,11 +201,11 @@ describe("runCli", () => {
     ["--help"],
   ])("exits 0 and skips handleCli on help: %s", (helpFlag) => {
     const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(
-      ((code?: number) => {
-        throw new ExitSignal(code);
-      }) as never,
-    );
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+      code?: number,
+    ) => {
+      throw new ExitSignal(code);
+    }) as never);
 
     expect(() => runCli(["node", "cli", helpFlag])).toThrow(ExitSignal);
 
@@ -227,11 +227,11 @@ describe("runCli", () => {
 
   it("exits with failure when argv is empty", () => {
     const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(
-      ((code?: number) => {
-        throw new ExitSignal(code);
-      }) as never,
-    );
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+      code?: number,
+    ) => {
+      throw new ExitSignal(code);
+    }) as never);
 
     expect(() => runCli([])).toThrow(ExitSignal);
 
@@ -285,12 +285,12 @@ describe("runCli", () => {
 
   it("logs invalid arguments when non-Error is thrown in outer try block", () => {
     const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(
-      ((code?: number) => {
-        if (code === 0) throw "EXIT_NON_ERROR";
-        throw new ExitSignal(code);
-      }) as never,
-    );
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+      code?: number,
+    ) => {
+      if (code === 0) throw "EXIT_NON_ERROR";
+      throw new ExitSignal(code);
+    }) as never);
 
     expect(() => runCli(["--help"])).toThrow(ExitSignal);
 

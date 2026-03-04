@@ -1,16 +1,16 @@
-import path from "path";
+import path from "node:path";
 
 export const createRelativeImportPath = (
   outputFile: string,
-  inputFile: string
+  inputFile: string,
 ) => {
   let relativePath = toPosixPath(
-    path.relative(path.dirname(outputFile), inputFile)
+    path.relative(path.dirname(outputFile), inputFile),
   ).replace(/\.tsx?$/, "");
 
   // Add "./" if the file is in the same directory
   if (!relativePath.startsWith("../")) {
-    relativePath = "./" + relativePath;
+    relativePath = `./${relativePath}`;
   }
 
   return relativePath;

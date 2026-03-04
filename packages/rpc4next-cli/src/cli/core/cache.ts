@@ -1,4 +1,4 @@
-import path from "path";
+import path from "node:path";
 import type { scanAppDir } from "./route-scanner";
 
 // Caches
@@ -8,7 +8,7 @@ export const scanAppDirCache = new Map<string, ReturnType<typeof scanAppDir>>();
 // Generic function to clear cache entries above a target path
 const clearCacheAbove = (
   cache: Map<string, unknown>,
-  targetPath: string
+  targetPath: string,
 ): void => {
   const basePath = path.resolve(targetPath);
 

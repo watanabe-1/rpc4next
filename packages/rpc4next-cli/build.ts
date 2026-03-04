@@ -1,6 +1,6 @@
 import { build } from "esbuild";
-import pkg from "./package.json";
 import { baseBuildOptions, mergeBuildOptions } from "../build-utils";
+import pkg from "./package.json";
 
 await build(
   mergeBuildOptions(
@@ -18,6 +18,6 @@ await build(
         js: "#!/usr/bin/env node",
       },
     },
-    baseBuildOptions
-  )
+    baseBuildOptions,
+  ),
 );

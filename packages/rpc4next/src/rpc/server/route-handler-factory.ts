@@ -3,18 +3,18 @@
  * particularly its routing design and handler interface.
  */
 
-import { createRouteContext } from "./route-context";
-import type {
-  ValidationSchema,
-  Handler,
-  RequiredRouteResponse,
-  ErrorHandler,
-  RouteBindings,
-  MethodRouteDefinition,
-} from "./route-types";
-import type { Query, Params } from "./types";
 import type { NextRequest } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
+import { createRouteContext } from "./route-context";
+import type {
+  ErrorHandler,
+  Handler,
+  MethodRouteDefinition,
+  RequiredRouteResponse,
+  RouteBindings,
+  ValidationSchema,
+} from "./route-types";
+import type { Params, Query } from "./types";
 
 const composeHandlersWithError = <
   THttpMethod extends HttpMethod,
@@ -25,15 +25,15 @@ const composeHandlersWithError = <
   TOnErrorResponse extends RequiredRouteResponse,
 >(
   handlers: THandlers,
-  onError: ErrorHandler<TOnErrorResponse, TParams, TQuery, TValidationSchema>
+  onError: ErrorHandler<TOnErrorResponse, TParams, TQuery, TValidationSchema>,
 ) => {
   return async (
     req: NextRequest,
-    segmentData: { params: Promise<TParams> }
+    segmentData: { params: Promise<TParams> },
   ) => {
     const routeContext = createRouteContext<TParams, TQuery, TValidationSchema>(
       req,
-      segmentData
+      segmentData,
     );
 
     try {
@@ -68,13 +68,13 @@ const composeHandlersWithError = <
  */
 export const routeHandlerFactory =
   <TOnErrorResponse extends RequiredRouteResponse = never>(
-    onError?: ErrorHandler<TOnErrorResponse>
+    onError?: ErrorHandler<TOnErrorResponse>,
   ) =>
   <TBindings extends RouteBindings>() => {
     const defineRouteForMethod = <THttpMethod extends HttpMethod>(
-      method: THttpMethod
+      method: THttpMethod,
     ) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
       return ((...handlers: any[]) => {
         const resolvedOnError =
           onError ??
@@ -84,7 +84,7 @@ export const routeHandlerFactory =
 
         const routeHandler = composeHandlersWithError(
           handlers,
-          resolvedOnError
+          resolvedOnError,
         );
 
         return { [method]: routeHandler } as Record<

@@ -1,15 +1,15 @@
-import { deepMerge } from "./client-utils";
-import { createUrl } from "./url";
-import { normalizeHeaders } from "../lib/headers";
-import type {
-  FuncParams,
-  UrlOptions,
-  ClientOptions,
-  TypedRequestInit,
-  BodyOptions,
-  HeadersOptions,
-} from "./types";
 import type { ContentType } from "../lib/content-type-types";
+import { normalizeHeaders } from "../lib/headers";
+import { deepMerge } from "./client-utils";
+import type {
+  BodyOptions,
+  ClientOptions,
+  FuncParams,
+  HeadersOptions,
+  TypedRequestInit,
+  UrlOptions,
+} from "./types";
+import { createUrl } from "./url";
 
 /** Local, non-breaking extension for future body shapes */
 type ExtendedBodyOptions = BodyOptions & {
@@ -93,13 +93,13 @@ export const httpMethod = (
     };
 
     // ---- Cookies: merge (existing cookie header + methodParam cookies map)
-    const existingCookie = mergedHeaders["cookie"];
+    const existingCookie = mergedHeaders.cookie;
     const methodParamCookies = methodParam?.requestHeaders?.cookies;
     if (methodParamCookies && Object.keys(methodParamCookies).length > 0) {
       const cookieFromMap = Object.entries(methodParamCookies)
         .map(([k, v]) => `${k}=${v}`)
         .join("; ");
-      mergedHeaders["cookie"] = existingCookie
+      mergedHeaders.cookie = existingCookie
         ? `${existingCookie}; ${cookieFromMap}`
         : cookieFromMap;
     }

@@ -1,15 +1,15 @@
-import path from "path";
+import path from "node:path";
 import { EXIT_FAILURE, EXIT_SUCCESS } from "./constants";
 import { toPosixPath } from "./core/path-utils";
 import { generate } from "./generator";
-import { setupWatcher } from "./watcher";
 import type { CliOptions, ExitCode, Logger } from "./types";
+import { setupWatcher } from "./watcher";
 
 const handleGenerateSafely = (
   baseDir: string,
   outputPath: string,
   paramsFileName: string | null,
-  logger: Logger
+  logger: Logger,
 ): ExitCode => {
   try {
     generate({
@@ -35,7 +35,7 @@ export const handleCli = (
   baseDir: string,
   outputPath: string,
   options: CliOptions,
-  logger: Logger
+  logger: Logger,
 ): ExitCode => {
   const resolvedBaseDir = toPosixPath(path.resolve(baseDir));
   const resolvedOutputPath = toPosixPath(path.resolve(outputPath));
@@ -57,10 +57,10 @@ export const handleCli = (
           resolvedBaseDir,
           resolvedOutputPath,
           paramsFileName,
-          logger
+          logger,
         );
       },
-      logger
+      logger,
     );
 
     return EXIT_SUCCESS;
@@ -70,6 +70,6 @@ export const handleCli = (
     resolvedBaseDir,
     resolvedOutputPath,
     paramsFileName,
-    logger
+    logger,
   );
 };

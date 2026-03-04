@@ -28,7 +28,7 @@ const readJson = <T>(file: string): T =>
   JSON.parse(fs.readFileSync(file, "utf8"));
 
 const writeJson = (file: string, obj: unknown) =>
-  fs.writeFileSync(file, JSON.stringify(obj, null, 2) + "\n", "utf8");
+  fs.writeFileSync(file, `${JSON.stringify(obj, null, 2)}\n`, "utf8");
 
 export function replaceWorkspaceDepsFromManifest(
   options: ReplaceOptions,
@@ -62,7 +62,7 @@ export function replaceWorkspaceDepsFromManifest(
 
   for (const dir of packageDirs) {
     const pkgPath = path.join(repoRoot, dir, "package.json");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
     const pkg = readJson<any>(pkgPath);
 
     let changed = false;

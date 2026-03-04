@@ -1,44 +1,44 @@
-import { http, HttpResponse } from "msw";
+import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import {
-  beforeAll,
-  afterEach,
   afterAll,
+  afterEach,
+  beforeAll,
   describe,
   expect,
   expectTypeOf,
   it,
 } from "vitest";
 import {
-  ContentType,
-  HttpStatusCode,
+  type ContentType,
+  type HttpStatusCode,
   routeHandlerFactory,
-  TypedNextResponse,
+  type TypedNextResponse,
 } from "../server";
 import { createRpcClient } from "./rpc-client";
-import { ParamsKey, Endpoint, QueryKey } from "./types";
+import type { Endpoint, ParamsKey, QueryKey } from "./types";
 
 const createRouteHandler = routeHandlerFactory();
 
 const { POST: _post_0 } = createRouteHandler().post(async (rc) =>
-  rc.text("post")
+  rc.text("post"),
 );
 
 const { GET: _get_0 } = createRouteHandler().get(async (rc) =>
-  rc.json({ method: "get" })
+  rc.json({ method: "get" }),
 );
 
 const { DELETE: _delete_0 } = createRouteHandler().delete(async (rc) =>
-  rc.text("delete")
+  rc.text("delete"),
 );
 
 const { HEAD: _head_0 } = createRouteHandler().head(async (rc) =>
-  rc.text("head")
+  rc.text("head"),
 );
 
 const { PATCH: _patch_0 } = createRouteHandler().patch(async (rc) =>
-  rc.text("patch")
+  rc.text("patch"),
 );
 
 const { PUT: _put_0 } = createRouteHandler().put(async (rc) => rc.text("put"));
@@ -99,7 +99,7 @@ const server = setupServer(
     const headers = Object.fromEntries(resInfo.request.headers.entries());
 
     return HttpResponse.json(headers);
-  })
+  }),
 );
 
 describe("createRpcClient", () => {
@@ -180,8 +180,8 @@ describe("createRpcClient", () => {
     it("should use only client-level options when only client options are specified", async () => {
       let capturedInit: RequestInit | undefined;
       const customFetch = async (
-        input: RequestInfo | URL,
-        init?: RequestInit
+        _input: RequestInfo | URL,
+        init?: RequestInit,
       ) => {
         capturedInit = init;
 
@@ -198,16 +198,16 @@ describe("createRpcClient", () => {
 
       await client.api.hoge.$delete();
       expect(capturedInit).toBeDefined();
-      expect(capturedInit!.method).toBe("DELETE");
-      expect(capturedInit!.mode).toBe("cors");
-      expect(capturedInit!.headers).toEqual({ "x-client": "client-header" });
+      expect(capturedInit?.method).toBe("DELETE");
+      expect(capturedInit?.mode).toBe("cors");
+      expect(capturedInit?.headers).toEqual({ "x-client": "client-header" });
     });
 
     it("should use only method-level options when only method options are specified", async () => {
       let capturedInit: RequestInit | undefined;
       const customFetch = async (
-        input: RequestInfo | URL,
-        init?: RequestInit
+        _input: RequestInfo | URL,
+        init?: RequestInit,
       ) => {
         capturedInit = init;
 
@@ -226,16 +226,16 @@ describe("createRpcClient", () => {
       });
 
       expect(capturedInit).toBeDefined();
-      expect(capturedInit!.method).toBe("DELETE");
-      expect(capturedInit!.cache).toBe("no-cache");
-      expect(capturedInit!.headers).toEqual({ "x-method": "method-header" });
+      expect(capturedInit?.method).toBe("DELETE");
+      expect(capturedInit?.cache).toBe("no-cache");
+      expect(capturedInit?.headers).toEqual({ "x-method": "method-header" });
     });
 
     it("should correctly merge client and method options", async () => {
       let capturedInit: RequestInit | undefined;
       const customFetch = async (
-        input: RequestInfo | URL,
-        init?: RequestInit
+        _input: RequestInfo | URL,
+        init?: RequestInit,
       ) => {
         capturedInit = init;
 
@@ -259,11 +259,11 @@ describe("createRpcClient", () => {
       });
 
       expect(capturedInit).toBeDefined();
-      expect(capturedInit!.method).toBe("DELETE");
-      expect(capturedInit!.mode).toBe("cors");
-      expect(capturedInit!.credentials).toBe("include");
-      expect(capturedInit!.cache).toBe("no-cache");
-      expect(capturedInit!.headers).toEqual({
+      expect(capturedInit?.method).toBe("DELETE");
+      expect(capturedInit?.mode).toBe("cors");
+      expect(capturedInit?.credentials).toBe("include");
+      expect(capturedInit?.cache).toBe("no-cache");
+      expect(capturedInit?.headers).toEqual({
         "x-client": "client-header",
         common: "method",
         "x-method": "method-header",
@@ -273,8 +273,8 @@ describe("createRpcClient", () => {
     it("should work when init options have no headers", async () => {
       let capturedInit: RequestInit | undefined;
       const customFetch = async (
-        input: RequestInfo | URL,
-        init?: RequestInit
+        _input: RequestInfo | URL,
+        init?: RequestInit,
       ) => {
         capturedInit = init;
 
@@ -293,15 +293,15 @@ describe("createRpcClient", () => {
       });
 
       expect(capturedInit).toBeDefined();
-      expect(capturedInit!.method).toBe("DELETE");
-      expect(capturedInit!.headers).toEqual({ "x-only": "only-header" });
+      expect(capturedInit?.method).toBe("DELETE");
+      expect(capturedInit?.headers).toEqual({ "x-only": "only-header" });
     });
 
     it("should merge non-conflicting options from client and method", async () => {
       let capturedInit: RequestInit | undefined;
       const customFetch = async (
-        input: RequestInfo | URL,
-        init?: RequestInit
+        _input: RequestInfo | URL,
+        init?: RequestInit,
       ) => {
         capturedInit = init;
 
@@ -322,9 +322,9 @@ describe("createRpcClient", () => {
       });
 
       expect(capturedInit).toBeDefined();
-      expect(capturedInit!.method).toBe("DELETE");
-      expect(capturedInit!.mode).toBe("cors");
-      expect(capturedInit!.cache).toBe("no-store");
+      expect(capturedInit?.method).toBe("DELETE");
+      expect(capturedInit?.mode).toBe("cors");
+      expect(capturedInit?.cache).toBe("no-store");
     });
 
     it("should propagate network errors", async () => {
@@ -337,12 +337,12 @@ describe("createRpcClient", () => {
       });
 
       await expect(client.api.hoge.$delete()).rejects.toThrow(
-        "Network failure"
+        "Network failure",
       );
     });
 
     it("should correctly pass request body for POST requests", async () => {
-      let capturedBody;
+      let capturedBody: BodyInit | null | undefined;
       const customFetch = async (_: RequestInfo | URL, init?: RequestInit) => {
         capturedBody = init?.body;
 
@@ -362,7 +362,7 @@ describe("createRpcClient", () => {
     });
 
     it("should correctly merge multiple header values", async () => {
-      let capturedHeaders;
+      let capturedHeaders: HeadersInit | undefined;
       const customFetch = async (_: RequestInfo | URL, init?: RequestInit) => {
         capturedHeaders = init?.headers;
 
@@ -436,7 +436,7 @@ describe("createRpcClient", () => {
       const json = await response.json();
       expect(json["x-client"]).toBe("client-header");
       expect(json["x-method"]).toBe("method-header");
-      expect(json["common"]).toBe("method");
+      expect(json.common).toBe("method");
     });
   });
 
@@ -473,7 +473,7 @@ describe("createRpcClient", () => {
     it('throws when calling the root proxy as a function ("/" is not dynamic)', () => {
       const client = createRpcClient<PathStructure>("/");
       expect(() => (client as unknown as (v: string) => void)("x")).toThrow(
-        'Cannot apply a value: "/" is not a dynamic segment.'
+        'Cannot apply a value: "/" is not a dynamic segment.',
       );
     });
 
@@ -481,7 +481,7 @@ describe("createRpcClient", () => {
       type FailurePath = Endpoint & { _fuga: Endpoint };
       const client = createRpcClient<FailurePath>("");
       expect(() => (client._fuga as unknown as (v?: string) => void)()).toThrow(
-        "Missing value for dynamic parameter: _fuga"
+        "Missing value for dynamic parameter: _fuga",
       );
     });
   });
@@ -497,25 +497,25 @@ describe("createRpcClient", () => {
 
       // calling dynamic param without argument
       expect(() => client._fuga(undefined as unknown as string)).toThrow(
-        "Missing value for dynamic parameter: _fuga"
+        "Missing value for dynamic parameter: _fuga",
       );
 
       // calling static path segment as a function
       const hoge = client.hoge as unknown as (value: string) => "";
       expect(() => hoge("")).toThrow(
-        'Cannot apply a value: "hoge" is not a dynamic segment.'
+        'Cannot apply a value: "hoge" is not a dynamic segment.',
       );
     });
   });
 
   const { POST: _post_1 } = createRouteHandler().post(
     async (rc) => rc.json("json"),
-    async (rc) => rc.text("text")
+    async (rc) => rc.text("text"),
   );
 
   const { POST: _get_1 } = createRouteHandler().post(
     async (rc) => rc.text("error", { status: 400 }),
-    async (rc) => rc.json({ ok: true }, { status: 200 })
+    async (rc) => rc.json({ ok: true }, { status: 200 }),
   );
 
   async function _get_2(_: NextRequest) {
@@ -609,14 +609,10 @@ describe("createRpcClient", () => {
         }>;
         type ExpectdText = () => Promise<string>;
 
-        const _json = incloudErrResponse.json;
-        const _text = incloudErrResponse.text;
-
-        expectTypeOf<
-          typeof incloudErrResponse
-        >().toEqualTypeOf<ExpectedOkResponse>();
-        expectTypeOf<typeof _json>().toEqualTypeOf<ExpectdJson>();
-        expectTypeOf<typeof _text>().toEqualTypeOf<ExpectdText>();
+        // Verify type narrowing by the `ok` discriminator without conditional expect().
+        const _okResponse: ExpectedOkResponse = incloudErrResponse;
+        const _json: ExpectdJson = incloudErrResponse.json;
+        const _text: ExpectdText = incloudErrResponse.text;
       } else {
         type ExpectedErrResponse = TypedNextResponse<
           "error",
@@ -627,14 +623,10 @@ describe("createRpcClient", () => {
         type ExpectdJson = () => Promise<never>;
         type ExpectdText = () => Promise<"error">;
 
-        const _json = incloudErrResponse.json;
-        const _text = incloudErrResponse.text;
-
-        expectTypeOf<
-          typeof incloudErrResponse
-        >().toEqualTypeOf<ExpectedErrResponse>();
-        expectTypeOf<typeof _json>().toEqualTypeOf<ExpectdJson>();
-        expectTypeOf<typeof _text>().toEqualTypeOf<ExpectdText>();
+        // Verify the else branch is narrowed to the error response shape.
+        const _errResponse: ExpectedErrResponse = incloudErrResponse;
+        const _json: ExpectdJson = incloudErrResponse.json;
+        const _text: ExpectdText = incloudErrResponse.text;
       }
 
       const _defaultResponse = await client.api.hoge._bar("").$get();

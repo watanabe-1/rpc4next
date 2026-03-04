@@ -1,9 +1,11 @@
 {
-  "extends": "../packages/tsconfig.eslint.json",
+  "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "rootDir": ".",
     "module": "nodenext",
-    "moduleResolution": "nodenext"
+    "moduleResolution": "nodenext",
+    "types": ["node"],
+    "noEmit": true
   },
   "include": ["./**/*.ts"],
   "exclude": ["../node_modules", "../**/dist", "../**/.next"]

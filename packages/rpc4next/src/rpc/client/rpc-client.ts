@@ -1,8 +1,8 @@
 import { isHttpMethod } from "./client-utils";
 import { httpMethod } from "./http-method";
 import { makeCreateRpc } from "./rpc";
-import { createUrl } from "./url";
 import type { ClientOptions, DynamicPathProxyAsFunction } from "./types";
+import { createUrl } from "./url";
 
 /**
  * Creates an RPC client proxy for making HTTP requests with a strongly typed API.
@@ -44,8 +44,8 @@ export const createRpcClient = makeCreateRpc(
     }
 
     return undefined;
-  }
+  },
 ) as <T extends object>(
   baseUrl: string,
-  options?: ClientOptions
+  options?: ClientOptions,
 ) => DynamicPathProxyAsFunction<T>;

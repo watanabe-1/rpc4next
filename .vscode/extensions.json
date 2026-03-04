@@ -1,7 +1,6 @@
 {
   "recommendations": [
-    "dbaeumer.vscode-eslint", // ESLint
-    "esbenp.prettier-vscode", // Prettier
+    "biomejs.biome", // Biome
     "yusukehirao.vscode-markuplint", // Markuplint
     "davidanson.vscode-markdownlint" // Markdownlint
   ]

@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { handleCli } from "./cli-handler";
 import * as generatorModule from "./generator";
-import * as watcherModule from "./watcher";
 import type { CliOptions, Logger } from "./types";
+import * as watcherModule from "./watcher";
 
 vi.mock("./generator", () => ({
   generate: vi.fn(),
@@ -32,7 +32,7 @@ describe("handleCli", () => {
 
     expect(result).toBe(1);
     expect(logger.error).toHaveBeenCalledWith(
-      "Error: --params-file requires a filename."
+      "Error: --params-file requires a filename.",
     );
     expect(generatorModule.generate).not.toHaveBeenCalled();
   });
@@ -61,7 +61,7 @@ describe("handleCli", () => {
     expect(watcherModule.setupWatcher).toHaveBeenCalledWith(
       expect.stringContaining("/testDir"),
       expect.any(Function),
-      logger
+      logger,
     );
 
     const mockedSetupWatcher = vi.mocked(watcherModule.setupWatcher);
@@ -98,7 +98,7 @@ describe("handleCli", () => {
 
     expect(result).toBe(1);
     expect(logger.error).toHaveBeenCalledWith(
-      "Failed to generate: something went wrong"
+      "Failed to generate: something went wrong",
     );
   });
 
@@ -112,7 +112,7 @@ describe("handleCli", () => {
 
     expect(result).toBe(1);
     expect(logger.error).toHaveBeenCalledWith(
-      "Unknown error occurred during generate: non-error string"
+      "Unknown error occurred during generate: non-error string",
     );
   });
 
@@ -132,7 +132,7 @@ describe("handleCli", () => {
     callback();
 
     expect(logger.error).toHaveBeenCalledWith(
-      "Failed to generate: watch failure"
+      "Failed to generate: watch failure",
     );
   });
 });

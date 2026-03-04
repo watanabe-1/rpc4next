@@ -1,5 +1,6 @@
-import { NextResponse, NextRequest } from "next/server";
-import { describe, it, expect, expectTypeOf } from "vitest";
+import { NextRequest, NextResponse } from "next/server";
+import { describe, expect, expectTypeOf, it } from "vitest";
+import type { ContentType } from "../lib/content-type-types";
 import { createRouteContext } from "./route-context";
 import type { ValidationSchema } from "./route-types";
 import type {
@@ -7,7 +8,6 @@ import type {
   ValidatedData,
   ValidationTarget,
 } from "./types";
-import type { ContentType } from "../lib/content-type-types";
 
 const createRealNextRequest = (url: string): NextRequest => {
   return new NextRequest(url);
@@ -36,7 +36,7 @@ describe("createRouteContext", () => {
 
     context.req.addValidatedData(
       "body" as ValidationTarget,
-      { name: "John" } as unknown as ValidatedData
+      { name: "John" } as unknown as ValidatedData,
     );
     expect(context.req.valid("body" as never)).toEqual({
       name: "John",
@@ -118,7 +118,7 @@ describe("createRouteContext", () => {
         headers: {
           "X-Json-Header": "yes",
         },
-      }
+      },
     );
 
     expect(response instanceof NextResponse).toBe(true);
@@ -188,7 +188,7 @@ describe("createRouteContext", () => {
       {
         status: 200,
         headersInit: headers,
-      }
+      },
     );
 
     expect(response instanceof NextResponse).toBe(true);
@@ -384,7 +384,7 @@ describe("createRouteContext type definitions", () => {
     // redirect response
     const _redirectResponse = context.redirect(
       "http://localhost/next-page",
-      307
+      307,
     );
     type InferredRedirect = typeof _redirectResponse;
     type ExpectedRedirect = TypedNextResponse<undefined, 307, "">;
@@ -412,14 +412,13 @@ describe("createRouteContext type definitions", () => {
 
     const _redirectResponse = context.redirect(
       "http://localhost",
-      301 as const
+      301 as const,
     );
     expectTypeOf(_redirectResponse).toEqualTypeOf<
       TypedNextResponse<undefined, 301, "">
     >();
   });
 
-  // eslint-disable-next-line vitest/expect-expect
   it("should cause a type error when both headers and headersInit are provided", () => {
     const req = createRealNextRequest("http://localhost/");
     const context = createRouteContext(req, { params: Promise.resolve({}) });
@@ -444,7 +443,7 @@ describe("createRouteContext type definitions", () => {
           "X-Test": "true",
         }, // @ts-expect-error both headers and headersInit should not be allowed
         headersInit: headers,
-      }
+      },
     );
 
     context.text("conflict-text", {
@@ -464,5 +463,8 @@ describe("createRouteContext type definitions", () => {
       // @ts-expect-error both headers and headersInit should not be allowed
       headersInit: headers,
     });
+
+    // This test validates compile-time errors via @ts-expect-error; keep one runtime expect for lint/useExpect.
+    expect(true).toBe(true);
   });
 });

@@ -1,3 +1,10 @@
+import type { NextResponse } from "next/server";
+import type {
+  CATCH_ALL_PREFIX,
+  DYNAMIC_PREFIX,
+  HTTP_METHOD_FUNC_KEYS,
+  OPTIONAL_CATCH_ALL_PREFIX,
+} from "rpc4next-shared";
 import type { ContentType } from "../lib/content-type-types";
 import type { HttpRequestHeaders } from "../lib/http-request-headers-types";
 import type { HttpStatusCode } from "../lib/http-status-code-types";
@@ -7,15 +14,8 @@ import type {
   ValidationSchema,
 } from "../server/route-types";
 import type { TypedNextResponse, ValidationInputFor } from "../server/types";
-import type { NextResponse } from "next/server";
-import type {
-  OPTIONAL_CATCH_ALL_PREFIX,
-  CATCH_ALL_PREFIX,
-  DYNAMIC_PREFIX,
-  HTTP_METHOD_FUNC_KEYS,
-} from "rpc4next-shared";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
 type DistributeOmit<T, K extends keyof any> = T extends any
   ? Omit<T, K>
   : never;
@@ -152,21 +152,21 @@ type InferHttpMethodValidationSchema<T> = {
 }[keyof T & HttpMethodFuncKey];
 
 type InferValidationSchema<T> = T extends (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
   ...args: any[]
 ) => RouteHandlerResponse<RouteResponse, infer TValidationSchema>
   ? TValidationSchema
   : ValidationSchema;
 
 type InferNextResponseType<T> = T extends (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
   ...args: any[]
 ) => Promise<NextResponse<infer U>>
   ? U
   : never;
 
 type InferTypedNextResponseType<T> = T extends (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
   ...args: any[]
 ) => Promise<TypedNextResponse>
   ? Awaited<ReturnType<T>>
@@ -224,5 +224,5 @@ export type RpcHandler = (
     params: FuncParams;
     dynamicKeys: string[];
     options: ClientOptions;
-  }
+  },
 ) => unknown | undefined;

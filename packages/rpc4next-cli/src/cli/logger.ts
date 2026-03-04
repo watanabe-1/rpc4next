@@ -6,9 +6,9 @@ export const padMessage = (
   label: string,
   value: string,
   separator = "→",
-  targetLength = 24
+  targetLength = 24,
 ) => {
-  return label.padEnd(targetLength) + ` ${separator} ${value}`;
+  return `${label.padEnd(targetLength)} ${separator} ${value}`;
 };
 
 const createIndent = (level: number = 0) => INDENT.repeat(level);

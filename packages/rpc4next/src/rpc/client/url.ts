@@ -1,4 +1,4 @@
-import type { UrlOptions, UrlResult, FuncParams } from "./types";
+import type { FuncParams, UrlOptions, UrlResult } from "./types";
 
 /**
  * Builds a URL suffix string from optional query and hash values.
@@ -34,7 +34,7 @@ import type { UrlOptions, UrlResult, FuncParams } from "./types";
 export const buildUrlSuffix = (url?: UrlOptions) => {
   if (!url) return "";
   const query = url.query
-    ? "?" + new URLSearchParams(url.query as Record<string, string>).toString()
+    ? `?${new URLSearchParams(url.query as Record<string, string>).toString()}`
     : "";
   const hash = url.hash ? `#${url.hash}` : "";
 

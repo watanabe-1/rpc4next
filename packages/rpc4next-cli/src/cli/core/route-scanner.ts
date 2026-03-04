@@ -3,9 +3,9 @@
  * especially the design and UX of its CLI.
  */
 
-import fs from "fs";
-import path from "path";
-
+import fs from "node:fs";
+import path from "node:path";
+import type { HttpMethod } from "rpc4next-shared";
 import {
   CATCH_ALL_PREFIX,
   DYNAMIC_PREFIX,
@@ -13,13 +13,12 @@ import {
   OPTIONAL_CATCH_ALL_PREFIX,
 } from "rpc4next-shared";
 import { END_POINT_FILE_NAMES } from "../constants";
+import type { EndPointFileNames } from "../types";
 import { scanAppDirCache, visitedDirsCache } from "./cache";
 import { INDENT, NEWLINE, TYPE_END_POINT, TYPE_KEY_PARAMS } from "./constants";
 import { toPosixPath } from "./path-utils";
 import { scanQuery, scanRoute } from "./scan-utils";
 import { createObjectType, createRecodeType } from "./type-utils";
-import type { EndPointFileNames } from "../types";
-import type { HttpMethod } from "rpc4next-shared";
 
 type ImportObj = {
   statement: string;
@@ -34,7 +33,8 @@ type ParamsType = {
 const endPointFileNames = new Set(END_POINT_FILE_NAMES);
 
 export const hasTargetFiles = (dirPath: string): boolean => {
-  if (visitedDirsCache.has(dirPath)) return visitedDirsCache.get(dirPath)!;
+  const cachedHasTargetFiles = visitedDirsCache.get(dirPath);
+  if (cachedHasTargetFiles !== undefined) return cachedHasTargetFiles;
 
   const entries = fs.readdirSync(dirPath, { withFileTypes: true });
   for (const entry of entries) {
@@ -79,7 +79,7 @@ const extractParamInfo = (
     isDynamic,
     isCatchAll,
     isOptionalCatchAll,
-  }: { isDynamic: boolean; isCatchAll: boolean; isOptionalCatchAll: boolean }
+  }: { isDynamic: boolean; isCatchAll: boolean; isOptionalCatchAll: boolean },
 ): { paramName: string; keyName: string } => {
   let param = entryName;
 
@@ -117,13 +117,14 @@ export const scanAppDir = (
       isGroup: boolean;
       isParallel: boolean;
     };
-  }[] = []
+  }[] = [],
 ): {
   pathStructure: string;
   imports: ImportObj[];
   paramsTypes: ParamsType[];
 } => {
-  if (scanAppDirCache.has(input)) return scanAppDirCache.get(input)!;
+  const cachedScanResult = scanAppDirCache.get(input);
+  if (cachedScanResult !== undefined) return cachedScanResult;
 
   const previousIndent = indent;
   const currentIndent = indent + INDENT;
@@ -194,7 +195,7 @@ export const scanAppDir = (
         output,
         fullPath,
         isSkipDir ? previousIndent : currentIndent,
-        nextParams
+        nextParams,
       );
 
       imports.push(...childImports);
@@ -211,12 +212,12 @@ export const scanAppDir = (
           typeFragments.push(trimmedChildPathStructure);
         } else {
           throw new Error(
-            `Invalid empty child path structure in grouped/parallel route: ${fullPath}`
+            `Invalid empty child path structure in grouped/parallel route: ${fullPath}`,
           );
         }
       } else {
         pathStructures.push(
-          `${currentIndent}"${keyName}": ${childPathStructure}`
+          `${currentIndent}"${keyName}": ${childPathStructure}`,
         );
       }
     } else {

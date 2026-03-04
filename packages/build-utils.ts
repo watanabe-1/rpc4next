@@ -1,5 +1,5 @@
-import glob from "fast-glob";
 import type { BuildOptions } from "esbuild";
+import glob from "fast-glob";
 
 export const baseBuildOptions: BuildOptions = {
   outdir: "dist",
@@ -16,7 +16,7 @@ export const libraryBuildOptions: BuildOptions = {
 
 export function mergeBuildOptions(
   overrides: BuildOptions,
-  base: BuildOptions = baseBuildOptions
+  base: BuildOptions = baseBuildOptions,
 ): BuildOptions {
   return {
     ...base,

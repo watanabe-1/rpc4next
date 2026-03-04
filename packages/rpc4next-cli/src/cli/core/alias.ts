@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import crypto from "node:crypto";
 
 export const createImportAlias = (path: string, name: string) => {
   const hash = crypto

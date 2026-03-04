@@ -1,6 +1,6 @@
 import * as headersModule from "next/headers";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { getHeadersObject, getCookiesObject } from "./validator-utils";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getCookiesObject, getHeadersObject } from "./validator-utils";
 
 // Mock the next/headers module
 vi.mock("next/headers", () => ({
@@ -14,7 +14,7 @@ const setupHeadersMock = (entries: [string, string][]) => {
     // Return an object with only entries() and cast it as Headers type
     {
       entries: () => entries[Symbol.iterator](),
-    } as unknown as Headers
+    } as unknown as Headers,
   );
 };
 
@@ -24,7 +24,7 @@ const setupCookiesMock = (cookies: { name: string; value: string }[]) => {
     // Return an object with only getAll(), cast as RequestCookies & ResponseCookies type
     {
       getAll: () => cookies,
-    } as unknown as Awaited<ReturnType<typeof headersModule.cookies>>
+    } as unknown as Awaited<ReturnType<typeof headersModule.cookies>>,
   );
 };
 

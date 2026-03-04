@@ -1,7 +1,7 @@
 /// <reference types="vitest" />
 
-import path from "path";
-import { fileURLToPath } from "url";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { coverageConfigDefaults, defineConfig } from "vitest/config";
 
 const workspaceRoot = fileURLToPath(new URL(".", import.meta.url));

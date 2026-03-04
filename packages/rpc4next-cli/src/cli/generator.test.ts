@@ -1,6 +1,6 @@
-import fs from "fs";
-import path from "path";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   SUCCESS_INDENT_LEVEL,
   SUCCESS_PAD_LENGTH,
@@ -46,19 +46,19 @@ describe("generate", () => {
 
     expect(generatePathStructure.generatePathStructure).toHaveBeenCalledWith(
       outputPath,
-      baseDir
+      baseDir,
     );
 
     expect(fs.writeFileSync).toHaveBeenCalledWith(
       outputPath,
-      "generated-type-content"
+      "generated-type-content",
     );
 
     const expectedSuccessMessage = padMessage(
       "Path structure type",
       path.relative(process.cwd(), outputPath),
       SUCCESS_SEPARATOR,
-      SUCCESS_PAD_LENGTH
+      SUCCESS_PAD_LENGTH,
     );
 
     expect(logger.success).toHaveBeenCalledWith(expectedSuccessMessage, {
@@ -90,28 +90,28 @@ describe("generate", () => {
 
     expect(generatePathStructure.generatePathStructure).toHaveBeenCalledWith(
       outputPath,
-      baseDir
+      baseDir,
     );
 
     expect(fs.writeFileSync).toHaveBeenCalledWith(
       outputPath,
-      "generated-type-content"
+      "generated-type-content",
     );
 
     expect(fs.writeFileSync).toHaveBeenCalledWith(
       path.join("dir1", paramsFileName),
-      "params-type-1"
+      "params-type-1",
     );
     expect(fs.writeFileSync).toHaveBeenCalledWith(
       path.join("dir2", paramsFileName),
-      "params-type-2"
+      "params-type-2",
     );
 
     const expectedTypeMessage = padMessage(
       "Path structure type",
       path.relative(process.cwd(), outputPath),
       SUCCESS_SEPARATOR,
-      SUCCESS_PAD_LENGTH
+      SUCCESS_PAD_LENGTH,
     );
     expect(logger.success).toHaveBeenCalledWith(expectedTypeMessage, {
       indentLevel: SUCCESS_INDENT_LEVEL,
@@ -121,7 +121,7 @@ describe("generate", () => {
       "Params types",
       paramsFileName,
       SUCCESS_SEPARATOR,
-      SUCCESS_PAD_LENGTH
+      SUCCESS_PAD_LENGTH,
     );
     expect(logger.success).toHaveBeenCalledWith(expectedParamsMessage, {
       indentLevel: SUCCESS_INDENT_LEVEL,

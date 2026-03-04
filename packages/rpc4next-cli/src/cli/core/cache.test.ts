@@ -1,10 +1,10 @@
-import path from "path";
-import { describe, it, expect, beforeEach } from "vitest";
+import path from "node:path";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
-  clearVisitedDirsCacheAbove,
   clearScanAppDirCacheAbove,
-  visitedDirsCache,
+  clearVisitedDirsCacheAbove,
   scanAppDirCache,
+  visitedDirsCache,
 } from "./cache";
 
 describe("clearVisitedDirsCacheAbove", () => {
@@ -60,7 +60,7 @@ describe("clearVisitedDirsCacheAbove", () => {
 
     expect(visitedDirsCache.has(absoluteTarget)).toBe(false);
     expect(visitedDirsCache.has(path.join(absoluteTarget, "subdir"))).toBe(
-      true
+      true,
     );
   });
 

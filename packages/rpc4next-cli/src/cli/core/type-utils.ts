@@ -1,4 +1,4 @@
-import { TYPE_SEPARATOR, STATEMENT_TERMINATOR } from "./constants";
+import { STATEMENT_TERMINATOR, TYPE_SEPARATOR } from "./constants";
 
 export const createRecodeType = (key: string, value: string) => {
   if (!key || !value) return "";
@@ -18,7 +18,7 @@ export const createObjectType = (fields: { name: string; type: string }[]) => {
 export const createImport = (
   type: string,
   path: string,
-  importAlias?: string
+  importAlias?: string,
 ) => {
   if (!type || !path) return "";
 

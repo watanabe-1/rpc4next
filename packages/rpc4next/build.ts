@@ -20,6 +20,6 @@ await build(
       platform: "neutral",
       bundle: false,
     },
-    libraryBuildOptions
-  )
+    libraryBuildOptions,
+  ),
 );

@@ -1,8 +1,8 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { z } from "zod";
-import { createRpcHelper } from "./rpc-helper";
 import { routeHandlerFactory } from "../server";
 import { zValidator } from "../server/validators/zod";
+import { createRpcHelper } from "./rpc-helper";
 import type { Endpoint, ParamsKey, QueryKey } from "./types";
 
 const createRouteHandler = routeHandlerFactory();
@@ -44,7 +44,7 @@ describe("createRpcHelper basic behavior", () => {
 
   it("Dynamic segment with query and hash", () => {
     const match = rpcHelper.fuga._foo._piyo.$match(
-      "/fuga/foo/bar?baz=value#section"
+      "/fuga/foo/bar?baz=value#section",
     );
     expect(match).toEqual({
       params: { foo: "foo", piyo: "bar" },
@@ -55,7 +55,7 @@ describe("createRpcHelper basic behavior", () => {
 
   it("Query validation segment with query and hash", () => {
     const match = rpcHelper.api.query.$match(
-      "/api/query?name=test&hoge=aa#hash123"
+      "/api/query?name=test&hoge=aa#hash123",
     );
     expect(match).toEqual({
       params: {},
@@ -89,7 +89,7 @@ describe("createRpcHelper type definitions", () => {
 
   it("should infer query types correctly", async () => {
     const _dynamic = rpcHelper.fuga._foo._piyo.$match(
-      "/fuga/dynamic/query?baz=test"
+      "/fuga/dynamic/query?baz=test",
     );
 
     type ExpectedDynamicMatch =

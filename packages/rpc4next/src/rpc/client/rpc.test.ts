@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { makeCreateRpc } from "./rpc";
 import type { RpcHandler } from "./types";
 
@@ -23,7 +23,7 @@ describe("apply trap fallback messages (nullish coalescing branches)", () => {
   const passthroughHandler: RpcHandler = () => undefined;
   const create = makeCreateRpc(passthroughHandler);
 
-  it('uses empty-string fallback when lastPath is "", exercising `${lastPath ?? ""}`', () => {
+  it('uses empty-string fallback when lastPath is "" (nullish fallback branch)', () => {
     const clientWithEmptyBase = create("", {}); // lastPath === "" (falsy & non-dynamic)
     expect(() => {
       (clientWithEmptyBase as unknown as (v: string) => void)("x");
@@ -123,7 +123,7 @@ describe("chaining, dynamic params, and handler short-circuit", () => {
     }).toThrow('Cannot apply a value: "/" is not a dynamic segment.');
   });
 
-  describe("coverage: RHS of `${lastPath ?? ''}` when lastPath becomes undefined", () => {
+  describe("coverage: nullish fallback branch when lastPath becomes undefined", () => {
     // Expose a mutator via handler that empties the *same* paths array the proxy closes over.
     const handler: RpcHandler = (key, ctx) => {
       if (key === "__mutatePathsToEmpty") {

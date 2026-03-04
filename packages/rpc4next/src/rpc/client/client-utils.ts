@@ -1,8 +1,8 @@
 import {
-  DYNAMIC_PREFIX,
   CATCH_ALL_PREFIX,
-  OPTIONAL_CATCH_ALL_PREFIX,
+  DYNAMIC_PREFIX,
   HTTP_METHOD_FUNC_KEYS,
+  OPTIONAL_CATCH_ALL_PREFIX,
 } from "rpc4next-shared";
 import type { HttpMethodFuncKey } from "./types";
 
@@ -33,7 +33,7 @@ export const deepMerge = <T extends object, U extends object>(
   const result = { ...target } as T & U;
 
   for (const key in source) {
-    if (Object.prototype.hasOwnProperty.call(source, key)) {
+    if (Object.hasOwn(source, key)) {
       const targetValue = (target as Record<string, unknown>)[key];
       const sourceValue = (source as Record<string, unknown>)[key];
 

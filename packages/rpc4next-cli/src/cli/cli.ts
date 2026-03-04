@@ -76,8 +76,8 @@ function extractOptionalValueFlag(
     // Support --params-file=foo
     let consumedByEqualsForm = false;
     for (const k of keys) {
-      if (a.startsWith(k + "=")) {
-        value = a.slice((k + "=").length) || true;
+      if (a.startsWith(`${k}=`)) {
+        value = a.slice(`${k}=`.length) || true;
         consumedByEqualsForm = true;
         // do not push this arg (consumed)
         break;

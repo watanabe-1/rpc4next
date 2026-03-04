@@ -1,0 +1,69 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "plugins": [
+    "./biome/no-vitest-test.grit",
+    "./biome/require-top-level-describe.grit"
+  ],
+  "files": {
+    "includes": [
+      "**/*.ts",
+      "**/*.tsx",
+      "**/*.mts",
+      "**/*.cts",
+      "**/*.json",
+      "**/*.jsonc",
+      "**/*.code-workspace",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/bin",
+      "!**/.next",
+      "!**/coverage",
+      "!biome/tests"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space"
+  },
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
+  "linter": {
+    "enabled": true,
+    "domains": {
+      "test": "recommended"
+    },
+    "rules": {
+      "recommended": true,
+      "complexity": {
+        "noExcessiveNestedTestSuites": "warn"
+      },
+      "suspicious": {
+        "noDoubleEquals": "error",
+        "noFocusedTests": "error",
+        "noSkippedTests": "error",
+        "noDuplicateTestHooks": "error",
+        "noExportsInTest": "error",
+        "noMisplacedAssertion": "error"
+      },
+      "correctness": {
+        "noUnusedImports": "error",
+        "noUnusedVariables": "error",
+        "useSingleJsDocAsterisk": "error"
+      },
+      "style": {
+        "noDoneCallback": "error"
+      },
+      "nursery": {
+        "useExpect": "error",
+        "noConditionalExpect": "error"
+      }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "trailingCommas": "all",
+      "semicolons": "always",
+      "arrowParentheses": "always"
+    }
+  }
+}
