@@ -33,6 +33,9 @@ export function copyRootFiles(
   options: CopyRootFilesOptions,
 ): CopyRootFilesResult {
   const packagesDir = path.join(rootDir, options.packagesDirName ?? "packages");
+  console.log(
+    `[copy-root-files] start rootDir=${rootDir} packagesDir=${packagesDir} files=${options.fileNames.join(",")}`,
+  );
 
   // Read all root files once
   const rootContents: Record<string, string> = {};
@@ -58,10 +61,21 @@ export function copyRootFiles(
 
       if (!fs.existsSync(destPath)) {
         fs.writeFileSync(destPath, rootContents[fileName]);
+        console.log(`[copy-root-files] copied ${fileName} -> ${destPath}`);
         copied[fileName].push(pkgName);
+      } else {
+        console.log(
+          `[copy-root-files] skipped (already exists) ${fileName} -> ${destPath}`,
+        );
       }
     }
   }
+
+  const copiedCount = Object.values(copied).reduce(
+    (total, names) => total + names.length,
+    0,
+  );
+  console.log(`[copy-root-files] done copied=${copiedCount}`);
 
   return { copied };
 }
