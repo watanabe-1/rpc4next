@@ -3,6 +3,6 @@
 `test($args)` as $call where {
   register_diagnostic(
     span = $call,
-    message = "Use it(...) instead of test(...) (Biome custom rule demo)."
+    message = "Use it(...) instead of test(...)."
   )
 }

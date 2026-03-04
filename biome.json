@@ -46,7 +46,8 @@
       },
       "correctness": {
         "noUnusedImports": "error",
-        "noUnusedVariables": "error"
+        "noUnusedVariables": "error",
+        "useSingleJsDocAsterisk": "error"
       },
       "style": {
         "noDoneCallback": "error"
