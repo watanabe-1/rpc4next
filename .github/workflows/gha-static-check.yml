@@ -47,3 +47,23 @@ jobs:
         with:
           advanced-security: false
           annotations: true
+
+  status-check:
+    name: GHA static checks status check
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - actionlint
+      - zizmor
+    steps:
+      - name: Check required job results
+        env:
+          ACTIONLINT_RESULT: ${{ needs.actionlint.result }}
+          ZIZMOR_RESULT: ${{ needs.zizmor.result }}
+        run: |
+          if [ "$ACTIONLINT_RESULT" = "success" ] && [ "$ZIZMOR_RESULT" = "success" ]; then
+            exit 0
+          fi
+          echo "actionlint result: $ACTIONLINT_RESULT"
+          echo "zizmor result: $ZIZMOR_RESULT"
+          exit 1
