@@ -5,6 +5,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
     versioning-strategy: increase
     groups:
       bun:
@@ -16,6 +18,8 @@ updates:
     directory: "/packages/rpc4next"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
     versioning-strategy: increase
     groups:
       bun:
@@ -30,6 +34,8 @@ updates:
     directory: "/packages/rpc4next-cli"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
     versioning-strategy: increase
     groups:
       bun:
@@ -44,6 +50,8 @@ updates:
     directory: "/packages/rpc4next-shared"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
     versioning-strategy: increase
     groups:
       bun:
@@ -58,6 +66,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
     groups:
       github-actions:
         patterns:
