@@ -113,3 +113,20 @@ jobs:
         uses: davelosert/vitest-coverage-report-action@2500dafcee7dd64f85ab689c0b83798a8359770e # v2.9.3
         with:
           comment-on: ${{ github.event_name == 'pull_request' && 'pr' || 'commit' }}
+
+  status-check:
+    name: Node test status check
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - node-test
+    steps:
+      - name: Check required job result
+        env:
+          NODE_TEST_RESULT: ${{ needs.node-test.result }}
+        run: |
+          if [ "$NODE_TEST_RESULT" = "success" ]; then
+            exit 0
+          fi
+          echo "node-test result: $NODE_TEST_RESULT"
+          exit 1
