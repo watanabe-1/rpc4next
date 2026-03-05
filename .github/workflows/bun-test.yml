@@ -5,11 +5,18 @@ on:
     branches: [main]
   pull_request:
 
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   bun-test:
+    name: Bun test matrix
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: read # needed for actions/checkout
     strategy:
       matrix:
         bun-version: ["1.1.0", "1.2.0", "tool-versions"]
@@ -26,21 +33,33 @@ jobs:
           bun-version-file: .tool-versions
 
       - name: Install base dependencies
+        env:
+          BUN_VERSION: ${{ matrix.bun-version }}
         run: |
-          if [ "${{ matrix.bun-version }}" = "tool-versions" ]; then
+          if [ "$BUN_VERSION" = "tool-versions" ]; then
             bun install --frozen-lockfile
           else
             bun install
           fi
 
       - name: Set Next.js version
+        env:
+          NEXT_VERSION: ${{ matrix.next-version }}
         run: |
-          if [ "${{ matrix.next-version }}" = "from-package" ]; then
+          case "$NEXT_VERSION" in
+            14.0.0|15.0.0|from-package) ;;
+            *)
+              echo "Invalid NEXT_VERSION: $NEXT_VERSION"
+              exit 1
+              ;;
+          esac
+
+          if [ "$NEXT_VERSION" = "from-package" ]; then
             echo "Using next from package.json"
           else
-            echo "Overwriting package.json to use next@${{ matrix.next-version }}"
+            echo "Overwriting package.json to use next@$NEXT_VERSION"
             rm -f bun.lockb bun.lock
-            bun add "next@${{ matrix.next-version }}"
+            bun add "next@$NEXT_VERSION"
           fi
 
       - name: Print versions
@@ -65,8 +84,10 @@ jobs:
           bun-version: ${{ matrix.bun-version }}
 
       - name: Install deps for Test (matrix Bun)
+        env:
+          BUN_VERSION: ${{ matrix.bun-version }}
         run: |
-          if [ "${{ matrix.bun-version }}" = "tool-versions" ]; then
+          if [ "$BUN_VERSION" = "tool-versions" ]; then
             bun install --frozen-lockfile
           else
             bun install

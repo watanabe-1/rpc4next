@@ -4,12 +4,19 @@ on:
   push:
     branches: [main]
 
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release-please:
+    name: Create release PR / tags
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      pull-requests: write
+      contents: write # needed by release-please to create tags/releases
+      pull-requests: write # needed by release-please to create/update PRs
     outputs:
       releases_created: ${{ steps.rp.outputs.releases_created }}
       paths_released: ${{ steps.rp.outputs.paths_released }}
@@ -23,13 +30,14 @@ jobs:
           include-component-in-tag: true
 
   publish:
+    name: Publish released packages
     needs: release-please
     runs-on: ubuntu-latest
     if: needs.release-please.outputs.paths_released != '[]'
 
     permissions:
-      contents: read
-      id-token: write
+      contents: read # needed for checkout
+      id-token: write # needed for npm Trusted Publishing (OIDC provenance)
 
     steps:
       - name: Checkout repo
