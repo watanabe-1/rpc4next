@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: write
     strategy:
       matrix:
         node-version: [20.9.0, 22, tool-versions]
@@ -72,9 +73,8 @@ jobs:
             npm run test
           fi
 
-      - name: Upload coverage
+      - name: Report Coverage
         if: ${{ matrix.node-version == 'tool-versions' && matrix.next-version == 'from-package' }}
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: davelosert/vitest-coverage-report-action@2500dafcee7dd64f85ab689c0b83798a8359770e # v2.9.3
         with:
-          name: coverage
-          path: coverage
+          comment-on: ${{ github.event_name == 'pull_request' && 'pr' || 'commit' }}
