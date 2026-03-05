@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-shared-v0.2.0...rpc4next-shared-v0.3.0) (2026-03-05)
+
+
+### Features
+
+* **rpc4next-shared:** Add package README ([#256](https://github.com/watanabe-1/rpc4next/issues/256)) ([a8bef38](https://github.com/watanabe-1/rpc4next/commit/a8bef388f48b9f5dd5c5b2922205136de91890a2))
+
 ## [0.2.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-shared-v0.1.5...rpc4next-shared-v0.2.0) (2026-03-04)
 
 
