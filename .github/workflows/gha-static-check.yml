@@ -53,7 +53,6 @@ jobs:
   ghalint:
     name: ghalint
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     env:
       AQUA_GLOBAL_CONFIG: ${{ github.workspace }}/aqua.yaml
     permissions:
