@@ -96,8 +96,10 @@ jobs:
           fi
 
           output_file="$(mktemp)"
+          set +e
           ghalint run 2>&1 | tee "$output_file"
           ghalint_status=${PIPESTATUS[0]}
+          set -e
 
           awk '
             /workflow_file_path=/ {
