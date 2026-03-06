@@ -94,13 +94,33 @@ jobs:
         if: github.event_name == 'pull_request' && steps.run-ghalint.outputs.status != '0'
         shell: bash
         run: |
+          formatted_file="$(mktemp)"
+          sed -E 's/\x1B\[[0-9;]*[mK]//g' ghalint.log | awk '
+            /workflow_file_path=/ {
+              workflow = policy = reference = job = err = ""
+              if (match($0, /workflow_file_path=([^ ]+)/, m)) workflow = m[1]
+              if (match($0, /policy_name=([^ ]+)/, m)) policy = m[1]
+              if (match($0, /reference=([^ ]+)/, m)) reference = m[1]
+              if (match($0, /job_name=([^ ]+)/, m)) job = m[1]
+              if (match($0, /error="([^"]+)"/, m)) err = m[1]
+              print "- workflow: " workflow
+              print "  policy: " policy
+              print "  job: " job
+              print "  error: " err
+              print "  reference: " reference
+              print ""
+            }
+          ' > "$formatted_file"
+
           {
             echo "<!-- ghalint-report -->"
-            echo "## ghalint raw log"
+            echo "## ghalint violations"
             echo
-            echo '```text'
-            cat ghalint.log
-            echo '```'
+            if [ -s "$formatted_file" ]; then
+              cat "$formatted_file"
+            else
+              echo "ghalint failed, but no violation lines were parsed."
+            fi
           } > comment.txt
 
       - name: Post ghalint comment on PR
