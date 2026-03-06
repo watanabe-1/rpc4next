@@ -14,6 +14,7 @@ jobs:
     name: Auto approve owner PR
     if: github.event.pull_request.user.login == github.repository_owner && ! github.event.pull_request.draft
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     concurrency:
       group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
       cancel-in-progress: true
