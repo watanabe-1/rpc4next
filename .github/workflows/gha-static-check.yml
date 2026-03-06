@@ -96,10 +96,10 @@ jobs:
         run: |
           {
             echo "<!-- ghalint-report -->"
-            echo "## ghalint violations"
+            echo "## ghalint raw log"
             echo
             echo '```text'
-            sed -E 's/\x1B\[[0-9;]*[mK]//g' ghalint.log | grep 'workflow_file_path=' || echo "ghalint failed, but no violation lines were parsed."
+            cat ghalint.log
             echo '```'
           } > comment.txt
 
