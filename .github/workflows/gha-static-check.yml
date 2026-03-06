@@ -16,6 +16,7 @@ jobs:
   actionlint:
     name: actionlint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
       checks: write # Required to publish actionlint results as GitHub Checks annotations.
@@ -33,6 +34,7 @@ jobs:
   zizmor:
     name: zizmor
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
       actions: read # Required so zizmor can read workflow/action metadata during analysis.
@@ -51,6 +53,7 @@ jobs:
   status-check:
     name: GHA static checks status check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     if: always()
     needs:
       - actionlint
