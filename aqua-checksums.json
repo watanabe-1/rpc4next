@@ -1,0 +1,59 @@
+{
+  "checksums": [
+    {
+      "id": "github_release/github.com/oven-sh/bun/bun-v1.3.9/bun-darwin-aarch64.zip",
+      "checksum": "CDE6A4EDF19CF64909158FA5A464A12026FD7F0D79A4A950C10CF0AF04266D85",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "github_release/github.com/oven-sh/bun/bun-v1.3.9/bun-darwin-x64.zip",
+      "checksum": "588F4A48740B9A0C366A00F878810AB3AB5E6734D29B7C3CBDD9484B74A007DE",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "github_release/github.com/oven-sh/bun/bun-v1.3.9/bun-linux-aarch64.zip",
+      "checksum": "A2C2862BCC1FD1C0B3A8DCDC8C7EFB5E2ACD871EB20ED2F17617884EDE81C844",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "github_release/github.com/oven-sh/bun/bun-v1.3.9/bun-linux-x64.zip",
+      "checksum": "4680E80E44E32AA718560CEAE85D22ECFBF2EFB8F3641782E35E4B7EFD65A1AA",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "github_release/github.com/oven-sh/bun/bun-v1.3.9/bun-windows-x64.zip",
+      "checksum": "F4C1CF3549F6AF986DC6535C40B4785FF1A7E7805E59637EC450FC11ADB0C874",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "http/nodejs.org/dist/v24.13.1/node-v24.13.1-darwin-arm64.tar.gz",
+      "checksum": "8C039D59F2FEC6195E4281AD5B0D02B9A940897B4DF7B849C6FB48BE6787BBA6",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "http/nodejs.org/dist/v24.13.1/node-v24.13.1-darwin-x64.tar.gz",
+      "checksum": "527F0578D9812E7DFA225121BDA0B1546A6A0E4B5F556295FC8299C272DE5FBF",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "http/nodejs.org/dist/v24.13.1/node-v24.13.1-linux-arm64.tar.gz",
+      "checksum": "4873459D7C9B28FEAA1F0FADE9BB9C81CB702670991FF80A51D805325C5E3456",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "http/nodejs.org/dist/v24.13.1/node-v24.13.1-linux-x64.tar.gz",
+      "checksum": "7AD28FB172A9AB0593F86C1A39E5C268D0D8FC3D6CB0167F455B5655A7A6E2FD",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "http/nodejs.org/dist/v24.13.1/node-v24.13.1-win-x64.zip",
+      "checksum": "FBA577C4BB87DF04D54DD87BBDAA5A2272F1F99A2ACBF9152E1A91B8B5F0B279",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "registries/github_content/github.com/aquaproj/aqua-registry/v4.477.0/registry.yaml",
+      "checksum": "C1968FE51FB875881251347D124A24345E25B7CCCDB5305D99BA83ECBD486569",
+      "algorithm": "sha256"
+    }
+  ]
+}
