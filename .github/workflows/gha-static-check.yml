@@ -96,28 +96,39 @@ jobs:
           fi
 
           output_file="$(mktemp)"
+          rdinput_file="$(mktemp)"
           set +e
           ghalint run 2>&1 | tee "$output_file"
           ghalint_status=${PIPESTATUS[0]}
           set -e
 
-          awk '
-            /workflow_file_path=/ {
-              line = $0
-              if (!match(line, /workflow_file_path=([^ ]+)/, m)) {
-                next
-              }
-              path = m[1]
-              msg = line
-              sub(/^[A-Z]+\[[0-9]+\][[:space:]]+/, "", msg)
-              gsub(/[[:space:]]+[a-zA-Z0-9_]+=([^[:space:]]+)/, "", msg)
-              gsub(/[[:space:]]+$/, "", msg)
-              if (msg == "") {
-                msg = "ghalint violation"
-              }
-              printf "%s:1:1: %s\n", path, msg
-            }
-          ' "$output_file" |
+          while IFS= read -r logline; do
+            case "$logline" in
+              *"workflow_file_path="*) ;;
+              *) continue ;;
+            esac
+
+            path="$(printf '%s\n' "$logline" | sed -n 's/.*workflow_file_path=\([^ ]*\).*/\1/p')"
+            [ -n "$path" ] || continue
+
+            msg="$(printf '%s\n' "$logline" | sed -E 's/^[A-Z]+\[[0-9]+\][[:space:]]+//; s/[[:space:]]+[a-zA-Z0-9_]+=([^[:space:]]+)//g; s/[[:space:]]+$//')"
+            if [ -z "$msg" ]; then
+              msg="ghalint violation"
+            fi
+
+            line_no=1
+            job_name="$(printf '%s\n' "$logline" | sed -n 's/.* job_name=\([^ ]*\).*/\1/p')"
+            if [ -n "$job_name" ] && [ -f "$path" ]; then
+              detected_line="$(grep -nF "  ${job_name}:" "$path" | head -n1 | cut -d: -f1)"
+              if [ -n "$detected_line" ]; then
+                line_no="$detected_line"
+              fi
+            fi
+
+            printf '%s:%s:1: %s\n' "$path" "$line_no" "$msg" >> "$rdinput_file"
+          done < "$output_file"
+
+          cat "$rdinput_file" |
             reviewdog \
               -efm="%f:%l:%c: %m" \
               -name="ghalint" \
