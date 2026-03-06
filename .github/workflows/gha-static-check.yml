@@ -86,7 +86,7 @@ jobs:
         run: |
           reporter=github-check
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            reporter=github-pr-review
+            reporter=github-pr-comment
           fi
 
           if ( reviewdog --help 2>&1 || : ) | grep -- "-fail-level" >/dev/null; then
