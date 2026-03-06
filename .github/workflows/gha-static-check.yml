@@ -53,12 +53,12 @@ jobs:
   ghalint:
     name: ghalint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     env:
       AQUA_GLOBAL_CONFIG: ${{ github.workspace }}/aqua.yaml
     permissions:
       contents: read
-      checks: write # Required to publish reviewdog results as GitHub Checks on push events.
-      pull-requests: write # Required to publish reviewdog results as PR review comments.
+      pull-requests: write # Required to create/update PR comments.
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -76,70 +76,44 @@ jobs:
         shell: bash
         run: |
           ghalint -v
-          reviewdog -version
 
-      - name: Run ghalint with reviewdog
+      - name: Run ghalint
+        id: run-ghalint
         shell: bash
         env:
-          REVIEWDOG_GITHUB_API_TOKEN: ${{ github.token }}
           GHALINT_LOG_COLOR: always
         run: |
-          reporter=github-check
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            reporter=github-pr-comment
-          fi
-
-          if ( reviewdog --help 2>&1 || : ) | grep -- "-fail-level" >/dev/null; then
-            options="-fail-level=error"
-          else
-            options="-fail-on-error=1"
-          fi
-
-          output_file="$(mktemp)"
-          rdinput_file="$(mktemp)"
           set +e
-          ghalint run 2>&1 | tee "$output_file"
+          ghalint run 2>&1 | tee ghalint.log
           ghalint_status=${PIPESTATUS[0]}
           set -e
+          echo "status=$ghalint_status" >> "$GITHUB_OUTPUT"
+          exit 0
 
-          while IFS= read -r logline; do
-            clean_line="$(printf '%s\n' "$logline" | sed -E 's/\x1B\[[0-9;]*[mK]//g')"
+      - name: Create ghalint comment body
+        if: github.event_name == 'pull_request' && steps.run-ghalint.outputs.status != '0'
+        shell: bash
+        run: |
+          {
+            echo "<!-- ghalint-report -->"
+            echo "## ghalint violations"
+            echo
+            echo '```text'
+            sed -E 's/\x1B\[[0-9;]*[mK]//g' ghalint.log | grep 'workflow_file_path=' || echo "ghalint failed, but no violation lines were parsed."
+            echo '```'
+          } > comment.txt
 
-            case "$clean_line" in
-              *"workflow_file_path="*) ;;
-              *) continue ;;
-            esac
+      - name: Post ghalint comment on PR
+        if: github.event_name == 'pull_request' && steps.run-ghalint.outputs.status != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: gh pr comment "${{ github.event.number }}" --edit-last --create-if-none --body-file comment.txt
 
-            path="$(printf '%s\n' "$clean_line" | sed -n 's/.*workflow_file_path=\([^ ]*\).*/\1/p')"
-            [ -n "$path" ] || continue
-
-            msg="$(printf '%s\n' "$clean_line" | sed -E 's/^[A-Z]+\[[0-9]+\][[:space:]]+//; s/[[:space:]]+[a-zA-Z0-9_]+=([^[:space:]]+)//g; s/[[:space:]]+$//')"
-            if [ -z "$msg" ]; then
-              msg="ghalint violation"
-            fi
-
-            line_no=1
-            job_name="$(printf '%s\n' "$clean_line" | sed -n 's/.* job_name=\([^ ]*\).*/\1/p')"
-            if [ -n "$job_name" ] && [ -f "$path" ]; then
-              detected_line="$(grep -nF "  ${job_name}:" "$path" | head -n1 | cut -d: -f1)"
-              if [ -n "$detected_line" ]; then
-                line_no="$detected_line"
-              fi
-            fi
-
-            printf '%s:%s:1: %s\n' "$path" "$line_no" "$msg" >> "$rdinput_file"
-          done < "$output_file"
-
-          cat "$rdinput_file" |
-            reviewdog \
-              -efm="%f:%l:%c: %m" \
-              -name="ghalint" \
-              -filter-mode=nofilter \
-              -reporter="$reporter" \
-              -level=warning \
-              "$options"
-
-          exit "$ghalint_status"
+      - name: Fail if ghalint found violations
+        if: steps.run-ghalint.outputs.status != '0'
+        shell: bash
+        run: exit 1
 
   status-check:
     name: GHA static checks status check
