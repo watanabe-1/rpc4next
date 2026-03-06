@@ -324,6 +324,24 @@ async function callUserApi() {
 
 - Next.js 14+ (App Router 使用)
 - Node.js 20.9.0+
+- aqua (Node.js / Bun のバージョン管理)
+
+```bash
+aqua i
+```
+
+- `aqua.yaml` を更新したら、チェックサムを更新してください
+
+```bash
+aqua update-checksum
+```
+
+- CI / ローカルで設定を強制する場合は以下を利用してください
+
+```bash
+export AQUA_ENFORCE_CHECKSUM=true
+export AQUA_ENFORCE_REQUIRE_CHECKSUM=true
+```
 
 ---
 
