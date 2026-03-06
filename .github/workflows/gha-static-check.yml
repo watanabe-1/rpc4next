@@ -103,21 +103,23 @@ jobs:
           set -e
 
           while IFS= read -r logline; do
-            case "$logline" in
+            clean_line="$(printf '%s\n' "$logline" | sed -E 's/\x1B\[[0-9;]*[mK]//g')"
+
+            case "$clean_line" in
               *"workflow_file_path="*) ;;
               *) continue ;;
             esac
 
-            path="$(printf '%s\n' "$logline" | sed -n 's/.*workflow_file_path=\([^ ]*\).*/\1/p')"
+            path="$(printf '%s\n' "$clean_line" | sed -n 's/.*workflow_file_path=\([^ ]*\).*/\1/p')"
             [ -n "$path" ] || continue
 
-            msg="$(printf '%s\n' "$logline" | sed -E 's/^[A-Z]+\[[0-9]+\][[:space:]]+//; s/[[:space:]]+[a-zA-Z0-9_]+=([^[:space:]]+)//g; s/[[:space:]]+$//')"
+            msg="$(printf '%s\n' "$clean_line" | sed -E 's/^[A-Z]+\[[0-9]+\][[:space:]]+//; s/[[:space:]]+[a-zA-Z0-9_]+=([^[:space:]]+)//g; s/[[:space:]]+$//')"
             if [ -z "$msg" ]; then
               msg="ghalint violation"
             fi
 
             line_no=1
-            job_name="$(printf '%s\n' "$logline" | sed -n 's/.* job_name=\([^ ]*\).*/\1/p')"
+            job_name="$(printf '%s\n' "$clean_line" | sed -n 's/.* job_name=\([^ ]*\).*/\1/p')"
             if [ -n "$job_name" ] && [ -f "$path" ]; then
               detected_line="$(grep -nF "  ${job_name}:" "$path" | head -n1 | cut -d: -f1)"
               if [ -n "$detected_line" ]; then
