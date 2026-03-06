@@ -14,10 +14,11 @@ jobs:
     name: Auto approve owner PR
     if: github.event.pull_request.user.login == github.repository_owner && ! github.event.pull_request.draft
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     concurrency:
       group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
       cancel-in-progress: true
     permissions:
       pull-requests: write # required to submit PR approval review
     steps:
-      - uses: hmarr/auto-approve-action@v4
+      - uses: hmarr/auto-approve-action@8f929096a962e83ccdfa8afcf855f39f12d4dac7 # v4

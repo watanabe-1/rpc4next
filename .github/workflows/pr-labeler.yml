@@ -10,6 +10,7 @@ jobs:
   label:
     name: Label pull request
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     concurrency:
       group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
       cancel-in-progress: true

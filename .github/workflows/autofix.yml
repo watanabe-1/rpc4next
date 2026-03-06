@@ -5,8 +5,13 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   autofix:
+    name: autofix
     runs-on: ubuntu-latest
     permissions: {}
     timeout-minutes: 15
@@ -21,5 +26,4 @@ jobs:
         run: aqua upc -prune
       - name: Run autofix.ci
         uses: autofix-ci/action@7a166d7532b277f34e16238930461bf77f9d7ed8 # v1.3.3
-
 
