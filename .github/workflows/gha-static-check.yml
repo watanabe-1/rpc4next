@@ -17,19 +17,48 @@ jobs:
     name: actionlint
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      AQUA_GLOBAL_CONFIG: ${{ github.workspace }}/aqua.yaml
     permissions:
       contents: read
       checks: write # Required to publish actionlint results as GitHub Checks annotations.
+      pull-requests: write # Required to publish actionlint results as PR review comments.
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
 
-      - name: Run actionlint
-        uses: reviewdog/action-actionlint@0d952c597ef8459f634d7145b0b044a9699e5e43 # v1.71.0
+      - name: Setup aqua
+        uses: aquaproj/aqua-installer@11dd79b4e498d471a9385aa9fb7f62bb5f52a73c # v4.0.4
         with:
-          fail_level: any
+          aqua_version: v2.56.7
+        env:
+          AQUA_GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Install required tools lazily
+        shell: bash
+        run: |
+          actionlint -version
+          reviewdog -version
+
+      - name: Run actionlint via reviewdog
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          reporter="github-check"
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            reporter="github-pr-review"
+          fi
+
+          actionlint -oneline \
+            | reviewdog \
+                -efm="%f:%l:%c: %m" \
+                -name=actionlint \
+                -reporter="${reporter}" \
+                -filter-mode=nofilter \
+                -fail-level=any
 
   zizmor:
     name: zizmor
