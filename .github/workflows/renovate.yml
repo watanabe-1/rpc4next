@@ -19,6 +19,11 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
       - name: Run Renovate
         uses: renovatebot/github-action@a3c115cd6676c8a5bc72f9715f108759e570daf5 # v43.0.19
         env:
