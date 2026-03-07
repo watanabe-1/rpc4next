@@ -52,9 +52,9 @@ jobs:
             reporter="github-pr-review"
           fi
 
-          actionlint -oneline -color \
+          actionlint -oneline \
             | reviewdog \
-                -f=actionlint \
+                -efm="%f:%l:%c: %m" \
                 -name=actionlint \
                 -reporter="${reporter}" \
                 -filter-mode=nofilter \
