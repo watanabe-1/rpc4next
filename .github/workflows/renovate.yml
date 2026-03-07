@@ -19,6 +19,21 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Create github app token
+        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
+        id: renovate-app-token
+        with:
+          app-id: ${{ secrets.RENOVATE_APP_ID }}
+          private-key: ${{ secrets.RENOVATE_PRIVATE_KEY }}
+          permission-administration: read
+          permission-checks: write
+          permission-statuses: write
+          permission-contents: write
+          permission-pull-requests: write
+          permission-issues: write
+          permission-workflows: write
+          permission-members: read
+
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -30,5 +45,5 @@ jobs:
           LOG_LEVEL: info
           RENOVATE_REPOSITORIES: ${{ github.repository }}
         with:
-          token: ${{ secrets.RENOVATE_TOKEN }}
+          token: ${{ steps.renovate-app-token.outputs.token }}
           configurationFile: .github/renovate.json
