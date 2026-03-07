@@ -67,14 +67,6 @@ jobs:
         env:
           NEXT_VERSION: ${{ matrix.next-version }}
         run: |
-          case "$NEXT_VERSION" in
-            14.0.0|15.0.0|from-package) ;;
-            *)
-              echo "Invalid NEXT_VERSION: $NEXT_VERSION"
-              exit 1
-              ;;
-          esac
-
           if [ "$NEXT_VERSION" = "from-package" ]; then
             echo "Using next from package.json"
           else
@@ -102,21 +94,6 @@ jobs:
           NODE_VERSION: ${{ matrix.node-version }}
           NEXT_VERSION: ${{ matrix.next-version }}
         run: |
-          case "$NODE_VERSION" in
-            20.9.0|22|aqua) ;;
-            *)
-              echo "Invalid NODE_VERSION: $NODE_VERSION"
-              exit 1
-              ;;
-          esac
-          case "$NEXT_VERSION" in
-            14.0.0|15.0.0|from-package) ;;
-            *)
-              echo "Invalid NEXT_VERSION: $NEXT_VERSION"
-              exit 1
-              ;;
-          esac
-
           if [ "$NODE_VERSION" = "aqua" ] && [ "$NEXT_VERSION" = "from-package" ]; then
             npm run test:coverage
           else
