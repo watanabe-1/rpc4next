@@ -47,10 +47,13 @@ jobs:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ github.token }}
         shell: bash
         run: |
+          echo "GITHUB_EVENT_NAME=${GITHUB_EVENT_NAME}"
+
           reporter="github-check"
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
             reporter="github-pr-review"
           fi
+          echo "reviewdog reporter=${reporter}"
 
           actionlint -oneline \
             | reviewdog \
@@ -73,6 +76,9 @@ jobs:
         with:
           persist-credentials: false
 
+      # Intentionally use the official zizmor action (not aqua):
+      # its release notes state Docker image use is "fully hash-checked internally".
+      # See: https://github.com/zizmorcore/zizmor-action/releases/tag/v0.4.0
       - name: Run zizmor (no Advanced Security)
         uses: zizmorcore/zizmor-action@0dce2577a4760a2749d8cfb7a84b7d5585ebcb7d # v0.5.0
         with:
