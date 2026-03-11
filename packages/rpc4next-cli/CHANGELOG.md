@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.3.0...rpc4next-cli-v0.3.1) (2026-03-11)
+
+
+### Bug Fixes
+
+* **monorepo:** Restore packages filter path in scripts ([#284](https://github.com/watanabe-1/rpc4next/issues/284)) ([f0d75ad](https://github.com/watanabe-1/rpc4next/commit/f0d75ad57aa9379caaebbbb0aae8dc93a7892b79))
+
 ## [0.3.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.2.0...rpc4next-cli-v0.3.0) (2026-03-04)
 
 
