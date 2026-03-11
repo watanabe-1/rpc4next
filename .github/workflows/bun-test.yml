@@ -50,7 +50,16 @@ jobs:
         with:
           bun-version: ${{ steps.aqua-versions.outputs.bun-version }}
 
+      - name: Windows preinstall probe
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Write-Host "Preinstall probe started at $(Get-Date -Format o)"
+          Write-Host "Runner OS: $env:RUNNER_OS"
+          bun --version
+
       - name: Install base dependencies
+        if: runner.os != 'Windows'
         shell: bash
         env:
           BUN_VERSION: ${{ matrix.bun-version }}
@@ -60,6 +69,28 @@ jobs:
           else
             bun install
           fi
+
+      - name: Install base dependencies (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          BUN_VERSION: ${{ matrix.bun-version }}
+        run: |
+          $startedAt = Get-Date
+          Write-Host "bun install started at $($startedAt.ToString('o'))"
+          if ($env:BUN_VERSION -eq 'aqua') {
+            & bun install --frozen-lockfile
+          } else {
+            & bun install
+          }
+          $exitCode = $LASTEXITCODE
+          $finishedAt = Get-Date
+          $elapsed = $finishedAt - $startedAt
+          Write-Host "bun install finished at $($finishedAt.ToString('o'))"
+          Write-Host ("bun install elapsed: {0:n1}s" -f $elapsed.TotalSeconds)
+          if ($exitCode -ne 0) {
+            exit $exitCode
+          }
 
       - name: Set Next.js version
         shell: bash
@@ -100,6 +131,7 @@ jobs:
           bun-version: ${{ matrix.bun-version }}
 
       - name: Install deps for Test (matrix Bun)
+        if: runner.os != 'Windows'
         shell: bash
         env:
           BUN_VERSION: ${{ matrix.bun-version }}
@@ -109,6 +141,28 @@ jobs:
           else
             bun install
           fi
+
+      - name: Install deps for Test (matrix Bun, Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          BUN_VERSION: ${{ matrix.bun-version }}
+        run: |
+          $startedAt = Get-Date
+          Write-Host "test bun install started at $($startedAt.ToString('o'))"
+          if ($env:BUN_VERSION -eq 'aqua') {
+            & bun install --frozen-lockfile
+          } else {
+            & bun install
+          }
+          $exitCode = $LASTEXITCODE
+          $finishedAt = Get-Date
+          $elapsed = $finishedAt - $startedAt
+          Write-Host "test bun install finished at $($finishedAt.ToString('o'))"
+          Write-Host ("test bun install elapsed: {0:n1}s" -f $elapsed.TotalSeconds)
+          if ($exitCode -ne 0) {
+            exit $exitCode
+          }
 
       - name: Print versions
         shell: bash

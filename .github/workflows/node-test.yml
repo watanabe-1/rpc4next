@@ -65,9 +65,34 @@ jobs:
         with:
           bun-version: ${{ steps.aqua-versions.outputs.bun-version }}
 
+      - name: Windows preinstall probe
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Write-Host "Preinstall probe started at $(Get-Date -Format o)"
+          Write-Host "Runner OS: $env:RUNNER_OS"
+          bun --version
+
       - name: Install base dependencies
+        if: runner.os != 'Windows'
         shell: bash
         run: bun install --frozen-lockfile
+
+      - name: Install base dependencies (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $startedAt = Get-Date
+          Write-Host "bun install started at $($startedAt.ToString('o'))"
+          & bun install --frozen-lockfile
+          $exitCode = $LASTEXITCODE
+          $finishedAt = Get-Date
+          $elapsed = $finishedAt - $startedAt
+          Write-Host "bun install finished at $($finishedAt.ToString('o'))"
+          Write-Host ("bun install elapsed: {0:n1}s" -f $elapsed.TotalSeconds)
+          if ($exitCode -ne 0) {
+            exit $exitCode
+          }
 
       - name: Install target Next.js version
         shell: bash
