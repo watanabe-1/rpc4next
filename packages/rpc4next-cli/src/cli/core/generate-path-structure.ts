@@ -3,9 +3,9 @@ import {
   RPC4NEXT_CLIENT_IMPORT_PATH,
   STATEMENT_TERMINATOR,
   TYPE_KEYS,
-} from "./constants";
-import { scanAppDir } from "./route-scanner";
-import { createImport } from "./type-utils";
+} from "./constants.js";
+import { scanAppDir } from "./route-scanner.js";
+import { createImport } from "./type-utils.js";
 
 export const generatePathStructure = (outputPath: string, baseDir: string) => {
   const { pathStructure, imports, paramsTypes } = scanAppDir(

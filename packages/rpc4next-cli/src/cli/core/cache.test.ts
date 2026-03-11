@@ -5,7 +5,7 @@ import {
   clearVisitedDirsCacheAbove,
   scanAppDirCache,
   visitedDirsCache,
-} from "./cache";
+} from "./cache.js";
 
 describe("clearVisitedDirsCacheAbove", () => {
   beforeEach(() => {

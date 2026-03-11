@@ -5,10 +5,10 @@ import {
   SUCCESS_INDENT_LEVEL,
   SUCCESS_PAD_LENGTH,
   SUCCESS_SEPARATOR,
-} from "./constants";
-import * as generatePathStructure from "./core/generate-path-structure";
-import { generate } from "./generator";
-import { padMessage } from "./logger";
+} from "./constants.js";
+import * as generatePathStructure from "./core/generate-path-structure.js";
+import { generate } from "./generator.js";
+import { padMessage } from "./logger.js";
 
 describe("generate", () => {
   const logger = {

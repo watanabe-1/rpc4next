@@ -1,6 +1,6 @@
-import { cyan, green, red } from "./colors";
-import { INDENT } from "./core/constants";
-import type { Logger } from "./types";
+import { cyan, green, red } from "./colors.js";
+import { INDENT } from "./core/constants.js";
+import type { Logger } from "./types.js";
 
 export const padMessage = (
   label: string,

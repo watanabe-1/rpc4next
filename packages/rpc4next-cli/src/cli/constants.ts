@@ -1,4 +1,4 @@
-import type { ErrorExitCode, SuccessExitCode } from "./types";
+import type { ErrorExitCode, SuccessExitCode } from "./types.js";
 
 export const END_POINT_FILE_NAMES = ["page.tsx", "route.ts"] as const;
 

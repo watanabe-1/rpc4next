@@ -1,4 +1,4 @@
-import { STATEMENT_TERMINATOR, TYPE_SEPARATOR } from "./constants";
+import { STATEMENT_TERMINATOR, TYPE_SEPARATOR } from "./constants.js";
 
 export const createRecodeType = (key: string, value: string) => {
   if (!key || !value) return "";

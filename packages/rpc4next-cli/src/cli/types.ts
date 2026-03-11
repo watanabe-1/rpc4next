@@ -1,4 +1,4 @@
-import type { END_POINT_FILE_NAMES } from "./constants";
+import type { END_POINT_FILE_NAMES } from "./constants.js";
 
 export type EndPointFileNames = (typeof END_POINT_FILE_NAMES)[number];
 

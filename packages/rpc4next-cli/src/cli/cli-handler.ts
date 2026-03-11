@@ -1,9 +1,9 @@
 import path from "node:path";
-import { EXIT_FAILURE, EXIT_SUCCESS } from "./constants";
-import { toPosixPath } from "./core/path-utils";
-import { generate } from "./generator";
-import type { CliOptions, ExitCode, Logger } from "./types";
-import { setupWatcher } from "./watcher";
+import { EXIT_FAILURE, EXIT_SUCCESS } from "./constants.js";
+import { toPosixPath } from "./core/path-utils.js";
+import { generate } from "./generator.js";
+import type { CliOptions, ExitCode, Logger } from "./types.js";
+import { setupWatcher } from "./watcher.js";
 
 const handleGenerateSafely = (
   baseDir: string,

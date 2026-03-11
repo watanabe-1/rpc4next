@@ -7,15 +7,15 @@ import {
   TYPE_END_POINT,
   TYPE_KEY_PARAMS,
   TYPE_KEY_QUERY,
-} from "./constants";
-import { generatePathStructure } from "./generate-path-structure";
+} from "./constants.js";
+import { generatePathStructure } from "./generate-path-structure.js";
 
 const scanAppDir = vi.hoisted(() => vi.fn());
-vi.mock("./route-scanner", () => ({
+vi.mock("./route-scanner.js", () => ({
   scanAppDir,
 }));
 
-vi.mock("./type-utils", () => ({
+vi.mock("./type-utils.js", () => ({
   createImport: vi.fn(
     (type, path) => `import type { ${type} } from "${path}";`,
   ),

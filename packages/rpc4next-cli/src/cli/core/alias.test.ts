@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createImportAlias } from "./alias";
+import { createImportAlias } from "./alias.js";
 
 describe("createImportAlias", () => {
   it("should generate a consistent alias for the same input", () => {

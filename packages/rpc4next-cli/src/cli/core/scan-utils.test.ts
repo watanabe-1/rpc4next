@@ -1,8 +1,8 @@
 import mock from "mock-fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { scanQuery, scanRoute } from "./scan-utils";
+import { scanQuery, scanRoute } from "./scan-utils.js";
 
-vi.mock("./type-utils", () => ({
+vi.mock("./type-utils.js", () => ({
   createImport: vi.fn(
     (type, path, alias) =>
       `import type { ${type} as ${alias} } from '${path}';`,

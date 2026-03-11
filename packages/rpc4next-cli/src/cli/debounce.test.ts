@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { debounceOnceRunningWithTrailing } from "./debounce";
+import { debounceOnceRunningWithTrailing } from "./debounce.js";
 
 describe("debounceOnceRunningWithTrailing", () => {
   it("should call the callback after the specified delay", async () => {

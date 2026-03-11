@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { handleCli } from "./cli-handler";
-import * as generatorModule from "./generator";
-import type { CliOptions, Logger } from "./types";
-import * as watcherModule from "./watcher";
+import { handleCli } from "./cli-handler.js";
+import * as generatorModule from "./generator.js";
+import type { CliOptions, Logger } from "./types.js";
+import * as watcherModule from "./watcher.js";
 
-vi.mock("./generator", () => ({
+vi.mock("./generator.js", () => ({
   generate: vi.fn(),
 }));
 
-vi.mock("./watcher", () => ({
+vi.mock("./watcher.js", () => ({
   setupWatcher: vi.fn(),
 }));
 
