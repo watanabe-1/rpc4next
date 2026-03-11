@@ -15,7 +15,12 @@ import {
 import { END_POINT_FILE_NAMES } from "../constants.js";
 import type { EndPointFileNames } from "../types.js";
 import { scanAppDirCache, visitedDirsCache } from "./cache.js";
-import { INDENT, NEWLINE, TYPE_END_POINT, TYPE_KEY_PARAMS } from "./constants.js";
+import {
+  INDENT,
+  NEWLINE,
+  TYPE_END_POINT,
+  TYPE_KEY_PARAMS,
+} from "./constants.js";
 import { toPosixPath } from "./path-utils.js";
 import { scanQuery, scanRoute } from "./scan-utils.js";
 import { createObjectType, createRecodeType } from "./type-utils.js";

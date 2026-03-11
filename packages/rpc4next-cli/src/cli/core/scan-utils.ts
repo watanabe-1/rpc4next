@@ -3,7 +3,11 @@ import type { HttpMethod } from "rpc4next-shared";
 import { createImportAlias } from "./alias.js";
 import { QUERY_TYPES, TYPE_KEY_QUERY } from "./constants.js";
 import { createRelativeImportPath } from "./path-utils.js";
-import { createImport, createObjectType, createRecodeType } from "./type-utils.js";
+import {
+  createImport,
+  createObjectType,
+  createRecodeType,
+} from "./type-utils.js";
 
 export const scanFile = <T extends string | undefined>(
   outputFile: string,
