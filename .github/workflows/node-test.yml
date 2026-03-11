@@ -21,9 +21,13 @@ jobs:
       pull-requests: write # needed for coverage comment on pull_request events
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest]
         node-version: [20.9.0, 22, aqua]
         next-version: ["14.0.0", "15.0.0", "from-package"]
+        include:
+          - os: windows-latest
+            node-version: aqua
+            next-version: from-package
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
