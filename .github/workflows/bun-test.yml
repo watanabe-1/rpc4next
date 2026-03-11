@@ -60,14 +60,29 @@ jobs:
           path: ~/.bun/install/cache
           key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
 
-      # Follow the GitHub Actions Bun cache example:
-      # https://github.com/actions/cache/blob/main/examples.md#Windows
-      # Windows cache ~\.bun.
+      # Cache Bun package downloads.
+      # Note:
+      # https://github.com/actions/cache/blob/main/examples.md#bun
+      # The actions/cache examples use `~/.bun/install/cache` for Bun in general,
+      # but the Windows section shows `~\.bun`. When tracing the history of the
+      # example (PR #1456),
+      # https://github.com/actions/cache/pull/1456
+      # the Windows snippet originally contained a copy-paste
+      # mistake from the Deno example and was later corrected, but there is no
+      # documented rationale for caching the entire `~\.bun` directory.
+      # According to Bun's documentation, downloaded package tarballs used by
+      # https://bun.sh/docs/pm/global-cache
+      # `bun install` are stored in `~/.bun/install/cache`. Since our goal here is
+      # to speed up dependency installation in CI (and to keep cache archives
+      # smaller for faster restore on Windows runners), we cache only the
+      # package cache directory instead of the entire Bun home.
+      # If CI later relies on global installs (`bun install -g`) or other files
+      # under `~/.bun`, this may need to be expanded back to `~\.bun`.
       - name: Restore Bun package cache (Windows)
         if: runner.os == 'Windows'
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         with:
-          path: ~\.bun
+          path: ~/.bun/install/cache
           key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
 
       - name: Install base dependencies
