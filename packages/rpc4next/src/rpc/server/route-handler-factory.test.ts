@@ -9,6 +9,7 @@ describe("routeHandlerFactory", () => {
     const handler = createRouteHandler.post(
       async (_) => {
         // This handler does not return anything (undefined)
+        return undefined;
       },
       async (rc) => {
         // The second handler returns a response using rc.text()
@@ -30,6 +31,7 @@ describe("routeHandlerFactory", () => {
     const handler = createRouteHandler.get(
       async (_) => {
         // None of the handlers return a Response, so an error should be thrown
+        return undefined;
       },
       async (_) => {
         // Also does not return a Response
@@ -71,6 +73,7 @@ describe("routeHandlerFactory", () => {
     const handler = createRouteHandler.patch(
       async (_) => {
         // Handler that returns nothing
+        return undefined;
       },
       spyHandler,
       secondHandler, // This handler should not be executed
