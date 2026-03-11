@@ -143,6 +143,7 @@ describe("zValidator tests", () => {
     }>().post(
       zValidator("params", schema, (_, __) => {
         // Does not return a response on failure
+        return undefined;
       }),
       async (rc) => rc.text("never reach"),
     );

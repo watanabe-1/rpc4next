@@ -93,7 +93,7 @@
     "test:watch": "vitest --watch",
     "lint": "biome check src",
     "lint:fix": "biome check --write src",
-    "typecheck": "tsc -b tsconfig.build.json --noEmit"
+    "typecheck": "tsc -p tsconfig.build.json --noEmit"
   },
   "dependencies": {
     "rpc4next-shared": "workspace:*"
