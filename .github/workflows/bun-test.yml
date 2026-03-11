@@ -50,6 +50,26 @@ jobs:
         with:
           bun-version: ${{ steps.aqua-versions.outputs.bun-version }}
 
+      # Follow the GitHub Actions Bun cache example:
+      # https://github.com/actions/cache/blob/main/examples.md#bun
+      # Linux/macOS cache ~/.bun/install/cache.
+      - name: Restore Bun package cache (Linux/macOS)
+        if: runner.os != 'Windows'
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+
+      # Follow the GitHub Actions Bun cache example:
+      # https://github.com/actions/cache/blob/main/examples.md#Windows
+      # Windows cache ~\.bun.
+      - name: Restore Bun package cache (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: ~\.bun
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+
       - name: Install base dependencies
         shell: bash
         env:
