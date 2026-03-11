@@ -29,8 +29,10 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> => {
 export const deepMerge = <T extends object, U extends object>(
   target: T,
   source: U,
-): T => {
-  const result = { ...target } as T & U;
+): T & U => {
+  const result: Record<string, unknown> = {
+    ...(target as Record<string, unknown>),
+  };
 
   for (const key in source) {
     if (Object.hasOwn(source, key)) {
@@ -38,15 +40,12 @@ export const deepMerge = <T extends object, U extends object>(
       const sourceValue = (source as Record<string, unknown>)[key];
 
       if (isPlainObject(targetValue) && isPlainObject(sourceValue)) {
-        (result as Record<string, unknown>)[key] = deepMerge(
-          targetValue,
-          sourceValue,
-        );
+        result[key] = deepMerge(targetValue, sourceValue);
       } else {
-        result[key as keyof (T & U)] = sourceValue as (T & U)[keyof (T & U)];
+        result[key] = sourceValue;
       }
     }
   }
 
-  return result;
+  return result as T & U;
 };
