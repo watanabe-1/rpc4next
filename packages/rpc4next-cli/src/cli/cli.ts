@@ -1,9 +1,9 @@
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { handleCli } from "./cli-handler";
-import { EXIT_FAILURE } from "./constants";
-import { createLogger } from "./logger";
-import type { CliOptions, Logger } from "./types";
+import { handleCli } from "./cli-handler.js";
+import { EXIT_FAILURE } from "./constants.js";
+import { createLogger } from "./logger.js";
+import type { CliOptions, Logger } from "./types.js";
 
 /**
  * Normalize argv:

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { __testing, cyan, green, red } from "./colors";
+import { __testing, cyan, green, red } from "./colors.js";
 
 describe("colors", () => {
   afterEach(() => {

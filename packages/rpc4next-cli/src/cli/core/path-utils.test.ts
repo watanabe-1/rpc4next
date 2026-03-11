@@ -4,7 +4,7 @@ import {
   createRelativeImportPath,
   relativeFromRoot,
   toPosixPath,
-} from "./path-utils";
+} from "./path-utils.js";
 
 describe("createRelativeImportPath", () => {
   it("should return a relative path between two files", () => {

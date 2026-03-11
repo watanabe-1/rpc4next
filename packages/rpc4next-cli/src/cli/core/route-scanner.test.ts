@@ -4,10 +4,10 @@ import {
   clearScanAppDirCacheAbove,
   scanAppDirCache,
   visitedDirsCache,
-} from "./cache";
-import { hasTargetFiles, scanAppDir } from "./route-scanner";
+} from "./cache.js";
+import { hasTargetFiles, scanAppDir } from "./route-scanner.js";
 
-vi.mock("./alias", () => ({
+vi.mock("./alias.js", () => ({
   createImportAlias: vi.fn((_path: string, name: string) => `${name}_asmocked`),
 }));
 

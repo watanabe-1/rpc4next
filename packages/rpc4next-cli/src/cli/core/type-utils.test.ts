@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { STATEMENT_TERMINATOR, TYPE_SEPARATOR } from "./constants";
-import { createImport, createObjectType, createRecodeType } from "./type-utils";
+import { STATEMENT_TERMINATOR, TYPE_SEPARATOR } from "./constants.js";
+import { createImport, createObjectType, createRecodeType } from "./type-utils.js";
 
 describe("createRecodeType", () => {
   it("should create a valid Record type", () => {

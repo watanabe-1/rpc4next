@@ -7,8 +7,8 @@ import {
   it,
   vi,
 } from "vitest";
-import { INDENT } from "./core/constants";
-import { createLogger, padMessage } from "./logger";
+import { INDENT } from "./core/constants.js";
+import { createLogger, padMessage } from "./logger.js";
 
 const stripAnsi = (s: string) => {
   const ESC = String.fromCharCode(27); // 0x1b

@@ -1,11 +1,11 @@
 import * as path from "node:path";
 import chokidar, { type FSWatcher } from "chokidar";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import * as cacheModule from "./core/cache";
-import * as debounceModule from "./debounce";
-import { setupWatcher } from "./watcher";
+import * as cacheModule from "./core/cache.js";
+import * as debounceModule from "./debounce.js";
+import { setupWatcher } from "./watcher.js";
 
-vi.mock("./core/cache", () => ({
+vi.mock("./core/cache.js", () => ({
   clearCntCache: vi.fn(),
   clearVisitedDirsCacheAbove: vi.fn(),
   clearScanAppDirCacheAbove: vi.fn(),

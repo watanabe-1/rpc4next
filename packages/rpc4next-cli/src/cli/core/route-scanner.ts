@@ -12,13 +12,13 @@ import {
   HTTP_METHODS_EXCLUDE_OPTIONS,
   OPTIONAL_CATCH_ALL_PREFIX,
 } from "rpc4next-shared";
-import { END_POINT_FILE_NAMES } from "../constants";
-import type { EndPointFileNames } from "../types";
-import { scanAppDirCache, visitedDirsCache } from "./cache";
-import { INDENT, NEWLINE, TYPE_END_POINT, TYPE_KEY_PARAMS } from "./constants";
-import { toPosixPath } from "./path-utils";
-import { scanQuery, scanRoute } from "./scan-utils";
-import { createObjectType, createRecodeType } from "./type-utils";
+import { END_POINT_FILE_NAMES } from "../constants.js";
+import type { EndPointFileNames } from "../types.js";
+import { scanAppDirCache, visitedDirsCache } from "./cache.js";
+import { INDENT, NEWLINE, TYPE_END_POINT, TYPE_KEY_PARAMS } from "./constants.js";
+import { toPosixPath } from "./path-utils.js";
+import { scanQuery, scanRoute } from "./scan-utils.js";
+import { createObjectType, createRecodeType } from "./type-utils.js";
 
 type ImportObj = {
   statement: string;

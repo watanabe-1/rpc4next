@@ -1,12 +1,12 @@
 import chokidar from "chokidar";
-import { END_POINT_FILE_NAMES } from "./constants";
+import { END_POINT_FILE_NAMES } from "./constants.js";
 import {
   clearScanAppDirCacheAbove,
   clearVisitedDirsCacheAbove,
-} from "./core/cache";
-import { relativeFromRoot } from "./core/path-utils";
-import { debounceOnceRunningWithTrailing } from "./debounce";
-import type { Logger } from "./types";
+} from "./core/cache.js";
+import { relativeFromRoot } from "./core/path-utils.js";
+import { debounceOnceRunningWithTrailing } from "./debounce.js";
+import type { Logger } from "./types.js";
 
 export const setupWatcher = (
   baseDir: string,

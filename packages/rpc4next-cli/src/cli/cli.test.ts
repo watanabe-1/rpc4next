@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { runCli } from "./cli";
-import * as cliHandler from "./cli-handler";
-import { EXIT_FAILURE } from "./constants";
-import * as loggerModule from "./logger";
+import { runCli } from "./cli.js";
+import * as cliHandler from "./cli-handler.js";
+import { EXIT_FAILURE } from "./constants.js";
+import * as loggerModule from "./logger.js";
 
 const flushAsync = async () => {
   await Promise.resolve();

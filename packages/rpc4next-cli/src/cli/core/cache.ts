@@ -1,5 +1,5 @@
 import path from "node:path";
-import type { scanAppDir } from "./route-scanner";
+import type { scanAppDir } from "./route-scanner.js";
 
 // Caches
 export const visitedDirsCache = new Map<string, boolean>();
