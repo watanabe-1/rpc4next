@@ -97,6 +97,7 @@ jobs:
       - name: Print versions
         shell: bash
         run: |
+          uname -a || ver
           bun -v
           bunx next --version
 
@@ -133,6 +134,7 @@ jobs:
       - name: Print versions
         shell: bash
         run: |
+          uname -a || ver
           bun -v
           bunx next --version
 
