@@ -73,6 +73,33 @@ jobs:
           Write-Host "Runner OS: $env:RUNNER_OS"
           bun --version
 
+      - name: Windows install script probe
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $packageFiles = @(
+            'package.json'
+            'packages/rpc4next/package.json'
+            'packages/rpc4next-cli/package.json'
+            'packages/rpc4next-shared/package.json'
+          )
+          $lifecycleScripts = @('preinstall', 'install', 'postinstall', 'prepare')
+          foreach ($packageFile in $packageFiles) {
+            $pkg = Get-Content $packageFile -Raw | ConvertFrom-Json
+            Write-Host "Checking $packageFile"
+            $found = $false
+            foreach ($scriptName in $lifecycleScripts) {
+              $script = $pkg.scripts.$scriptName
+              if ($null -ne $script) {
+                $found = $true
+                Write-Host ("  {0}: {1}" -f $scriptName, $script)
+              }
+            }
+            if (-not $found) {
+              Write-Host "  No install lifecycle scripts"
+            }
+          }
+
       - name: Install base dependencies
         if: runner.os != 'Windows'
         shell: bash
@@ -84,7 +111,7 @@ jobs:
         run: |
           $startedAt = Get-Date
           Write-Host "bun install started at $($startedAt.ToString('o'))"
-          & bun install --frozen-lockfile
+          & bun install --frozen-lockfile --verbose
           $exitCode = $LASTEXITCODE
           $finishedAt = Get-Date
           $elapsed = $finishedAt - $startedAt
