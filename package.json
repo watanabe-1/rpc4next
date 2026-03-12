@@ -7,14 +7,15 @@
     "url": "git+https://github.com/watanabe-1/rpc4next.git"
   },
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "integration/*"
   ],
   "scripts": {
-    "build": "bun --filter \"./packages/*\" --if-present build",
-    "clean": "bun --filter \"./packages/*\" --if-present clean",
-    "typecheck": "bun --filter \"./packages/*\" --if-present typecheck",
-    "lint": "bun --filter \"./packages/*\" --if-present lint",
-    "lint:fix": "bun --filter \"./packages/*\" --if-present lint:fix",
+    "build": "bun run --filter \"./packages/*\" --if-present build",
+    "clean": "bun run --filter \"./packages/*\" --if-present clean",
+    "typecheck": "bun run --filter \"./packages/*\" --if-present typecheck",
+    "lint": "bun run --filter \"./packages/*\" --if-present lint",
+    "lint:fix": "bun run --filter \"./packages/*\" --if-present lint:fix",
     "lint:repo": "biome check .",
     "lint:biome:demo": "biome check --config-path biome.demo.json biome/tests",
     "lint:repo:fix": "biome check --write .",
@@ -23,6 +24,11 @@
     "test:coverage": "vitest run --coverage.enabled true",
     "test:ui": "vitest --ui --coverage.enabled true",
     "test:watch": "vitest --watch",
+    "integration:next-app:generate": "bun run --cwd integration/next-app generate:rpc",
+    "integration:next-app:typecheck": "bun run --cwd integration/next-app typecheck",
+    "integration:next-app:dev": "bun run --cwd integration/next-app dev",
+    "integration:next-app:build": "bun run --cwd integration/next-app build:app",
+    "integration:next-app:smoke": "bun run --cwd integration/next-app smoke:client",
     "diff2prompt": "diff2prompt --excludeFile=.gitignore"
   },
   "devDependencies": {

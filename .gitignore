@@ -60,3 +60,6 @@ generated-prompt.txt
 # rpc4next
 dist
 packages/*/dist
+integration/next-app/.next/
+integration/next-app/tsconfig.tsbuildinfo
+integration/next-app/.tmp-start*.log

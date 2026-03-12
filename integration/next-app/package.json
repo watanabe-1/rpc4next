@@ -1,0 +1,27 @@
+{
+  "name": "@integration/next-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate:rpc": "bun --bun ../../packages/rpc4next-cli/src/cli/index.ts app src/generated/rpc.ts --params-file route-params.ts",
+    "typecheck": "bun run generate:rpc && tsc --noEmit",
+    "dev": "bun run generate:rpc && next dev",
+    "build:app": "bun run generate:rpc && next build",
+    "start": "next start",
+    "smoke:client": "bun run generate:rpc && bun scripts/smoke-client.ts"
+  },
+  "dependencies": {
+    "next": "16.1.6",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "rpc4next": "workspace:*",
+    "rpc4next-cli": "workspace:*",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.3",
+    "@types/react": "^19.1.16",
+    "@types/react-dom": "^19.1.9",
+    "typescript": "^5.9.3"
+  }
+}
