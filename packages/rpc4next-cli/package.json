@@ -10,6 +10,9 @@
   },
   "license": "MIT",
   "author": "watanabe-1",
+  "engines": {
+    "node": ">=20.12.0"
+  },
   "type": "module",
   "bin": {
     "rpc4next": "dist/index.js"
