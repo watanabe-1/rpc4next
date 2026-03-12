@@ -1,5 +1,6 @@
 import mock from "mock-fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ImportAliasName } from "./alias.js";
 import {
   clearScanAppDirCacheAbove,
   scanAppDirCache,
@@ -8,7 +9,9 @@ import {
 import { hasTargetFiles, scanAppDir } from "./route-scanner.js";
 
 vi.mock("./alias.js", () => ({
-  createImportAlias: vi.fn((_path: string, name: string) => `${name}_asmocked`),
+  createImportAlias: vi.fn(
+    (_path: string, name: ImportAliasName) => `${name}_asmocked`,
+  ),
 }));
 
 // ----------------------

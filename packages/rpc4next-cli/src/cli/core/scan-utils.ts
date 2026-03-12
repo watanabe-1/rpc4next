@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import type { HttpMethod } from "rpc4next-shared";
+import type { ImportAliasName } from "./alias.js";
 import { createImportAlias } from "./alias.js";
 import { QUERY_TYPES, TYPE_KEY_QUERY } from "./constants.js";
 import { createRelativeImportPath } from "./path-utils.js";
@@ -9,7 +10,7 @@ import {
   createRecodeType,
 } from "./type-utils.js";
 
-export const scanFile = <T extends string | undefined>(
+export const scanFile = <T extends ImportAliasName | undefined>(
   outputFile: string,
   inputFile: string,
   findCallBack: (fileContents: string) => T,
