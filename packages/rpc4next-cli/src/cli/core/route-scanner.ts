@@ -37,27 +37,73 @@ type ParamsType = {
 
 const endPointFileNames = new Set(END_POINT_FILE_NAMES);
 
+const isInterceptingSegment = (entryName: string): boolean => {
+  return (
+    entryName.startsWith("(.)") ||
+    entryName.startsWith("(..)") ||
+    entryName.startsWith("(...)")
+  );
+};
+
+const decodeStaticSegment = (entryName: string): string => {
+  try {
+    return decodeURIComponent(entryName);
+  } catch {
+    return entryName;
+  }
+};
+
+const getDirectoryMeta = (entryName: string) => {
+  const isGroup = entryName.startsWith("(") && entryName.endsWith(")");
+  const isParallel = entryName.startsWith("@");
+  const isOptionalCatchAll =
+    entryName.startsWith("[[...") && entryName.endsWith("]]");
+  const isCatchAll = entryName.startsWith("[...") && entryName.endsWith("]");
+  const isDynamic = entryName.startsWith("[") && entryName.endsWith("]");
+  const isPrivate = entryName.startsWith("_");
+  const isIntercept = isInterceptingSegment(entryName);
+  const staticKeyName = decodeStaticSegment(entryName);
+
+  return {
+    isCatchAll,
+    isDynamic,
+    isGroup,
+    isIntercept,
+    isOptionalCatchAll,
+    isParallel,
+    isPrivate,
+    staticKeyName,
+  };
+};
+
 export const hasTargetFiles = (dirPath: string): boolean => {
   const cachedHasTargetFiles = visitedDirsCache.get(dirPath);
   if (cachedHasTargetFiles !== undefined) return cachedHasTargetFiles;
+
+  const dirName = path.basename(dirPath);
+  const dirMeta = getDirectoryMeta(dirName);
+  if (
+    dirName === "node_modules" ||
+    dirMeta.isPrivate ||
+    dirMeta.isIntercept
+  ) {
+    visitedDirsCache.set(dirPath, false);
+
+    return false;
+  }
 
   const entries = fs.readdirSync(dirPath, { withFileTypes: true });
   for (const entry of entries) {
     const { name } = entry;
     const entryPath = path.join(dirPath, name);
+    const entryMeta = getDirectoryMeta(name);
 
     if (
       name === "node_modules" ||
-      // private
-      name.startsWith("_") ||
-      // intercepts
-      name.startsWith("(.)") ||
-      name.startsWith("(..)") ||
-      name.startsWith("(...)")
+      entryMeta.isPrivate ||
+      entryMeta.isIntercept
     ) {
-      visitedDirsCache.set(dirPath, false);
-
-      return false;
+      continue;
     }
 
     if (entry.isFile() && endPointFileNames.has(name as EndPointFileNames)) {
@@ -158,13 +204,20 @@ export const scanAppDir = (
 
     if (entry.isDirectory()) {
       const entryName = entry.name;
-      const isGroup = entryName.startsWith("(") && entryName.endsWith(")");
-      const isParallel = entryName.startsWith("@");
-      const isOptionalCatchAll =
-        entryName.startsWith("[[...") && entryName.endsWith("]]");
-      const isCatchAll =
-        entryName.startsWith("[...") && entryName.endsWith("]");
-      const isDynamic = entryName.startsWith("[") && entryName.endsWith("]");
+      const {
+        isGroup,
+        isParallel,
+        isOptionalCatchAll,
+        isCatchAll,
+        isDynamic,
+        isPrivate,
+        isIntercept,
+        staticKeyName,
+      } = getDirectoryMeta(entryName);
+
+      if (isPrivate || isIntercept) {
+        continue;
+      }
 
       const { paramName, keyName } = extractParamInfo(entryName, {
         isDynamic,
@@ -221,8 +274,11 @@ export const scanAppDir = (
           );
         }
       } else {
+        const segmentKeyName = isDynamic || isCatchAll || isOptionalCatchAll
+          ? keyName
+          : staticKeyName;
         pathStructures.push(
-          `${currentIndent}"${keyName}": ${childPathStructure}`,
+          `${currentIndent}"${segmentKeyName}": ${childPathStructure}`,
         );
       }
     } else {

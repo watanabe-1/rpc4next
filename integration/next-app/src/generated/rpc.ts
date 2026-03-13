@@ -12,7 +12,7 @@ export type PathStructure = Endpoint & {
   },
   "feed": Endpoint,
   "patterns": Endpoint & {
-    "%5Fescaped": Endpoint,
+    "_escaped": Endpoint,
     "reports": Endpoint,
     "catch-all": {
       "___parts": Endpoint & Record<ParamsKey, { "parts": string[] }>
@@ -29,9 +29,6 @@ export type PathStructure = Endpoint & {
     "parallel": Endpoint & {
       "views": Endpoint,
       "members": Endpoint
-    },
-    "_private": {
-      "ignored": Endpoint
     }
   },
   "photo": {
