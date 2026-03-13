@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "rpc4next-shared-shim.d.ts",
+    "src/pattern-coverage.check.ts"
+  ]
+}
