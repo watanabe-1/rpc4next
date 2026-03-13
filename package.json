@@ -28,6 +28,7 @@
     "test:ui": "vitest --ui --coverage.enabled true",
     "test:watch": "vitest --watch",
     "integration:next-app:generate": "bun run --cwd integration/next-app generate:rpc",
+    "integration:next-app:check-patterns": "bun run --cwd integration/next-app check:folder-patterns",
     "integration:next-app:typecheck": "bun run --cwd integration/next-app typecheck",
     "integration:next-app:dev": "bun run --cwd integration/next-app dev",
     "integration:next-app:build": "bun run --cwd integration/next-app build:app",
