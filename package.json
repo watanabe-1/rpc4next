@@ -14,11 +14,11 @@
     "node": ">=20.19.2"
   },
   "scripts": {
-    "build": "bun run --filter \"./packages/*\" --if-present build",
-    "clean": "bun run --filter \"./packages/*\" --if-present clean",
-    "typecheck": "bun run --filter \"./packages/*\" --if-present typecheck",
-    "lint": "bun run --filter \"./packages/*\" --if-present lint",
-    "lint:fix": "bun run --filter \"./packages/*\" --if-present lint:fix",
+    "build": "bun --filter \"./packages/*\" --if-present build",
+    "clean": "bun --filter \"./packages/*\" --if-present clean",
+    "typecheck": "bun --filter \"./packages/*\" --if-present typecheck",
+    "lint": "bun --filter \"./packages/*\" --if-present lint",
+    "lint:fix": "bun --filter \"./packages/*\" --if-present lint:fix",
     "lint:repo": "biome check .",
     "lint:biome:demo": "biome check --config-path biome.demo.json biome/tests",
     "lint:repo:fix": "biome check --write .",
