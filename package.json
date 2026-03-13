@@ -9,6 +9,9 @@
   "workspaces": [
     "packages/*"
   ],
+  "engines": {
+    "node": ">=20.19.2"
+  },
   "scripts": {
     "build": "bun --filter \"./packages/*\" --if-present build",
     "clean": "bun --filter \"./packages/*\" --if-present clean",
