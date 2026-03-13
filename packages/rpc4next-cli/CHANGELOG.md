@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.3.1...rpc4next-cli-v0.3.2) (2026-03-13)
+
+
+### Bug Fixes
+
+* **cli:** Preserve public routes and decode segments ([#297](https://github.com/watanabe-1/rpc4next/issues/297)) ([7c81120](https://github.com/watanabe-1/rpc4next/commit/7c81120258715a5bc1cbb9c46f1de4518dc56c3d))
+
 ## [0.3.1](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.3.0...rpc4next-cli-v0.3.1) (2026-03-11)
 
 
