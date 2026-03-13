@@ -102,6 +102,25 @@ describe("hasTargetFiles", () => {
     const result3 = hasTargetFiles("/except/node");
     expect(result3).toBe(false);
   });
+
+  it("should ignore private children without hiding public routes in the same directory", () => {
+    mock({
+      "/mixed": {
+        _private: {
+          hidden: {
+            "page.tsx": "export function Hidden() {};",
+          },
+        },
+        public: {
+          "page.tsx": "export function Public() {};",
+        },
+      },
+    });
+
+    expect(hasTargetFiles("/mixed")).toBe(true);
+    expect(hasTargetFiles("/mixed/_private")).toBe(false);
+    expect(hasTargetFiles("/mixed/public")).toBe(true);
+  });
 });
 
 // ----------------------
@@ -479,6 +498,83 @@ describe("scanAppDir", () => {
 
     const expectPathStructure = `{
   "base": Endpoint
+}`;
+    const { pathStructure } = scanAppDir("/output", "/testApp");
+    expect(pathStructure).equals(expectPathStructure);
+  });
+
+  it("should decode escaped underscore segments as literal URL segments", () => {
+    mock({
+      "/testApp": {
+        patterns: {
+          "%5Fescaped": {
+            "page.tsx": "export function Escaped() {};",
+          },
+        },
+      },
+    });
+
+    const expectPathStructure = `{
+  "patterns": {
+    "_escaped": Endpoint
+  }
+}`;
+    const { pathStructure } = scanAppDir("/output", "/testApp");
+    expect(pathStructure).equals(expectPathStructure);
+  });
+
+  it("should keep the original segment name when decodeURIComponent fails", () => {
+    mock({
+      "/testApp": {
+        patterns: {
+          "%E0%A4%A": {
+            "page.tsx": "export function BrokenEncoding() {};",
+          },
+        },
+      },
+    });
+
+    const expectPathStructure = `{
+  "patterns": {
+    "%E0%A4%A": Endpoint
+  }
+}`;
+    const { pathStructure } = scanAppDir("/output", "/testApp");
+    expect(pathStructure).equals(expectPathStructure);
+  });
+
+  it("should skip private and intercept directories even if cached as targetable", () => {
+    mock({
+      "/testApp": {
+        parent: {
+          _private: {
+            hidden: {
+              "page.tsx": "export function Hidden() {};",
+            },
+          },
+          "(.)modal": {
+            hidden: {
+              "page.tsx": "export function Modal() {};",
+            },
+          },
+          public: {
+            "page.tsx": "export function Public() {};",
+          },
+        },
+      },
+    });
+
+    scanAppDirCache.clear();
+    visitedDirsCache.clear();
+    visitedDirsCache.set("/testApp/parent/_private", true);
+    visitedDirsCache.set("/testApp/parent/(.)modal", true);
+    visitedDirsCache.set("\\testApp\\parent\\_private", true);
+    visitedDirsCache.set("\\testApp\\parent\\(.)modal", true);
+
+    const expectPathStructure = `{
+  "parent": {
+    "public": Endpoint
+  }
 }`;
     const { pathStructure } = scanAppDir("/output", "/testApp");
     expect(pathStructure).equals(expectPathStructure);
