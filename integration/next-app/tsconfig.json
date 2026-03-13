@@ -1,0 +1,61 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "es2022"
+    ],
+    "allowJs": false,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "rpc4next": [
+        "../../packages/rpc4next/src/index.ts"
+      ],
+      "rpc4next/client": [
+        "../../packages/rpc4next/src/rpc/client/index.ts"
+      ],
+      "rpc4next/server": [
+        "../../packages/rpc4next/src/rpc/server/index.ts"
+      ],
+      "rpc4next/server/validators/zod": [
+        "../../packages/rpc4next/src/rpc/server/validators/zod/index.ts"
+      ],
+      "rpc4next-shared": [
+        "../../packages/rpc4next-shared/dist/index.js"
+      ],
+      "rpc4next-shared/*": [
+        "../../packages/rpc4next-shared/dist/*"
+      ]
+    },
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
+  },
+  "include": [
+    "next-env.d.ts",
+    "rpc4next-shared-shim.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

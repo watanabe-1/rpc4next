@@ -7,7 +7,8 @@
     "url": "git+https://github.com/watanabe-1/rpc4next.git"
   },
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "integration/*"
   ],
   "engines": {
     "node": ">=20.19.2"
@@ -26,6 +27,11 @@
     "test:coverage": "vitest run --coverage.enabled true",
     "test:ui": "vitest --ui --coverage.enabled true",
     "test:watch": "vitest --watch",
+    "integration:next-app:generate": "bun run --cwd integration/next-app generate:rpc",
+    "integration:next-app:typecheck": "bun run --cwd integration/next-app typecheck",
+    "integration:next-app:dev": "bun run --cwd integration/next-app dev",
+    "integration:next-app:build": "bun run --cwd integration/next-app build:app",
+    "integration:next-app:smoke": "bun run --cwd integration/next-app smoke:client",
     "diff2prompt": "diff2prompt --excludeFile=.gitignore"
   },
   "devDependencies": {
