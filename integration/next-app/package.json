@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "generate:rpc": "bun --bun ../../packages/rpc4next-cli/src/cli/index.ts app src/generated/rpc.ts --params-file route-params.ts",
+    "generate:rpc:watch": "bun --bun ../../packages/rpc4next-cli/src/cli/index.ts app src/generated/rpc.ts --params-file route-params.ts --watch",
     "check:folder-patterns": "bun run generate:rpc && tsc --noEmit --project tsconfig.patterns.json && bun scripts/report-folder-pattern-gaps.ts",
     "typecheck": "bun run generate:rpc && tsc --noEmit",
     "dev": "bun run generate:rpc && next dev",

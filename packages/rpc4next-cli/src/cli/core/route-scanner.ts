@@ -5,11 +5,9 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import type { HttpMethod } from "rpc4next-shared";
 import {
   CATCH_ALL_PREFIX,
   DYNAMIC_PREFIX,
-  HTTP_METHODS_EXCLUDE_OPTIONS,
   OPTIONAL_CATCH_ALL_PREFIX,
 } from "rpc4next-shared";
 import { END_POINT_FILE_NAMES } from "../constants.js";
@@ -22,7 +20,7 @@ import {
   TYPE_KEY_PARAMS,
 } from "./constants.js";
 import { toPosixPath } from "./path-utils.js";
-import { scanQuery, scanRoute } from "./scan-utils.js";
+import { scanEndpointFile } from "./scan-utils.js";
 import { createObjectType, createRecodeType } from "./type-utils.js";
 
 type ImportObj = {
@@ -280,7 +278,7 @@ export const scanAppDir = (
       }
     } else {
       // Process endpoint file
-      const queryDef = scanQuery(output, fullPath);
+      const { query: queryDef, routes } = scanEndpointFile(output, fullPath);
       if (queryDef) {
         const { importStatement, importPath, type } = queryDef;
         imports.push({ statement: importStatement, path: importPath });
@@ -288,13 +286,10 @@ export const scanAppDir = (
       }
 
       // Process routes for each HTTP method (excluding OPTIONS)
-      HTTP_METHODS_EXCLUDE_OPTIONS.forEach((method: HttpMethod) => {
-        const routeDef = scanRoute(output, fullPath, method);
-        if (routeDef) {
-          const { importStatement, importPath, type } = routeDef;
-          imports.push({ statement: importStatement, path: importPath });
-          typeFragments.push(type);
-        }
+      routes.forEach((routeDef) => {
+        const { importStatement, importPath, type } = routeDef;
+        imports.push({ statement: importStatement, path: importPath });
+        typeFragments.push(type);
       });
 
       // Add endpoint type

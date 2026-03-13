@@ -1,6 +1,7 @@
+import fs from "node:fs";
 import mock from "mock-fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { scanQuery, scanRoute } from "./scan-utils.js";
+import { scanEndpointFile } from "./scan-utils.js";
 
 vi.mock("./type-utils.js", () => ({
   createImport: vi.fn(
@@ -14,9 +15,10 @@ vi.mock("./type-utils.js", () => ({
   ),
 }));
 
-describe("scanQuery", () => {
+describe("scanEndpointFile", () => {
   afterEach(() => {
     mock.restore();
+    vi.restoreAllMocks();
   });
 
   it("should return a query definition for an exported interface", () => {
@@ -24,14 +26,15 @@ describe("scanQuery", () => {
       "input.ts": "export interface Query { id: number; }",
     });
 
-    const result = scanQuery("output.ts", "input.ts");
-    expect(result).toBeDefined();
-    expect(result?.importName).toBe("Query_da299b9577978fcd");
-    expect(result?.importPath).toBe("./input");
-    expect(result?.importStatement).toBe(
+    const result = scanEndpointFile("output.ts", "input.ts");
+    expect(result.query).toBeDefined();
+    expect(result.query?.importName).toBe("Query_da299b9577978fcd");
+    expect(result.query?.importPath).toBe("./input");
+    expect(result.query?.importStatement).toBe(
       "import type { Query as Query_da299b9577978fcd } from './input';",
     );
-    expect(result?.type).toBe("Record<QueryKey, Query_da299b9577978fcd>");
+    expect(result.query?.type).toBe("Record<QueryKey, Query_da299b9577978fcd>");
+    expect(result.routes).toEqual([]);
   });
 
   it("should return a query definition for an exported type alias", () => {
@@ -39,26 +42,16 @@ describe("scanQuery", () => {
       "input.ts": "export type Query = { id: number; }",
     });
 
-    const result = scanQuery("output.ts", "input.ts");
-    expect(result).toBeDefined();
-    expect(result?.importName).toBe("Query_da299b9577978fcd");
-    expect(result?.importPath).toBe("./input");
-    expect(result?.importStatement).toBe(
-      "import type { Query as Query_da299b9577978fcd } from './input';",
-    );
-    expect(result?.type).toBe("Record<QueryKey, Query_da299b9577978fcd>");
+    const result = scanEndpointFile("output.ts", "input.ts");
+    expect(result.query?.importName).toBe("Query_da299b9577978fcd");
+    expect(result.query?.type).toBe("Record<QueryKey, Query_da299b9577978fcd>");
+    expect(result.routes).toEqual([]);
   });
 
-  it("should return undefined when no relevant query definition exists", () => {
+  it("should omit query when no relevant query definition exists", () => {
     mock({ "input.ts": "export interface OtherType { value: string; }" });
-    const result = scanQuery("output.ts", "input.ts");
-    expect(result).toBeUndefined();
-  });
-});
-
-describe("scanRoute", () => {
-  afterEach(() => {
-    mock.restore();
+    const result = scanEndpointFile("output.ts", "input.ts");
+    expect(result.query).toBeUndefined();
   });
 
   it("should return a route definition for an exported async function", () => {
@@ -66,14 +59,16 @@ describe("scanRoute", () => {
       "input.ts": "export async function GET() { return { data: 'test' }; }",
     });
 
-    const result = scanRoute("output.ts", "input.ts", "GET");
-    expect(result).toBeDefined();
-    expect(result?.importName).toBe("GET_84a33c1aab9019d2");
-    expect(result?.importPath).toBe("./input");
-    expect(result?.importStatement).toBe(
+    const result = scanEndpointFile("output.ts", "input.ts");
+    expect(result.routes).toHaveLength(1);
+    expect(result.routes[0]?.importName).toBe("GET_84a33c1aab9019d2");
+    expect(result.routes[0]?.importPath).toBe("./input");
+    expect(result.routes[0]?.importStatement).toBe(
       "import type { GET as GET_84a33c1aab9019d2 } from './input';",
     );
-    expect(result?.type).toBe('{ "$get": typeof GET_84a33c1aab9019d2 }');
+    expect(result.routes[0]?.type).toBe(
+      '{ "$get": typeof GET_84a33c1aab9019d2 }',
+    );
   });
 
   it("should return a route definition for an exported constant function", () => {
@@ -81,14 +76,12 @@ describe("scanRoute", () => {
       "input.ts": "export const PATCH = ()=> { return { data: 'test' }; }",
     });
 
-    const result = scanRoute("output.ts", "input.ts", "PATCH");
-    expect(result).toBeDefined();
-    expect(result?.importName).toBe("PATCH_2fb9d0ae6e8b8cfc");
-    expect(result?.importPath).toBe("./input");
-    expect(result?.importStatement).toBe(
-      "import type { PATCH as PATCH_2fb9d0ae6e8b8cfc } from './input';",
+    const result = scanEndpointFile("output.ts", "input.ts");
+    expect(result.routes).toHaveLength(1);
+    expect(result.routes[0]?.importName).toBe("PATCH_2fb9d0ae6e8b8cfc");
+    expect(result.routes[0]?.type).toBe(
+      '{ "$patch": typeof PATCH_2fb9d0ae6e8b8cfc }',
     );
-    expect(result?.type).toBe('{ "$patch": typeof PATCH_2fb9d0ae6e8b8cfc }');
   });
 
   it("should return a route definition for a destructured export", () => {
@@ -97,14 +90,12 @@ describe("scanRoute", () => {
         'export const { POST } = app.post((rc) => rc.json({test: "hello"}))',
     });
 
-    const result = scanRoute("output.ts", "input.ts", "POST");
-    expect(result).toBeDefined();
-    expect(result?.importName).toBe("POST_8393a35405bb7d7f");
-    expect(result?.importPath).toBe("./input");
-    expect(result?.importStatement).toBe(
-      "import type { POST as POST_8393a35405bb7d7f } from './input';",
+    const result = scanEndpointFile("output.ts", "input.ts");
+    expect(result.routes).toHaveLength(1);
+    expect(result.routes[0]?.importName).toBe("POST_8393a35405bb7d7f");
+    expect(result.routes[0]?.type).toBe(
+      '{ "$post": typeof POST_8393a35405bb7d7f }',
     );
-    expect(result?.type).toBe('{ "$post": typeof POST_8393a35405bb7d7f }');
   });
 
   it("should return a route definition for a re-exported function", () => {
@@ -112,43 +103,60 @@ describe("scanRoute", () => {
       "input.ts": 'export { DELETE } from "@/features/delete";',
     });
 
-    const result = scanRoute("output.ts", "input.ts", "DELETE");
-    expect(result).toBeDefined();
-    expect(result?.importName).toBe("DELETE_bacf7eb8c865f8b9");
-    expect(result?.importPath).toBe("./input");
-    expect(result?.importStatement).toBe(
-      "import type { DELETE as DELETE_bacf7eb8c865f8b9 } from './input';",
+    const result = scanEndpointFile("output.ts", "input.ts");
+    expect(result.routes).toHaveLength(1);
+    expect(result.routes[0]?.importName).toBe("DELETE_bacf7eb8c865f8b9");
+    expect(result.routes[0]?.type).toBe(
+      '{ "$delete": typeof DELETE_bacf7eb8c865f8b9 }',
     );
-    expect(result?.type).toBe('{ "$delete": typeof DELETE_bacf7eb8c865f8b9 }');
   });
 
-  it("should increment alias count for multiple imports of the same route", () => {
+  it("should return stable aliases for multiple scans of the same route", () => {
     mock({
       "input.ts": 'export { PUT } from "@/features/put";',
     });
 
-    const result = scanRoute("output.ts", "input.ts", "PUT");
-    expect(result).toBeDefined();
-    expect(result?.importName).toBe("PUT_203d1825e2307ab2");
-    expect(result?.importPath).toBe("./input");
-    expect(result?.importStatement).toBe(
-      "import type { PUT as PUT_203d1825e2307ab2 } from './input';",
-    );
-    expect(result?.type).toBe('{ "$put": typeof PUT_203d1825e2307ab2 }');
+    const result1 = scanEndpointFile("output.ts", "input.ts");
+    const result2 = scanEndpointFile("output.ts", "input.ts");
 
-    const result2 = scanRoute("output.ts", "input.ts", "PUT");
-    expect(result2).toBeDefined();
-    expect(result2?.importName).toBe("PUT_203d1825e2307ab2");
-    expect(result2?.importPath).toBe("./input");
-    expect(result2?.importStatement).toBe(
-      "import type { PUT as PUT_203d1825e2307ab2 } from './input';",
+    expect(result1.routes[0]?.importName).toBe("PUT_203d1825e2307ab2");
+    expect(result2.routes[0]?.importName).toBe("PUT_203d1825e2307ab2");
+    expect(result2.routes[0]?.type).toBe(
+      '{ "$put": typeof PUT_203d1825e2307ab2 }',
     );
-    expect(result2?.type).toBe('{ "$put": typeof PUT_203d1825e2307ab2 }');
   });
 
-  it("should return undefined when no matching route definition exists", () => {
-    mock({ "input.ts": "export function POST() { return { data: 'test' }; }" });
-    const result = scanRoute("output.ts", "input.ts", "GET");
-    expect(result).toBeUndefined();
+  it("should skip non-matching route definitions", () => {
+    mock({
+      "input.ts": "export function OTHER() { return { data: 'test' }; }",
+    });
+    const result = scanEndpointFile("output.ts", "input.ts");
+    expect(result.routes).toEqual([]);
+  });
+
+  it("should read the file once and return query plus all matching routes", () => {
+    mock({
+      "input.ts": `
+        export interface Query { id: number; }
+        export async function GET() { return { data: "get" }; }
+        export const POST = () => ({ data: "post" });
+      `,
+    });
+    const readFileSyncSpy = vi.spyOn(fs, "readFileSync");
+
+    const result = scanEndpointFile("output.ts", "input.ts");
+
+    expect(readFileSyncSpy).toHaveBeenCalledTimes(1);
+    expect(result.query?.importName).toBe("Query_da299b9577978fcd");
+    expect(result.query?.type).toBe("Record<QueryKey, Query_da299b9577978fcd>");
+    expect(result.routes).toHaveLength(2);
+    expect(result.routes.map((route) => route.importName)).toEqual([
+      "GET_84a33c1aab9019d2",
+      "POST_8393a35405bb7d7f",
+    ]);
+    expect(result.routes.map((route) => route.type)).toEqual([
+      '{ "$get": typeof GET_84a33c1aab9019d2 }',
+      '{ "$post": typeof POST_8393a35405bb7d7f }',
+    ]);
   });
 });
