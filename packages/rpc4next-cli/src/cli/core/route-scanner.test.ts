@@ -523,6 +523,63 @@ describe("scanAppDir", () => {
     expect(pathStructure).equals(expectPathStructure);
   });
 
+  it("should keep the original segment name when decodeURIComponent fails", () => {
+    mock({
+      "/testApp": {
+        patterns: {
+          "%E0%A4%A": {
+            "page.tsx": "export function BrokenEncoding() {};",
+          },
+        },
+      },
+    });
+
+    const expectPathStructure = `{
+  "patterns": {
+    "%E0%A4%A": Endpoint
+  }
+}`;
+    const { pathStructure } = scanAppDir("/output", "/testApp");
+    expect(pathStructure).equals(expectPathStructure);
+  });
+
+  it("should skip private and intercept directories even if cached as targetable", () => {
+    mock({
+      "/testApp": {
+        parent: {
+          _private: {
+            hidden: {
+              "page.tsx": "export function Hidden() {};",
+            },
+          },
+          "(.)modal": {
+            hidden: {
+              "page.tsx": "export function Modal() {};",
+            },
+          },
+          public: {
+            "page.tsx": "export function Public() {};",
+          },
+        },
+      },
+    });
+
+    scanAppDirCache.clear();
+    visitedDirsCache.clear();
+    visitedDirsCache.set("/testApp/parent/_private", true);
+    visitedDirsCache.set("/testApp/parent/(.)modal", true);
+    visitedDirsCache.set("\\testApp\\parent\\_private", true);
+    visitedDirsCache.set("\\testApp\\parent\\(.)modal", true);
+
+    const expectPathStructure = `{
+  "parent": {
+    "public": Endpoint
+  }
+}`;
+    const { pathStructure } = scanAppDir("/output", "/testApp");
+    expect(pathStructure).equals(expectPathStructure);
+  });
+
   it("should handle empty directories gracefully", () => {
     // Handle empty directories
     mock({ "/emptyDir": {} });
