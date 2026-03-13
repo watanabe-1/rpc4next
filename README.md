@@ -323,7 +323,7 @@ async function callUserApi() {
 ## 🚧 Requirements
 
 - Next.js 14+ (App Router 使用)
-- Node.js 20.9.0+
+- Node.js 20.19.2+
 - aqua (Node.js / Bun のバージョン管理)
 
 ```bash
