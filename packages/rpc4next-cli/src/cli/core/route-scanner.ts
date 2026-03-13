@@ -82,11 +82,7 @@ export const hasTargetFiles = (dirPath: string): boolean => {
 
   const dirName = path.basename(dirPath);
   const dirMeta = getDirectoryMeta(dirName);
-  if (
-    dirName === "node_modules" ||
-    dirMeta.isPrivate ||
-    dirMeta.isIntercept
-  ) {
+  if (dirName === "node_modules" || dirMeta.isPrivate || dirMeta.isIntercept) {
     visitedDirsCache.set(dirPath, false);
 
     return false;
@@ -274,9 +270,10 @@ export const scanAppDir = (
           );
         }
       } else {
-        const segmentKeyName = isDynamic || isCatchAll || isOptionalCatchAll
-          ? keyName
-          : staticKeyName;
+        const segmentKeyName =
+          isDynamic || isCatchAll || isOptionalCatchAll
+            ? keyName
+            : staticKeyName;
         pathStructures.push(
           `${currentIndent}"${segmentKeyName}": ${childPathStructure}`,
         );
