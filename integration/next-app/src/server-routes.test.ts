@@ -15,14 +15,21 @@ type ValidationErrorPayload = {
 const expectValidationErrorPayload = (
   payload: unknown,
 ): ValidationErrorPayload => {
-  expect(payload).toMatchObject({
-    success: false,
-    error: {
-      name: expect.any(String),
-      message: expect.any(String),
-    },
-  });
-
+  if (
+    typeof payload !== "object" ||
+    payload === null ||
+    !("success" in payload) ||
+    payload.success !== false ||
+    !("error" in payload) ||
+    typeof payload.error !== "object" ||
+    payload.error === null ||
+    !("name" in payload.error) ||
+    typeof payload.error.name !== "string" ||
+    !("message" in payload.error) ||
+    typeof payload.error.message !== "string"
+  ) {
+    throw new Error("Expected a validation error payload");
+  }
   return payload as ValidationErrorPayload;
 };
 
@@ -120,7 +127,9 @@ describe("integration next-app server route handlers", () => {
       session: "cookie-ok",
     });
 
-    const { GET: requestMetaGet } = await import("../app/api/request-meta/route");
+    const { GET: requestMetaGet } = await import(
+      "../app/api/request-meta/route"
+    );
     const response = await requestMetaGet(
       new NextRequest("http://127.0.0.1:3000/api/request-meta"),
       { params: Promise.resolve({}) },
@@ -137,7 +146,9 @@ describe("integration next-app server route handlers", () => {
     vi.spyOn(validatorUtils, "getHeadersObject").mockResolvedValueOnce({});
     vi.spyOn(validatorUtils, "getCookiesObject").mockResolvedValueOnce({});
 
-    const { GET: requestMetaGet } = await import("../app/api/request-meta/route");
+    const { GET: requestMetaGet } = await import(
+      "../app/api/request-meta/route"
+    );
     const response = await requestMetaGet(
       new NextRequest("http://127.0.0.1:3000/api/request-meta"),
       { params: Promise.resolve({}) },

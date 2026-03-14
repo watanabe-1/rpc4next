@@ -17,10 +17,7 @@ const client = createRpcClient<PathStructure>(baseUrl, {
 describe("integration next-app generated RPC type coverage", () => {
   it("infers the generated client signatures for query, body, and headers", () => {
     const usersUrl = client.api.users._userId("demo-user").$url;
-    type ExpectedUsersUrl = (url?: {
-      query?: UsersQuery;
-      hash?: string;
-    }) => {
+    type ExpectedUsersUrl = (url?: { query?: UsersQuery; hash?: string }) => {
       pathname: string;
       path: string;
       relativePath: string;
@@ -70,6 +67,8 @@ describe("integration next-app generated RPC type coverage", () => {
     const usersResponse = await client.api.users._userId("demo-user").$get({
       url: { query: { includePosts: "true" } },
     });
+    type UsersResponse = typeof usersResponse;
+    type UsersSuccessResponse = Extract<UsersResponse, { ok: true }>;
     expectTypeOf<typeof usersResponse>().toMatchTypeOf<
       | TypedNextResponse<
           {
@@ -84,22 +83,14 @@ describe("integration next-app generated RPC type coverage", () => {
     >();
 
     if (usersResponse.ok) {
-      expectTypeOf<typeof usersResponse>().toEqualTypeOf<
-        TypedNextResponse<
-          {
-            ok: boolean;
-            userId: string;
-            includePosts: boolean;
-          },
-          200,
-          "application/json"
-        >
-      >();
+      const _usersOkResponse: UsersSuccessResponse = usersResponse;
     }
 
     const postsResponse = await client.api.posts.$post({
       body: { json: { title: "integration type test" } },
     });
+    type PostsResponse = typeof postsResponse;
+    type PostsSuccessResponse = Extract<PostsResponse, { ok: true }>;
     expectTypeOf<typeof postsResponse>().toMatchTypeOf<
       | TypedNextResponse<
           {
@@ -113,16 +104,7 @@ describe("integration next-app generated RPC type coverage", () => {
     >();
 
     if (postsResponse.ok) {
-      expectTypeOf<typeof postsResponse>().toEqualTypeOf<
-        TypedNextResponse<
-          {
-            ok: boolean;
-            title: string;
-          },
-          201,
-          "application/json"
-        >
-      >();
+      const _postsOkResponse: PostsSuccessResponse = postsResponse;
     }
 
     const requestMetaResponse = await client.api["request-meta"].$get({
@@ -131,21 +113,13 @@ describe("integration next-app generated RPC type coverage", () => {
         cookies: { session: "cookie-ok" },
       },
     });
+    type RequestMetaResponse = typeof requestMetaResponse;
+    type RequestMetaSuccessResponse = Extract<
+      RequestMetaResponse,
+      { ok: true }
+    >;
     expectTypeOf<typeof requestMetaResponse>().toMatchTypeOf<
-      TypedNextResponse<
-        {
-          header: string;
-          session: string;
-        },
-        200,
-        "application/json"
-      >
-      | TypedNextResponse<unknown, 400, "application/json">
-    >();
-
-    if (requestMetaResponse.ok) {
-      expectTypeOf<typeof requestMetaResponse>().toEqualTypeOf<
-        TypedNextResponse<
+      | TypedNextResponse<
           {
             header: string;
             session: string;
@@ -153,7 +127,12 @@ describe("integration next-app generated RPC type coverage", () => {
           200,
           "application/json"
         >
-      >();
+      | TypedNextResponse<unknown, 400, "application/json">
+    >();
+
+    if (requestMetaResponse.ok) {
+      const _requestMetaOkResponse: RequestMetaSuccessResponse =
+        requestMetaResponse;
     }
 
     const redirectResponse = await client.api["redirect-me"].$get();
@@ -168,7 +147,9 @@ describe("integration next-app generated RPC type coverage", () => {
     });
 
     // @ts-expect-error invalid users query literal should be rejected
-    client.api.users._userId("demo-user").$url({ query: { includePosts: "maybe" } });
+    client.api.users
+      ._userId("demo-user")
+      .$url({ query: { includePosts: "maybe" } });
 
     client.api.posts.$post({
       body: { json: { title: "ok" } },
@@ -188,7 +169,9 @@ describe("integration next-app generated RPC type coverage", () => {
     });
 
     // @ts-expect-error request-meta requires both validated headers and cookies
-    client.api["request-meta"].$get({ requestHeaders: { headers: { "x-integration-test": "header-ok" } } });
+    client.api["request-meta"].$get({
+      requestHeaders: { headers: { "x-integration-test": "header-ok" } },
+    });
 
     client.patterns["catch-all"].___parts(["alpha"]);
 

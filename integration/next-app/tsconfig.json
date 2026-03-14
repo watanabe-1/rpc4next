@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "es2022"
-    ],
+    "lib": ["dom", "dom.iterable", "es2022"],
     "allowJs": false,
     "skipLibCheck": true,
     "strict": true,
@@ -19,27 +15,15 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "rpc4next": [
-        "../../packages/rpc4next/src/index.ts"
-      ],
-      "rpc4next/client": [
-        "../../packages/rpc4next/src/rpc/client/index.ts"
-      ],
-      "rpc4next/server": [
-        "../../packages/rpc4next/src/rpc/server/index.ts"
-      ],
+      "@/*": ["./src/*"],
+      "rpc4next": ["../../packages/rpc4next/src/index.ts"],
+      "rpc4next/client": ["../../packages/rpc4next/src/rpc/client/index.ts"],
+      "rpc4next/server": ["../../packages/rpc4next/src/rpc/server/index.ts"],
       "rpc4next/server/validators/zod": [
         "../../packages/rpc4next/src/rpc/server/validators/zod/index.ts"
       ],
-      "rpc4next-shared": [
-        "../../packages/rpc4next-shared/dist/index.js"
-      ],
-      "rpc4next-shared/*": [
-        "../../packages/rpc4next-shared/dist/*"
-      ]
+      "rpc4next-shared": ["../../packages/rpc4next-shared/dist/index.js"],
+      "rpc4next-shared/*": ["../../packages/rpc4next-shared/dist/*"]
     },
     "plugins": [
       {
@@ -55,7 +39,5 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }

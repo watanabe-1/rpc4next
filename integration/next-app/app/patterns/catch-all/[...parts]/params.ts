@@ -1,1 +1,1 @@
-export type Params = { "parts": string[] };
+export type Params = { parts: string[] };
