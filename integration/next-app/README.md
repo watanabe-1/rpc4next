@@ -21,6 +21,7 @@ This workspace now includes fixture routes for the official `app` directory fold
 - Private folders
 - Escaped underscore segments via `%5F`
 - Intercepting route fixtures
+- A plain Next.js route-handler fixture using `NextResponse.json(...)`
 
 Folder-pattern coverage is verified as part of the normal integration workspace test flow without changing `rpc4next` itself.
 
@@ -47,6 +48,8 @@ bun run typecheck
 ```
 
 Inside `integration/next-app`, `bun run test` runs the integration workspace test suite: a normal workspace typecheck, runtime Vitest checks, direct server-route handler checks for validation, redirects, and error handling, folder-pattern Vitest checks, and the TypeScript-only pattern assertions used to validate generated `PathStructure`.
+
+The API fixtures also include plain Next.js routes written without `routeHandlerFactory`, including a static `NextResponse.json(...)` route, a dynamic route that reads `params` and `nextUrl.searchParams`, and a `Response.json(...)` route. The generated client can still call them as RPC, but their response types are intentionally broader than rpc4next's `TypedNextResponse` helpers.
 
 `bun run integration:next-app:e2e` runs browser-based Playwright checks against the real Next.js app on `http://127.0.0.1:3100`. Before the first run, install the browser once:
 

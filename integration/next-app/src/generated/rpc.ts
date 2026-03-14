@@ -1,5 +1,8 @@
 import type { Endpoint ,ParamsKey ,QueryKey } from "rpc4next/client";
 import type { GET as GET_871f64658e86ddce } from "../../app/api/error-demo/route";
+import type { GET as GET_f6b301e60ff73f39 } from "../../app/api/next-native-response/route";
+import type { GET as GET_de7c3f3aefa104c1 } from "../../app/api/next-native/[itemId]/route";
+import type { GET as GET_ac9bcfb08eed44cd } from "../../app/api/next-native/route";
 import type { POST as POST_90625e305d8eaaef } from "../../app/api/posts/route";
 import type { GET as GET_61a9f4b9fd49ccf5 } from "../../app/api/redirect-me/route";
 import type { GET as GET_fbb09db60ba2ae51 } from "../../app/api/request-meta/route";
@@ -9,6 +12,10 @@ import type { GET as GET_b6e4799d411d6efe } from "../../app/api/users/[userId]/r
 export type PathStructure = Endpoint & {
   "api": {
     "error-demo": { "$get": typeof GET_871f64658e86ddce } & Endpoint,
+    "next-native": { "$get": typeof GET_ac9bcfb08eed44cd } & Endpoint & {
+      "_itemId": { "$get": typeof GET_de7c3f3aefa104c1 } & Endpoint & Record<ParamsKey, { "itemId": string }>
+    },
+    "next-native-response": { "$get": typeof GET_f6b301e60ff73f39 } & Endpoint,
     "posts": { "$post": typeof POST_90625e305d8eaaef } & Endpoint,
     "redirect-me": { "$get": typeof GET_61a9f4b9fd49ccf5 } & Endpoint,
     "request-meta": { "$get": typeof GET_fbb09db60ba2ae51 } & Endpoint,

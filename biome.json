@@ -16,6 +16,7 @@
       "!**/bin",
       "!**/.next",
       "!**/coverage",
+      "!**/test-results",
       "!biome/tests"
     ]
   },

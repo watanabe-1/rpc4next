@@ -1,5 +1,9 @@
 import { createRpcClient } from "rpc4next/client";
-import type { TypedNextResponse } from "rpc4next/server";
+import type {
+  ContentType,
+  HttpStatusCode,
+  TypedNextResponse,
+} from "rpc4next/server";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import type { Query as UsersQuery } from "../app/api/users/[userId]/route";
 import type { PathStructure } from "./generated/rpc";
@@ -16,6 +20,18 @@ const client = createRpcClient<PathStructure>(baseUrl, {
 
 describe("integration next-app generated RPC type coverage", () => {
   it("infers the generated client signatures for query, body, and headers", () => {
+    type NativeDynamicBuilder = (typeof client.api)["next-native"]["_itemId"];
+    type NativeDynamicUrl = ReturnType<NativeDynamicBuilder>["$url"];
+    type ExpectedNativeDynamicUrl = (url?: { hash?: string }) => {
+      pathname: string;
+      path: string;
+      relativePath: string;
+      params: {
+        itemId: string;
+      };
+    };
+    expectTypeOf<NativeDynamicUrl>().toEqualTypeOf<ExpectedNativeDynamicUrl>();
+
     type UsersUrl = ReturnType<typeof client.api.users._userId>["$url"];
     type ExpectedUsersUrl = (url?: { query?: UsersQuery; hash?: string }) => {
       pathname: string;
@@ -64,6 +80,42 @@ describe("integration next-app generated RPC type coverage", () => {
   });
 
   it("infers the generated response types for integration routes", async () => {
+    const nativeNextResponse = await client.api["next-native"].$get();
+    type NativeNextResponse = typeof nativeNextResponse;
+    expectTypeOf<NativeNextResponse>().toEqualTypeOf<
+      TypedNextResponse<
+        {
+          ok: boolean;
+          mode: string;
+        },
+        HttpStatusCode,
+        ContentType
+      >
+    >();
+
+    const nativeDynamicResponse = await client.api["next-native"]
+      ._itemId("native-item")
+      .$get();
+    type NativeDynamicResponse = typeof nativeDynamicResponse;
+    expectTypeOf<NativeDynamicResponse>().toEqualTypeOf<
+      TypedNextResponse<
+        {
+          ok: boolean;
+          itemId: string;
+          filter: string;
+        },
+        HttpStatusCode,
+        ContentType
+      >
+    >();
+
+    const nativeResponseJson = await client.api["next-native-response"].$get();
+    const _nativeResponseJson: TypedNextResponse<
+      unknown,
+      HttpStatusCode,
+      ContentType
+    > = nativeResponseJson;
+
     const usersResponse = await client.api.users._userId("demo-user").$get({
       url: { query: { includePosts: "true" } },
     });
@@ -143,6 +195,11 @@ describe("integration next-app generated RPC type coverage", () => {
   });
 
   it("rejects invalid generated RPC inputs at compile time", () => {
+    type NativeDynamicArg = Parameters<
+      (typeof client.api)["next-native"]["_itemId"]
+    >[0];
+    expectTypeOf<NativeDynamicArg>().toEqualTypeOf<string | number>();
+
     client.api.users._userId("demo-user").$url({
       query: { includePosts: "false" },
     });
