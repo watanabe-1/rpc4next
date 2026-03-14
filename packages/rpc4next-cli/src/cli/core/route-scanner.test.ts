@@ -526,7 +526,7 @@ describe("scanAppDir", () => {
     expect(pathStructure).equals(expectPathStructure);
   });
 
-  it("should decode escaped underscore segments as literal URL segments", () => {
+  it("should preserve escaped underscore segments to avoid DSL key collisions", () => {
     mock({
       "/testApp": {
         patterns: {
@@ -539,7 +539,7 @@ describe("scanAppDir", () => {
 
     const expectPathStructure = `{
   "patterns": {
-    "_escaped": Endpoint
+    "%5Fescaped": Endpoint
   }
 }`;
     const { pathStructure } = scanAppDir("/output", "/testApp");

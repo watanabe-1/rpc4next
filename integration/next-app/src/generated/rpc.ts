@@ -12,7 +12,7 @@ export type PathStructure = Endpoint & {
   },
   "feed": Endpoint,
   "patterns": Endpoint & {
-    "_escaped": Endpoint,
+    "%5Fescaped": Endpoint,
     "reports": Endpoint,
     "catch-all": {
       "___parts": Endpoint & Record<ParamsKey, { "parts": string[] }>

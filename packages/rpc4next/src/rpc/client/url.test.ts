@@ -169,4 +169,14 @@ describe("createUrl", () => {
 
     expect(result.pathname).toBe("/[group]/user/[...ids]");
   });
+
+  it("decodes encoded static segments without treating them as dynamic", () => {
+    const paths = ["https://example.com", "patterns", "%5Fescaped"];
+    const urlGenerator = createUrl(paths, {}, []);
+    const result = urlGenerator();
+
+    expect(result.relativePath).toBe("/patterns/_escaped");
+    expect(result.path).toBe("https://example.com/patterns/_escaped");
+    expect(result.pathname).toBe("/patterns/_escaped");
+  });
 });

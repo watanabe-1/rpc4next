@@ -38,7 +38,7 @@ type HasPrivateFolderRoute = HasPath<
 >;
 type HasEscapedUnderscoreUrlSegment = HasPath<
   PathStructure,
-  ["patterns", "_escaped"]
+  ["patterns", "%5Fescaped"]
 >;
 
 type _dynamicSlug = ExpectTrue<HasDynamicSlug>;
@@ -54,4 +54,4 @@ type _photoCommentRoute = ExpectTrue<HasPhotoCommentRoute>;
 type _privateFolderExcluded = ExpectFalse<HasPrivateFolderRoute>;
 
 // `%5Fsegment` is the encoded folder form for a literal `_segment` URL.
-type _escapedUnderscoreDecoded = ExpectTrue<HasEscapedUnderscoreUrlSegment>;
+type _escapedUnderscorePreserved = ExpectTrue<HasEscapedUnderscoreUrlSegment>;

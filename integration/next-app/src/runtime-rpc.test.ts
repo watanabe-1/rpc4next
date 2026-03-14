@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { createRpcClient } from "rpc4next/client";
+import { describe, expect, it } from "vitest";
 import type { PathStructure } from "./generated/rpc";
 
 type UrlExpectation = {
@@ -60,7 +60,8 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
       },
       {
         name: "nested dynamic page route",
-        actual: () => client.photo._id("photo-1").comments._commentId("c-9").$url(),
+        actual: () =>
+          client.photo._id("photo-1").comments._commentId("c-9").$url(),
         expected: {
           path: `${baseUrl}/photo/photo-1/comments/c-9`,
           relativePath: "/photo/photo-1/comments/c-9",
@@ -70,7 +71,8 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
       },
       {
         name: "catch-all page route",
-        actual: () => client.patterns["catch-all"].___parts(["alpha", "beta"]).$url(),
+        actual: () =>
+          client.patterns["catch-all"].___parts(["alpha", "beta"]).$url(),
         expected: {
           path: `${baseUrl}/patterns/catch-all/alpha/beta`,
           relativePath: "/patterns/catch-all/alpha/beta",
@@ -102,7 +104,9 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
       {
         name: "optional catch-all page route with segments",
         actual: () =>
-          client.patterns["optional-catch-all"]._____parts(["one", "two"]).$url(),
+          client.patterns["optional-catch-all"]
+            ._____parts(["one", "two"])
+            .$url(),
         expected: {
           path: `${baseUrl}/patterns/optional-catch-all/one/two`,
           relativePath: "/patterns/optional-catch-all/one/two",
@@ -148,22 +152,19 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
       });
     }
 
-    it.fails(
-      "should allow optional catch-all page routes without segments",
-      () => {
-        expect(
-          client.patterns["optional-catch-all"]._____parts().$url(),
-        ).toEqual({
+    it.fails("should allow optional catch-all page routes without segments", () => {
+      expect(client.patterns["optional-catch-all"]._____parts().$url()).toEqual(
+        {
           path: `${baseUrl}/patterns/optional-catch-all`,
           relativePath: "/patterns/optional-catch-all",
           pathname: "/patterns/optional-catch-all/[[...parts]]",
           params: { parts: undefined },
-        });
-      },
-    );
+        },
+      );
+    });
 
-    it.fails("should treat decoded _escaped as a static page route", () => {
-      expect(client.patterns._escaped.$url()).toEqual({
+    it("should treat escaped underscore folders as static page routes", () => {
+      expect(client.patterns["%5Fescaped"].$url()).toEqual({
         path: `${baseUrl}/patterns/_escaped`,
         relativePath: "/patterns/_escaped",
         pathname: "/patterns/_escaped",
