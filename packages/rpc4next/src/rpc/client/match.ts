@@ -37,7 +37,8 @@ function safeDecode(value: string | undefined | null): string | undefined {
   }
 }
 
-const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const escapeRegex = (value: string) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /**
  * Match a URL (string) against a pre-defined path pattern array.
