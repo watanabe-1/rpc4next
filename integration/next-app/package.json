@@ -6,6 +6,7 @@
     "generate:rpc": "bun --bun ../../packages/rpc4next-cli/src/cli/index.ts app src/generated/rpc.ts --params-file params.ts",
     "generate:rpc:watch": "bun --bun ../../packages/rpc4next-cli/src/cli/index.ts app src/generated/rpc.ts --params-file params.ts --watch",
     "check:folder-patterns": "bun run generate:rpc && tsc --noEmit --project tsconfig.patterns.json && bun scripts/report-folder-pattern-gaps.ts",
+    "test:runtime": "bun run generate:rpc && vitest run --config ../../vitest.config.ts src/runtime-rpc.test.ts",
     "typecheck": "bun run generate:rpc && tsc --noEmit",
     "dev": "bun run generate:rpc && next dev",
     "build:app": "bun run generate:rpc && next build",

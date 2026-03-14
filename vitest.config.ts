@@ -43,7 +43,11 @@ export default defineConfig({
     root: workspaceRoot,
     globals: true,
     environment: "node",
-    include: ["packages/**/src/**/*.test.ts", "scripts/**/*.test.ts"],
+    include: [
+      "packages/**/src/**/*.test.ts",
+      "integration/**/src/**/*.test.ts",
+      "scripts/**/*.test.ts",
+    ],
     coverage: {
       provider: "v8",
       reporter: ["text", "html", "json", "json-summary"],
