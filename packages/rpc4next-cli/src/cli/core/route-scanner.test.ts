@@ -467,10 +467,11 @@ describe("route-scanner", () => {
       );
     });
 
-    it("should scan directory with parallel routes and generate path structure", () => {
+    it("should ignore parallel slot descendants in path structure", () => {
       setupTree({
         testApp: {
           parallel: {
+            "page.tsx": "export function Parallel() {};",
             "@user": {
               home: {
                 "page.tsx": "export function Home() {};",
@@ -485,9 +486,7 @@ describe("route-scanner", () => {
         tmpPath("testApp"),
       );
       expect(pathStructure).equals(`{
-  "parallel": {
-    "home": Endpoint
-  }
+  "parallel": Endpoint
 }`);
     });
 

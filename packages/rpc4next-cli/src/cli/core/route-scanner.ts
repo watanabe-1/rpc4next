@@ -260,7 +260,8 @@ export const scanAppDir = (
             ]
           : params;
 
-      const isSkipDir = isGroup || isParallel;
+      const isFlattenDir = isGroup;
+      const isHiddenFromPathStructure = isIntercept || isParallel;
 
       const {
         pathStructure: childPathStructure,
@@ -269,19 +270,19 @@ export const scanAppDir = (
       } = scanAppDir(
         output,
         fullPath,
-        isSkipDir ? previousIndent : currentIndent,
+        isFlattenDir || isParallel ? previousIndent : currentIndent,
         nextParams,
       );
 
       paramsTypes.push(...childParamsTypes);
 
-      if (isIntercept) {
+      if (isHiddenFromPathStructure) {
         continue;
       }
 
       imports.push(...childImports);
 
-      if (isSkipDir) {
+      if (isFlattenDir) {
         // Extract only the inner part inside `{}` from the child output
         const match = childPathStructure.match(/^\s*\{([\s\S]*)\}\s*$/);
         const trimmedChildPathStructure = childPathStructure.trim();

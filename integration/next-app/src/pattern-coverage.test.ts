@@ -27,11 +27,22 @@ type HasOptionalCatchAll = HasPath<
   ["patterns", "optional-catch-all", "_____parts"]
 >;
 type HasGroupedRoute = HasPath<PathStructure, ["patterns", "reports"]>;
-type HasParallelAnalytics = HasPath<
+type HasParallelAnalyticsSlot = HasPath<
+  PathStructure,
+  ["patterns", "parallel", "@analytics"]
+>;
+type HasParallelTeamSlot = HasPath<
+  PathStructure,
+  ["patterns", "parallel", "@team"]
+>;
+type HasParallelAnalyticsPage = HasPath<
   PathStructure,
   ["patterns", "parallel", "views"]
 >;
-type HasParallelTeam = HasPath<PathStructure, ["patterns", "parallel", "members"]>;
+type HasParallelTeamPage = HasPath<
+  PathStructure,
+  ["patterns", "parallel", "members"]
+>;
 type HasPhotoCommentRoute = HasPath<
   PathStructure,
   ["photo", "_id", "comments", "_commentId"]
@@ -48,15 +59,24 @@ type HasMalformedEncodedUrlSegment = HasPath<
   PathStructure,
   ["patterns", "%E3%81%ZZ"]
 >;
+type HasInterceptingModalBranch = HasPath<PathStructure, ["feed", "@modal"]>;
+type HasInterceptingDrilldownBranch = HasPath<
+  PathStructure,
+  ["feed", "@drilldown"]
+>;
 
 type _dynamicCategory = ExpectTrue<HasDynamicCategory>;
 type _nestedDynamic = ExpectTrue<HasNestedDynamic>;
 type _catchAll = ExpectTrue<HasCatchAll>;
 type _optionalCatchAll = ExpectTrue<HasOptionalCatchAll>;
 type _groupedRoute = ExpectTrue<HasGroupedRoute>;
-type _parallelAnalytics = ExpectTrue<HasParallelAnalytics>;
-type _parallelTeam = ExpectTrue<HasParallelTeam>;
 type _photoCommentRoute = ExpectTrue<HasPhotoCommentRoute>;
+type _parallelAnalyticsSlotExcluded = ExpectFalse<HasParallelAnalyticsSlot>;
+type _parallelTeamSlotExcluded = ExpectFalse<HasParallelTeamSlot>;
+type _parallelAnalyticsPageExcluded = ExpectFalse<HasParallelAnalyticsPage>;
+type _parallelTeamPageExcluded = ExpectFalse<HasParallelTeamPage>;
+type _interceptingModalExcluded = ExpectFalse<HasInterceptingModalBranch>;
+type _interceptingDrilldownExcluded = ExpectFalse<HasInterceptingDrilldownBranch>;
 
 // Next.js private folders should be fully excluded from routing.
 type _privateFolderExcluded = ExpectFalse<HasPrivateFolderRoute>;

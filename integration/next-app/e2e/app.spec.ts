@@ -122,4 +122,14 @@ test.describe("integration next-app e2e", () => {
     await page.goto("/patterns/%E3%81%ZZ");
     await expect(page.getByText("malformed-encoded-pattern")).toBeVisible();
   });
+
+  test("parallel child routes are not exposed as direct public urls", async ({
+    page,
+  }) => {
+    await page.goto("/patterns/parallel/views");
+    await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
+
+    await page.goto("/patterns/parallel/members");
+    await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
+  });
 });

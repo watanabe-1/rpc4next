@@ -138,26 +138,6 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
           params: {},
         },
       },
-      {
-        name: "parallel route analytics branch",
-        actual: () => client.patterns.parallel.views.$url(),
-        expected: {
-          path: `${baseUrl}/patterns/parallel/views`,
-          relativePath: "/patterns/parallel/views",
-          pathname: "/patterns/parallel/views",
-          params: {},
-        },
-      },
-      {
-        name: "parallel route team branch",
-        actual: () => client.patterns.parallel.members.$url(),
-        expected: {
-          path: `${baseUrl}/patterns/parallel/members`,
-          relativePath: "/patterns/parallel/members",
-          pathname: "/patterns/parallel/members",
-          params: {},
-        },
-      },
     ];
 
     for (const testCase of cases) {
@@ -193,6 +173,16 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
         pathname: "/patterns/%E3%81%ZZ",
         params: {},
       });
+    });
+
+    it("should not expose private or internal routing branches on the client", () => {
+      expect("_private" in client.patterns).toBe(false);
+      expect("@analytics" in client.patterns.parallel).toBe(false);
+      expect("@team" in client.patterns.parallel).toBe(false);
+      expect("views" in client.patterns.parallel).toBe(false);
+      expect("members" in client.patterns.parallel).toBe(false);
+      expect("@modal" in client.feed).toBe(false);
+      expect("@drilldown" in client.feed).toBe(false);
     });
   });
 

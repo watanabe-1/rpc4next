@@ -32,10 +32,7 @@ export type PathStructure = Endpoint & {
     "optional-catch-all": {
       "_____parts": Endpoint & Record<ParamsKey, { "parts": string[] | undefined }>
     },
-    "parallel": Endpoint & {
-      "views": Endpoint,
-      "members": Endpoint
-    }
+    "parallel": Endpoint
   },
   "photo": {
     "_id": Endpoint & Record<ParamsKey, { "id": string }> & {
