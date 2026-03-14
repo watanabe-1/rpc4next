@@ -1,0 +1,13 @@
+{
+  "$schema": "../node_modules/@biomejs/biome/configuration_schema.json",
+  "plugins": ["./no-vitest-test.grit", "./require-top-level-describe.grit"],
+  "files": {
+    "includes": ["biome/tests/**/*.ts"]
+  },
+  "linter": {
+    "enabled": true
+  },
+  "formatter": {
+    "enabled": false
+  }
+}
