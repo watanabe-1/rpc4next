@@ -92,9 +92,12 @@ describe("hasTargetFiles", () => {
     expect(result2).toBe(false);
   });
 
-  it("should return false if the directory is one of the except directories", () => {
+  it("should traverse intercepting directories to find endpoint files", () => {
     const result = hasTargetFiles("/except/intercepts");
-    expect(result).toBe(false);
+    expect(result).toBe(true);
+
+    const childResult = hasTargetFiles("/except/intercepts/(.)intercept");
+    expect(childResult).toBe(true);
 
     const result2 = hasTargetFiles("/except/private");
     expect(result2).toBe(false);
@@ -444,29 +447,31 @@ describe("scanAppDir", () => {
     expect(pathStructure).equals(expectPathStructure);
   });
 
-  it("should scan directory with intercepting routes and generate path structure", () => {
+  it("should scan intercepting routes for params types without changing path structure", () => {
     // Setup intercepting routes
     mock({
       "/testApp": {
         intercepts: {
           "(.)intercept": {
-            home: {
+            "[id]": {
               "page.tsx": "export function Home() {};",
             },
           },
           "(..)intercept": {
-            home: {
-              "page.tsx": "export function Home() {};",
+            nested: {
+              "[slug]": {
+                "page.tsx": "export function Nested() {};",
+              },
             },
           },
           "(..)(..)intercept": {
-            home: {
-              "page.tsx": "export function Home() {};",
+            "[...parts]": {
+              "page.tsx": "export function CatchAll() {};",
             },
           },
           "(...)intercept": {
-            home: {
-              "page.tsx": "export function Home() {};",
+            "[[...optionalParts]]": {
+              "page.tsx": "export function OptionalCatchAll() {};",
             },
           },
         },
@@ -477,8 +482,26 @@ describe("scanAppDir", () => {
     const expectPathStructure = `{
   "base": Endpoint
 }`;
-    const { pathStructure } = scanAppDir("/output", "/testApp");
+    const { pathStructure, paramsTypes } = scanAppDir("/output", "/testApp");
     expect(pathStructure).equals(expectPathStructure);
+    expect(paramsTypes).toStrictEqual([
+      {
+        dirPath: "/testApp/intercepts/(.)intercept/[id]",
+        paramsType: '{ "id": string }',
+      },
+      {
+        dirPath: "/testApp/intercepts/(..)(..)intercept/[...parts]",
+        paramsType: '{ "parts": string[] }',
+      },
+      {
+        dirPath: "/testApp/intercepts/(..)intercept/nested/[slug]",
+        paramsType: '{ "slug": string }',
+      },
+      {
+        dirPath: "/testApp/intercepts/(...)intercept/[[...optionalParts]]",
+        paramsType: '{ "optionalParts": string[] | undefined }',
+      },
+    ]);
   });
 
   it("should scan private directory and generate path structure", () => {
@@ -543,7 +566,7 @@ describe("scanAppDir", () => {
     expect(pathStructure).equals(expectPathStructure);
   });
 
-  it("should skip private and intercept directories even if cached as targetable", () => {
+  it("should skip private directories even if cached as targetable and keep intercepting routes out of path structure", () => {
     mock({
       "/testApp": {
         parent: {
@@ -553,7 +576,7 @@ describe("scanAppDir", () => {
             },
           },
           "(.)modal": {
-            hidden: {
+            "[id]": {
               "page.tsx": "export function Modal() {};",
             },
           },
@@ -576,8 +599,43 @@ describe("scanAppDir", () => {
     "public": Endpoint
   }
 }`;
-    const { pathStructure } = scanAppDir("/output", "/testApp");
+    const { pathStructure, paramsTypes } = scanAppDir("/output", "/testApp");
     expect(pathStructure).equals(expectPathStructure);
+    expect(paramsTypes).toStrictEqual([
+      {
+        dirPath: "/testApp/parent/(.)modal/[id]",
+        paramsType: '{ "id": string }',
+      },
+    ]);
+  });
+
+  it("should ignore empty parallel-route path structure produced by intercepting children while keeping params types", () => {
+    mock({
+      "/testApp": {
+        feed: {
+          "@modal": {
+            "(..)photo": {
+              "[id]": {
+                "page.tsx": "export function Modal() {};",
+              },
+            },
+          },
+          "page.tsx": "export function Feed() {};",
+        },
+      },
+    });
+
+    const expectPathStructure = `{
+  "feed": Endpoint
+}`;
+    const { pathStructure, paramsTypes } = scanAppDir("/output", "/testApp");
+    expect(pathStructure).equals(expectPathStructure);
+    expect(paramsTypes).toStrictEqual([
+      {
+        dirPath: "/testApp/feed/@modal/(..)photo/[id]",
+        paramsType: '{ "id": string }',
+      },
+    ]);
   });
 
   it("should handle empty directories gracefully", () => {

@@ -35,12 +35,28 @@ type ParamsType = {
 
 const endPointFileNames = new Set(END_POINT_FILE_NAMES);
 
+const INTERCEPTING_SEGMENT_PREFIXES = ["(..)(..)", "(...)", "(..)", "(.)"];
+
 const isInterceptingSegment = (entryName: string): boolean => {
-  return (
-    entryName.startsWith("(.)") ||
-    entryName.startsWith("(..)") ||
-    entryName.startsWith("(...)")
+  return INTERCEPTING_SEGMENT_PREFIXES.some((prefix) =>
+    entryName.startsWith(prefix),
   );
+};
+
+const stripInterceptingSegmentPrefix = (entryName: string): string => {
+  let segmentName = entryName;
+
+  while (true) {
+    const prefix = INTERCEPTING_SEGMENT_PREFIXES.find((candidate) =>
+      segmentName.startsWith(candidate),
+    );
+
+    if (!prefix) {
+      return segmentName;
+    }
+
+    segmentName = segmentName.slice(prefix.length);
+  }
 };
 
 const decodeStaticSegment = (entryName: string): string => {
@@ -52,15 +68,22 @@ const decodeStaticSegment = (entryName: string): string => {
 };
 
 const getDirectoryMeta = (entryName: string) => {
-  const isGroup = entryName.startsWith("(") && entryName.endsWith(")");
-  const isParallel = entryName.startsWith("@");
-  const isOptionalCatchAll =
-    entryName.startsWith("[[...") && entryName.endsWith("]]");
-  const isCatchAll = entryName.startsWith("[...") && entryName.endsWith("]");
-  const isDynamic = entryName.startsWith("[") && entryName.endsWith("]");
-  const isPrivate = entryName.startsWith("_");
   const isIntercept = isInterceptingSegment(entryName);
-  const staticKeyName = decodeStaticSegment(entryName);
+  const segmentName = isIntercept
+    ? stripInterceptingSegmentPrefix(entryName)
+    : entryName;
+  const isGroup =
+    !isIntercept && segmentName.startsWith("(") && segmentName.endsWith(")");
+  const isParallel = !isIntercept && segmentName.startsWith("@");
+  const isOptionalCatchAll =
+    segmentName.startsWith("[[...") && segmentName.endsWith("]]");
+  const isCatchAll =
+    !isOptionalCatchAll &&
+    segmentName.startsWith("[...") &&
+    segmentName.endsWith("]");
+  const isDynamic = segmentName.startsWith("[") && segmentName.endsWith("]");
+  const isPrivate = !isIntercept && segmentName.startsWith("_");
+  const staticKeyName = decodeStaticSegment(segmentName);
 
   return {
     isCatchAll,
@@ -70,6 +93,7 @@ const getDirectoryMeta = (entryName: string) => {
     isOptionalCatchAll,
     isParallel,
     isPrivate,
+    segmentName,
     staticKeyName,
   };
 };
@@ -80,7 +104,7 @@ export const hasTargetFiles = (dirPath: string): boolean => {
 
   const dirName = path.basename(dirPath);
   const dirMeta = getDirectoryMeta(dirName);
-  if (dirName === "node_modules" || dirMeta.isPrivate || dirMeta.isIntercept) {
+  if (dirName === "node_modules" || dirMeta.isPrivate) {
     visitedDirsCache.set(dirPath, false);
 
     return false;
@@ -92,11 +116,7 @@ export const hasTargetFiles = (dirPath: string): boolean => {
     const entryPath = path.join(dirPath, name);
     const entryMeta = getDirectoryMeta(name);
 
-    if (
-      name === "node_modules" ||
-      entryMeta.isPrivate ||
-      entryMeta.isIntercept
-    ) {
+    if (name === "node_modules" || entryMeta.isPrivate) {
       continue;
     }
 
@@ -206,14 +226,15 @@ export const scanAppDir = (
         isDynamic,
         isPrivate,
         isIntercept,
+        segmentName,
         staticKeyName,
       } = getDirectoryMeta(entryName);
 
-      if (isPrivate || isIntercept) {
+      if (isPrivate) {
         continue;
       }
 
-      const { paramName, keyName } = extractParamInfo(entryName, {
+      const { paramName, keyName } = extractParamInfo(segmentName, {
         isDynamic,
         isCatchAll,
         isOptionalCatchAll,
@@ -250,13 +271,22 @@ export const scanAppDir = (
         nextParams,
       );
 
-      imports.push(...childImports);
       paramsTypes.push(...childParamsTypes);
+
+      if (isIntercept) {
+        continue;
+      }
+
+      imports.push(...childImports);
 
       if (isSkipDir) {
         // Extract only the inner part inside `{}` from the child output
         const match = childPathStructure.match(/^\s*\{([\s\S]*)\}\s*$/);
         const trimmedChildPathStructure = childPathStructure.trim();
+        if (!childPathStructure) {
+          continue;
+        }
+
         if (match) {
           pathStructures.push(`${currentIndent}${match[1].trim()}`);
         } else if (trimmedChildPathStructure) {
@@ -268,6 +298,10 @@ export const scanAppDir = (
           );
         }
       } else {
+        if (!childPathStructure.trim()) {
+          continue;
+        }
+
         const segmentKeyName =
           isDynamic || isCatchAll || isOptionalCatchAll
             ? keyName
