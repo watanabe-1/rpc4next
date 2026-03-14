@@ -22,7 +22,7 @@ This workspace now includes fixture routes for the official `app` directory fold
 - Escaped underscore segments via `%5F`
 - Intercepting route fixtures
 
-`check:folder-patterns` is a dedicated detection command. It intentionally reports gaps without changing `rpc4next` itself.
+`check:folder-patterns` is a dedicated test command for folder-pattern coverage. It runs both the type-level assertions and the fixture-oriented Vitest suite without changing `rpc4next` itself.
 
 Official references used for these fixtures:
 
@@ -40,8 +40,7 @@ From the repository root:
 bun install
 bun run integration:next-app:generate
 bun run integration:next-app:watch
-bun run integration:next-app:check-patterns
-bun run integration:next-app:test:runtime
+bun run integration:next-app:test
 bun run integration:next-app:typecheck
 bun run integration:next-app:dev
 ```
@@ -52,12 +51,14 @@ In another terminal, with the dev server running:
 bun run integration:next-app:smoke
 ```
 
-`integration:next-app:smoke` calls the live Next.js routes through the generated client.
+`integration:next-app:test` runs the integration workspace test suite: runtime Vitest checks, folder-pattern Vitest checks, and the TypeScript-only pattern assertions used to validate generated `PathStructure`.
 
-`integration:next-app:test:runtime` runs a Vitest suite that verifies generated client paths via `.$url()` and inspects the actual `fetch` inputs without starting Next.js.
+`integration:next-app:smoke` calls the live Next.js routes through the generated client.
 
 `integration:next-app:watch` keeps `src/generated/rpc.ts` and `app/**/params.ts` in sync while route files under `app/**` change.
 
-`integration:next-app:check-patterns` is expected to fail while official folder conventions are still missing or misrepresented in the generated `PathStructure`.
+For focused local debugging inside `integration/next-app`, `test:runtime` and `check:folder-patterns` still exist as narrower workspace-level commands.
+
+Intercepting route fixtures are kept to verify scanning behavior, but they are intentionally excluded from `PathStructure` because rpc4next models public URL paths rather than intercepted UI branches.
 
 If `next build` asks for `@types/react`, run `bun install` once at the repo root so the new workspace devDependencies are installed.

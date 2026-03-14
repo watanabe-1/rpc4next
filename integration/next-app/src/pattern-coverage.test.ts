@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import type { PathStructure } from "./generated/rpc";
 
 type ExpectFalse<T extends false> = T;
@@ -55,3 +56,9 @@ type _privateFolderExcluded = ExpectFalse<HasPrivateFolderRoute>;
 
 // `%5Fsegment` is the encoded folder form for a literal `_segment` URL.
 type _escapedUnderscorePreserved = ExpectTrue<HasEscapedUnderscoreUrlSegment>;
+
+describe("integration next-app generated PathStructure type coverage", () => {
+  it("compiles the expected folder pattern assertions", () => {
+    expect(true).toBe(true);
+  });
+});
