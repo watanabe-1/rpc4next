@@ -534,10 +534,10 @@ describe("route-scanner", () => {
           dirPath: tmpPosixPath(
             "testApp",
             "intercepts",
-            "(.)intercept",
-            "[id]",
+            "(...)intercept",
+            "[[...optionalParts]]",
           ),
-          paramsType: '{ "id": string }',
+          paramsType: '{ "optionalParts": string[] | undefined }',
         },
         {
           dirPath: tmpPosixPath(
@@ -562,10 +562,10 @@ describe("route-scanner", () => {
           dirPath: tmpPosixPath(
             "testApp",
             "intercepts",
-            "(...)intercept",
-            "[[...optionalParts]]",
+            "(.)intercept",
+            "[id]",
           ),
-          paramsType: '{ "optionalParts": string[] | undefined }',
+          paramsType: '{ "id": string }',
         },
       ]);
     });
@@ -1190,14 +1190,14 @@ describe("route-scanner", () => {
 
       const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(initial.pathStructure).toBe(`{
-  "static": {
-    "home": Endpoint
-  },
   "_admin": {
     "home": Endpoint & Record<ParamsKey, { "admin": string }>
   },
   "_user": {
     "home": Endpoint & Record<ParamsKey, { "user": string }>
+  },
+  "static": {
+    "home": Endpoint
   }
 }`);
 
@@ -1230,9 +1230,6 @@ describe("route-scanner", () => {
 
       const modified = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(modified.pathStructure).toBe(`{
-  "static": {
-    "home": Endpoint
-  },
   "_admin": {
     "_id": {
       "home": Endpoint & Record<ParamsKey, { "admin": string; "id": string; }>
@@ -1242,6 +1239,9 @@ describe("route-scanner", () => {
     "_id": {
       "home": Endpoint & Record<ParamsKey, { "user": string; "id": string; }>
     }
+  },
+  "static": {
+    "home": Endpoint
   }
 }`);
     });

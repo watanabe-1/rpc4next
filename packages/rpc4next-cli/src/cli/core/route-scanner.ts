@@ -213,7 +213,7 @@ export const scanAppDir = (
 
       return endPointFileNames.has(entry.name as EndPointFileNames);
     })
-    .sort();
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   for (const entry of entries) {
     const fullPath = toPosixPath(path.join(input, entry.name));
