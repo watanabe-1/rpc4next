@@ -23,6 +23,7 @@ export type PathStructure = Endpoint & {
       "_userId": Record<QueryKey, Query_96533c19a2b0de99> & { "$get": typeof GET_b6e4799d411d6efe } & Endpoint & Record<ParamsKey, { "userId": string }>
     }
   },
+  "e2e-client": Endpoint,
   "feed": Endpoint,
   "patterns": Endpoint & {
     "reports": Endpoint,
