@@ -1,5 +1,6 @@
-import mock from "mock-fs";
-import { describe, expect, it, vi } from "vitest";
+import path from "node:path";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanupTempDir, makeTempDir } from "../../test-helpers/tmp-dir.js";
 import {
   NEWLINE,
   RPC4NEXT_CLIENT_IMPORT_PATH,
@@ -17,16 +18,22 @@ vi.mock("./route-scanner.js", () => ({
 
 vi.mock("./type-utils.js", () => ({
   createImport: vi.fn(
-    (type, path) => `import type { ${type} } from "${path}";`,
+    (type, importPath) => `import type { ${type} } from "${importPath}";`,
   ),
 }));
 
-mock({
-  "/[hoge]": { bar: { "route.ts": "dummy content" } },
-});
-
 describe("generatePathStructure", () => {
+  let tmpDir: string | null = null;
+
+  afterEach(() => {
+    cleanupTempDir(tmpDir);
+    tmpDir = null;
+    scanAppDir.mockReset();
+  });
+
   it("should generate correct type definitions and imports", () => {
+    tmpDir = makeTempDir();
+
     scanAppDir.mockReturnValue({
       pathStructure: `{ home: ${TYPE_END_POINT}, user: { id: ${TYPE_KEY_PARAMS} }, ${TYPE_KEY_QUERY}}`,
       imports: [
@@ -40,12 +47,15 @@ describe("generatePathStructure", () => {
         },
       ],
       paramsTypes: [
-        { paramsType: '{ "hoge": string }', dirPath: "/[hoge]/bar" },
+        {
+          paramsType: '{ "hoge": string }',
+          dirPath: path.join(tmpDir, "[hoge]", "bar"),
+        },
       ],
     });
 
-    const outputPath = "./output";
-    const baseDir = "./base";
+    const outputPath = path.join(tmpDir, "output");
+    const baseDir = path.join(tmpDir, "base");
     const { pathStructure, paramsTypes } = generatePathStructure(
       outputPath,
       baseDir,
@@ -63,20 +73,22 @@ describe("generatePathStructure", () => {
     expect(paramsTypes).toStrictEqual([
       {
         paramsType: 'export type Params = { "hoge": string };',
-        dirPath: "/[hoge]/bar",
+        dirPath: path.join(tmpDir, "[hoge]", "bar"),
       },
     ]);
   });
 
   it("should handle cases with no imports", () => {
+    tmpDir = makeTempDir();
+
     scanAppDir.mockReturnValue({
       pathStructure: `{ dashboard: ${TYPE_END_POINT} }`,
       imports: [],
       paramsTypes: [],
     });
 
-    const outputPath = "./output";
-    const baseDir = "./base";
+    const outputPath = path.join(tmpDir, "output");
+    const baseDir = path.join(tmpDir, "base");
     const { pathStructure, paramsTypes } = generatePathStructure(
       outputPath,
       baseDir,

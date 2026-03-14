@@ -18,9 +18,9 @@ export type PathStructure = Endpoint & {
   },
   "feed": Endpoint,
   "patterns": Endpoint & {
+    "reports": Endpoint,
     "%5Fescaped": Endpoint,
     "%E3%81%ZZ": Endpoint,
-    "reports": Endpoint,
     "catch-all": {
       "___parts": Endpoint & Record<ParamsKey, { "parts": string[] }>
     },
