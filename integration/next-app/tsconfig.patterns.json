@@ -2,6 +2,7 @@
   "extends": "./tsconfig.json",
   "include": [
     "rpc4next-shared-shim.d.ts",
-    "src/pattern-coverage.test.ts"
+    "src/pattern-coverage.test.ts",
+    "src/rpc-types.test.ts"
   ]
 }
