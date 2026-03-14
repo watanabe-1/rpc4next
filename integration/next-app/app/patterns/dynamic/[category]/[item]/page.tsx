@@ -1,8 +1,7 @@
+import type { Params } from "./params";
+
 type NestedDynamicPatternPageProps = {
-  params: Promise<{
-    category: string;
-    item: string;
-  }>;
+  params: Promise<Params>;
 };
 
 export default async function NestedDynamicPatternPage({

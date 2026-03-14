@@ -1,7 +1,7 @@
+import type { Params } from "./params";
+
 type DynamicPatternPageProps = {
-  params: Promise<{
-    slug: string;
-  }>;
+  params: Promise<Params>;
 };
 
 export default async function DynamicPatternPage({

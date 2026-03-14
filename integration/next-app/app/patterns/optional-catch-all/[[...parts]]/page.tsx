@@ -1,7 +1,7 @@
+import type { Params } from "./params";
+
 type OptionalCatchAllPatternPageProps = {
-  params: Promise<{
-    parts?: string[];
-  }>;
+  params: Promise<Params>;
 };
 
 export default async function OptionalCatchAllPatternPage({

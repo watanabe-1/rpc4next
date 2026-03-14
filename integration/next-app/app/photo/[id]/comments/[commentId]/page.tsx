@@ -1,8 +1,7 @@
+import type { Params } from "./params";
+
 type PhotoCommentPageProps = {
-  params: Promise<{
-    commentId: string;
-    id: string;
-  }>;
+  params: Promise<Params>;
 };
 
 export default async function PhotoCommentPage({
