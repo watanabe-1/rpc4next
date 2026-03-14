@@ -151,6 +151,16 @@ describe("matchPath", () => {
       const matcher = matchPath(paths, dynamicKeys);
       expect(matcher("/users")).toBeNull();
     });
+
+    it("matches decoded static underscore segments from encoded DSL keys", () => {
+      const matcher = matchPath(["/", "patterns", "%5Fescaped"], []);
+
+      expect(matcher("/patterns/_escaped")).toEqual({
+        params: {},
+        query: {},
+        hash: undefined,
+      });
+    });
   });
 
   describe("Query and hash support", () => {

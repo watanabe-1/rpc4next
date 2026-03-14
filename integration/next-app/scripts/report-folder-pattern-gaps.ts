@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 type PatternStatus = "covered" | "fixture-only" | "missing";
 
@@ -11,7 +12,10 @@ type PatternReport = {
   status: PatternStatus;
 };
 
-const workspaceRoot = path.resolve(import.meta.dir, "..");
+const workspaceRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+);
 const generatedRpcPath = path.join(workspaceRoot, "src/generated/rpc.ts");
 const generatedRpc = fs.readFileSync(generatedRpcPath, "utf8");
 
@@ -72,9 +76,9 @@ const patternReports: PatternReport[] = [
     docsUrl:
       "https://nextjs.org/docs/app/building-your-application/routing/colocation",
     note: generatedRpc.includes('"%5Fescaped"')
-      ? "Generator keeps the encoded folder name instead of exposing `_escaped`."
-      : "Escaped underscore segment is represented without the encoded folder name.",
-    status: generatedRpc.includes('"%5Fescaped"') ? "missing" : "covered",
+      ? "Escaped underscore segment preserves its encoded DSL key while routing to `/_escaped`."
+      : "Generator does not preserve the encoded folder name for the escaped underscore segment.",
+    status: generatedRpc.includes('"%5Fescaped"') ? "covered" : "missing",
   },
   {
     id: "intercepting-routes",

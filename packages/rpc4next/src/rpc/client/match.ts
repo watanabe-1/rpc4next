@@ -1,6 +1,5 @@
 import { searchParamsToObject } from "../lib/search-params";
 import { isCatchAllOrOptional } from "./client-utils";
-import { replaceDynamicSegments } from "./url";
 
 type ParamValue = string | string[] | undefined;
 
@@ -38,38 +37,7 @@ function safeDecode(value: string | undefined | null): string | undefined {
   }
 }
 
-/**
- * Normalize path segments into a canonical base path string.
- *
- * This function:
- * - Joins the given segments with `/`
- * - Collapses duplicate slashes into a single `/`
- * - Ensures **exactly one leading slash**
- * - Removes any trailing slash (except when the result is the root path)
- * - Returns `/` if the normalized result would otherwise be empty
- *
- * @example
- * ```ts
- * normalizeBasePath(["api", "v1", "users"]);
- * // "/api/v1/users"
- *
- * normalizeBasePath(["/api/", "/v1/", "users/"]);
- * // "/api/v1/users"
- *
- * normalizeBasePath([]);
- * // "/"
- * ```
- *
- * @param segments - Path segments to be combined into a base path.
- * @returns A normalized base path starting with a single `/` and without a trailing slash (unless root).
- */
-const normalizeBasePath = (segments: string[]): string => {
-  // Join with '/', ensure exactly one leading slash and no trailing slash.
-  const joined = segments.join("/").replace(/\/+/g, "/");
-  const withLeading = joined.startsWith("/") ? joined : `/${joined}`;
-
-  return withLeading.replace(/\/+$/, "") || "/";
-};
+const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /**
  * Match a URL (string) against a pre-defined path pattern array.
@@ -77,15 +45,26 @@ const normalizeBasePath = (segments: string[]): string => {
  * @param dynamicKeys keys in the same order the capturing groups appear
  */
 export const matchPath = (paths: string[], dynamicKeys: string[]) => {
-  // Build a normalized base path like "/users/_id"
-  const basePath = normalizeBasePath(paths);
+  const normalizedSegments = paths
+    .map((segment) => segment.replace(/^\/+|\/+$/g, ""))
+    .filter(Boolean);
+  const regexPattern =
+    normalizedSegments.length === 0
+      ? "/"
+      : normalizedSegments.reduce((acc, segment) => {
+          if (!dynamicKeys.includes(segment)) {
+            return `${acc}/${escapeRegex(safeDecode(segment) ?? segment)}`;
+          }
 
-  // Build a regex pattern, plugging in capture groups for dynamic segments
-  const regexPattern = replaceDynamicSegments(basePath, {
-    optionalCatchAll: "(?:/(.*))?", // group captures inner (.*) if present
-    catchAll: "/([^/]+(?:/[^/]+)*)", // group for ".../a/b/c"
-    dynamic: "/([^/]+)", // group for "[id]"
-  });
+          if (segment.startsWith("_____")) {
+            return `${acc}(?:/(.*))?`;
+          }
+          if (segment.startsWith("___")) {
+            return `${acc}/([^/]+(?:/[^/]+)*)`;
+          }
+
+          return `${acc}/([^/]+)`;
+        }, "");
 
   // Precompile matcher: allow optional trailing slash
   const matcher = new RegExp(`^${regexPattern}(?:/)?$`);

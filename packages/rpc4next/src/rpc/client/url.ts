@@ -100,6 +100,35 @@ export const replaceDynamicSegments = (
     // dynamic
     .replace(/\/_(\w+)/g, replacements.dynamic);
 
+const safeDecodeSegment = (value: string) => {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+};
+
+const buildPathFromSegments = (segments: string[]) => {
+  const joined = segments.join("/");
+  const withLeadingSlash = joined ? `/${joined}` : "/";
+
+  return withLeadingSlash.replace(/\/+/g, "/").replace(/\/+$/, "") || "/";
+};
+
+const getPathnameSegment = (segment: string) => {
+  if (segment.startsWith("_____")) {
+    return `[[...${segment.slice(5)}]]`;
+  }
+  if (segment.startsWith("___")) {
+    return `[...${segment.slice(3)}]`;
+  }
+  if (segment.startsWith("_")) {
+    return `[${segment.slice(1)}]`;
+  }
+
+  return safeDecodeSegment(segment);
+};
+
 /**
  * Creates a URL builder for a route definition.
  *
@@ -150,7 +179,11 @@ export const createUrl = (
   dynamicKeys: string[],
 ) => {
   const baseUrl = paths.shift();
-  const basePath = `/${paths.join("/")}`;
+  const basePath = buildPathFromSegments(
+    paths.map((segment) =>
+      dynamicKeys.includes(segment) ? segment : safeDecodeSegment(segment),
+    ),
+  );
 
   const dynamicPath = dynamicKeys.reduce((acc, key) => {
     const param = params[key];
@@ -171,11 +204,7 @@ export const createUrl = (
 
   return (url?: UrlOptions) => {
     const relativePath = `${dynamicPath}${buildUrlSuffix(url)}`;
-    const pathname = replaceDynamicSegments(basePath, {
-      optionalCatchAll: "/[[...$1]]",
-      catchAll: "/[...$1]",
-      dynamic: "/[$1]",
-    });
+    const pathname = buildPathFromSegments(paths.map(getPathnameSegment));
 
     const cleanedParams: FuncParams = {};
     for (const key in params) {

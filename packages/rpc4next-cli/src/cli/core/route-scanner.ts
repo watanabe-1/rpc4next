@@ -61,7 +61,9 @@ const stripInterceptingSegmentPrefix = (entryName: string): string => {
 
 const decodeStaticSegment = (entryName: string): string => {
   try {
-    return decodeURIComponent(entryName);
+    const decoded = decodeURIComponent(entryName);
+
+    return decoded.startsWith("_") ? entryName : decoded;
   } catch {
     return entryName;
   }
