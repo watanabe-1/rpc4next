@@ -12,6 +12,12 @@ This workspace intentionally resolves `rpc4next` imports to the monorepo source 
 Generated files are committed in this workspace so CLI output diffs are reviewable in Git, including `src/generated/rpc.ts` and `app/**/params.ts`.
 The local `rpc4next.config.json` keeps the generator command short by pinning `baseDir`, `outputPath`, and `paramsFile`.
 
+## Development workflow
+
+If a change touches route scanning, generated client shape, params generation, or integration fixture routes under `app/**`, run `bun run integration:next-app:generate` and review the committed generated diffs.
+
+This workspace is intended to make scanner and runtime regressions visible in Git. Avoid hand-editing `src/generated/rpc.ts` or `app/**/params.ts` unless the task is specifically about generator output.
+
 ## App folder pattern coverage
 
 This workspace now includes fixture routes for the official `app` directory folder conventions documented by Next.js:

@@ -8,6 +8,18 @@ Inspired by Hono RPC and Pathpida, **rpc4next** automatically generates a type-s
 
 ---
 
+## Development Notes
+
+This repository is a monorepo.
+
+- `packages/rpc4next` contains the runtime client/server helpers.
+- `packages/rpc4next-cli` contains the Next.js scanner and type generator.
+- `integration/next-app` is the real end-to-end fixture app used to verify generated artifacts, runtime behavior, and browser usage together.
+
+When a change affects scanner behavior, generated path structure output, params generation, or integration fixture routes, regenerate the integration artifacts and review those diffs as part of the change.
+
+---
+
 ## ✨ Features
 
 - ✅ ルート、パラメータ、クエリパラメータ、 リクエストボディ、レスポンスの型安全なクライアント生成
