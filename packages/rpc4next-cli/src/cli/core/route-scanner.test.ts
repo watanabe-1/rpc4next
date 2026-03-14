@@ -473,7 +473,13 @@ describe("route-scanner", () => {
 }`);
       expect(paramsTypes).toStrictEqual([
         {
-          dirPath: tmpPosixPath("testApp", "group", "(user)", "(.)modal", "[id]"),
+          dirPath: tmpPosixPath(
+            "testApp",
+            "group",
+            "(user)",
+            "(.)modal",
+            "[id]",
+          ),
           paramsType: '{ "id": string }',
         },
       ]);
