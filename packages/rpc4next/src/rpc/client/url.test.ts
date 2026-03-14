@@ -193,4 +193,23 @@ describe("createUrl", () => {
     expect(result.path).toBe("https://example.com/patterns/_escaped");
     expect(result.pathname).toBe("/patterns/_escaped");
   });
+
+  it("keeps malformed encoded static segments as raw values", () => {
+    const paths = ["https://example.com", "patterns", "%E3%81%ZZ"];
+    const urlGenerator = createUrl(paths, {}, []);
+    const result = urlGenerator();
+
+    expect(result.relativePath).toBe("/patterns/%E3%81%ZZ");
+    expect(result.path).toBe("https://example.com/patterns/%E3%81%ZZ");
+    expect(result.pathname).toBe("/patterns/%E3%81%ZZ");
+  });
+
+  it("builds the root path when there are no route segments", () => {
+    const urlGenerator = createUrl(["https://example.com"], {}, []);
+    const result = urlGenerator();
+
+    expect(result.relativePath).toBe("/");
+    expect(result.path).toBe("https://example.com/");
+    expect(result.pathname).toBe("/");
+  });
 });

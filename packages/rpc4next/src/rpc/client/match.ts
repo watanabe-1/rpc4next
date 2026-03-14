@@ -54,7 +54,7 @@ export const matchPath = (paths: string[], dynamicKeys: string[]) => {
       ? "/"
       : normalizedSegments.reduce((acc, segment) => {
           if (!dynamicKeys.includes(segment)) {
-            return `${acc}/${escapeRegex(safeDecode(segment) ?? segment)}`;
+            return `${acc}/${escapeRegex(safeDecode(segment))}`;
           }
 
           if (segment.startsWith("_____")) {

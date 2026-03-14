@@ -161,6 +161,16 @@ describe("matchPath", () => {
         hash: undefined,
       });
     });
+
+    it("matches malformed encoded static segments using the raw segment as fallback", () => {
+      const matcher = matchPath(["/", "patterns", "%E3%81%ZZ"], []);
+
+      expect(matcher("/patterns/%E3%81%ZZ")).toEqual({
+        params: {},
+        query: {},
+        hash: undefined,
+      });
+    });
   });
 
   describe("Query and hash support", () => {
