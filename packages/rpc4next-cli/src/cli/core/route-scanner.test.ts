@@ -444,6 +444,41 @@ describe("route-scanner", () => {
 }`);
     });
 
+    it("should ignore grouped-route children that resolve to an empty path structure", () => {
+      setupTree({
+        testApp: {
+          group: {
+            "(user)": {
+              "(.)modal": {
+                "[id]": {
+                  "page.tsx": "export function Modal() {};",
+                },
+              },
+            },
+            base: {
+              "page.tsx": "export function Base() {};",
+            },
+          },
+        },
+      });
+
+      const { pathStructure, paramsTypes } = scanAppDir(
+        tmpPath("output"),
+        tmpPath("testApp"),
+      );
+      expect(pathStructure).equals(`{
+  "group": {
+    "base": Endpoint
+  }
+}`);
+      expect(paramsTypes).toStrictEqual([
+        {
+          dirPath: tmpPosixPath("testApp", "group", "(user)", "(.)modal", "[id]"),
+          paramsType: '{ "id": string }',
+        },
+      ]);
+    });
+
     it("should throw when grouped route child path structure is empty", () => {
       setupTree({
         testApp: {
