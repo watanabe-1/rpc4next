@@ -1,150 +1,224 @@
-import mock from "mock-fs";
+import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  cleanupTempDir,
+  type FsTreeDirectory,
+  makeTempDir,
+  resetTempDir,
+  writeTree,
+} from "../../test-helpers/tmp-dir.js";
 import type { ImportAliasName } from "./alias.js";
 import {
   clearScanAppDirCacheAbove,
   scanAppDirCache,
   visitedDirsCache,
 } from "./cache.js";
+import { toPosixPath } from "./path-utils.js";
 import { hasTargetFiles, scanAppDir } from "./route-scanner.js";
 
 vi.mock("./alias.js", () => ({
   createImportAlias: vi.fn(
-    (_path: string, name: ImportAliasName) => `${name}_asmocked`,
+    (_inputPath: string, name: ImportAliasName) => `${name}_asmocked`,
   ),
 }));
 
-// ----------------------
-// Test for hasTargetFiles
-// ----------------------
-describe("hasTargetFiles", () => {
-  beforeEach(() => {
-    // Prepare mock file system
-    mock({
-      "/testDir": {
-        "file1.ts": "console.log('test');",
-        nonapi: {
+describe("route-scanner", () => {
+  let tmpDir: string | null = null;
+
+  const setupTree = (tree: FsTreeDirectory) => {
+    tmpDir = makeTempDir();
+    writeTree(tmpDir, tree);
+
+    return tmpDir;
+  };
+
+  const resetTree = (tree: FsTreeDirectory) => {
+    if (!tmpDir) {
+      throw new Error("tmpDir is not initialized");
+    }
+
+    resetTempDir(tmpDir, tree);
+  };
+
+  const tmpPath = (...parts: string[]) => {
+    if (!tmpDir) {
+      throw new Error("tmpDir is not initialized");
+    }
+
+    return path.join(tmpDir, ...parts);
+  };
+
+  const tmpPosixPath = (...parts: string[]) => toPosixPath(tmpPath(...parts));
+
+  const requireTmpDir = () => {
+    if (!tmpDir) {
+      throw new Error("tmpDir is not initialized");
+    }
+
+    return tmpDir;
+  };
+
+  afterEach(() => {
+    cleanupTempDir(tmpDir);
+    tmpDir = null;
+    scanAppDirCache.clear();
+    visitedDirsCache.clear();
+  });
+
+  describe("hasTargetFiles", () => {
+    it("should return true if directory contains endpoint files", () => {
+      setupTree({
+        testDir: {
+          "file1.ts": "console.log('test');",
+          nonapi: {
+            "test.ts": "console.log('test');",
+          },
+          api: {
+            "route.ts": "export default function handler() {};",
+          },
+        },
+        testDir2: {
           "test.ts": "console.log('test');",
         },
-        api: {
-          "route.ts": "export default function handler() {};",
-        },
-      },
-      "/testDir2": {
-        "test.ts": "console.log('test');",
-      },
-      "/except": {
-        intercepts: {
-          "(.)intercept": {
-            home: {
-              "page.tsx": "export function Home() {};",
+        except: {
+          intercepts: {
+            "(.)intercept": {
+              home: {
+                "page.tsx": "export function Home() {};",
+              },
+            },
+            "(..)intercept": {
+              home: {
+                "page.tsx": "export function Home() {};",
+              },
+            },
+            "(..)(..)intercept": {
+              home: {
+                "page.tsx": "export function Home() {};",
+              },
+            },
+            "(...)intercept": {
+              home: {
+                "page.tsx": "export function Home() {};",
+              },
             },
           },
-          "(..)intercept": {
-            home: {
-              "page.tsx": "export function Home() {};",
+          private: {
+            _components: {
+              home: {
+                "page.tsx": "export function Home() {};",
+              },
             },
           },
-          "(..)(..)intercept": {
-            home: {
-              "page.tsx": "export function Home() {};",
-            },
-          },
-          "(...)intercept": {
-            home: {
-              "page.tsx": "export function Home() {};",
-            },
-          },
-        },
-        private: {
-          _components: {
-            home: {
-              "page.tsx": "export function Home() {};",
-            },
-          },
-        },
-        node: {
-          node_modules: {
-            home: {
-              "page.tsx": "export function Home() {};",
+          node: {
+            node_modules: {
+              home: {
+                "page.tsx": "export function Home() {};",
+              },
             },
           },
         },
-      },
+      });
+
+      expect(hasTargetFiles(tmpPath("testDir", "api"))).toBe(true);
+    });
+
+    it("should return false if directory does not contain endpoint files", () => {
+      setupTree({
+        testDir: {
+          "file1.ts": "console.log('test');",
+          nonapi: {
+            "test.ts": "console.log('test');",
+          },
+        },
+        testDir2: {
+          "test.ts": "console.log('test');",
+        },
+      });
+
+      expect(hasTargetFiles(tmpPath("testDir2"))).toBe(false);
+      expect(hasTargetFiles(tmpPath("testDir", "nonapi"))).toBe(false);
+    });
+
+    it("should traverse intercepting directories to find endpoint files", () => {
+      setupTree({
+        except: {
+          intercepts: {
+            "(.)intercept": {
+              home: {
+                "page.tsx": "export function Home() {};",
+              },
+            },
+            "(..)intercept": {
+              home: {
+                "page.tsx": "export function Home() {};",
+              },
+            },
+            "(..)(..)intercept": {
+              home: {
+                "page.tsx": "export function Home() {};",
+              },
+            },
+            "(...)intercept": {
+              home: {
+                "page.tsx": "export function Home() {};",
+              },
+            },
+          },
+          private: {
+            _components: {
+              home: {
+                "page.tsx": "export function Home() {};",
+              },
+            },
+          },
+          node: {
+            node_modules: {
+              home: {
+                "page.tsx": "export function Home() {};",
+              },
+            },
+          },
+        },
+      });
+
+      expect(hasTargetFiles(tmpPath("except", "intercepts"))).toBe(true);
+      expect(
+        hasTargetFiles(tmpPath("except", "intercepts", "(.)intercept")),
+      ).toBe(true);
+      expect(hasTargetFiles(tmpPath("except", "private"))).toBe(false);
+      expect(hasTargetFiles(tmpPath("except", "node"))).toBe(false);
+    });
+
+    it("should ignore private children without hiding public routes in the same directory", () => {
+      setupTree({
+        mixed: {
+          _private: {
+            hidden: {
+              "page.tsx": "export function Hidden() {};",
+            },
+          },
+          public: {
+            "page.tsx": "export function Public() {};",
+          },
+        },
+      });
+
+      expect(hasTargetFiles(tmpPath("mixed"))).toBe(true);
+      expect(hasTargetFiles(tmpPath("mixed", "_private"))).toBe(false);
+      expect(hasTargetFiles(tmpPath("mixed", "public"))).toBe(true);
     });
   });
 
-  afterEach(() => {
-    // Restore original file system after each test
-    mock.restore();
-  });
-
-  it("should return true if directory contains endpoint files", () => {
-    const result = hasTargetFiles("/testDir/api");
-    expect(result).toBe(true);
-  });
-
-  it("should return false if directory does not contain endpoint files", () => {
-    const result = hasTargetFiles("/testDir2");
-    expect(result).toBe(false);
-
-    const result2 = hasTargetFiles("/testDir/nonapi");
-    expect(result2).toBe(false);
-  });
-
-  it("should traverse intercepting directories to find endpoint files", () => {
-    const result = hasTargetFiles("/except/intercepts");
-    expect(result).toBe(true);
-
-    const childResult = hasTargetFiles("/except/intercepts/(.)intercept");
-    expect(childResult).toBe(true);
-
-    const result2 = hasTargetFiles("/except/private");
-    expect(result2).toBe(false);
-
-    const result3 = hasTargetFiles("/except/node");
-    expect(result3).toBe(false);
-  });
-
-  it("should ignore private children without hiding public routes in the same directory", () => {
-    mock({
-      "/mixed": {
-        _private: {
-          hidden: {
-            "page.tsx": "export function Hidden() {};",
-          },
-        },
-        public: {
-          "page.tsx": "export function Public() {};",
-        },
-      },
-    });
-
-    expect(hasTargetFiles("/mixed")).toBe(true);
-    expect(hasTargetFiles("/mixed/_private")).toBe(false);
-    expect(hasTargetFiles("/mixed/public")).toBe(true);
-  });
-});
-
-// ----------------------
-// Test for scanAppDir
-// ----------------------
-describe("scanAppDir", () => {
-  afterEach(() => {
-    // Cleanup
-    mock.restore();
-    scanAppDirCache.clear();
-  });
-
-  it("should scan API directory and generate path structure with multiple HTTP methods, excluding OPTIONS", () => {
-    // Setup API directory with multiple HTTP methods including OPTIONS
-    mock({
-      "/testApp": {
-        api: {
-          users: {
-            "index.ts": "console.log('test');",
-            "[id]": {
-              "route.ts": `
+  describe("scanAppDir", () => {
+    it("should scan API directory and generate path structure with multiple HTTP methods, excluding OPTIONS", () => {
+      setupTree({
+        testApp: {
+          api: {
+            users: {
+              "index.ts": "console.log('test');",
+              "[id]": {
+                "route.ts": `
                 export function GET() {};
                 export function POST() {};
                 export function PUT() {};
@@ -153,150 +227,117 @@ describe("scanAppDir", () => {
                 export function HEAD() {};
                 export function OPTIONS() {}; // Should be ignored
               `,
+              },
             },
           },
         },
-      },
-    });
+      });
 
-    // Expected path structure
-    const expectPathStructure = `{
+      const { pathStructure, imports, paramsTypes } = scanAppDir(
+        tmpPath("output"),
+        tmpPath("testApp"),
+      );
+
+      expect(pathStructure).equals(`{
   "api": {
     "users": {
       "_id": { "$get": typeof GET_asmocked } & { "$head": typeof HEAD_asmocked } & { "$post": typeof POST_asmocked } & { "$put": typeof PUT_asmocked } & { "$delete": typeof DELETE_asmocked } & { "$patch": typeof PATCH_asmocked } & Endpoint & Record<ParamsKey, { "id": string }>
     }
   }
-}`;
-    const { pathStructure, imports, paramsTypes } = scanAppDir(
-      "/output",
-      "/testApp",
-    );
+}`);
+      expect(imports).toHaveLength(6);
 
-    expect(pathStructure).equals(expectPathStructure);
-
-    // Should import 6 methods excluding OPTIONS
-    expect(imports).toHaveLength(6);
-
-    const expectedImports = [
-      {
-        statement:
-          'import type { GET as GET_asmocked } from "./testApp/api/users/[id]/route";',
-        method: "GET",
-      },
-      {
-        statement:
-          'import type { HEAD as HEAD_asmocked } from "./testApp/api/users/[id]/route";',
-        method: "HEAD",
-      },
-      {
-        statement:
-          'import type { POST as POST_asmocked } from "./testApp/api/users/[id]/route";',
-        method: "POST",
-      },
-      {
-        statement:
-          'import type { PUT as PUT_asmocked } from "./testApp/api/users/[id]/route";',
-        method: "PUT",
-      },
-      {
-        statement:
-          'import type { DELETE as DELETE_asmocked } from "./testApp/api/users/[id]/route";',
-        method: "DELETE",
-      },
-      {
-        statement:
-          'import type { PATCH as PATCH_asmocked } from "./testApp/api/users/[id]/route";',
-        method: "PATCH",
-      },
-    ];
-
-    expectedImports.forEach(({ statement }, i) => {
-      expect(imports[i].statement).equals(statement);
-    });
-
-    expect(imports.every((imp) => !imp.statement.includes("OPTIONS"))).toBe(
-      true,
-    );
-
-    // Parameter types
-    expect(paramsTypes).toHaveLength(1);
-
-    const expectedParamsTypes = [
-      {
-        paramsType: '{ "id": string }',
-        dirPath: "/testApp/api/users/[id]",
-      },
-    ];
-
-    expectedParamsTypes.forEach((paramsType, i) => {
-      expect(paramsTypes[i]).toStrictEqual(paramsType);
-    });
-  });
-
-  it("should scan page directory and generate path structure with dynamic segment", () => {
-    // Setup dynamic segment
-    mock({
-      "/testApp": {
-        page: {
-          "[user]": {
-            home: {
-              "page.tsx": "export function Home() {};",
-            },
-          },
+      const expectedImports = [
+        'import type { GET as GET_asmocked } from "./testApp/api/users/[id]/route";',
+        'import type { HEAD as HEAD_asmocked } from "./testApp/api/users/[id]/route";',
+        'import type { POST as POST_asmocked } from "./testApp/api/users/[id]/route";',
+        'import type { PUT as PUT_asmocked } from "./testApp/api/users/[id]/route";',
+        'import type { DELETE as DELETE_asmocked } from "./testApp/api/users/[id]/route";',
+        'import type { PATCH as PATCH_asmocked } from "./testApp/api/users/[id]/route";',
+      ];
+      expectedImports.forEach((statement, i) => {
+        expect(imports[i].statement).equals(statement);
+      });
+      expect(imports.every((imp) => !imp.statement.includes("OPTIONS"))).toBe(
+        true,
+      );
+      expect(paramsTypes).toStrictEqual([
+        {
+          paramsType: '{ "id": string }',
+          dirPath: tmpPosixPath("testApp", "api", "users", "[id]"),
         },
-      },
+      ]);
     });
 
-    const expectPathStructure = `{
-  "page": {
-    "_user": {
-      "home": Endpoint & Record<ParamsKey, { "user": string }>
-    }
-  }
-}`;
-    const { pathStructure } = scanAppDir("/output", "/testApp");
-    expect(pathStructure).equals(expectPathStructure);
-  });
-
-  it("should generate path structure with query type", () => {
-    // Setup page containing a Query type
-    mock({
-      "/testApp": {
-        query: {
-          home: {
-            "page.tsx":
-              "export type Query = {query : string;} export function Home() {};",
-          },
-        },
-      },
-    });
-
-    const expectPathStructure = `{
-  "query": {
-    "home": Record<QueryKey, Query_asmocked> & Endpoint
-  }
-}`;
-    const { pathStructure } = scanAppDir("/output", "/testApp");
-    expect(pathStructure).equals(expectPathStructure);
-  });
-
-  it("should scan directory with multiple dynamic segments and generate path structure", () => {
-    // Setup multiple dynamic segments
-    mock({
-      "/testApp": {
-        dynamic: {
-          "[user]": {
-            "[id]": {
+    it("should scan page directory and generate path structure with dynamic segment", () => {
+      setupTree({
+        testApp: {
+          page: {
+            "[user]": {
               home: {
                 "page.tsx": "export function Home() {};",
               },
             },
           },
         },
-      },
+      });
+
+      const { pathStructure } = scanAppDir(
+        tmpPath("output"),
+        tmpPath("testApp"),
+      );
+      expect(pathStructure).equals(`{
+  "page": {
+    "_user": {
+      "home": Endpoint & Record<ParamsKey, { "user": string }>
+    }
+  }
+}`);
     });
 
-    const expectPathStructure = `{
+    it("should generate path structure with query type", () => {
+      setupTree({
+        testApp: {
+          query: {
+            home: {
+              "page.tsx":
+                "export type Query = {query : string;} export function Home() {};",
+            },
+          },
+        },
+      });
+
+      const { pathStructure } = scanAppDir(
+        tmpPath("output"),
+        tmpPath("testApp"),
+      );
+      expect(pathStructure).equals(`{
+  "query": {
+    "home": Record<QueryKey, Query_asmocked> & Endpoint
+  }
+}`);
+    });
+
+    it("should scan directory with multiple dynamic segments and generate path structure", () => {
+      setupTree({
+        testApp: {
+          dynamic: {
+            "[user]": {
+              "[id]": {
+                home: {
+                  "page.tsx": "export function Home() {};",
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const { pathStructure } = scanAppDir(
+        tmpPath("output"),
+        tmpPath("testApp"),
+      );
+      expect(pathStructure).equals(`{
   "dynamic": {
     "_user": {
       "_id": {
@@ -304,776 +345,764 @@ describe("scanAppDir", () => {
       }
     }
   }
-}`;
-    const { pathStructure } = scanAppDir("/output", "/testApp");
-    expect(pathStructure).equals(expectPathStructure);
-  });
+}`);
+    });
 
-  it("should scan directory with catch-all routes and generate path structure", () => {
-    // Setup catch-all routes
-    mock({
-      "/testApp": {
-        catchAll: {
-          "[user]": {
-            "[...names]": {
-              "page.tsx": "export function UserName() {};",
+    it("should scan directory with catch-all routes and generate path structure", () => {
+      setupTree({
+        testApp: {
+          catchAll: {
+            "[user]": {
+              "[...names]": {
+                "page.tsx": "export function UserName() {};",
+              },
             },
           },
         },
-      },
-    });
+      });
 
-    const expectPathStructure = `{
+      const { pathStructure } = scanAppDir(
+        tmpPath("output"),
+        tmpPath("testApp"),
+      );
+      expect(pathStructure).equals(`{
   "catchAll": {
     "_user": {
       "___names": Endpoint & Record<ParamsKey, { "user": string; "names": string[]; }>
     }
   }
-}`;
-    const { pathStructure } = scanAppDir("/output", "/testApp");
-    expect(pathStructure).equals(expectPathStructure);
-  });
+}`);
+    });
 
-  it("should scan directory with optional catch-all routes and generate path structure", () => {
-    // Setup optional catch-all routes
-    mock({
-      "/testApp": {
-        OptionalCatchAll: {
-          user: {
-            "[[...names]]": {
-              "page.tsx": "export function UserName() {};",
+    it("should scan directory with optional catch-all routes and generate path structure", () => {
+      setupTree({
+        testApp: {
+          OptionalCatchAll: {
+            user: {
+              "[[...names]]": {
+                "page.tsx": "export function UserName() {};",
+              },
             },
           },
         },
-      },
-    });
+      });
 
-    const expectPathStructure = `{
+      const { pathStructure } = scanAppDir(
+        tmpPath("output"),
+        tmpPath("testApp"),
+      );
+      expect(pathStructure).equals(`{
   "OptionalCatchAll": {
     "user": {
       "_____names": Endpoint & Record<ParamsKey, { "names": string[] | undefined }>
     }
   }
-}`;
-    const { pathStructure } = scanAppDir("/output", "/testApp");
-    expect(pathStructure).equals(expectPathStructure);
-  });
-
-  it("should scan directory with grouped routes and generate path structure", () => {
-    // Setup grouped routes
-    mock({
-      "/testApp": {
-        group: {
-          "(user)": {
-            home: {
-              "page.tsx": "export function Home() {};",
-            },
-          },
-        },
-      },
+}`);
     });
 
-    const expectPathStructure = `{
-  "group": {
-    "home": Endpoint
-  }
-}`;
-    const { pathStructure } = scanAppDir("/output", "/testApp");
-    expect(pathStructure).equals(expectPathStructure);
-  });
-
-  it("should ignore non-object child path structure for grouped routes", () => {
-    mock({
-      "/testApp": {
-        group: {
-          "(user)": {
-            "page.tsx": "export function Home() {};",
-          },
-        },
-      },
-    });
-
-    const expectPathStructure = `{
-  "group": Endpoint
-}`;
-    const { pathStructure } = scanAppDir("/output", "/testApp");
-    expect(pathStructure).equals(expectPathStructure);
-  });
-
-  it("should throw when grouped route child path structure is empty", () => {
-    mock({
-      "/testApp": {
-        group: {
-          "(user)": {
-            "page.tsx": "export function Home() {};",
-          },
-        },
-      },
-    });
-
-    // Force grouped child scan result to be empty so the falsy branch is covered.
-    visitedDirsCache.set("/testApp/group/(user)", true);
-    scanAppDirCache.set("/testApp/group/(user)", {
-      pathStructure: "   ",
-      imports: [],
-      paramsTypes: [],
-    });
-
-    expect(() => scanAppDir("/output", "/testApp")).toThrow(
-      "Invalid empty child path structure in grouped/parallel route: /testApp/group/(user)",
-    );
-  });
-
-  it("should scan directory with parallel routes and generate path structure", () => {
-    // Setup parallel routes
-    mock({
-      "/testApp": {
-        parallel: {
-          "@user": {
-            home: {
-              "page.tsx": "export function Home() {};",
-            },
-          },
-        },
-      },
-    });
-
-    const expectPathStructure = `{
-  "parallel": {
-    "home": Endpoint
-  }
-}`;
-    const { pathStructure } = scanAppDir("/output", "/testApp");
-    expect(pathStructure).equals(expectPathStructure);
-  });
-
-  it("should scan intercepting routes for params types without changing path structure", () => {
-    // Setup intercepting routes
-    mock({
-      "/testApp": {
-        intercepts: {
-          "(.)intercept": {
-            "[id]": {
-              "page.tsx": "export function Home() {};",
-            },
-          },
-          "(..)intercept": {
-            nested: {
-              "[slug]": {
-                "page.tsx": "export function Nested() {};",
+    it("should scan directory with grouped routes and generate path structure", () => {
+      setupTree({
+        testApp: {
+          group: {
+            "(user)": {
+              home: {
+                "page.tsx": "export function Home() {};",
               },
             },
           },
-          "(..)(..)intercept": {
-            "[...parts]": {
-              "page.tsx": "export function CatchAll() {};",
-            },
-          },
-          "(...)intercept": {
-            "[[...optionalParts]]": {
-              "page.tsx": "export function OptionalCatchAll() {};",
-            },
-          },
         },
-        base: { "page.tsx": "export function Base() {};" },
-      },
+      });
+
+      const { pathStructure } = scanAppDir(
+        tmpPath("output"),
+        tmpPath("testApp"),
+      );
+      expect(pathStructure).equals(`{
+  "group": {
+    "home": Endpoint
+  }
+}`);
     });
 
-    const expectPathStructure = `{
-  "base": Endpoint
-}`;
-    const { pathStructure, paramsTypes } = scanAppDir("/output", "/testApp");
-    expect(pathStructure).equals(expectPathStructure);
-    expect(paramsTypes).toStrictEqual([
-      {
-        dirPath: "/testApp/intercepts/(.)intercept/[id]",
-        paramsType: '{ "id": string }',
-      },
-      {
-        dirPath: "/testApp/intercepts/(..)(..)intercept/[...parts]",
-        paramsType: '{ "parts": string[] }',
-      },
-      {
-        dirPath: "/testApp/intercepts/(..)intercept/nested/[slug]",
-        paramsType: '{ "slug": string }',
-      },
-      {
-        dirPath: "/testApp/intercepts/(...)intercept/[[...optionalParts]]",
-        paramsType: '{ "optionalParts": string[] | undefined }',
-      },
-    ]);
-  });
-
-  it("should scan private directory and generate path structure", () => {
-    // Setup private directory
-    mock({
-      "/testApp": {
-        private: {
-          _components: {
-            home: {
+    it("should ignore non-object child path structure for grouped routes", () => {
+      setupTree({
+        testApp: {
+          group: {
+            "(user)": {
               "page.tsx": "export function Home() {};",
             },
           },
         },
-        base: { "page.tsx": "export function Base() {};" },
-      },
+      });
+
+      const { pathStructure } = scanAppDir(
+        tmpPath("output"),
+        tmpPath("testApp"),
+      );
+      expect(pathStructure).equals(`{
+  "group": Endpoint
+}`);
     });
 
-    const expectPathStructure = `{
-  "base": Endpoint
-}`;
-    const { pathStructure } = scanAppDir("/output", "/testApp");
-    expect(pathStructure).equals(expectPathStructure);
-  });
-
-  it("should preserve escaped underscore segments to avoid DSL key collisions", () => {
-    mock({
-      "/testApp": {
-        patterns: {
-          "%5Fescaped": {
-            "page.tsx": "export function Escaped() {};",
+    it("should throw when grouped route child path structure is empty", () => {
+      setupTree({
+        testApp: {
+          group: {
+            "(user)": {
+              "page.tsx": "export function Home() {};",
+            },
           },
         },
-      },
+      });
+
+      visitedDirsCache.set(tmpPath("testApp", "group", "(user)"), true);
+      scanAppDirCache.set(tmpPosixPath("testApp", "group", "(user)"), {
+        pathStructure: "   ",
+        imports: [],
+        paramsTypes: [],
+      });
+
+      expect(() => scanAppDir(tmpPath("output"), tmpPath("testApp"))).toThrow(
+        `Invalid empty child path structure in grouped/parallel route: ${tmpPosixPath("testApp", "group", "(user)")}`,
+      );
     });
 
-    const expectPathStructure = `{
+    it("should scan directory with parallel routes and generate path structure", () => {
+      setupTree({
+        testApp: {
+          parallel: {
+            "@user": {
+              home: {
+                "page.tsx": "export function Home() {};",
+              },
+            },
+          },
+        },
+      });
+
+      const { pathStructure } = scanAppDir(
+        tmpPath("output"),
+        tmpPath("testApp"),
+      );
+      expect(pathStructure).equals(`{
+  "parallel": {
+    "home": Endpoint
+  }
+}`);
+    });
+
+    it("should scan intercepting routes for params types without changing path structure", () => {
+      setupTree({
+        testApp: {
+          intercepts: {
+            "(.)intercept": {
+              "[id]": {
+                "page.tsx": "export function Home() {};",
+              },
+            },
+            "(..)intercept": {
+              nested: {
+                "[slug]": {
+                  "page.tsx": "export function Nested() {};",
+                },
+              },
+            },
+            "(..)(..)intercept": {
+              "[...parts]": {
+                "page.tsx": "export function CatchAll() {};",
+              },
+            },
+            "(...)intercept": {
+              "[[...optionalParts]]": {
+                "page.tsx": "export function OptionalCatchAll() {};",
+              },
+            },
+          },
+          base: { "page.tsx": "export function Base() {};" },
+        },
+      });
+
+      const { pathStructure, paramsTypes } = scanAppDir(
+        tmpPath("output"),
+        tmpPath("testApp"),
+      );
+      expect(pathStructure).equals(`{
+  "base": Endpoint
+}`);
+      expect(paramsTypes).toStrictEqual([
+        {
+          dirPath: tmpPosixPath(
+            "testApp",
+            "intercepts",
+            "(.)intercept",
+            "[id]",
+          ),
+          paramsType: '{ "id": string }',
+        },
+        {
+          dirPath: tmpPosixPath(
+            "testApp",
+            "intercepts",
+            "(..)(..)intercept",
+            "[...parts]",
+          ),
+          paramsType: '{ "parts": string[] }',
+        },
+        {
+          dirPath: tmpPosixPath(
+            "testApp",
+            "intercepts",
+            "(..)intercept",
+            "nested",
+            "[slug]",
+          ),
+          paramsType: '{ "slug": string }',
+        },
+        {
+          dirPath: tmpPosixPath(
+            "testApp",
+            "intercepts",
+            "(...)intercept",
+            "[[...optionalParts]]",
+          ),
+          paramsType: '{ "optionalParts": string[] | undefined }',
+        },
+      ]);
+    });
+
+    it("should scan private directory and generate path structure", () => {
+      setupTree({
+        testApp: {
+          private: {
+            _components: {
+              home: {
+                "page.tsx": "export function Home() {};",
+              },
+            },
+          },
+          base: { "page.tsx": "export function Base() {};" },
+        },
+      });
+
+      const { pathStructure } = scanAppDir(
+        tmpPath("output"),
+        tmpPath("testApp"),
+      );
+      expect(pathStructure).equals(`{
+  "base": Endpoint
+}`);
+    });
+
+    it("should preserve escaped underscore segments to avoid DSL key collisions", () => {
+      setupTree({
+        testApp: {
+          patterns: {
+            "%5Fescaped": {
+              "page.tsx": "export function Escaped() {};",
+            },
+          },
+        },
+      });
+
+      const { pathStructure } = scanAppDir(
+        tmpPath("output"),
+        tmpPath("testApp"),
+      );
+      expect(pathStructure).equals(`{
   "patterns": {
     "%5Fescaped": Endpoint
   }
-}`;
-    const { pathStructure } = scanAppDir("/output", "/testApp");
-    expect(pathStructure).equals(expectPathStructure);
-  });
-
-  it("should keep the original segment name when decodeURIComponent fails", () => {
-    mock({
-      "/testApp": {
-        patterns: {
-          "%E0%A4%A": {
-            "page.tsx": "export function BrokenEncoding() {};",
-          },
-        },
-      },
+}`);
     });
 
-    const expectPathStructure = `{
+    it("should keep the original segment name when decodeURIComponent fails", () => {
+      setupTree({
+        testApp: {
+          patterns: {
+            "%E0%A4%A": {
+              "page.tsx": "export function BrokenEncoding() {};",
+            },
+          },
+        },
+      });
+
+      const { pathStructure } = scanAppDir(
+        tmpPath("output"),
+        tmpPath("testApp"),
+      );
+      expect(pathStructure).equals(`{
   "patterns": {
     "%E0%A4%A": Endpoint
   }
-}`;
-    const { pathStructure } = scanAppDir("/output", "/testApp");
-    expect(pathStructure).equals(expectPathStructure);
-  });
-
-  it("should skip private directories even if cached as targetable and keep intercepting routes out of path structure", () => {
-    mock({
-      "/testApp": {
-        parent: {
-          _private: {
-            hidden: {
-              "page.tsx": "export function Hidden() {};",
-            },
-          },
-          "(.)modal": {
-            "[id]": {
-              "page.tsx": "export function Modal() {};",
-            },
-          },
-          public: {
-            "page.tsx": "export function Public() {};",
-          },
-        },
-      },
+}`);
     });
 
-    scanAppDirCache.clear();
-    visitedDirsCache.clear();
-    visitedDirsCache.set("/testApp/parent/_private", true);
-    visitedDirsCache.set("/testApp/parent/(.)modal", true);
-    visitedDirsCache.set("\\testApp\\parent\\_private", true);
-    visitedDirsCache.set("\\testApp\\parent\\(.)modal", true);
-
-    const expectPathStructure = `{
-  "parent": {
-    "public": Endpoint
-  }
-}`;
-    const { pathStructure, paramsTypes } = scanAppDir("/output", "/testApp");
-    expect(pathStructure).equals(expectPathStructure);
-    expect(paramsTypes).toStrictEqual([
-      {
-        dirPath: "/testApp/parent/(.)modal/[id]",
-        paramsType: '{ "id": string }',
-      },
-    ]);
-  });
-
-  it("should ignore empty parallel-route path structure produced by intercepting children while keeping params types", () => {
-    mock({
-      "/testApp": {
-        feed: {
-          "@modal": {
-            "(..)photo": {
+    it("should skip private directories even if cached as targetable and keep intercepting routes out of path structure", () => {
+      setupTree({
+        testApp: {
+          parent: {
+            _private: {
+              hidden: {
+                "page.tsx": "export function Hidden() {};",
+              },
+            },
+            "(.)modal": {
               "[id]": {
                 "page.tsx": "export function Modal() {};",
               },
             },
+            public: {
+              "page.tsx": "export function Public() {};",
+            },
           },
-          "page.tsx": "export function Feed() {};",
         },
-      },
+      });
+
+      visitedDirsCache.set(tmpPath("testApp", "parent", "_private"), true);
+      visitedDirsCache.set(tmpPath("testApp", "parent", "(.)modal"), true);
+      visitedDirsCache.set(
+        path.win32.join(requireTmpDir(), "testApp", "parent", "_private"),
+        true,
+      );
+      visitedDirsCache.set(
+        path.win32.join(requireTmpDir(), "testApp", "parent", "(.)modal"),
+        true,
+      );
+
+      const { pathStructure, paramsTypes } = scanAppDir(
+        tmpPath("output"),
+        tmpPath("testApp"),
+      );
+      expect(pathStructure).equals(`{
+  "parent": {
+    "public": Endpoint
+  }
+}`);
+      expect(paramsTypes).toStrictEqual([
+        {
+          dirPath: tmpPosixPath("testApp", "parent", "(.)modal", "[id]"),
+          paramsType: '{ "id": string }',
+        },
+      ]);
     });
 
-    const expectPathStructure = `{
+    it("should ignore empty parallel-route path structure produced by intercepting children while keeping params types", () => {
+      setupTree({
+        testApp: {
+          feed: {
+            "@modal": {
+              "(..)photo": {
+                "[id]": {
+                  "page.tsx": "export function Modal() {};",
+                },
+              },
+            },
+            "page.tsx": "export function Feed() {};",
+          },
+        },
+      });
+
+      const { pathStructure, paramsTypes } = scanAppDir(
+        tmpPath("output"),
+        tmpPath("testApp"),
+      );
+      expect(pathStructure).equals(`{
   "feed": Endpoint
-}`;
-    const { pathStructure, paramsTypes } = scanAppDir("/output", "/testApp");
-    expect(pathStructure).equals(expectPathStructure);
-    expect(paramsTypes).toStrictEqual([
-      {
-        dirPath: "/testApp/feed/@modal/(..)photo/[id]",
-        paramsType: '{ "id": string }',
-      },
-    ]);
-  });
+}`);
+      expect(paramsTypes).toStrictEqual([
+        {
+          dirPath: tmpPosixPath(
+            "testApp",
+            "feed",
+            "@modal",
+            "(..)photo",
+            "[id]",
+          ),
+          paramsType: '{ "id": string }',
+        },
+      ]);
+    });
 
-  it("should handle empty directories gracefully", () => {
-    // Handle empty directories
-    mock({ "/emptyDir": {} });
-    const { pathStructure } = scanAppDir("/output", "/emptyDir");
-    expect(pathStructure).toBe("");
-  });
+    it("should handle empty directories gracefully", () => {
+      setupTree({ emptyDir: {} });
+      const { pathStructure } = scanAppDir(
+        tmpPath("output"),
+        tmpPath("emptyDir"),
+      );
+      expect(pathStructure).toBe("");
+    });
 
-  it("should handle multiple params", () => {
-    // Setup for multiple params
-    mock({
-      "/testApp": {
-        OptionalCatchAll: {
-          user: {
-            "[[...names]]": {
-              "page.tsx": "export function UserName() {};",
+    it("should handle multiple params", () => {
+      setupTree({
+        testApp: {
+          OptionalCatchAll: {
+            user: {
+              "[[...names]]": {
+                "page.tsx": "export function UserName() {};",
+              },
+            },
+          },
+          catchAll: {
+            "[user]": {
+              "[...names]": {
+                "page.tsx": "export function UserName() {};",
+              },
             },
           },
         },
-        catchAll: {
-          "[user]": {
-            "[...names]": {
-              "page.tsx": "export function UserName() {};",
-            },
-          },
+      });
+
+      const { paramsTypes } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(paramsTypes).toStrictEqual([
+        {
+          paramsType: '{ "user": string; "names": string[]; }',
+          dirPath: tmpPosixPath("testApp", "catchAll", "[user]", "[...names]"),
         },
-      },
-    });
-
-    const { paramsTypes } = scanAppDir("/output", "/testApp");
-    expect(paramsTypes).toHaveLength(2);
-
-    const expectedParamsTypes = [
-      {
-        paramsType: '{ "names": string[] | undefined }',
-        dirPath: "/testApp/OptionalCatchAll/user/[[...names]]",
-      },
-      {
-        paramsType: '{ "user": string; "names": string[]; }',
-        dirPath: "/testApp/catchAll/[user]/[...names]",
-      },
-    ];
-    expectedParamsTypes.forEach((paramsType, i) => {
-      expect(paramsTypes[i]).toStrictEqual(paramsType);
-    });
-  });
-});
-
-// ----------------------
-// Tests for scanAppDirCache
-// ----------------------
-describe("scanAppDirCache", () => {
-  afterEach(() => {
-    // Cleanup
-    mock.restore();
-  });
-
-  it("should return the same cached result for the same directory", () => {
-    // Result should be cached
-    mock({
-      "/testApp": {
-        "page.tsx": "export function Page() {};",
-      },
-    });
-
-    const result1 = scanAppDir("/output", "/testApp");
-    const result2 = scanAppDir("/output", "/testApp");
-    expect(result1).toBe(result2);
-  });
-
-  it("should clear cache when clearScanAppDirCache is called with the exact path", () => {
-    // Clear by exact path
-    mock({
-      "/testApp": {
-        "page.tsx": "export function Page() {};",
-      },
-    });
-
-    const result1 = scanAppDir("/output", "/testApp");
-    clearScanAppDirCacheAbove("/testApp");
-    const result2 = scanAppDir("/output", "/testApp");
-    expect(result1).not.toBe(result2);
-  });
-
-  it("should clear parent cache when clearScanAppDirCache is called with a subdirectory", () => {
-    // Clear cache by subdirectory
-    mock({
-      "/testApp": {
-        "page.tsx": "export function Page() {};",
-        sub: {
-          "index.ts": "export default function Index() {};",
+        {
+          paramsType: '{ "names": string[] | undefined }',
+          dirPath: tmpPosixPath(
+            "testApp",
+            "OptionalCatchAll",
+            "user",
+            "[[...names]]",
+          ),
         },
-      },
+      ]);
     });
-
-    const parentResult1 = scanAppDir("/output", "/testApp");
-    const childResult1 = scanAppDir("/output", "/testApp/sub");
-
-    clearScanAppDirCacheAbove("/testApp/sub");
-
-    const parentResult2 = scanAppDir("/output", "/testApp");
-    const childResult2 = scanAppDir("/output", "/testApp/sub");
-
-    expect(parentResult1).not.toBe(parentResult2);
-    expect(childResult1).not.toBe(childResult2);
   });
 
-  it("should not clear any cache if clearScanAppDirCache is called with a non-matching path", () => {
-    // Clear with irrelevant path
-    mock({
-      "/testApp": {
-        "page.tsx": "export function Page() {};",
-      },
-      "/another": {
-        "index.ts": "export function Index() {};",
-      },
-    });
-
-    const resultTestApp1 = scanAppDir("/output", "/testApp");
-    const resultAnother1 = scanAppDir("/output", "/another");
-
-    clearScanAppDirCacheAbove("/nonexistent");
-
-    const resultTestApp2 = scanAppDir("/output", "/testApp");
-    const resultAnother2 = scanAppDir("/output", "/another");
-
-    expect(resultTestApp1).toBe(resultTestApp2);
-    expect(resultAnother1).toBe(resultAnother2);
-  });
-});
-
-// ----------------------
-// Detailed scenarios for cache modification
-// ----------------------
-describe("scanAppDirCache modification scenarios - detailed verification", () => {
-  beforeEach(() => {
-    // Clear all caches before each test
-    scanAppDirCache.clear();
-    visitedDirsCache.clear();
-  });
-
-  afterEach(() => {
-    mock.restore();
-  });
-
-  it("should generate correct output when the lowest-level file is modified", () => {
-    // First scan: recognized as an Endpoint from lowest-level file (page.tsx)
-    mock({
-      "/testApp": {
-        sub: {
+  describe("scanAppDirCache", () => {
+    it("should return the same cached result for the same directory", () => {
+      setupTree({
+        testApp: {
           "page.tsx": "export function Page() {};",
         },
-      },
-    });
-    const initial = scanAppDir("/output", "/testApp");
-    const expectedInitial = `{
-  "sub": Endpoint
-}`;
-    expect(initial.pathStructure).toBe(expectedInitial);
+      });
 
-    // After modification: change to route definition with GET method
-    mock.restore();
-    mock({
-      "/testApp": {
-        sub: {
-          "page.tsx": "export function GET() {};",
-        },
-      },
+      const result1 = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      const result2 = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(result1).toBe(result2);
     });
-    clearScanAppDirCacheAbove("/testApp/sub/page.tsx");
-    const modified = scanAppDir("/output", "/testApp");
-    const expectedModified = `{
+
+    it("should clear cache when clearScanAppDirCache is called with the exact path", () => {
+      setupTree({
+        testApp: {
+          "page.tsx": "export function Page() {};",
+        },
+      });
+
+      const result1 = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      clearScanAppDirCacheAbove(tmpPath("testApp"));
+      const result2 = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(result1).not.toBe(result2);
+    });
+
+    it("should clear parent cache when clearScanAppDirCache is called with a subdirectory", () => {
+      setupTree({
+        testApp: {
+          "page.tsx": "export function Page() {};",
+          sub: {
+            "index.ts": "export default function Index() {};",
+          },
+        },
+      });
+
+      const parentResult1 = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      const childResult1 = scanAppDir(
+        tmpPath("output"),
+        tmpPath("testApp", "sub"),
+      );
+
+      clearScanAppDirCacheAbove(tmpPath("testApp", "sub"));
+
+      const parentResult2 = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      const childResult2 = scanAppDir(
+        tmpPath("output"),
+        tmpPath("testApp", "sub"),
+      );
+
+      expect(parentResult1).not.toBe(parentResult2);
+      expect(childResult1).not.toBe(childResult2);
+    });
+
+    it("should not clear any cache if clearScanAppDirCache is called with a non-matching path", () => {
+      setupTree({
+        testApp: {
+          "page.tsx": "export function Page() {};",
+        },
+        another: {
+          "index.ts": "export function Index() {};",
+        },
+      });
+
+      const resultTestApp1 = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      const resultAnother1 = scanAppDir(tmpPath("output"), tmpPath("another"));
+
+      clearScanAppDirCacheAbove(tmpPath("nonexistent"));
+
+      const resultTestApp2 = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      const resultAnother2 = scanAppDir(tmpPath("output"), tmpPath("another"));
+
+      expect(resultTestApp1).toBe(resultTestApp2);
+      expect(resultAnother1).toBe(resultAnother2);
+    });
+  });
+
+  describe("scanAppDirCache modification scenarios - detailed verification", () => {
+    beforeEach(() => {
+      scanAppDirCache.clear();
+      visitedDirsCache.clear();
+    });
+
+    it("should generate correct output when the lowest-level file is modified", () => {
+      setupTree({
+        testApp: {
+          sub: {
+            "page.tsx": "export function Page() {};",
+          },
+        },
+      });
+      const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(initial.pathStructure).toBe(`{
+  "sub": Endpoint
+}`);
+
+      resetTree({
+        testApp: {
+          sub: {
+            "page.tsx": "export function GET() {};",
+          },
+        },
+      });
+      clearScanAppDirCacheAbove(tmpPath("testApp", "sub", "page.tsx"));
+      const modified = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(modified.pathStructure).toBe(`{
   "sub": { "$get": typeof GET_asmocked } & Endpoint
-}`;
-    expect(modified.pathStructure).toBe(expectedModified);
-  });
-
-  it("should generate correct output when a mid-level file is modified", () => {
-    // First scan: recognized as an Endpoint from mid-level file
-    mock({
-      "/testApp": {
-        mid: {
-          "page.tsx": "export function Page() {};",
-        },
-      },
+}`);
     });
-    const initial = scanAppDir("/output", "/testApp");
-    const expectedInitial = `{
-  "mid": Endpoint
-}`;
-    expect(initial.pathStructure).toBe(expectedInitial);
 
-    // After modification: add GET method
-    mock.restore();
-    mock({
-      "/testApp": {
-        mid: {
-          "page.tsx": "export function GET() {};",
-        },
-      },
-    });
-    clearScanAppDirCacheAbove("/testApp/mid/page.tsx");
-    const modified = scanAppDir("/output", "/testApp");
-    const expectedModified = `{
-  "mid": { "$get": typeof GET_asmocked } & Endpoint
-}`;
-    expect(modified.pathStructure).toBe(expectedModified);
-  });
-
-  it("should generate correct output when a top-level file is modified", () => {
-    // First scan: top-level file as Endpoint
-    mock({
-      "/testApp": {
-        "route.ts": "export default function Index() {};",
-      },
-    });
-    const initial = scanAppDir("/output", "/testApp");
-    const expectedInitial = `Endpoint`;
-    expect(initial.pathStructure).toBe(expectedInitial);
-
-    // After modification: add GET method
-    mock.restore();
-    mock({
-      "/testApp": {
-        "route.ts": "export function GET() {};",
-      },
-    });
-    clearScanAppDirCacheAbove("/testApp/index.ts");
-    const modified = scanAppDir("/output", "/testApp");
-    const expectedModified = `{ "$get": typeof GET_asmocked } & Endpoint`;
-    expect(modified.pathStructure).toBe(expectedModified);
-  });
-  it("should generate correct output when a folder is added in the lowest-level directory", () => {
-    // First scan: /testApp/sub has only one file
-    mock({
-      "/testApp": {
-        sub: {
-          "page.tsx": "export function Page() {};",
-        },
-      },
-    });
-    const initial = scanAppDir("/output", "/testApp");
-    const expectedInitial = `{
-  "sub": Endpoint
-}`;
-    expect(initial.pathStructure).toBe(expectedInitial);
-
-    // After modification: a new folder (newFolder) is added under /testApp/sub with a file
-    mock.restore();
-    mock({
-      "/testApp": {
-        sub: {
-          "page.tsx": "export function Page() {};",
-          newFolder: {
-            "page.tsx": "export function NewPage() {};",
+    it("should generate correct output when a mid-level file is modified", () => {
+      setupTree({
+        testApp: {
+          mid: {
+            "page.tsx": "export function Page() {};",
           },
         },
-      },
+      });
+      const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(initial.pathStructure).toBe(`{
+  "mid": Endpoint
+}`);
+
+      resetTree({
+        testApp: {
+          mid: {
+            "page.tsx": "export function GET() {};",
+          },
+        },
+      });
+      clearScanAppDirCacheAbove(tmpPath("testApp", "mid", "page.tsx"));
+      const modified = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(modified.pathStructure).toBe(`{
+  "mid": { "$get": typeof GET_asmocked } & Endpoint
+}`);
     });
-    clearScanAppDirCacheAbove("/testApp/sub/newFolder");
-    const modified = scanAppDir("/output", "/testApp");
-    const expectedModified = `{
+
+    it("should generate correct output when a top-level file is modified", () => {
+      setupTree({
+        testApp: {
+          "route.ts": "export default function Index() {};",
+        },
+      });
+      const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(initial.pathStructure).toBe("Endpoint");
+
+      resetTree({
+        testApp: {
+          "route.ts": "export function GET() {};",
+        },
+      });
+      clearScanAppDirCacheAbove(tmpPath("testApp", "index.ts"));
+      const modified = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(modified.pathStructure).toBe(
+        '{ "$get": typeof GET_asmocked } & Endpoint',
+      );
+    });
+
+    it("should generate correct output when a folder is added in the lowest-level directory", () => {
+      setupTree({
+        testApp: {
+          sub: {
+            "page.tsx": "export function Page() {};",
+          },
+        },
+      });
+      const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(initial.pathStructure).toBe(`{
+  "sub": Endpoint
+}`);
+
+      resetTree({
+        testApp: {
+          sub: {
+            "page.tsx": "export function Page() {};",
+            newFolder: {
+              "page.tsx": "export function NewPage() {};",
+            },
+          },
+        },
+      });
+      clearScanAppDirCacheAbove(tmpPath("testApp", "sub", "newFolder"));
+      const modified = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(modified.pathStructure).toBe(`{
   "sub": Endpoint & {
     "newFolder": Endpoint
   }
-}`;
-    expect(modified.pathStructure).toBe(expectedModified);
-  });
+}`);
+    });
 
-  it("should generate correct output when a folder is added in a mid-level directory", () => {
-    // First scan: /testApp/mid/sub has only one file
-    mock({
-      "/testApp": {
-        mid: {
-          sub: {
-            "page.tsx": "export function Page() {};",
+    it("should generate correct output when a folder is added in a mid-level directory", () => {
+      setupTree({
+        testApp: {
+          mid: {
+            sub: {
+              "page.tsx": "export function Page() {};",
+            },
           },
         },
-      },
-    });
-    const initial = scanAppDir("/output", "/testApp");
-    const expectedInitial = `{
+      });
+      const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(initial.pathStructure).toBe(`{
   "mid": {
     "sub": Endpoint
   }
-}`;
-    expect(initial.pathStructure).toBe(expectedInitial);
+}`);
 
-    // After modification: add newFolder under mid
-    mock.restore();
-    mock({
-      "/testApp": {
-        mid: {
-          sub: {
-            "page.tsx": "export function Page() {};",
-          },
-          newFolder: {
-            "page.tsx": "export default function NewPage() {};",
+      resetTree({
+        testApp: {
+          mid: {
+            sub: {
+              "page.tsx": "export function Page() {};",
+            },
+            newFolder: {
+              "page.tsx": "export default function NewPage() {};",
+            },
           },
         },
-      },
-    });
-    clearScanAppDirCacheAbove("/testApp/mid/newFolder");
-    const modified = scanAppDir("/output", "/testApp");
-    const expectedModified = `{
+      });
+      clearScanAppDirCacheAbove(tmpPath("testApp", "mid", "newFolder"));
+      const modified = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(modified.pathStructure).toBe(`{
   "mid": {
     "newFolder": Endpoint,
     "sub": Endpoint
   }
-}`;
-    expect(modified.pathStructure).toBe(expectedModified);
-  });
-
-  it("should generate correct output when a folder is added in the top-level directory", () => {
-    // First scan: /testApp has only a top-level file
-    mock({
-      "/testApp": {
-        "route.ts": "export default function Index() {};",
-      },
+}`);
     });
-    const initial = scanAppDir("/output", "/testApp");
-    const expectedInitial = `Endpoint`;
-    expect(initial.pathStructure).toBe(expectedInitial);
 
-    // After modification: add newFolder at the top level
-    mock.restore();
-    mock({
-      "/testApp": {
-        "route.ts": "export default function Index() {};",
-        newFolder: {
-          "page.tsx": "export function NewPage() {};",
+    it("should generate correct output when a folder is added in the top-level directory", () => {
+      setupTree({
+        testApp: {
+          "route.ts": "export default function Index() {};",
         },
-      },
-    });
-    clearScanAppDirCacheAbove("/testApp/newFolder");
-    const modified = scanAppDir("/output", "/testApp");
-    const expectedModified = `Endpoint & {
-  "newFolder": Endpoint
-}`;
-    expect(modified.pathStructure).toBe(expectedModified);
-  });
-});
+      });
+      const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(initial.pathStructure).toBe("Endpoint");
 
-// ----------------------
-// Tests for dynamic folder scenarios
-// ----------------------
-describe("scanAppDirCache dynamic folder scenarios - detailed verification", () => {
-  beforeEach(() => {
-    scanAppDirCache.clear();
-    visitedDirsCache.clear();
-  });
-
-  afterEach(() => {
-    mock.restore();
-  });
-
-  it("should generate correct output when a single dynamic folder is inserted in between", () => {
-    // Initial: /testApp/[user]/home/page.tsx
-    mock({
-      "/testApp": {
-        "[user]": {
-          home: {
-            "page.tsx": "export function Page() {};",
+      resetTree({
+        testApp: {
+          "route.ts": "export default function Index() {};",
+          newFolder: {
+            "page.tsx": "export function NewPage() {};",
           },
         },
-      },
+      });
+      clearScanAppDirCacheAbove(tmpPath("testApp", "newFolder"));
+      const modified = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(modified.pathStructure).toBe(`Endpoint & {
+  "newFolder": Endpoint
+}`);
     });
-    const initial = scanAppDir("/output", "/testApp");
-    const expectedInitial = `{
-  "_user": {
-    "home": Endpoint & Record<ParamsKey, { "user": string }>
-  }
-}`;
-    expect(initial.pathStructure).toBe(expectedInitial);
+  });
 
-    // After modification: insert dynamic folder [id]
-    mock.restore();
-    mock({
-      "/testApp": {
-        "[user]": {
-          "[id]": {
+  describe("scanAppDirCache dynamic folder scenarios - detailed verification", () => {
+    beforeEach(() => {
+      scanAppDirCache.clear();
+      visitedDirsCache.clear();
+    });
+
+    it("should generate correct output when a single dynamic folder is inserted in between", () => {
+      setupTree({
+        testApp: {
+          "[user]": {
             home: {
               "page.tsx": "export function Page() {};",
             },
           },
         },
-      },
-    });
-    clearScanAppDirCacheAbove("/testApp/[user]/[id]");
-    const modified = scanAppDir("/output", "/testApp");
-    const expectedModified = `{
-  "_user": {
-    "_id": {
-      "home": Endpoint & Record<ParamsKey, { "user": string; "id": string; }>
-    }
-  }
-}`;
-    expect(modified.pathStructure).toBe(expectedModified);
-  });
-
-  it("should generate correct output when multiple dynamic folders are added in between", () => {
-    // Initial: /testApp/[user]/home/page.tsx
-    mock({
-      "/testApp": {
-        "[user]": {
-          home: {
-            "page.tsx": "export function Page() {};",
-          },
-        },
-      },
-    });
-    const initial = scanAppDir("/output", "/testApp");
-    const expectedInitial = `{
+      });
+      const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(initial.pathStructure).toBe(`{
   "_user": {
     "home": Endpoint & Record<ParamsKey, { "user": string }>
   }
-}`;
-    expect(initial.pathStructure).toBe(expectedInitial);
+}`);
 
-    // After modification: insert [id] and [detail] in between
-    mock.restore();
-    mock({
-      "/testApp": {
-        "[user]": {
-          "[id]": {
-            "[detail]": {
+      resetTree({
+        testApp: {
+          "[user]": {
+            "[id]": {
               home: {
                 "page.tsx": "export function Page() {};",
               },
             },
           },
         },
-      },
+      });
+      clearScanAppDirCacheAbove(tmpPath("testApp", "[user]", "[id]"));
+      const modified = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(modified.pathStructure).toBe(`{
+  "_user": {
+    "_id": {
+      "home": Endpoint & Record<ParamsKey, { "user": string; "id": string; }>
+    }
+  }
+}`);
     });
-    clearScanAppDirCacheAbove("/testApp/[user]/[id]");
-    const modified = scanAppDir("/output", "/testApp");
-    const expectedModified = `{
+
+    it("should generate correct output when multiple dynamic folders are added in between", () => {
+      setupTree({
+        testApp: {
+          "[user]": {
+            home: {
+              "page.tsx": "export function Page() {};",
+            },
+          },
+        },
+      });
+      const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(initial.pathStructure).toBe(`{
+  "_user": {
+    "home": Endpoint & Record<ParamsKey, { "user": string }>
+  }
+}`);
+
+      resetTree({
+        testApp: {
+          "[user]": {
+            "[id]": {
+              "[detail]": {
+                home: {
+                  "page.tsx": "export function Page() {};",
+                },
+              },
+            },
+          },
+        },
+      });
+      clearScanAppDirCacheAbove(tmpPath("testApp", "[user]", "[id]"));
+      const modified = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(modified.pathStructure).toBe(`{
   "_user": {
     "_id": {
       "_detail": {
@@ -1081,39 +1110,13 @@ describe("scanAppDirCache dynamic folder scenarios - detailed verification", () 
       }
     }
   }
-}`;
-    expect(modified.pathStructure).toBe(expectedModified);
-  });
-
-  it("should generate correct output when a dynamic folder is inserted in the middle of an existing dynamic structure", () => {
-    // Initial: /testApp/[user]/[id]/home/page.tsx
-    mock({
-      "/testApp": {
-        "[user]": {
-          "[id]": {
-            home: {
-              "page.tsx": "export function Page() {};",
-            },
-          },
-        },
-      },
+}`);
     });
-    const initial = scanAppDir("/output", "/testApp");
-    const expectedInitial = `{
-  "_user": {
-    "_id": {
-      "home": Endpoint & Record<ParamsKey, { "user": string; "id": string; }>
-    }
-  }
-}`;
-    expect(initial.pathStructure).toBe(expectedInitial);
 
-    // After modification: insert [lang] between [user] and [id]
-    mock.restore();
-    mock({
-      "/testApp": {
-        "[user]": {
-          "[lang]": {
+    it("should generate correct output when a dynamic folder is inserted in the middle of an existing dynamic structure", () => {
+      setupTree({
+        testApp: {
+          "[user]": {
             "[id]": {
               home: {
                 "page.tsx": "export function Page() {};",
@@ -1121,11 +1124,32 @@ describe("scanAppDirCache dynamic folder scenarios - detailed verification", () 
             },
           },
         },
-      },
-    });
-    clearScanAppDirCacheAbove("/testApp/[user]/[lang]");
-    const modified = scanAppDir("/output", "/testApp");
-    const expectedModified = `{
+      });
+      const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(initial.pathStructure).toBe(`{
+  "_user": {
+    "_id": {
+      "home": Endpoint & Record<ParamsKey, { "user": string; "id": string; }>
+    }
+  }
+}`);
+
+      resetTree({
+        testApp: {
+          "[user]": {
+            "[lang]": {
+              "[id]": {
+                home: {
+                  "page.tsx": "export function Page() {};",
+                },
+              },
+            },
+          },
+        },
+      });
+      clearScanAppDirCacheAbove(tmpPath("testApp", "[user]", "[lang]"));
+      const modified = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(modified.pathStructure).toBe(`{
   "_user": {
     "_lang": {
       "_id": {
@@ -1133,94 +1157,82 @@ describe("scanAppDirCache dynamic folder scenarios - detailed verification", () 
       }
     }
   }
-}`;
-    expect(modified.pathStructure).toBe(expectedModified);
-  });
-});
-
-// ----------------------
-// Test for scanAppDirCache multiple child directories scenarios
-// ----------------------
-describe("scanAppDirCache multiple child directories scenarios", () => {
-  beforeEach(() => {
-    // Clear caches before each test
-    scanAppDirCache.clear();
-    visitedDirsCache.clear();
+}`);
+    });
   });
 
-  afterEach(() => {
-    // Restore the mock file system
-    mock.restore();
-  });
-
-  it("should generate correct output when multiple child directories exist and one branch is modified with an additional dynamic folder", () => {
-    mock({
-      "/testApp": {
-        "[user]": {
-          home: {
-            "page.tsx": "export function Page() {};",
-          },
-        },
-        "[admin]": {
-          home: {
-            "page.tsx": "export function Page() {};",
-          },
-        },
-        static: {
-          home: {
-            "page.tsx": "export function Page() {};",
-          },
-        },
-      },
+  describe("scanAppDirCache multiple child directories scenarios", () => {
+    beforeEach(() => {
+      scanAppDirCache.clear();
+      visitedDirsCache.clear();
     });
 
-    const initial = scanAppDir("/output", "/testApp");
-    // Sorted by lexicographical order
-    const expectedInitial = `{
+    it("should generate correct output when multiple child directories exist and one branch is modified with an additional dynamic folder", () => {
+      setupTree({
+        testApp: {
+          "[user]": {
+            home: {
+              "page.tsx": "export function Page() {};",
+            },
+          },
+          "[admin]": {
+            home: {
+              "page.tsx": "export function Page() {};",
+            },
+          },
+          static: {
+            home: {
+              "page.tsx": "export function Page() {};",
+            },
+          },
+        },
+      });
+
+      const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(initial.pathStructure).toBe(`{
+  "static": {
+    "home": Endpoint
+  },
   "_admin": {
     "home": Endpoint & Record<ParamsKey, { "admin": string }>
   },
   "_user": {
     "home": Endpoint & Record<ParamsKey, { "user": string }>
-  },
+  }
+}`);
+
+      resetTree({
+        testApp: {
+          "[admin]": {
+            "[id]": {
+              home: {
+                "page.tsx": "export function Page() {};",
+              },
+            },
+          },
+          "[user]": {
+            "[id]": {
+              home: {
+                "page.tsx": "export function Page() {};",
+              },
+            },
+          },
+          static: {
+            home: {
+              "page.tsx": "export function Page() {};",
+            },
+          },
+        },
+      });
+
+      clearScanAppDirCacheAbove(tmpPath("testApp", "[admin]", "[id]"));
+      clearScanAppDirCacheAbove(tmpPath("testApp", "[user]", "[id]"));
+
+      const modified = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(modified.pathStructure).toBe(`{
   "static": {
     "home": Endpoint
-  }
-}`;
-    expect(initial.pathStructure).toBe(expectedInitial);
-
-    // After modification: add dynamic folder [id] under both branches
-    mock.restore();
-    mock({
-      "/testApp": {
-        "[admin]": {
-          "[id]": {
-            home: {
-              "page.tsx": "export function Page() {};",
-            },
-          },
-        },
-        "[user]": {
-          "[id]": {
-            home: {
-              "page.tsx": "export function Page() {};",
-            },
-          },
-        },
-        static: {
-          home: {
-            "page.tsx": "export function Page() {};",
-          },
-        },
-      },
-    });
-
-    // Clear caches for added dynamic folders
-    clearScanAppDirCacheAbove("/testApp/[admin]/[id]");
-    clearScanAppDirCacheAbove("/testApp/[user]/[id]");
-
-    const modified = scanAppDir("/output", "/testApp");
-    const expectedModified = `{
+  },
   "_admin": {
     "_id": {
       "home": Endpoint & Record<ParamsKey, { "admin": string; "id": string; }>
@@ -1230,69 +1242,60 @@ describe("scanAppDirCache multiple child directories scenarios", () => {
     "_id": {
       "home": Endpoint & Record<ParamsKey, { "user": string; "id": string; }>
     }
-  },
-  "static": {
-    "home": Endpoint
   }
-}`;
-    expect(modified.pathStructure).toBe(expectedModified);
-  });
-
-  it("should generate correct output when multiple child directories exist and both branches are modified with additional dynamic folders", () => {
-    mock({
-      "/testApp": {
-        "[user]": {
-          home: {
-            "page.tsx": "export function Page() {};",
-          },
-        },
-        "[group]": {
-          dashboard: {
-            "page.tsx": "export function Page() {};",
-          },
-        },
-      },
+}`);
     });
 
-    const initial = scanAppDir("/output", "/testApp");
-    // Sorting: "[group]" comes before "[user]"
-    const expectedInitial = `{
+    it("should generate correct output when multiple child directories exist and both branches are modified with additional dynamic folders", () => {
+      setupTree({
+        testApp: {
+          "[user]": {
+            home: {
+              "page.tsx": "export function Page() {};",
+            },
+          },
+          "[group]": {
+            dashboard: {
+              "page.tsx": "export function Page() {};",
+            },
+          },
+        },
+      });
+
+      const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(initial.pathStructure).toBe(`{
   "_group": {
     "dashboard": Endpoint & Record<ParamsKey, { "group": string }>
   },
   "_user": {
     "home": Endpoint & Record<ParamsKey, { "user": string }>
   }
-}`;
-    expect(initial.pathStructure).toBe(expectedInitial);
+}`);
 
-    // After modification: insert additional dynamic folder [id] into both branches
-    mock.restore();
-    mock({
-      "/testApp": {
-        "[user]": {
-          "[id]": {
-            home: {
-              "page.tsx": "export function Page() {};",
+      resetTree({
+        testApp: {
+          "[user]": {
+            "[id]": {
+              home: {
+                "page.tsx": "export function Page() {};",
+              },
+            },
+          },
+          "[group]": {
+            "[id]": {
+              dashboard: {
+                "page.tsx": "export function Page() {};",
+              },
             },
           },
         },
-        "[group]": {
-          "[id]": {
-            dashboard: {
-              "page.tsx": "export function Page() {};",
-            },
-          },
-        },
-      },
-    });
+      });
 
-    // Clear caches for added dynamic folders
-    clearScanAppDirCacheAbove("/testApp/[user]/[id]");
-    clearScanAppDirCacheAbove("/testApp/[group]/[id]");
+      clearScanAppDirCacheAbove(tmpPath("testApp", "[user]", "[id]"));
+      clearScanAppDirCacheAbove(tmpPath("testApp", "[group]", "[id]"));
 
-    const modified = scanAppDir("/output", "/testApp");
-    const expectedModified = `{
+      const modified = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(modified.pathStructure).toBe(`{
   "_group": {
     "_id": {
       "dashboard": Endpoint & Record<ParamsKey, { "group": string; "id": string; }>
@@ -1303,7 +1306,7 @@ describe("scanAppDirCache multiple child directories scenarios", () => {
       "home": Endpoint & Record<ParamsKey, { "user": string; "id": string; }>
     }
   }
-}`;
-    expect(modified.pathStructure).toBe(expectedModified);
+}`);
+    });
   });
 });

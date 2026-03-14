@@ -1,12 +1,17 @@
 import fs from "node:fs";
-import mock from "mock-fs";
+import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  cleanupTempDir,
+  makeTempDir,
+  writeTree,
+} from "../../test-helpers/tmp-dir.js";
 import { scanEndpointFile } from "./scan-utils.js";
 
 vi.mock("./type-utils.js", () => ({
   createImport: vi.fn(
-    (type, path, alias) =>
-      `import type { ${type} as ${alias} } from '${path}';`,
+    (type, importPath, alias) =>
+      `import type { ${type} as ${alias} } from '${importPath}';`,
   ),
   createRecodeType: vi.fn((key, alias) => `Record<${key}, ${alias}>`),
   createObjectType: vi.fn(
@@ -16,17 +21,32 @@ vi.mock("./type-utils.js", () => ({
 }));
 
 describe("scanEndpointFile", () => {
+  let tmpDir: string | null = null;
+
   afterEach(() => {
-    mock.restore();
+    cleanupTempDir(tmpDir);
+    tmpDir = null;
     vi.restoreAllMocks();
   });
 
+  const createPaths = () => {
+    tmpDir = makeTempDir();
+    const rootDir = tmpDir;
+
+    return {
+      inputFile: path.join(rootDir, "input.ts"),
+      outputFile: path.join(rootDir, "output.ts"),
+      rootDir,
+    };
+  };
+
   it("should return a query definition for an exported interface", () => {
-    mock({
+    const { inputFile, outputFile, rootDir } = createPaths();
+    writeTree(rootDir, {
       "input.ts": "export interface Query { id: number; }",
     });
 
-    const result = scanEndpointFile("output.ts", "input.ts");
+    const result = scanEndpointFile(outputFile, inputFile);
     expect(result.query).toBeDefined();
     expect(result.query?.importName).toBe("Query_da299b9577978fcd");
     expect(result.query?.importPath).toBe("./input");
@@ -38,28 +58,34 @@ describe("scanEndpointFile", () => {
   });
 
   it("should return a query definition for an exported type alias", () => {
-    mock({
+    const { inputFile, outputFile, rootDir } = createPaths();
+    writeTree(rootDir, {
       "input.ts": "export type Query = { id: number; }",
     });
 
-    const result = scanEndpointFile("output.ts", "input.ts");
+    const result = scanEndpointFile(outputFile, inputFile);
     expect(result.query?.importName).toBe("Query_da299b9577978fcd");
     expect(result.query?.type).toBe("Record<QueryKey, Query_da299b9577978fcd>");
     expect(result.routes).toEqual([]);
   });
 
   it("should omit query when no relevant query definition exists", () => {
-    mock({ "input.ts": "export interface OtherType { value: string; }" });
-    const result = scanEndpointFile("output.ts", "input.ts");
+    const { inputFile, outputFile, rootDir } = createPaths();
+    writeTree(rootDir, {
+      "input.ts": "export interface OtherType { value: string; }",
+    });
+
+    const result = scanEndpointFile(outputFile, inputFile);
     expect(result.query).toBeUndefined();
   });
 
   it("should return a route definition for an exported async function", () => {
-    mock({
+    const { inputFile, outputFile, rootDir } = createPaths();
+    writeTree(rootDir, {
       "input.ts": "export async function GET() { return { data: 'test' }; }",
     });
 
-    const result = scanEndpointFile("output.ts", "input.ts");
+    const result = scanEndpointFile(outputFile, inputFile);
     expect(result.routes).toHaveLength(1);
     expect(result.routes[0]?.importName).toBe("GET_84a33c1aab9019d2");
     expect(result.routes[0]?.importPath).toBe("./input");
@@ -72,11 +98,12 @@ describe("scanEndpointFile", () => {
   });
 
   it("should return a route definition for an exported constant function", () => {
-    mock({
+    const { inputFile, outputFile, rootDir } = createPaths();
+    writeTree(rootDir, {
       "input.ts": "export const PATCH = ()=> { return { data: 'test' }; }",
     });
 
-    const result = scanEndpointFile("output.ts", "input.ts");
+    const result = scanEndpointFile(outputFile, inputFile);
     expect(result.routes).toHaveLength(1);
     expect(result.routes[0]?.importName).toBe("PATCH_2fb9d0ae6e8b8cfc");
     expect(result.routes[0]?.type).toBe(
@@ -85,12 +112,13 @@ describe("scanEndpointFile", () => {
   });
 
   it("should return a route definition for a destructured export", () => {
-    mock({
+    const { inputFile, outputFile, rootDir } = createPaths();
+    writeTree(rootDir, {
       "input.ts":
         'export const { POST } = app.post((rc) => rc.json({test: "hello"}))',
     });
 
-    const result = scanEndpointFile("output.ts", "input.ts");
+    const result = scanEndpointFile(outputFile, inputFile);
     expect(result.routes).toHaveLength(1);
     expect(result.routes[0]?.importName).toBe("POST_8393a35405bb7d7f");
     expect(result.routes[0]?.type).toBe(
@@ -99,11 +127,12 @@ describe("scanEndpointFile", () => {
   });
 
   it("should return a route definition for a re-exported function", () => {
-    mock({
+    const { inputFile, outputFile, rootDir } = createPaths();
+    writeTree(rootDir, {
       "input.ts": 'export { DELETE } from "@/features/delete";',
     });
 
-    const result = scanEndpointFile("output.ts", "input.ts");
+    const result = scanEndpointFile(outputFile, inputFile);
     expect(result.routes).toHaveLength(1);
     expect(result.routes[0]?.importName).toBe("DELETE_bacf7eb8c865f8b9");
     expect(result.routes[0]?.type).toBe(
@@ -112,12 +141,13 @@ describe("scanEndpointFile", () => {
   });
 
   it("should return stable aliases for multiple scans of the same route", () => {
-    mock({
+    const { inputFile, outputFile, rootDir } = createPaths();
+    writeTree(rootDir, {
       "input.ts": 'export { PUT } from "@/features/put";',
     });
 
-    const result1 = scanEndpointFile("output.ts", "input.ts");
-    const result2 = scanEndpointFile("output.ts", "input.ts");
+    const result1 = scanEndpointFile(outputFile, inputFile);
+    const result2 = scanEndpointFile(outputFile, inputFile);
 
     expect(result1.routes[0]?.importName).toBe("PUT_203d1825e2307ab2");
     expect(result2.routes[0]?.importName).toBe("PUT_203d1825e2307ab2");
@@ -127,15 +157,18 @@ describe("scanEndpointFile", () => {
   });
 
   it("should skip non-matching route definitions", () => {
-    mock({
+    const { inputFile, outputFile, rootDir } = createPaths();
+    writeTree(rootDir, {
       "input.ts": "export function OTHER() { return { data: 'test' }; }",
     });
-    const result = scanEndpointFile("output.ts", "input.ts");
+
+    const result = scanEndpointFile(outputFile, inputFile);
     expect(result.routes).toEqual([]);
   });
 
   it("should read the file once and return query plus all matching routes", () => {
-    mock({
+    const { inputFile, outputFile, rootDir } = createPaths();
+    writeTree(rootDir, {
       "input.ts": `
         export interface Query { id: number; }
         export async function GET() { return { data: "get" }; }
@@ -144,7 +177,7 @@ describe("scanEndpointFile", () => {
     });
     const readFileSyncSpy = vi.spyOn(fs, "readFileSync");
 
-    const result = scanEndpointFile("output.ts", "input.ts");
+    const result = scanEndpointFile(outputFile, inputFile);
 
     expect(readFileSyncSpy).toHaveBeenCalledTimes(1);
     expect(result.query?.importName).toBe("Query_da299b9577978fcd");
