@@ -4,7 +4,7 @@
  * particularly their routing structures and developer experience.
  */
 
-import { isDynamic } from "./client-utils";
+import { isDynamic, isOptionalCatchAll } from "./client-utils";
 import type { ClientOptions, FuncParams, RpcHandler } from "./types";
 
 const createProxy = <T>(
@@ -32,7 +32,7 @@ const createProxy = <T>(
           `Cannot apply a value: "${lastPath ?? ""}" is not a dynamic segment.`,
         );
       }
-      if (value === undefined) {
+      if (value === undefined && !isOptionalCatchAll(lastPath)) {
         const label = lastKey ?? lastPath;
         throw new Error(
           `Missing value for dynamic parameter: ${String(label)}`,

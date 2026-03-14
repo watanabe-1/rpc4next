@@ -491,6 +491,12 @@ describe("createRpcClient", () => {
     hoge: Endpoint;
   };
 
+  type OptionalCatchAllPath = Endpoint & {
+    patterns: {
+      _____parts: Endpoint & Record<ParamsKey, { parts: string[] | undefined }>;
+    };
+  };
+
   describe("Invalid usage patterns", () => {
     it("throws when a dynamic parameter is called without an argument or when a static path is called as a function", () => {
       const client = createRpcClient<FalierPathStructure>("");
@@ -505,6 +511,19 @@ describe("createRpcClient", () => {
       expect(() => hoge("")).toThrow(
         'Cannot apply a value: "hoge" is not a dynamic segment.',
       );
+    });
+  });
+
+  describe("optional catch-all runtime behavior", () => {
+    it("allows calling an optional catch-all segment without an argument", () => {
+      const client = createRpcClient<OptionalCatchAllPath>("");
+
+      expect(client.patterns._____parts().$url()).toEqual({
+        path: "/patterns",
+        relativePath: "/patterns",
+        pathname: "/patterns/[[...parts]]",
+        params: { parts: undefined },
+      });
     });
   });
 

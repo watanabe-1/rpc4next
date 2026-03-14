@@ -10,6 +10,7 @@ import {
   isCatchAllOrOptional,
   isDynamic,
   isHttpMethod,
+  isOptionalCatchAll,
 } from "./client-utils";
 
 describe("isDynamic", () => {
@@ -38,6 +39,18 @@ describe("isCatchAllOrOptional", () => {
   it("returns false if the string starts with neither prefix", () => {
     const key = "anotherTest";
     expect(isCatchAllOrOptional(key)).toBe(false);
+  });
+});
+
+describe("isOptionalCatchAll", () => {
+  it("returns true if the string starts with OPTIONAL_CATCH_ALL_PREFIX", () => {
+    const key = `${OPTIONAL_CATCH_ALL_PREFIX}test`;
+    expect(isOptionalCatchAll(key)).toBe(true);
+  });
+
+  it("returns false for non-optional catch-all keys", () => {
+    const key = `${CATCH_ALL_PREFIX}test`;
+    expect(isOptionalCatchAll(key)).toBe(false);
   });
 });
 
