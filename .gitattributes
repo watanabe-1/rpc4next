@@ -11,6 +11,6 @@
 *.tsx         text eol=lf
 *.txt         text eol=lf
 *.yml         text eol=lf
-.code-workspace text eol=lf
+*.code-workspace text eol=lf
 .gitignore    text eol=lf
 .tool-versions    text eol=lf

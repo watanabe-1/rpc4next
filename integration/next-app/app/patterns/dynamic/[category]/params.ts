@@ -1,1 +1,1 @@
-export type Params = { category: string };
+export type Params = { "category": string };

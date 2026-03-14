@@ -9,6 +9,8 @@
       "**/*.json",
       "**/*.jsonc",
       "**/*.code-workspace",
+      "!integration/**/app/**/params.ts",
+      "!integration/**/src/generated",
       "!**/node_modules",
       "!**/dist",
       "!**/bin",
