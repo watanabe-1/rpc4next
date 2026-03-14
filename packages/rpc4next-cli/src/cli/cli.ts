@@ -1,6 +1,7 @@
 import path from "node:path";
 import { parseArgs } from "node:util";
 import { handleCli } from "./cli-handler.js";
+import { loadCliConfig } from "./config.js";
 import { EXIT_FAILURE } from "./constants.js";
 import { createLogger } from "./logger.js";
 import type { CliOptions, Logger } from "./types.js";
@@ -41,14 +42,17 @@ Generate RPC client type definitions based on the Next.js path structure.
 
 Usage:
   rpc4next <baseDir> <outputPath> [options]
+  rpc4next [options]
 
 Arguments:
   baseDir       Base directory containing Next.js paths for type generation
   outputPath    Output path for the generated type definitions
+                Both can be omitted when rpc4next.config.json provides them
 
 Options:
   -w, --watch                   Watch mode: regenerate on file changes
   -p, --params-file [filename]  Generate params types file (optional filename)
+  Config file:                  rpc4next.config.json in the current directory
   -h, --help                    Show help
 `.trim();
 
@@ -129,8 +133,11 @@ export const runCli = (argv: string[], logger: Logger = createLogger()) => {
       process.exit(0);
     }
 
-    const baseDir = positionals[0];
-    const outputPath = positionals[1];
+    const config = loadCliConfig();
+    const baseDir = positionals[0] ?? config.baseDir;
+    const outputPath = positionals[1] ?? config.outputPath;
+    const paramsFile =
+      paramsFileRaw !== undefined ? paramsFileRaw : config.paramsFile;
 
     if (!baseDir || !outputPath) {
       logger.error("Missing required arguments: <baseDir> <outputPath>");
@@ -145,7 +152,7 @@ export const runCli = (argv: string[], logger: Logger = createLogger()) => {
       // - undefined: not specified
       // - true: specified without filename
       // - string: specified with filename
-      ...(paramsFileRaw !== undefined ? { paramsFile: paramsFileRaw } : {}),
+      ...(paramsFile !== undefined ? { paramsFile } : {}),
     } as CliOptions;
 
     // Match your current behavior:

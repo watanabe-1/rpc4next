@@ -68,6 +68,21 @@ npx rpc4next <baseDir> <outputPath>
 
 `rpc4next` command is provided by the `rpc4next-cli` package.
 
+```json
+{
+  "baseDir": "app",
+  "outputPath": "src/generated/rpc.ts",
+  "paramsFile": "params.ts"
+}
+```
+
+`rpc4next.config.json` を実行ディレクトリに置くと、固定値を CLI 引数に繰り返し書かずに済みます。
+
+```bash
+npx rpc4next
+npx rpc4next --watch
+```
+
 - `<baseDir>`: Next.js の Appルータが配置されたベースディレクトリ
 - `<outputPath>`: 生成された型定義ファイルの出力先
 

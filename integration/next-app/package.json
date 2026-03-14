@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "generate:rpc": "bun --bun ../../packages/rpc4next-cli/src/cli/index.ts app src/generated/rpc.ts --params-file params.ts",
-    "generate:rpc:watch": "bun --bun ../../packages/rpc4next-cli/src/cli/index.ts app src/generated/rpc.ts --params-file params.ts --watch",
+    "generate:rpc": "bun --bun ../../packages/rpc4next-cli/src/cli/index.ts",
+    "generate:rpc:watch": "bun --bun ../../packages/rpc4next-cli/src/cli/index.ts --watch",
     "test": "bun run generate:rpc && tsc --noEmit && vitest run --config ../../vitest.config.ts src/*.test.ts",
     "e2e": "bun run generate:rpc && playwright test",
     "typecheck": "bun run generate:rpc && tsc --noEmit",
