@@ -139,10 +139,11 @@ jobs:
       - name: Test
         shell: bash
         env:
+          MATRIX_OS: ${{ matrix.os }}
           NODE_VERSION: ${{ matrix.node-version }}
           NEXT_VERSION: ${{ matrix.next-version }}
         run: |
-          if [ "$NODE_VERSION" = "aqua" ] && [ "$NEXT_VERSION" = "from-package" ]; then
+          if [ "$MATRIX_OS" = "ubuntu-latest" ] && [ "$NODE_VERSION" = "aqua" ] && [ "$NEXT_VERSION" = "from-package" ]; then
             npm run test:coverage
           else
             npm run test
