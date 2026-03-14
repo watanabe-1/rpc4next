@@ -41,6 +41,7 @@ bun install
 bun run integration:next-app:generate
 bun run integration:next-app:watch
 bun run integration:next-app:check-patterns
+bun run integration:next-app:test:runtime
 bun run integration:next-app:typecheck
 bun run integration:next-app:dev
 ```
@@ -52,6 +53,8 @@ bun run integration:next-app:smoke
 ```
 
 `integration:next-app:smoke` calls the live Next.js routes through the generated client.
+
+`integration:next-app:test:runtime` runs a Vitest suite that verifies generated client paths via `.$url()` and inspects the actual `fetch` inputs without starting Next.js.
 
 `integration:next-app:watch` keeps `src/generated/rpc.ts` and `app/**/params.ts` in sync while route files under `app/**` change.
 
