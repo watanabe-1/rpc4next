@@ -65,5 +65,13 @@
       "semicolons": "always",
       "arrowParentheses": "always"
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["integration/*/e2e/**/*.ts"],
+      "linter": {
+        "enabled": false
+      }
+    }
+  ]
 }
