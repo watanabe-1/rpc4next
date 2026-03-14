@@ -1,12 +1,12 @@
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import * as validatorUtils from "../../../packages/rpc4next/src/rpc/server/validators/validator-utils";
 import { POST } from "../app/api/posts/route";
 import { GET } from "../app/api/users/[userId]/route";
 
 describe("integration next-app server route handlers", () => {
   afterEach(() => {
-    vi.resetModules();
-    vi.doUnmock("next/headers");
+    vi.restoreAllMocks();
   });
 
   it("serves the users route through the real GET handler", async () => {
@@ -91,19 +91,14 @@ describe("integration next-app server route handlers", () => {
   });
 
   it("reads validated headers and cookies through the real GET handler chain", async () => {
-    vi.doMock("next/headers", () => ({
-      headers: async () =>
-        new Headers({
-          "x-integration-test": "header-ok",
-        }),
-      cookies: async () => ({
-        getAll: () => [{ name: "session", value: "cookie-ok" }],
-      }),
-    }));
+    vi.spyOn(validatorUtils, "getHeadersObject").mockResolvedValueOnce({
+      "x-integration-test": "header-ok",
+    });
+    vi.spyOn(validatorUtils, "getCookiesObject").mockResolvedValueOnce({
+      session: "cookie-ok",
+    });
 
-    const { GET: requestMetaGet } = await import(
-      "../app/api/request-meta/route"
-    );
+    const { GET: requestMetaGet } = await import("../app/api/request-meta/route");
     const response = await requestMetaGet(
       new NextRequest("http://127.0.0.1:3000/api/request-meta"),
       { params: Promise.resolve({}) },
@@ -117,16 +112,10 @@ describe("integration next-app server route handlers", () => {
   });
 
   it("returns a validation error when required request metadata is missing", async () => {
-    vi.doMock("next/headers", () => ({
-      headers: async () => new Headers(),
-      cookies: async () => ({
-        getAll: () => [],
-      }),
-    }));
+    vi.spyOn(validatorUtils, "getHeadersObject").mockResolvedValueOnce({});
+    vi.spyOn(validatorUtils, "getCookiesObject").mockResolvedValueOnce({});
 
-    const { GET: requestMetaGet } = await import(
-      "../app/api/request-meta/route"
-    );
+    const { GET: requestMetaGet } = await import("../app/api/request-meta/route");
     const response = await requestMetaGet(
       new NextRequest("http://127.0.0.1:3000/api/request-meta"),
       { params: Promise.resolve({}) },
