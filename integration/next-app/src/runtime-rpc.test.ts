@@ -152,7 +152,7 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
       });
     }
 
-    it.fails("should allow optional catch-all page routes without segments", () => {
+    it("should allow optional catch-all page routes without segments", () => {
       expect(client.patterns["optional-catch-all"]._____parts().$url()).toEqual(
         {
           path: `${baseUrl}/patterns/optional-catch-all`,

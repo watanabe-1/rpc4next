@@ -122,6 +122,20 @@ describe("createUrl", () => {
     expect(result.pathname).toBe("/user/[[...ids]]");
   });
 
+  it("generates a URL without optional catch-all segments when the parameter is undefined", () => {
+    const paths = ["https://example.com", "user", "_____ids"];
+    const params = { _____ids: undefined };
+    const expectedParams = { ids: undefined };
+    const dynamicKeys = ["_____ids"];
+    const urlGenerator = createUrl(paths, params, dynamicKeys);
+    const result = urlGenerator();
+
+    expect(result.relativePath).toBe("/user");
+    expect(result.path).toBe("https://example.com/user");
+    expect(result.params).toEqual(expectedParams);
+    expect(result.pathname).toBe("/user/[[...ids]]");
+  });
+
   it("encodes array parameters and joins with slashes", () => {
     const paths = ["https://example.com", "items", "list"];
     const params = { list: ["a b", "c/d"] };

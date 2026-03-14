@@ -17,6 +17,12 @@ export const isDynamic = (key: string) => key.startsWith(DYNAMIC_PREFIX);
 export const isCatchAllOrOptional = (key: string) =>
   key.startsWith(CATCH_ALL_PREFIX) || key.startsWith(OPTIONAL_CATCH_ALL_PREFIX);
 
+/**
+ * Returns true if the key represents an optional catch-all segment.
+ */
+export const isOptionalCatchAll = (key: string) =>
+  key.startsWith(OPTIONAL_CATCH_ALL_PREFIX);
+
 const httpMethods: Set<HttpMethodFuncKey> = new Set(HTTP_METHOD_FUNC_KEYS);
 
 export const isHttpMethod = (value: string): value is HttpMethodFuncKey =>
