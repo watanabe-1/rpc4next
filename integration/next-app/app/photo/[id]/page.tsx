@@ -1,7 +1,7 @@
+import type { Params } from "./params";
+
 type PhotoPageProps = {
-  params: Promise<{
-    id: string;
-  }>;
+  params: Promise<Params>;
 };
 
 export default async function PhotoPage({ params }: PhotoPageProps) {
