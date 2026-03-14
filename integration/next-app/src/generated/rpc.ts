@@ -25,10 +25,9 @@ export type PathStructure = Endpoint & {
       "___parts": Endpoint & Record<ParamsKey, { "parts": string[] }>
     },
     "dynamic": {
-      "_category": {
+      "_category": Endpoint & Record<ParamsKey, { "category": string }> & {
         "_item": Endpoint & Record<ParamsKey, { "category": string; "item": string; }>
-      },
-      "_slug": Endpoint & Record<ParamsKey, { "slug": string }>
+      }
     },
     "optional-catch-all": {
       "_____parts": Endpoint & Record<ParamsKey, { "parts": string[] | undefined }>

@@ -13,7 +13,10 @@ type HasPath<T, TKeys extends readonly PropertyKey[]> = TKeys extends readonly [
     : false
   : true;
 
-type HasDynamicSlug = HasPath<PathStructure, ["patterns", "dynamic", "_slug"]>;
+type HasDynamicCategory = HasPath<
+  PathStructure,
+  ["patterns", "dynamic", "_category"]
+>;
 type HasNestedDynamic = HasPath<
   PathStructure,
   ["patterns", "dynamic", "_category", "_item"]
@@ -46,7 +49,7 @@ type HasMalformedEncodedUrlSegment = HasPath<
   ["patterns", "%E3%81%ZZ"]
 >;
 
-type _dynamicSlug = ExpectTrue<HasDynamicSlug>;
+type _dynamicCategory = ExpectTrue<HasDynamicCategory>;
 type _nestedDynamic = ExpectTrue<HasNestedDynamic>;
 type _catchAll = ExpectTrue<HasCatchAll>;
 type _optionalCatchAll = ExpectTrue<HasOptionalCatchAll>;

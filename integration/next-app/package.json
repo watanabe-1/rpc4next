@@ -8,11 +8,13 @@
     "check:folder-patterns": "bun run generate:rpc && tsc --noEmit --project tsconfig.patterns.json && vitest run --config ../../vitest.config.ts src/pattern-coverage.test.ts src/folder-patterns.test.ts",
     "test": "bun run generate:rpc && tsc --noEmit --project tsconfig.patterns.json && vitest run --config ../../vitest.config.ts src/*.test.ts",
     "test:runtime": "bun run generate:rpc && vitest run --config ../../vitest.config.ts src/runtime-rpc.test.ts",
+    "dev:e2e": "bun run generate:rpc && next dev --port 3100",
+    "e2e": "bun run generate:rpc && playwright test",
+    "e2e:headed": "bun run generate:rpc && playwright test --headed",
     "typecheck": "bun run generate:rpc && tsc --noEmit",
     "dev": "bun run generate:rpc && next dev",
     "build:app": "bun run generate:rpc && next build",
-    "start": "next start",
-    "smoke:client": "bun run generate:rpc && bun scripts/smoke-client.ts"
+    "start": "next start"
   },
   "dependencies": {
     "next": "16.1.6",
@@ -23,6 +25,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.1",
     "@types/node": "^25.3.3",
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.1.9",

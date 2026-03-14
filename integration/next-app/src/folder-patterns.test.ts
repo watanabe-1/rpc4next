@@ -11,7 +11,7 @@ const generatedRpcPath = path.join(workspaceRoot, "src/generated/rpc.ts");
 const generatedRpc = fs.readFileSync(generatedRpcPath, "utf8");
 
 const fixturePaths = [
-  "app/patterns/dynamic/[slug]/page.tsx",
+  "app/patterns/dynamic/[category]/page.tsx",
   "app/patterns/catch-all/[...parts]/page.tsx",
   "app/patterns/optional-catch-all/[[...parts]]/page.tsx",
   "app/patterns/(grouped)/reports/page.tsx",

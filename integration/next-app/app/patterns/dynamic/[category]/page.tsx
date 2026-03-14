@@ -7,7 +7,7 @@ type DynamicPatternPageProps = {
 export default async function DynamicPatternPage({
   params,
 }: DynamicPatternPageProps) {
-  const { slug } = await params;
+  const { category } = await params;
 
-  return <div>dynamic:{slug}</div>;
+  return <div>dynamic:{category}</div>;
 }
