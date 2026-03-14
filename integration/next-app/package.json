@@ -5,15 +5,11 @@
   "scripts": {
     "generate:rpc": "bun --bun ../../packages/rpc4next-cli/src/cli/index.ts app src/generated/rpc.ts --params-file params.ts",
     "generate:rpc:watch": "bun --bun ../../packages/rpc4next-cli/src/cli/index.ts app src/generated/rpc.ts --params-file params.ts --watch",
-    "check:folder-patterns": "bun run generate:rpc && tsc --noEmit --project tsconfig.patterns.json && vitest run --config ../../vitest.config.ts src/pattern-coverage.test.ts src/folder-patterns.test.ts",
-    "test": "bun run generate:rpc && tsc --noEmit --project tsconfig.patterns.json && vitest run --config ../../vitest.config.ts src/*.test.ts",
-    "test:runtime": "bun run generate:rpc && vitest run --config ../../vitest.config.ts src/runtime-rpc.test.ts",
-    "dev:e2e": "bun run generate:rpc && next dev --port 3100",
+    "test": "bun run generate:rpc && tsc --noEmit && vitest run --config ../../vitest.config.ts src/*.test.ts",
     "e2e": "bun run generate:rpc && playwright test",
-    "e2e:headed": "bun run generate:rpc && playwright test --headed",
     "typecheck": "bun run generate:rpc && tsc --noEmit",
     "dev": "bun run generate:rpc && next dev",
-    "build:app": "bun run generate:rpc && next build",
+    "build": "bun run generate:rpc && next build",
     "start": "next start"
   },
   "dependencies": {

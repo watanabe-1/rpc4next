@@ -22,7 +22,7 @@ This workspace now includes fixture routes for the official `app` directory fold
 - Escaped underscore segments via `%5F`
 - Intercepting route fixtures
 
-`check:folder-patterns` is a dedicated test command for folder-pattern coverage. It runs both the type-level assertions and the fixture-oriented Vitest suite without changing `rpc4next` itself.
+Folder-pattern coverage is verified as part of the normal integration workspace test flow without changing `rpc4next` itself.
 
 Official references used for these fixtures:
 
@@ -40,23 +40,23 @@ From the repository root:
 bun install
 bun run integration:next-app:generate
 bun run integration:next-app:watch
-bun run integration:next-app:test
 bun run integration:next-app:e2e
-bun run integration:next-app:typecheck
 bun run integration:next-app:dev
+bun run test
+bun run typecheck
 ```
 
-`integration:next-app:test` runs the integration workspace test suite: runtime Vitest checks, direct server-route handler checks for validation, redirects, and error handling, folder-pattern Vitest checks, and the TypeScript-only pattern assertions used to validate generated `PathStructure`.
+Inside `integration/next-app`, `bun run test` runs the integration workspace test suite: a normal workspace typecheck, runtime Vitest checks, direct server-route handler checks for validation, redirects, and error handling, folder-pattern Vitest checks, and the TypeScript-only pattern assertions used to validate generated `PathStructure`.
 
-`integration:next-app:e2e` runs browser-based Playwright checks against the real Next.js app on `http://127.0.0.1:3100`. Before the first run, install the browser once:
+`bun run integration:next-app:e2e` runs browser-based Playwright checks against the real Next.js app on `http://127.0.0.1:3100`. Before the first run, install the browser once:
 
 ```bash
 bunx playwright install chromium
 ```
 
-`integration:next-app:watch` keeps `src/generated/rpc.ts` and `app/**/params.ts` in sync while route files under `app/**` change.
+For headed browser debugging inside `integration/next-app`, run `bun run e2e -- --headed`.
 
-For focused local debugging inside `integration/next-app`, `test:runtime` and `check:folder-patterns` still exist as narrower workspace-level commands.
+`bun run integration:next-app:watch` keeps `src/generated/rpc.ts` and `app/**/params.ts` in sync while route files under `app/**` change.
 
 Intercepting route fixtures are kept to verify scanning behavior, but they are intentionally excluded from `PathStructure` because rpc4next models public URL paths rather than intercepted UI branches.
 

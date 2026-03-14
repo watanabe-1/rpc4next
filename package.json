@@ -29,7 +29,7 @@
     "integration:next-app:watch": "bun run --cwd integration/next-app generate:rpc:watch",
     "integration:next-app:e2e": "bun run --cwd integration/next-app e2e",
     "integration:next-app:dev": "bun run --cwd integration/next-app dev",
-    "integration:next-app:build": "bun run --cwd integration/next-app build:app",
+    "integration:next-app:build": "bun run --cwd integration/next-app build",
     "diff2prompt": "diff2prompt --excludeFile=.gitignore"
   },
   "devDependencies": {
