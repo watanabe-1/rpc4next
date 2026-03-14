@@ -16,7 +16,7 @@ const client = createRpcClient<PathStructure>(baseUrl, {
 
 describe("integration next-app generated RPC type coverage", () => {
   it("infers the generated client signatures for query, body, and headers", () => {
-    const usersUrl = client.api.users._userId("demo-user").$url;
+    type UsersUrl = ReturnType<typeof client.api.users._userId>["$url"];
     type ExpectedUsersUrl = (url?: { query?: UsersQuery; hash?: string }) => {
       pathname: string;
       path: string;
@@ -26,7 +26,7 @@ describe("integration next-app generated RPC type coverage", () => {
       };
     };
 
-    expectTypeOf<typeof usersUrl>().toEqualTypeOf<ExpectedUsersUrl>();
+    expectTypeOf<UsersUrl>().toEqualTypeOf<ExpectedUsersUrl>();
 
     type PostsArg = Parameters<typeof client.api.posts.$post>[0];
     type ExpectedPostsArg = {
@@ -42,8 +42,8 @@ describe("integration next-app generated RPC type coverage", () => {
     const _postsArgFromActual: ExpectedPostsArg = {} as PostsArg;
     const _postsArgFromExpected: PostsArg = {} as ExpectedPostsArg;
 
-    const requestMetaGet = client.api["request-meta"].$get;
-    type RequestMetaArg = Parameters<typeof requestMetaGet>[0];
+    type RequestMetaGet = (typeof client.api)["request-meta"]["$get"];
+    type RequestMetaArg = Parameters<RequestMetaGet>[0];
     type ExpectedRequestMetaArg = {
       url?: {
         hash?: string;
@@ -135,8 +135,9 @@ describe("integration next-app generated RPC type coverage", () => {
         requestMetaResponse;
     }
 
-    const redirectResponse = await client.api["redirect-me"].$get();
-    expectTypeOf<typeof redirectResponse>().toEqualTypeOf<
+    type RedirectGet = (typeof client.api)["redirect-me"]["$get"];
+    type RedirectResponse = Awaited<ReturnType<RedirectGet>>;
+    expectTypeOf<RedirectResponse>().toEqualTypeOf<
       TypedNextResponse<undefined, 307, "">
     >();
   });
