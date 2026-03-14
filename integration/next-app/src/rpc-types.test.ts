@@ -80,9 +80,8 @@ describe("integration next-app generated RPC type coverage", () => {
   });
 
   it("infers the generated response types for integration routes", async () => {
-    const nativeNextResponse = await client.api["next-native"].$get();
-    type NativeNextResponse = typeof nativeNextResponse;
-    expectTypeOf<NativeNextResponse>().toEqualTypeOf<
+    const _nativeNextResponse = await client.api["next-native"].$get();
+    expectTypeOf<typeof _nativeNextResponse>().toEqualTypeOf<
       TypedNextResponse<
         {
           ok: boolean;
@@ -93,11 +92,10 @@ describe("integration next-app generated RPC type coverage", () => {
       >
     >();
 
-    const nativeDynamicResponse = await client.api["next-native"]
+    const _nativeDynamicResponse = await client.api["next-native"]
       ._itemId("native-item")
       .$get();
-    type NativeDynamicResponse = typeof nativeDynamicResponse;
-    expectTypeOf<NativeDynamicResponse>().toEqualTypeOf<
+    expectTypeOf<typeof _nativeDynamicResponse>().toEqualTypeOf<
       TypedNextResponse<
         {
           ok: boolean;
