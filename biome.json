@@ -1,9 +1,5 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
-  "plugins": [
-    "./biome/no-vitest-test.grit",
-    "./biome/require-top-level-describe.grit"
-  ],
   "files": {
     "includes": [
       "**/*.ts",
@@ -68,10 +64,16 @@
   },
   "overrides": [
     {
-      "includes": ["integration/*/e2e/**/*.ts"],
-      "linter": {
-        "enabled": false
-      }
+      "includes": [
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/*.test.mts",
+        "**/*.test.cts"
+      ],
+      "plugins": [
+        "./biome/no-vitest-test.grit",
+        "./biome/require-top-level-describe.grit"
+      ]
     }
   ]
 }
