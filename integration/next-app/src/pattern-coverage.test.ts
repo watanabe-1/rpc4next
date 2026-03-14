@@ -41,6 +41,10 @@ type HasEscapedUnderscoreUrlSegment = HasPath<
   PathStructure,
   ["patterns", "%5Fescaped"]
 >;
+type HasMalformedEncodedUrlSegment = HasPath<
+  PathStructure,
+  ["patterns", "%E3%81%ZZ"]
+>;
 
 type _dynamicSlug = ExpectTrue<HasDynamicSlug>;
 type _nestedDynamic = ExpectTrue<HasNestedDynamic>;
@@ -56,6 +60,8 @@ type _privateFolderExcluded = ExpectFalse<HasPrivateFolderRoute>;
 
 // `%5Fsegment` is the encoded folder form for a literal `_segment` URL.
 type _escapedUnderscorePreserved = ExpectTrue<HasEscapedUnderscoreUrlSegment>;
+type _malformedEncodedSegmentPreserved =
+  ExpectTrue<HasMalformedEncodedUrlSegment>;
 
 describe("integration next-app generated PathStructure type coverage", () => {
   it("compiles the expected folder pattern assertions", () => {

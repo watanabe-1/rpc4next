@@ -18,6 +18,7 @@ const fixturePaths = [
   "app/patterns/parallel/@analytics/views/page.tsx",
   "app/patterns/_private/ignored/page.tsx",
   "app/patterns/%5Fescaped/page.tsx",
+  "app/patterns/%E3%81%ZZ/page.tsx",
   "app/feed/@modal/(..)photo/[id]/page.tsx",
 ];
 
@@ -34,6 +35,10 @@ describe("integration next-app folder pattern coverage", () => {
 
   it("preserves escaped underscore folder keys in PathStructure", () => {
     expect(generatedRpc.includes('"%5Fescaped"')).toBe(true);
+  });
+
+  it("preserves malformed encoded folder keys in PathStructure", () => {
+    expect(generatedRpc.includes('"%E3%81%ZZ"')).toBe(true);
   });
 
   it("excludes intercepting route variants from PathStructure", () => {

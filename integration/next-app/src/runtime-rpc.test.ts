@@ -102,6 +102,20 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
         },
       },
       {
+        name: "dynamic page route with encoded params",
+        actual: () =>
+          client.patterns.dynamic
+            ._category("sci fi")
+            ._item("a/b")
+            .$url({ hash: "section-1" }),
+        expected: {
+          path: `${baseUrl}/patterns/dynamic/sci%20fi/a%2Fb#section-1`,
+          relativePath: "/patterns/dynamic/sci%20fi/a%2Fb#section-1",
+          pathname: "/patterns/dynamic/[category]/[item]",
+          params: { category: "sci fi", item: "a/b" },
+        },
+      },
+      {
         name: "optional catch-all page route with segments",
         actual: () =>
           client.patterns["optional-catch-all"]
@@ -171,6 +185,15 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
         params: {},
       });
     });
+
+    it("should preserve malformed encoded static segments as raw page routes", () => {
+      expect(client.patterns["%E3%81%ZZ"].$url()).toEqual({
+        path: `${baseUrl}/patterns/%E3%81%ZZ`,
+        relativePath: "/patterns/%E3%81%ZZ",
+        pathname: "/patterns/%E3%81%ZZ",
+        params: {},
+      });
+    });
   });
 
   describe("fetch", () => {
@@ -194,6 +217,30 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
       expect(calls).toHaveLength(1);
       expect(String(calls[0]?.input)).toBe(
         `${baseUrl}/api/users/smoke-user?includePosts=false`,
+      );
+      expect(calls[0]?.init?.method).toBe("GET");
+    });
+
+    it("encodes dynamic API params before issuing GET requests", async () => {
+      const calls: FetchCall[] = [];
+      const client = createRpcClient<PathStructure>(baseUrl, {
+        fetch: async (input, init) => {
+          calls.push({ input, init });
+          return new Response(JSON.stringify({ ok: true }), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        },
+      });
+
+      const response = await client.api.users
+        ._userId("user with/slash")
+        .$get({ url: { query: { includePosts: "true" } } });
+
+      expect(response.status).toBe(200);
+      expect(calls).toHaveLength(1);
+      expect(String(calls[0]?.input)).toBe(
+        `${baseUrl}/api/users/user%20with%2Fslash?includePosts=true`,
       );
       expect(calls[0]?.init?.method).toBe("GET");
     });
