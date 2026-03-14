@@ -4,6 +4,28 @@ import * as validatorUtils from "../../../packages/rpc4next/src/rpc/server/valid
 import { POST } from "../app/api/posts/route";
 import { GET } from "../app/api/users/[userId]/route";
 
+type ValidationErrorPayload = {
+  success: false;
+  error: {
+    name: string;
+    message: string;
+  };
+};
+
+const expectValidationErrorPayload = (
+  payload: unknown,
+): ValidationErrorPayload => {
+  expect(payload).toMatchObject({
+    success: false,
+    error: {
+      name: expect.any(String),
+      message: expect.any(String),
+    },
+  });
+
+  return payload as ValidationErrorPayload;
+};
+
 describe("integration next-app server route handlers", () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -40,10 +62,10 @@ describe("integration next-app server route handlers", () => {
     expect(response.headers.get("content-type")).toContain("application/json");
 
     const payload = await response.json();
-    expect(payload.success).toBe(false);
-    expect(payload.error.name).toBe("ZodError");
-    expect(payload.error.message).toContain('"path": [');
-    expect(payload.error.message).toContain('"includePosts"');
+    const errorPayload = expectValidationErrorPayload(payload);
+    expect(errorPayload.error.name).toBe("ZodError");
+    expect(errorPayload.error.message).toContain('"path": [');
+    expect(errorPayload.error.message).toContain('"includePosts"');
   });
 
   it("serves the posts route through the real POST handler", async () => {
@@ -84,10 +106,10 @@ describe("integration next-app server route handlers", () => {
     expect(response.headers.get("content-type")).toContain("application/json");
 
     const payload = await response.json();
-    expect(payload.success).toBe(false);
-    expect(payload.error.name).toBe("ZodError");
-    expect(payload.error.message).toContain('"path": [');
-    expect(payload.error.message).toContain('"title"');
+    const errorPayload = expectValidationErrorPayload(payload);
+    expect(errorPayload.error.name).toBe("ZodError");
+    expect(errorPayload.error.message).toContain('"path": [');
+    expect(errorPayload.error.message).toContain('"title"');
   });
 
   it("reads validated headers and cookies through the real GET handler chain", async () => {
@@ -124,8 +146,8 @@ describe("integration next-app server route handlers", () => {
     expect(response.status).toBe(400);
 
     const payload = await response.json();
-    expect(payload.success).toBe(false);
-    expect(payload.error.name).toBe("ZodError");
+    const errorPayload = expectValidationErrorPayload(payload);
+    expect(errorPayload.error.name).toBe("ZodError");
   });
 
   it("returns redirect responses from integration routes", async () => {
