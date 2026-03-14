@@ -56,6 +56,52 @@ describe("integration next-app server route handlers", () => {
     });
   });
 
+  it("serves a plain Next.js route handler through the generated RPC shape", async () => {
+    const { GET: nativeNextGet } = await import("../app/api/next-native/route");
+    const response = await nativeNextGet();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("application/json");
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      mode: "native-next",
+    });
+  });
+
+  it("serves a plain Next.js dynamic route handler with params and query", async () => {
+    const { GET: nativeDynamicGet } = await import(
+      "../app/api/next-native/[itemId]/route"
+    );
+    const response = await nativeDynamicGet(
+      new NextRequest(
+        "http://127.0.0.1:3000/api/next-native/native-item?filter=recent",
+      ),
+      { params: Promise.resolve({ itemId: "native-item" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("application/json");
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      itemId: "native-item",
+      filter: "recent",
+    });
+  });
+
+  it("serves a plain Response.json route handler", async () => {
+    const { GET: nativeResponseGet } = await import(
+      "../app/api/next-native-response/route"
+    );
+    const response = await nativeResponseGet();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("application/json");
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      source: "response-json",
+    });
+  });
+
   it("returns a validation error for unsupported users query values", async () => {
     const request = new NextRequest(
       "http://127.0.0.1:3000/api/users/smoke-user?includePosts=maybe",
