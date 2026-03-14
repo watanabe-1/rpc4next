@@ -146,9 +146,9 @@ describe("integration next-app generated RPC type coverage", () => {
       query: { includePosts: "false" },
     });
 
-    // @ts-expect-error invalid users query literal should be rejected
     client.api.users
       ._userId("demo-user")
+      // @ts-expect-error invalid users query literal should be rejected
       .$url({ query: { includePosts: "maybe" } });
 
     client.api.posts.$post({
@@ -168,8 +168,8 @@ describe("integration next-app generated RPC type coverage", () => {
       },
     });
 
-    // @ts-expect-error request-meta requires both validated headers and cookies
     client.api["request-meta"].$get({
+      // @ts-expect-error request-meta requires both validated headers and cookies
       requestHeaders: { headers: { "x-integration-test": "header-ok" } },
     });
 

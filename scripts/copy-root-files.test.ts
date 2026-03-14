@@ -95,7 +95,9 @@ describe("copyRootFiles", () => {
     const res = copyRootFiles(tmpDir, { fileNames: ["README.md"] });
 
     expect(readText(path.join(pkgA, "README.md"))).toBe("root readme\n");
-    expect(fs.existsSync(path.join(packagesDir, "not-a-package.txt", "README.md"))).toBe(false);
+    expect(
+      fs.existsSync(path.join(packagesDir, "not-a-package.txt", "README.md")),
+    ).toBe(false);
     expect(res.copied).toEqual({
       "README.md": ["a"],
     });
