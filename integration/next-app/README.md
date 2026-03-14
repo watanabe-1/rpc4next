@@ -51,7 +51,7 @@ In another terminal, with the dev server running:
 bun run integration:next-app:smoke
 ```
 
-`integration:next-app:test` runs the integration workspace test suite: runtime Vitest checks, folder-pattern Vitest checks, and the TypeScript-only pattern assertions used to validate generated `PathStructure`.
+`integration:next-app:test` runs the integration workspace test suite: runtime Vitest checks, direct server-route handler checks for validation, redirects, and error handling, folder-pattern Vitest checks, and the TypeScript-only pattern assertions used to validate generated `PathStructure`.
 
 `integration:next-app:smoke` calls the live Next.js routes through the generated client.
 
