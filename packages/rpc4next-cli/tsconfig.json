@@ -6,5 +6,5 @@
     "types": ["node"]
   },
   "references": [{ "path": "../rpc4next-shared" }],
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "../../tests/**/*.d.ts"]
+  "include": ["src/**/*.ts", "src/**/*.d.ts"]
 }
