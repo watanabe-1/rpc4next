@@ -1,0 +1,5 @@
+{
+  "baseDir": "app",
+  "outputPath": "src/generated/rpc.ts",
+  "paramsFile": "params.ts"
+}

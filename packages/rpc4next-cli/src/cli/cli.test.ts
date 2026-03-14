@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runCli } from "./cli.js";
 import * as cliHandler from "./cli-handler.js";
+import * as configModule from "./config.js";
 import { EXIT_FAILURE } from "./constants.js";
 import * as loggerModule from "./logger.js";
 
@@ -25,6 +26,7 @@ describe("runCli", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(loggerModule, "createLogger").mockReturnValue(mockLogger);
+    vi.spyOn(configModule, "loadCliConfig").mockReturnValue({});
     vi.spyOn(process, "exit").mockImplementation((() => undefined) as never);
   });
 
@@ -42,6 +44,44 @@ describe("runCli", () => {
       "src",
       "types.ts",
       { watch: false },
+      mockLogger,
+    );
+  });
+
+  it("loads required args from rpc4next.config.json when positionals are omitted", async () => {
+    const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
+    vi.spyOn(configModule, "loadCliConfig").mockReturnValue({
+      baseDir: "app",
+      outputPath: "src/generated/rpc.ts",
+      paramsFile: "params.ts",
+    });
+
+    runCli(["node", "cli"]);
+    await flushAsync();
+
+    expect(handleCliSpy).toHaveBeenCalledWith(
+      "app",
+      "src/generated/rpc.ts",
+      { watch: false, paramsFile: "params.ts" },
+      mockLogger,
+    );
+  });
+
+  it("prefers CLI args over config values", async () => {
+    const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
+    vi.spyOn(configModule, "loadCliConfig").mockReturnValue({
+      baseDir: "app",
+      outputPath: "src/generated/rpc.ts",
+      paramsFile: "params.ts",
+    });
+
+    runCli(["node", "cli", "custom-app", "custom-rpc.ts", "-p", "custom.ts"]);
+    await flushAsync();
+
+    expect(handleCliSpy).toHaveBeenCalledWith(
+      "custom-app",
+      "custom-rpc.ts",
+      { watch: false, paramsFile: "custom.ts" },
       mockLogger,
     );
   });

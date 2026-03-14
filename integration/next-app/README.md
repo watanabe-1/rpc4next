@@ -10,6 +10,7 @@ This workspace is a real Next.js app for verifying the end-to-end rpc4next flow:
 
 This workspace intentionally resolves `rpc4next` imports to the monorepo source via `tsconfig.json` paths so you can verify changes before rebuilding package `dist/`.
 Generated files are committed in this workspace so CLI output diffs are reviewable in Git, including `src/generated/rpc.ts` and `app/**/params.ts`.
+The local `rpc4next.config.json` keeps the generator command short by pinning `baseDir`, `outputPath`, and `paramsFile`.
 
 ## App folder pattern coverage
 
