@@ -8,7 +8,9 @@ export default function HomePage() {
   return (
     <main>
       <h1>rpc4next integration app</h1>
-      <p>This app verifies the rpc4next CLI output against a live Next.js app.</p>
+      <p>
+        This app verifies the rpc4next CLI output against a live Next.js app.
+      </p>
       <code>{userUrl.relativePath}</code>
     </main>
   );

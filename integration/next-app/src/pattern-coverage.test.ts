@@ -21,7 +21,10 @@ type HasNestedDynamic = HasPath<
   PathStructure,
   ["patterns", "dynamic", "_category", "_item"]
 >;
-type HasCatchAll = HasPath<PathStructure, ["patterns", "catch-all", "___parts"]>;
+type HasCatchAll = HasPath<
+  PathStructure,
+  ["patterns", "catch-all", "___parts"]
+>;
 type HasOptionalCatchAll = HasPath<
   PathStructure,
   ["patterns", "optional-catch-all", "_____parts"]
@@ -76,7 +79,8 @@ type _parallelTeamSlotExcluded = ExpectFalse<HasParallelTeamSlot>;
 type _parallelAnalyticsPageExcluded = ExpectFalse<HasParallelAnalyticsPage>;
 type _parallelTeamPageExcluded = ExpectFalse<HasParallelTeamPage>;
 type _interceptingModalExcluded = ExpectFalse<HasInterceptingModalBranch>;
-type _interceptingDrilldownExcluded = ExpectFalse<HasInterceptingDrilldownBranch>;
+type _interceptingDrilldownExcluded =
+  ExpectFalse<HasInterceptingDrilldownBranch>;
 
 // Next.js private folders should be fully excluded from routing.
 type _privateFolderExcluded = ExpectFalse<HasPrivateFolderRoute>;
