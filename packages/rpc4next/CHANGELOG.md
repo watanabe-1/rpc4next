@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.1](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.5.0...rpc4next-v0.5.1) (2026-03-14)
+
+
+### Bug Fixes
+
+* **client:** Handle malformed static segments ([#310](https://github.com/watanabe-1/rpc4next/issues/310)) ([48594c6](https://github.com/watanabe-1/rpc4next/commit/48594c6c185020acfe95029744687dede3cad80b))
+* **client:** Handle optional catch-all segments ([#308](https://github.com/watanabe-1/rpc4next/issues/308)) ([9d764fb](https://github.com/watanabe-1/rpc4next/commit/9d764fbf707fe1ffb8f015968eb931facad2f25d))
+
 ## [0.5.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.4.14...rpc4next-v0.5.0) (2026-03-04)
 
 
