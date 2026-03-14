@@ -82,12 +82,12 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
       },
       {
         name: "single dynamic page route",
-        actual: () => client.patterns.dynamic._slug("hello-world").$url(),
+        actual: () => client.patterns.dynamic._category("hello-world").$url(),
         expected: {
           path: `${baseUrl}/patterns/dynamic/hello-world`,
           relativePath: "/patterns/dynamic/hello-world",
-          pathname: "/patterns/dynamic/[slug]",
-          params: { slug: "hello-world" },
+          pathname: "/patterns/dynamic/[category]",
+          params: { category: "hello-world" },
         },
       },
       {

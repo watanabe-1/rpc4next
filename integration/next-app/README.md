@@ -41,19 +41,18 @@ bun install
 bun run integration:next-app:generate
 bun run integration:next-app:watch
 bun run integration:next-app:test
+bun run integration:next-app:e2e
 bun run integration:next-app:typecheck
 bun run integration:next-app:dev
 ```
 
-In another terminal, with the dev server running:
-
-```bash
-bun run integration:next-app:smoke
-```
-
 `integration:next-app:test` runs the integration workspace test suite: runtime Vitest checks, direct server-route handler checks for validation, redirects, and error handling, folder-pattern Vitest checks, and the TypeScript-only pattern assertions used to validate generated `PathStructure`.
 
-`integration:next-app:smoke` calls the live Next.js routes through the generated client.
+`integration:next-app:e2e` runs browser-based Playwright checks against the real Next.js app on `http://127.0.0.1:3100`. Before the first run, install the browser once:
+
+```bash
+bunx playwright install chromium
+```
 
 `integration:next-app:watch` keeps `src/generated/rpc.ts` and `app/**/params.ts` in sync while route files under `app/**` change.
 
