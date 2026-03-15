@@ -1,0 +1,145 @@
+name: E2E test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e-test:
+    name: E2E test matrix (${{ matrix.os }}, node=${{ matrix.node-version }}, next=${{ matrix.next-version }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    permissions:
+      contents: read # needed for actions/checkout
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        node-version: [aqua]
+        next-version: ["from-package"]
+        include:
+          - os: windows-latest
+            node-version: aqua
+            next-version: from-package
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Read Node.js/Bun versions from aqua/aqua.yaml
+        id: aqua-versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          NODE_VERSION="$(sed -nE 's/^- name: nodejs\/node@v?([0-9]+(\.[0-9]+)*)$/\1/p' aqua/aqua.yaml | head -n1)"
+          BUN_VERSION="$(sed -nE 's/^- name: oven-sh\/bun@(bun-v|v)?([0-9]+(\.[0-9]+)*)$/\2/p' aqua/aqua.yaml | head -n1)"
+          if [ -z "${NODE_VERSION}" ] || [ -z "${BUN_VERSION}" ]; then
+            echo "Failed to parse nodejs/node or oven-sh/bun from aqua/aqua.yaml"
+            exit 1
+          fi
+          echo "node-version=${NODE_VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "bun-version=${BUN_VERSION}" >> "${GITHUB_OUTPUT}"
+
+      - name: Setup Node.js (from matrix)
+        if: matrix.node-version != 'aqua'
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Setup Node.js (from aqua/aqua.yaml)
+        if: matrix.node-version == 'aqua'
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: ${{ steps.aqua-versions.outputs.node-version }}
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@ecf28ddc73e819eb6fa29df6b34ef8921c743461 # v2.1.3
+        with:
+          bun-version: ${{ steps.aqua-versions.outputs.bun-version }}
+
+      - name: Restore Bun package cache (Linux/macOS)
+        if: runner.os != 'Windows'
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+
+      - name: Restore Bun package cache (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+
+      - name: Install base dependencies
+        shell: bash
+        run: bun install --frozen-lockfile
+
+      - name: Install target Next.js version
+        shell: bash
+        env:
+          NEXT_VERSION: ${{ matrix.next-version }}
+        run: |
+          if [ "$NEXT_VERSION" = "from-package" ]; then
+            echo "Using next from package.json"
+          else
+            echo "Overwriting package.json to use next@$NEXT_VERSION"
+            rm -f bun.lockb bun.lock
+            bun add "next@$NEXT_VERSION"
+          fi
+
+      - name: Install Playwright browser dependencies (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: bunx playwright install --with-deps chromium
+
+      - name: Install Playwright browser (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: bunx playwright install chromium
+
+      - name: Print versions
+        shell: bash
+        run: |
+          uname -a || ver
+          node -v
+          bun -v
+          bunx next --version
+
+      - name: Run integration e2e
+        shell: bash
+        run: bun run integration:next-app:e2e
+
+      - name: Upload Playwright HTML report
+        if: always()
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        with:
+          name: playwright-report-${{ matrix.os }}-node-${{ matrix.node-version }}-next-${{ matrix.next-version }}
+          path: integration/next-app/playwright-report
+          if-no-files-found: ignore
+          retention-days: 7
+
+  status-check:
+    name: E2E test status check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: always()
+    needs:
+      - e2e-test
+    steps:
+      - name: Check required job result
+        env:
+          E2E_TEST_RESULT: ${{ needs.e2e-test.result }}
+        run: |
+          if [ "$E2E_TEST_RESULT" = "success" ]; then
+            exit 0
+          fi
+          echo "e2e-test result: $E2E_TEST_RESULT"
+          exit 1
