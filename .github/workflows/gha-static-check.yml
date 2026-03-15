@@ -18,7 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      AQUA_GLOBAL_CONFIG: ${{ github.workspace }}/aqua.yaml
+      AQUA_GLOBAL_CONFIG: ${{ github.workspace }}/aqua/aqua.yaml
+      AQUA_POLICY_CONFIG: ${{ github.workspace }}/aqua/aqua-policy.yaml
     permissions:
       contents: read
       checks: write # Required to publish actionlint results as GitHub Checks annotations.
@@ -90,7 +91,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      AQUA_GLOBAL_CONFIG: ${{ github.workspace }}/aqua.yaml
+      AQUA_GLOBAL_CONFIG: ${{ github.workspace }}/aqua/aqua.yaml
+      AQUA_POLICY_CONFIG: ${{ github.workspace }}/aqua/aqua-policy.yaml
     permissions:
       contents: read
       pull-requests: write # Required to create/update PR comments.

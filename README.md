@@ -357,7 +357,7 @@ async function callUserApi() {
 aqua i
 ```
 
-- `aqua.yaml` を更新したら、チェックサムを更新してください
+- `aqua/aqua.yaml` を更新したら、チェックサムを更新してください
 
 ```bash
 aqua update-checksum
