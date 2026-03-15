@@ -35,7 +35,7 @@ This is a good fit if you want typed client calls and typed URLs from an existin
 
 - Node.js `>=20.19.2`
 - Next.js App Router
-- Package peer dependency support in `rpc4next` and `rpc4next-cli`: Next.js `^14`, `^15`, or `^16`
+- Package peer dependency support in `rpc4next` and `rpc4next-cli`: Next.js `^15` or `^16`
 
 ## Installation
 
