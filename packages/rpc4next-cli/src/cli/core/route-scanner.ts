@@ -260,8 +260,8 @@ export const scanAppDir = (
             ]
           : params;
 
-      const isFlattenDir = isGroup;
-      const isHiddenFromPathStructure = isIntercept || isParallel;
+      const isFlattenDir = isGroup || isParallel;
+      const isHiddenFromPathStructure = isIntercept;
 
       const {
         pathStructure: childPathStructure,

@@ -123,13 +123,23 @@ test.describe("integration next-app e2e", () => {
     await expect(page.getByText("malformed-encoded-pattern")).toBeVisible();
   });
 
-  test("parallel child routes are not exposed as direct public urls", async ({
+  test("parallel child routes resolve on direct navigation with default slot fallbacks", async ({
     page,
   }) => {
     await page.goto("/patterns/parallel/views");
-    await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
+    await expect(page.getByText("parallel-analytics-views")).toBeVisible();
+    await expect(page.getByText("parallel-children-default")).toBeVisible();
+    await expect(page.getByText("team-default")).toBeVisible();
 
     await page.goto("/patterns/parallel/members");
-    await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
+    await expect(page.getByText("parallel-team-members")).toBeVisible();
+    await expect(page.getByText("parallel-children-default")).toBeVisible();
+    await expect(page.getByText("analytics-default")).toBeVisible();
+  });
+
+  test("page routes read promised searchParams", async ({ page }) => {
+    await page.goto("/patterns/search?q=playwright");
+
+    await expect(page.getByText("search:playwright")).toBeVisible();
   });
 });
