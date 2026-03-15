@@ -2,83 +2,148 @@
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/watanabe-1/rpc4next)
 
-Lightweight, type-safe RPC system for Next.js App Router projects.
+`rpc4next` is a lightweight, type-safe RPC layer for Next.js App Router projects.
+It scans your existing `app/**` files, generates a `PathStructure` type, and lets you call route handlers through a typed client without introducing a custom server framework.
 
-Inspired by Hono RPC and Pathpida, **rpc4next** automatically generates a type-safe client for your existing `route.ts` **and** `page.tsx` files, enabling seamless server-client communication with full type inference.
+It is inspired by Hono RPC and Pathpida:
 
----
+- `route.ts` files become typed RPC endpoints
+- `page.tsx` files become typed URL/path entries
+- dynamic segments and exported route `Query` types are reflected in generated client types
+- optional generated `params.ts` files can give route files a stable sibling `Params` type
 
-## Development Notes
+If you want to see a full working example, start with the real integration fixture in [integration/next-app/README.md](./integration/next-app/README.md). It shows how route scanning, generated types, the client, and a real Next.js app fit together in this repository.
 
-This repository is a monorepo.
+## What It Covers
 
-- `packages/rpc4next` contains the runtime client/server helpers.
-- `packages/rpc4next-cli` contains the Next.js scanner and type generator.
-- `integration/next-app` is the real end-to-end fixture app used to verify generated artifacts, runtime behavior, and browser usage together.
+- Typed client calls for `app/**/route.ts`
+- Typed URL generation for `app/**/page.tsx`
+- Dynamic routes, catch-all routes, and optional catch-all routes
+- Route groups and parallel-route descendants
+- Validation helpers for `params`, `query`, `json`, `headers`, and `cookies`
+- Plain Next.js route handlers written with `NextResponse.json(...)` or `Response.json(...)`
 
-When a change affects scanner behavior, generated path structure output, params generation, or integration fixture routes, regenerate the integration artifacts and review those diffs as part of the change.
+Routing notes:
 
----
+- Route group folders do not appear in generated public paths
+- Parallel route slot names are excluded, but their descendant pages are flattened onto public URL paths
+- Intercepting route branches are excluded from `PathStructure` because rpc4next models public URL paths
 
-## ✨ Features
+This is a good fit if you want typed client calls and typed URLs from an existing App Router codebase without moving to a custom RPC server framework. If you already want to keep writing normal `route.ts` and `page.tsx` files, `rpc4next` is designed for that.
 
-- ✅ ルート、パラメータ、クエリパラメータ、 リクエストボディ、レスポンスの型安全なクライアント生成
-- ✅ 既存の `app/**/route.ts` および `app/**/page.tsx` を活用するため、新たなハンドラファイルの作成は不要
-- ✅ 最小限のセットアップで、カスタムサーバー不要
-- ✅ 動的ルート（`[id]`、`[...slug]` など）に対応
-- ✅ CLI による自動クライアント用型定義生成
+## Requirements
 
----
+- Node.js `>=20.19.2`
+- Next.js App Router
+- Package peer dependency support in `rpc4next` and `rpc4next-cli`: Next.js `^14`, `^15`, or `^16`
 
-## 🚀 Getting Started
-
-### 1. Install Packages
+## Installation
 
 ```bash
 npm install rpc4next
 npm install -D rpc4next-cli
 ```
 
-### 2. Define API Routes in Next.js
-
-Next.js プロジェクト内の既存の `app/**/route.ts` と `app/**/page.tsx` ファイルをそのまま利用できます。
-さらに、クエリパラメータ（searchParams）の型安全性を有効にするには、対象のファイル内で `Query` 型を定義し、`export` してください。
-
-```ts
-// app/api/user/[id]/route.ts
-import { NextRequest, NextResponse } from "next/server";
-
-// searchParams用の型定義
-export type Query = {
-  q: string; // 必須
-  page?: number; // 任意
-};
-
-export async function GET(
-  req: NextRequest,
-  segmentData: { params: Promise<{ id: string }> },
-) {
-  const { id } = await segmentData.params;
-  const q = req.nextUrl.searchParams.get("q");
-  return NextResponse.json({ id, q });
-}
-```
-
-🚩 Query 型を export することで、searchParams の型も自動的にクライアントに反映されます。
-
-- **RPCとしてresponseの戻り値の推論が機能するのは、対象となる `route.ts` の HTTPメソッドハンドラ内で`NextResponse.json()` をしている関数のみになります**
-
----
-
-### 3. Generate Type Definitions with CLI
-
-CLI を利用して、Next.js のルート構造から型安全な RPC クライアントの定義を自動生成します。
+If you use Bun in your project:
 
 ```bash
-npx rpc4next <baseDir> <outputPath>
+bun add rpc4next
+bun add -d rpc4next-cli
 ```
 
-`rpc4next` command is provided by the `rpc4next-cli` package.
+`zod` is only needed if you use the server-side validation helpers such as
+`zValidator()`. If you only use the generated client types and do not validate
+request input with Zod, you can omit it.
+
+If you want Zod-based request validation later:
+
+```bash
+npm install zod
+```
+
+## Quick Start
+
+If you prefer to inspect a complete app before wiring this into your own project, see [integration/next-app/README.md](./integration/next-app/README.md).
+
+### 1. Define a Route
+
+`rpc4next` does not require `routeHandlerFactory()`.
+It can scan and generate client types from standard Next.js App Router handlers as-is.
+The server helpers are optional and mainly give you stronger response and validation typing.
+
+If you want the stronger typed server-side experience, use `routeHandlerFactory()`:
+
+```ts
+// app/api/users/[userId]/route.ts
+import { routeHandlerFactory } from "rpc4next/server";
+
+export type Query = {
+  includePosts?: "true" | "false";
+};
+
+const createRouteHandler = routeHandlerFactory();
+
+export const { GET } = createRouteHandler<{
+  params: { userId: string };
+  query: Query;
+}>().get(async (rc) => {
+  const { userId } = await rc.req.params();
+  const query = rc.req.query();
+
+  return rc.json({
+    ok: true,
+    userId,
+    includePosts: query.includePosts === "true",
+  });
+});
+```
+
+Notes:
+
+- `routeHandlerFactory()` is optional, not required
+- Export `Query` from a route if you want the generated client to type `searchParams` for plain Next.js handlers too
+- `routeHandlerFactory()` gives you typed helpers such as `rc.json()`, `rc.text()`, and `rc.redirect()`
+- Validation helpers such as `zValidator()` are optional
+
+If you also want request validation with Zod, add `zValidator()`:
+
+```ts
+import { routeHandlerFactory } from "rpc4next/server";
+import { zValidator } from "rpc4next/server/validators/zod";
+import { z } from "zod";
+
+const createRouteHandler = routeHandlerFactory();
+
+const querySchema = z.object({
+  includePosts: z.enum(["true", "false"]).optional(),
+});
+
+export const { GET } = createRouteHandler<{
+  params: { userId: string };
+  query: z.infer<typeof querySchema>;
+}>().get(zValidator("query", querySchema), async (rc) => {
+  const query = rc.req.valid("query");
+  return rc.json({ ok: true, includePosts: query.includePosts === "true" });
+});
+```
+
+`zValidator()` validates request input and returns `400` JSON errors by default on invalid input.
+
+### 2. Generate `PathStructure`
+
+Generate the client types from your `app` directory:
+
+```bash
+npx rpc4next app src/generated/rpc.ts
+```
+
+If you use Bun:
+
+```bash
+bunx rpc4next app src/generated/rpc.ts
+```
+
+You can also configure the CLI with `rpc4next.config.json`:
 
 ```json
 {
@@ -88,290 +153,262 @@ npx rpc4next <baseDir> <outputPath>
 }
 ```
 
-`rpc4next.config.json` を実行ディレクトリに置くと、固定値を CLI 引数に繰り返し書かずに済みます。
+Then run:
 
 ```bash
 npx rpc4next
+```
+
+Or with Bun:
+
+```bash
+bunx rpc4next
+```
+
+Positional arguments:
+
+- `<baseDir>`: the App Router root to scan, such as `app`
+- `<outputPath>`: the file to generate, such as `src/generated/rpc.ts`
+
+Useful options:
+
+- `-w`, `--watch`: regenerate on file changes
+- `-p`, `--params-file [filename]`: generate sibling params files such as `app/users/[userId]/params.ts`
+
+Examples:
+
+```bash
 npx rpc4next --watch
+npx rpc4next app src/generated/rpc.ts --params-file params.ts
 ```
 
-- `<baseDir>`: Next.js の Appルータが配置されたベースディレクトリ
-- `<outputPath>`: 生成された型定義ファイルの出力先
-
-#### オプション
-
-- **ウォッチモード**  
-  ファイル変更を検知して自動的に再生成する場合は `--watch` or `-w` オプションを付けます。
-
-  ```bash
-  npx rpc4next <baseDir> <outputPath> --watch
-  ```
-
-- **パラメータ型ファイルの生成**  
-  各ルートに対して個別のパラメータ型定義ファイルを生成する場合は、`--params-file` or `-p` オプションにファイル名を指定します。
-
-  ```bash
-  npx rpc4next <baseDir> <outputPath> --params-file <paramsFileName>
-  ```
-
----
-
-### 4. Create Your RPC Client
-
-生成された型定義ファイルを基に、RPC クライアントを作成します。
+### 3. Create a Client
 
 ```ts
-// lib/rpcClient.ts
-import { createClient } from "rpc4next/client";
-import type { PathStructure } from "あなたが生成した型定義ファイル";
+// src/lib/rpc-client.ts
+import { createRpcClient } from "rpc4next/client";
+import type { PathStructure } from "../generated/rpc";
 
-export const rpc = createClient<PathStructure>();
+export const rpc = createRpcClient<PathStructure>("");
 ```
 
----
+Use `""` for same-origin calls in the browser, or pass an absolute base URL for server-side or cross-origin usage.
 
-### 5. Use It in Your Components
+### 4. Call Routes
 
-コンポーネント内で生成された RPC クライアントを使用します。
+Generated client naming follows the App Router path shape:
 
-```tsx
-// app/page.tsx
-import { rpc } from "@/lib/rpcClient";
-
-export default async function Page() {
-  const res = await rpc.api.user._id("123").$get({
-    query: { q: "hello", page: 1 },
-  });
-  const json = await res.json();
-  return <div>{json.q}</div>;
-}
-```
-
-- エディタの補完機能により、利用可能なエンドポイントが自動的に表示されます。
-- リクエストの構造（params, query）はサーバーコードから推論され、レスポンスも型安全に扱えます。
-
----
-
-## ✅ さらに型安全にしたい場合 `createRouteHandler` による Next.js の型安全強化
-
-### 📌 主なメリット
-
-1. **レスポンス型安全**
-   - ステータス、Content-Type、Body がすべて型で保証される
-   - クライアントは受け取るレスポンス型を完全に推論可能
-
-2. **クライアント側補完強化**
-   - `status`, `content-type`, `json()`, `text()` などが適切に補完される
-
-3. **サーバー側 params / query も型安全**
-   - `createRouteHandler()` + `zValidator()` を使えば、`params`, `query`, `headers`, `cookies`, `json` も型推論・バリデーション可能
-   - `createRouteHandler()` + `zValidator()` を使えば、`Query` 型もexportする必要なし
-
----
-
-### ✅ 基本的な使い方
+- static segments stay as property access, such as `rpc.api.users`
+- dynamic segments become callable helpers, such as `[userId] -> ._userId("123")`
+- `route.ts` methods become `$get()`, `$post()`, and so on
+- `page.tsx` entries can be turned into typed URLs with `$url()`
 
 ```ts
-const createRouteHandler = routeHandlerFactory((err, rc) =>
-  rc.text("error", { status: 400 }),
-);
-
-const { POST } = createRouteHandler().post(async (rc) => rc.text("plain text"));
-```
-
-これだけで、POSTリクエストの返り値に、レスポンスの内容 (`json`, `text`など)、`status`, `content-type` が型付けされるようになります。
-
----
-
-### 👤 サーバー側でのより型安全なルート作成
-
-`createRouteHandler()` と `zValidator()` を使うことで、各リクエストパーツに対して **型安全なバリデーション** をかけられます。
-
-#### シンプルな例
-
-```ts
-import { createRouteHandler } from "@/path/to/createRouteHandler";
-import { zValidator } from "@/path/to/zValidator";
-import { z } from "zod";
-
-// Zodスキーマを定義
-const paramsSchema = z.object({
-  userId: z.string(),
+const response = await rpc.api.users._userId("123").$get({
+  url: { query: { includePosts: "true" } },
 });
 
-// バリデーション付きルートハンドラを作成
-export const { GET } = createRouteHandler<{
-  params: z.infer<typeof paramsSchema>;
-}>().get(
-  zValidator("params", paramsSchema), // paramsを検証
-  async (rc) => {
-    const params = rc.req.valid("params"); // バリデーション済みparamsを取得
-    return rc.json({ message: `User ID is ${params.userId}` });
+const data = await response.json();
+```
+
+For JSON request bodies:
+
+```ts
+const response = await rpc.api.posts.$post({
+  body: { json: { title: "hello" } },
+});
+```
+
+For request headers and cookies:
+
+```ts
+const response = await rpc.api["request-meta"].$get({
+  requestHeaders: {
+    headers: { "x-integration-test": "example" },
+    cookies: { session: "abc123" },
   },
-);
+});
 ```
 
-## ✅ サポートされているバリデーションターゲット
+### 5. Generate Typed URLs for Pages
 
-サーバー側では，次のリクエスト部分を型安全に検証できます：
-
-| ターゲット | 説明                                                |
-| :--------- | :-------------------------------------------------- |
-| `params`   | URLパラメータ ( `/user/:id` の `id`など)            |
-| `query`    | クエリパラメータ (`?q=xxx&page=1`など)              |
-| `headers`  | リクエストヘッダー                                  |
-| `cookies`  | クッキー                                            |
-| `json`     | リクエストボディ (Content-Type: `application/json`) |
-
----
-
-### 🔥 複数ターゲットを同時に検証する例
+`page.tsx` files are included in the generated path tree, so you can build typed URLs even when there is no RPC method to call.
 
 ```ts
-import { createRouteHandler } from "@/path/to/createRouteHandler";
-import { zValidator } from "@/path/to/zValidator";
+const photoUrl = rpc.photo._id("42").$url();
+
+photoUrl.path;
+photoUrl.relativePath;
+photoUrl.pathname;
+photoUrl.params;
+```
+
+## Server Helpers
+
+### `routeHandlerFactory`
+
+`routeHandlerFactory()` creates typed handlers for:
+
+- `get`
+- `post`
+- `put`
+- `delete`
+- `patch`
+- `head`
+- `options`
+
+It also supports a shared error handler:
+
+```ts
+import { routeHandlerFactory } from "rpc4next/server";
+
+const createRouteHandler = routeHandlerFactory((error, rc) => {
+  return rc.text("error", 400);
+});
+
+export const { POST } = createRouteHandler().post(async (rc) => {
+  return rc.json({ ok: true }, 201);
+});
+```
+
+### `zValidator`
+
+`zValidator()` supports these targets:
+
+- `params`
+- `query`
+- `json`
+- `headers`
+- `cookies`
+
+Example:
+
+```ts
+import { routeHandlerFactory } from "rpc4next/server";
+import { zValidator } from "rpc4next/server/validators/zod";
 import { z } from "zod";
 
-const querySchema = z.object({
-  page: z.string().regex(/^\d+$/),
-});
+const createRouteHandler = routeHandlerFactory();
 
 const jsonSchema = z.object({
-  name: z.string(),
-  age: z.number(),
+  title: z.string().min(1),
 });
 
-export const { POST } = createRouteHandler<{
-  query: z.infer<typeof querySchema>;
-}>().post(
-  zValidator("query", querySchema),
+export const { POST } = createRouteHandler().post(
   zValidator("json", jsonSchema),
   async (rc) => {
-    const query = rc.req.valid("query");
     const body = rc.req.valid("json");
-    return rc.json({ query, body });
+    return rc.json({ title: body.title }, 201);
   },
 );
 ```
 
-- `query`と`json`を別々のスキーマで検証
-- **成功時は型安全に取得可能** (`rc.req.valid('query')`, `rc.req.valid('json')`)
-
----
-
-これにより，クライアント側とサーバー側が、全面的に**型でつながる**ので，ミスを何次も防げ，開発体験を大幅に向上できます。
-
----
-
-### ⚡ バリデーション失敗時のカスタムエラーハンドリング
-
-- デフォルトでは、バリデーション失敗時に自動で `400 Bad Request` を返します。
-- 必要に応じて、**カスタムフック**でエラー対応を制御できます。
+If you provide a custom hook, you must return a response yourself when validation fails:
 
 ```ts
-zValidator("params", paramsSchema, (result, rc) => {
+zValidator("json", jsonSchema, (result, rc) => {
   if (!result.success) {
-    return rc.json({ error: result.error.errors }, { status: 422 });
+    return rc.json({ error: result.error.issues }, 422);
   }
 });
 ```
 
-> （フック内でレスポンスを返さない場合は、通常通り例外がスローされます）
+## Plain Next.js Route Handlers Also Work
 
----
+You can keep using native App Router handlers without adopting `routeHandlerFactory()`.
+This is useful when you want to stay close to stock Next.js APIs and only use `rpc4next` for route scanning and client generation.
 
-## 📡 クライアント側での使い方
-
-`rpc4next`で作成したクライアントは、`createRouteHandler` と `zValidator` で作成したルートハンドラの内容にしたがって　**params, query, headers, cookies, json** を型安全に送信できます。
-
-例：
+Example with `NextResponse.json(...)`:
 
 ```ts
-import { createRpcClient } from "@/path/to/rpc-client";
-import type { PathStructure } from "@/path/to/generated-types";
+// app/api/next-native/[itemId]/route.ts
+import { type NextRequest, NextResponse } from "next/server";
 
-const client = createRpcClient<PathStructure>("http://localhost:3000");
+export type Query = {
+  filter?: string;
+};
 
-async function callUserApi() {
-  const res = await client.api.menu.test.$post({
-    body: { json: { age: 20, name: "foo" } },
-    url: { query: { page: "1" } },
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ itemId: string }> },
+) {
+  const { itemId } = await context.params;
+  const filter = request.nextUrl.searchParams.get("filter") ?? "all";
+
+  return NextResponse.json({
+    ok: true,
+    itemId,
+    filter,
   });
-
-  if (res.ok) {
-    const json = await res.json();
-
-    // ✅ 正常時は次の型が推論されます
-    // const json: {
-    //   query: {
-    //     page: string;
-    //   };
-    //   body: {
-    //     name: string;
-    //     age: number;
-    //   };
-    // }
-  } else {
-    const error = await res.json();
-
-    // ⚠️ バリデーションエラー時は次の型が推論されます
-    // const error:
-    //   | SafeParseError<{
-    //       page: string;
-    //     }>
-    //   | SafeParseError<{
-    //       name: string;
-    //       age: number;
-    //     }>;
-  }
 }
 ```
 
-- エディタの補完機能により、送信できるターゲットが明示されます
-- サーバー側の型定義に基づいて、**型のズレを防止**できます
+Example with `Response.json(...)`:
 
----
-
-これらのように、リクエスト時にはさまざまなターゲット (`params`, `query`, `headers`, `cookies`, `json`) を送信できます。
-
-さらに、サーバー側では、これらを**個別に型付け、バリデーション**できます。
-
----
-
-## 🧭 Monorepo Layout
-
-- `packages/rpc4next`: Core library modules (client, server, validators, shared types)
-- `packages/rpc4next-cli`: CLI generator that exposes the `rpc4next` binary
-- Install once at the repo root: `bun install`
-- Build everything: `bun run build`
-- Run all tests: `bun run test`
-- Lint all packages: `bun run lint`
-
-## 🚧 Requirements
-
-- Next.js 14+ (App Router 使用)
-- Node.js 20.19.2+
-- aqua (Node.js / Bun のバージョン管理)
-
-```bash
-aqua i
+```ts
+// app/api/next-native-response/route.ts
+export async function GET() {
+  return Response.json({
+    ok: true,
+    source: "response-json",
+  });
+}
 ```
 
-- `aqua/aqua.yaml` を更新したら、チェックサムを更新してください
+The generated client can still call this route:
 
-```bash
-aqua update-checksum
+```ts
+const response = await rpc.api["next-native"]
+  ._itemId("item-1")
+  .$get({ url: { query: { filter: "recent" } } });
 ```
 
-- CI / ローカルで設定を強制する場合は以下を利用してください
+You can also call a plain `Response.json(...)` route:
 
-```bash
-export AQUA_ENFORCE_CHECKSUM=true
-export AQUA_ENFORCE_REQUIRE_CHECKSUM=true
+```ts
+const response = await rpc.api["next-native-response"].$get();
 ```
 
----
+For native handlers, route discovery and request typing still work, but response typing is naturally broader than when you return rpc4next's typed helpers.
 
-## 💼 License
+See [integration/next-app/README.md](./integration/next-app/README.md) for the repository's full integration fixture coverage and route-pattern notes.
+
+## Generated Files
+
+When `paramsFile` is enabled, the CLI can generate sibling files such as:
+
+```ts
+// app/api/users/[userId]/params.ts
+export type Params = { userId: string };
+```
+
+That lets route files import the param shape instead of repeating it manually.
+These generated `params.ts` files are optional, and your generated `src/generated/rpc.ts` is typically not something you edit by hand.
+
+Your generated `src/generated/rpc.ts` exports a `PathStructure` type that includes:
+
+- path entries from `page.tsx`
+- callable HTTP methods from `route.ts`
+- dynamic segment parameter types
+- route `Query` exports where available
+
+## Typical Workflow
+
+1. Add or update files under `app/**`
+2. Run `rpc4next` to regenerate `PathStructure`
+3. Import `PathStructure` into your client
+4. Call routes with `createRpcClient<PathStructure>(...)`
+5. Use `routeHandlerFactory` and `zValidator` where you want stronger server-side typing
+
+## Repository Layout
+
+- `packages/rpc4next`: runtime client and server helpers
+- `packages/rpc4next-cli`: route scanner and type generator
+- `packages/rpc4next-shared`: internal shared constants and types
+- `integration/next-app`: real Next.js integration fixture
+
+If you are evaluating the repository itself, `integration/next-app` is the best place to see the full flow working in a real app.
+
+## License
 
 MIT
