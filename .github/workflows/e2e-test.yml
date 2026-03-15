@@ -113,6 +113,10 @@ jobs:
           bun -v
           bunx next --version
 
+      - name: Build (all packages)
+        shell: bash
+        run: bun run build
+
       - name: Run integration e2e
         shell: bash
         run: bun run integration:next-app:e2e
