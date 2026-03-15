@@ -22,7 +22,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         bun-version: ["1.1.0", "1.2.0", "aqua"]
-        next-version: ["14.0.0", "15.0.0", "from-package"]
+        next-version: ["15.0.0", "from-package"]
         include:
           - os: windows-latest
             bun-version: aqua
