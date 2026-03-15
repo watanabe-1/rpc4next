@@ -114,6 +114,19 @@ export type HeadersOptions<THeaders = unknown, TCookies = unknown> = {
   headers: THeaders;
   cookies: TCookies;
 };
+
+type QueryInputForValidation<TValidationSchema extends ValidationSchema> =
+  ValidationInputFor<"query", TValidationSchema>;
+
+type JsonInputForValidation<TValidationSchema extends ValidationSchema> =
+  ValidationInputFor<"json", TValidationSchema>;
+
+type HeadersInputForValidation<TValidationSchema extends ValidationSchema> =
+  ValidationInputFor<"headers", TValidationSchema>;
+
+type CookiesInputForValidation<TValidationSchema extends ValidationSchema> =
+  ValidationInputFor<"cookies", TValidationSchema>;
+
 type RequestHeadersArgs<THeaders = unknown, TCookies = unknown> =
   IsNever<THeaders> extends true
     ? IsNever<TCookies> extends true
@@ -126,26 +139,26 @@ type RequestHeadersArgs<THeaders = unknown, TCookies = unknown> =
 type MethodParameterBase<
   T,
   TValidationSchema extends ValidationSchema,
-> = UrlArgsObj<T, ValidationInputFor<"query", TValidationSchema>> &
-  BodyArgsObj<ValidationInputFor<"json", TValidationSchema>> &
+> = UrlArgsObj<T, QueryInputForValidation<TValidationSchema>> &
+  BodyArgsObj<JsonInputForValidation<TValidationSchema>> &
   RequestHeadersArgs<
-    ValidationInputFor<"headers", TValidationSchema>,
-    ValidationInputFor<"cookies", TValidationSchema>
+    HeadersInputForValidation<TValidationSchema>,
+    CookiesInputForValidation<TValidationSchema>
   >;
 
 type ClientOptionRestrictedHeaders<TValidationSchema extends ValidationSchema> =
-  | (IsNever<ValidationInputFor<"json", TValidationSchema>> extends true
+  | (IsNever<JsonInputForValidation<TValidationSchema>> extends true
       ? never
       : "Content-Type")
-  | (IsNever<ValidationInputFor<"cookies", TValidationSchema>> extends true
+  | (IsNever<CookiesInputForValidation<TValidationSchema>> extends true
       ? never
       : "Cookie");
 
 type ClientOptionRestrictedInit<TValidationSchema extends ValidationSchema> =
-  | (IsNever<ValidationInputFor<"json", TValidationSchema>> extends true
+  | (IsNever<JsonInputForValidation<TValidationSchema>> extends true
       ? never
       : "body")
-  | (IsNever<ValidationInputFor<"headers", TValidationSchema>> extends true
+  | (IsNever<HeadersInputForValidation<TValidationSchema>> extends true
       ? never
       : "headers" | "headersInit");
 
@@ -169,17 +182,17 @@ type HttpMethodsArgs<
 
 type InferHttpMethods<T extends IsHttpMethod> = {
   [K in keyof T as K extends HttpMethodFuncKey ? K : never]: (
-    ...args: HttpMethodsArgs<T, InferValidationSchema<T[K]>>
-  ) => Promise<InferTypedNextResponseType<T[K]>>;
+    ...args: HttpMethodsArgs<T, InferRouteValidationSchema<T[K]>>
+  ) => Promise<InferClientResponse<T[K]>>;
 };
 
-type InferHttpMethodValidationSchema<T> = {
+type InferEndpointValidationSchema<T> = {
   [K in keyof T]: K extends HttpMethodFuncKey
-    ? InferValidationSchema<T[K]>
+    ? InferRouteValidationSchema<T[K]>
     : never;
 }[keyof T & HttpMethodFuncKey];
 
-type InferValidationSchema<T> = T extends (
+type InferRouteValidationSchema<T> = T extends (
   // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
   ...args: any[]
 ) => RouteHandlerResponse<RouteResponse, infer TValidationSchema>
@@ -193,7 +206,7 @@ type InferNextResponseType<T> = T extends (
   ? U
   : never;
 
-type InferTypedNextResponseType<T> = T extends (
+type InferClientResponse<T> = T extends (
   // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
   ...args: any[]
 ) => Promise<TypedNextResponse>
@@ -208,10 +221,7 @@ type PathProxyAsProperty<T> = {
     | null;
 };
 
-type InferQuery<T> = ValidationInputFor<
-  "query",
-  InferHttpMethodValidationSchema<T>
->;
+type InferQuery<T> = QueryInputForValidation<InferEndpointValidationSchema<T>>;
 
 type PathProxyAsFunction<T> = {
   $url: (...args: UrlArgs<T, InferQuery<T>>) => UrlResult<T>;
