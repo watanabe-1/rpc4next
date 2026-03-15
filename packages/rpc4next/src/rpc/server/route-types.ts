@@ -79,26 +79,51 @@ type HttpMethodMapping<
   RouteHandler<TParams, TRouteResponse, TValidationSchema>
 >;
 
+type RouteParamsForBindings<TBindings extends RouteBindings> =
+  TBindings extends {
+    params: infer TValue;
+  }
+    ? Awaited<TValue>
+    : Params;
+
+type RouteQueryForBindings<TBindings extends RouteBindings> =
+  TBindings extends { query: infer TValue } ? TValue : Query;
+
+type MethodRouteHandler<
+  THttpMethod extends HttpMethod,
+  TParams,
+  TQuery,
+  TValidationSchema extends ValidationSchema,
+  TRouteResponse extends RouteResponse,
+> = Handler<THttpMethod, TParams, TQuery, TValidationSchema, TRouteResponse>;
+
+type MethodRouteMapping<
+  THttpMethod extends HttpMethod,
+  TParams extends RouteBindings["params"],
+  TRouteResponse extends RouteResponse,
+  TValidationSchema extends ValidationSchema,
+  TOnErrorResponse extends RequiredRouteResponse,
+> = HttpMethodMapping<
+  THttpMethod,
+  TParams,
+  TRouteResponse | TOnErrorResponse,
+  TValidationSchema
+>;
+
 export interface MethodRouteDefinition<
   THttpMethod extends HttpMethod,
   TBindings extends RouteBindings,
   TOnErrorResponse extends RequiredRouteResponse,
-  TParams extends TBindings["params"] = TBindings extends {
-    params: infer TValue;
-  }
-    ? Awaited<TValue>
-    : Params,
-  TQuery extends TBindings["query"] = TBindings extends { query: infer TValue }
-    ? TValue
-    : Query,
+  TParams extends TBindings["params"] = RouteParamsForBindings<TBindings>,
+  TQuery extends TBindings["query"] = RouteQueryForBindings<TBindings>,
 > {
   // 1 handler
   <
     TV1 extends ValidationSchema = ValidationSchema,
     TR1 extends RequiredRouteResponse = RequiredRouteResponse,
   >(
-    handler: Handler<THttpMethod, TParams, TQuery, TV1, TR1>,
-  ): HttpMethodMapping<THttpMethod, TParams, TR1 | TOnErrorResponse, TV1>;
+    handler: MethodRouteHandler<THttpMethod, TParams, TQuery, TV1, TR1>,
+  ): MethodRouteMapping<THttpMethod, TParams, TR1, TV1, TOnErrorResponse>;
 
   // 2 handlers
   <
@@ -107,9 +132,9 @@ export interface MethodRouteDefinition<
     TR1 extends RouteResponse = RouteResponse,
     TR2 extends RequiredRouteResponse = RequiredRouteResponse,
   >(
-    handler1: Handler<THttpMethod, TParams, TQuery, TV1, TR1>,
-    handler2: Handler<THttpMethod, TParams, TQuery, TV2, TR2>,
-  ): HttpMethodMapping<THttpMethod, TParams, TR1 | TR2 | TOnErrorResponse, TV2>;
+    handler1: MethodRouteHandler<THttpMethod, TParams, TQuery, TV1, TR1>,
+    handler2: MethodRouteHandler<THttpMethod, TParams, TQuery, TV2, TR2>,
+  ): MethodRouteMapping<THttpMethod, TParams, TR1 | TR2, TV2, TOnErrorResponse>;
 
   // 3 handlers
   <
@@ -120,14 +145,15 @@ export interface MethodRouteDefinition<
     TR2 extends RouteResponse = RouteResponse,
     TR3 extends RequiredRouteResponse = RequiredRouteResponse,
   >(
-    handler1: Handler<THttpMethod, TParams, TQuery, TV1, TR1>,
-    handler2: Handler<THttpMethod, TParams, TQuery, TV2, TR2>,
-    handler3: Handler<THttpMethod, TParams, TQuery, TV3, TR3>,
-  ): HttpMethodMapping<
+    handler1: MethodRouteHandler<THttpMethod, TParams, TQuery, TV1, TR1>,
+    handler2: MethodRouteHandler<THttpMethod, TParams, TQuery, TV2, TR2>,
+    handler3: MethodRouteHandler<THttpMethod, TParams, TQuery, TV3, TR3>,
+  ): MethodRouteMapping<
     THttpMethod,
     TParams,
-    TR1 | TR2 | TR3 | TOnErrorResponse,
-    TV3
+    TR1 | TR2 | TR3,
+    TV3,
+    TOnErrorResponse
   >;
 
   // 4 handlers
@@ -141,15 +167,16 @@ export interface MethodRouteDefinition<
     TR3 extends RouteResponse = RouteResponse,
     TR4 extends RequiredRouteResponse = RequiredRouteResponse,
   >(
-    handler1: Handler<THttpMethod, TParams, TQuery, TV1, TR1>,
-    handler2: Handler<THttpMethod, TParams, TQuery, TV2, TR2>,
-    handler3: Handler<THttpMethod, TParams, TQuery, TV3, TR3>,
-    handler4: Handler<THttpMethod, TParams, TQuery, TV4, TR4>,
-  ): HttpMethodMapping<
+    handler1: MethodRouteHandler<THttpMethod, TParams, TQuery, TV1, TR1>,
+    handler2: MethodRouteHandler<THttpMethod, TParams, TQuery, TV2, TR2>,
+    handler3: MethodRouteHandler<THttpMethod, TParams, TQuery, TV3, TR3>,
+    handler4: MethodRouteHandler<THttpMethod, TParams, TQuery, TV4, TR4>,
+  ): MethodRouteMapping<
     THttpMethod,
     TParams,
-    TR1 | TR2 | TR3 | TR4 | TOnErrorResponse,
-    TV4
+    TR1 | TR2 | TR3 | TR4,
+    TV4,
+    TOnErrorResponse
   >;
 
   // 5 handlers
@@ -165,16 +192,17 @@ export interface MethodRouteDefinition<
     TR4 extends RouteResponse = RouteResponse,
     TR5 extends RequiredRouteResponse = RequiredRouteResponse,
   >(
-    handler1: Handler<THttpMethod, TParams, TQuery, TV1, TR1>,
-    handler2: Handler<THttpMethod, TParams, TQuery, TV2, TR2>,
-    handler3: Handler<THttpMethod, TParams, TQuery, TV3, TR3>,
-    handler4: Handler<THttpMethod, TParams, TQuery, TV4, TR4>,
-    handler5: Handler<THttpMethod, TParams, TQuery, TV5, TR5>,
-  ): HttpMethodMapping<
+    handler1: MethodRouteHandler<THttpMethod, TParams, TQuery, TV1, TR1>,
+    handler2: MethodRouteHandler<THttpMethod, TParams, TQuery, TV2, TR2>,
+    handler3: MethodRouteHandler<THttpMethod, TParams, TQuery, TV3, TR3>,
+    handler4: MethodRouteHandler<THttpMethod, TParams, TQuery, TV4, TR4>,
+    handler5: MethodRouteHandler<THttpMethod, TParams, TQuery, TV5, TR5>,
+  ): MethodRouteMapping<
     THttpMethod,
     TParams,
-    TR1 | TR2 | TR3 | TR4 | TR5 | TOnErrorResponse,
-    TV5
+    TR1 | TR2 | TR3 | TR4 | TR5,
+    TV5,
+    TOnErrorResponse
   >;
 
   // 6 handlers
@@ -192,16 +220,17 @@ export interface MethodRouteDefinition<
     TR5 extends RouteResponse = RouteResponse,
     TR6 extends RequiredRouteResponse = RequiredRouteResponse,
   >(
-    handler1: Handler<THttpMethod, TParams, TQuery, TV1, TR1>,
-    handler2: Handler<THttpMethod, TParams, TQuery, TV2, TR2>,
-    handler3: Handler<THttpMethod, TParams, TQuery, TV3, TR3>,
-    handler4: Handler<THttpMethod, TParams, TQuery, TV4, TR4>,
-    handler5: Handler<THttpMethod, TParams, TQuery, TV5, TR5>,
-    handler6: Handler<THttpMethod, TParams, TQuery, TV6, TR6>,
-  ): HttpMethodMapping<
+    handler1: MethodRouteHandler<THttpMethod, TParams, TQuery, TV1, TR1>,
+    handler2: MethodRouteHandler<THttpMethod, TParams, TQuery, TV2, TR2>,
+    handler3: MethodRouteHandler<THttpMethod, TParams, TQuery, TV3, TR3>,
+    handler4: MethodRouteHandler<THttpMethod, TParams, TQuery, TV4, TR4>,
+    handler5: MethodRouteHandler<THttpMethod, TParams, TQuery, TV5, TR5>,
+    handler6: MethodRouteHandler<THttpMethod, TParams, TQuery, TV6, TR6>,
+  ): MethodRouteMapping<
     THttpMethod,
     TParams,
-    TR1 | TR2 | TR3 | TR4 | TR5 | TR6 | TOnErrorResponse,
-    TV6
+    TR1 | TR2 | TR3 | TR4 | TR5 | TR6,
+    TV6,
+    TOnErrorResponse
   >;
 }
