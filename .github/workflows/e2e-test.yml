@@ -22,7 +22,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         node-version: [aqua]
-        next-version: ["15.0.0", "from-package"]
+        next-version: ["14.0.0", "15.0.0", "from-package"]
         include:
           - os: windows-latest
             node-version: aqua
