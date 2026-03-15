@@ -21,31 +21,57 @@ import type {
 } from "../../types";
 import { validator } from "../validator";
 
+type ValidationTargetParams<
+  TValidationTarget extends ValidationTarget,
+  TValidationSchema extends ValidationSchema,
+> = ConditionalValidationInput<
+  TValidationTarget,
+  "params",
+  TValidationSchema,
+  Params
+> &
+  Params;
+
+type ValidationTargetQuery<
+  TValidationTarget extends ValidationTarget,
+  TValidationSchema extends ValidationSchema,
+> = ConditionalValidationInput<
+  TValidationTarget,
+  "query",
+  TValidationSchema,
+  Query
+> &
+  Query;
+
+type ZodValidationSchemaForTarget<
+  TValidationTarget extends ValidationTarget,
+  TInput,
+  TOutput,
+> = {
+  input: Record<TValidationTarget, TInput>;
+  output: Record<TValidationTarget, TOutput>;
+};
+
 export const zValidator = <
   THttpMethod extends HttpMethod,
   TValidationTarget extends ValidationTarget<THttpMethod>,
   // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
   TSchema extends ZodSchema<any>,
-  TParams extends ConditionalValidationInput<
-    TValidationTarget,
-    "params",
-    TValidationSchema,
-    Params
-  > &
-    Params,
-  TQuery extends ConditionalValidationInput<
-    TValidationTarget,
-    "query",
-    TValidationSchema,
-    Query
-  > &
-    Query,
   TInput = z.input<TSchema>,
   TOutput = z.output<TSchema>,
-  TValidationSchema extends ValidationSchema = {
-    input: Record<TValidationTarget, TInput>;
-    output: Record<TValidationTarget, TOutput>;
-  },
+  TValidationSchema extends ValidationSchema = ZodValidationSchemaForTarget<
+    TValidationTarget,
+    TInput,
+    TOutput
+  >,
+  TParams extends ValidationTargetParams<
+    TValidationTarget,
+    TValidationSchema
+  > = ValidationTargetParams<TValidationTarget, TValidationSchema>,
+  TQuery extends ValidationTargetQuery<
+    TValidationTarget,
+    TValidationSchema
+  > = ValidationTargetQuery<TValidationTarget, TValidationSchema>,
   THookReturn extends TypedNextResponse | undefined =
     | TypedNextResponse<z.ZodSafeParseError<TInput>, 400, "application/json">
     | undefined,
