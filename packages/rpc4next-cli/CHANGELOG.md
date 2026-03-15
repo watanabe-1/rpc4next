@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.4.0...rpc4next-cli-v0.5.0) (2026-03-15)
+
+
+### Features
+
+* **cli:** Flatten parallel routes in path structure ([#334](https://github.com/watanabe-1/rpc4next/issues/334)) ([e7063b6](https://github.com/watanabe-1/rpc4next/commit/e7063b6656ddc37a022be5ed83ab17d32c35c72e))
+
 ## [0.4.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.3.2...rpc4next-cli-v0.4.0) (2026-03-15)
 
 
