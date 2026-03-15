@@ -112,8 +112,11 @@ export function replaceWorkspaceDepsFromManifest(
   return result;
 }
 
-export function runCli(cwd = process.cwd()): ReplaceResult {
-  return replaceWorkspaceDepsFromManifest({ repoRoot: cwd });
+export function runCli(
+  cwd = process.cwd(),
+  manifestFile = process.argv[2],
+): ReplaceResult {
+  return replaceWorkspaceDepsFromManifest({ repoRoot: cwd, manifestFile });
 }
 
 // CLI entry point (used by CI)

@@ -233,4 +233,43 @@ describe("replaceWorkspaceDepsFromManifest", () => {
     expect(core.dependencies["rpc4next-shared"]).toBe("^1.7.3");
     expect(res.updatedFiles.length).toBe(1);
   });
+
+  it("runCli accepts an explicit manifest path", () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "rpc4next-test-"));
+
+    const pShared = path.join(tmpDir, "packages/rpc4next-shared");
+    const pCore = path.join(tmpDir, "packages/rpc4next");
+    const manifestDir = path.join(tmpDir, ".github/release-please");
+    mkdirp(pShared);
+    mkdirp(pCore);
+    mkdirp(manifestDir);
+
+    writeJson(path.join(manifestDir, ".release-please-manifest.json"), {
+      "packages/rpc4next": "2.0.0",
+      "packages/rpc4next-shared": "1.7.3",
+    });
+
+    writeJson(path.join(pShared, "package.json"), {
+      name: "rpc4next-shared",
+      version: "0.0.0-ignored",
+    });
+
+    writeJson(path.join(pCore, "package.json"), {
+      name: "rpc4next",
+      version: "0.0.0-ignored",
+      dependencies: {
+        "rpc4next-shared": "workspace:*",
+      },
+    });
+
+    const res = runCli(
+      tmpDir,
+      ".github/release-please/.release-please-manifest.json",
+    );
+
+    // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
+    const core = readJson<any>(path.join(pCore, "package.json"));
+    expect(core.dependencies["rpc4next-shared"]).toBe("^1.7.3");
+    expect(res.updatedFiles.length).toBe(1);
+  });
 });
