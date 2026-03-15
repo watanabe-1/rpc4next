@@ -15,8 +15,10 @@ const fixturePaths = [
   "app/patterns/catch-all/[...parts]/page.tsx",
   "app/patterns/optional-catch-all/[[...parts]]/page.tsx",
   "app/patterns/(grouped)/reports/page.tsx",
+  "app/patterns/parallel/default.tsx",
   "app/patterns/parallel/@analytics/views/page.tsx",
   "app/patterns/parallel/@team/members/page.tsx",
+  "app/patterns/search/page.tsx",
   "app/patterns/_private/ignored/page.tsx",
   "app/patterns/%5Fescaped/page.tsx",
   "app/patterns/%E3%81%ZZ/page.tsx",
@@ -49,10 +51,10 @@ describe("integration next-app folder pattern coverage", () => {
     expect(generatedRpc.includes('"(..)photo"')).toBe(false);
   });
 
-  it("excludes parallel route slot names from PathStructure", () => {
+  it("flattens parallel route descendants into public PathStructure keys", () => {
     expect(generatedRpc.includes('"@analytics"')).toBe(false);
     expect(generatedRpc.includes('"@team"')).toBe(false);
-    expect(generatedRpc.includes('"views"')).toBe(false);
-    expect(generatedRpc.includes('"members"')).toBe(false);
+    expect(generatedRpc.includes('"views"')).toBe(true);
+    expect(generatedRpc.includes('"members"')).toBe(true);
   });
 });

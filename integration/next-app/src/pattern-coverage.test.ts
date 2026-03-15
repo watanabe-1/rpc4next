@@ -30,6 +30,7 @@ type HasOptionalCatchAll = HasPath<
   ["patterns", "optional-catch-all", "_____parts"]
 >;
 type HasGroupedRoute = HasPath<PathStructure, ["patterns", "reports"]>;
+type HasSearchRoute = HasPath<PathStructure, ["patterns", "search"]>;
 type HasParallelAnalyticsSlot = HasPath<
   PathStructure,
   ["patterns", "parallel", "@analytics"]
@@ -73,11 +74,12 @@ type _nestedDynamic = ExpectTrue<HasNestedDynamic>;
 type _catchAll = ExpectTrue<HasCatchAll>;
 type _optionalCatchAll = ExpectTrue<HasOptionalCatchAll>;
 type _groupedRoute = ExpectTrue<HasGroupedRoute>;
+type _searchRoute = ExpectTrue<HasSearchRoute>;
 type _photoCommentRoute = ExpectTrue<HasPhotoCommentRoute>;
 type _parallelAnalyticsSlotExcluded = ExpectFalse<HasParallelAnalyticsSlot>;
 type _parallelTeamSlotExcluded = ExpectFalse<HasParallelTeamSlot>;
-type _parallelAnalyticsPageExcluded = ExpectFalse<HasParallelAnalyticsPage>;
-type _parallelTeamPageExcluded = ExpectFalse<HasParallelTeamPage>;
+type _parallelAnalyticsPageIncluded = ExpectTrue<HasParallelAnalyticsPage>;
+type _parallelTeamPageIncluded = ExpectTrue<HasParallelTeamPage>;
 type _interceptingModalExcluded = ExpectFalse<HasInterceptingModalBranch>;
 type _interceptingDrilldownExcluded =
   ExpectFalse<HasInterceptingDrilldownBranch>;

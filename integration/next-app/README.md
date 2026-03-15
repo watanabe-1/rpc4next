@@ -27,6 +27,7 @@ This workspace now includes fixture routes for the official `app` directory fold
 - Parallel routes
 - Private folders
 - Escaped underscore segments via `%5F`
+- Page `searchParams` as promised props
 - Intercepting route fixtures
 - A plain Next.js route-handler fixture using `NextResponse.json(...)`
 
@@ -36,9 +37,10 @@ Official references used for these fixtures:
 
 - [Dynamic Routes](https://nextjs.org/docs/app/building-your-application/routing/dynamic-routes)
 - [Route Groups](https://nextjs.org/docs/app/building-your-application/routing/route-groups)
-- [Parallel Routes](https://nextjs.org/docs/14/app/building-your-application/routing/parallel-routes)
+- [Parallel Routes](https://nextjs.org/docs/app/building-your-application/routing/parallel-routes)
 - [Intercepting Routes](https://nextjs.org/docs/app/building-your-application/routing/intercepting-routes)
 - [Colocation](https://nextjs.org/docs/app/building-your-application/routing/colocation)
+- [page.js](https://nextjs.org/docs/app/api-reference/file-conventions/page)
 
 ## Commands
 
@@ -67,6 +69,8 @@ bunx playwright install chromium
 For headed browser debugging inside `integration/next-app`, run `bun run e2e -- --headed`.
 
 `bun run integration:next-app:watch` keeps `src/generated/rpc.ts` and `app/**/params.ts` in sync while route files under `app/**` change.
+
+Parallel route slot names are excluded from `PathStructure`, but their descendant pages are flattened onto public URL paths such as `/patterns/parallel/views` and `/patterns/parallel/members`.
 
 Intercepting route fixtures are kept to verify scanning behavior, but they are intentionally excluded from `PathStructure` because rpc4next models public URL paths rather than intercepted UI branches.
 

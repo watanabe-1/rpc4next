@@ -508,7 +508,7 @@ describe("route-scanner", () => {
       );
     });
 
-    it("should ignore parallel slot descendants in path structure", () => {
+    it("should flatten parallel slot descendants into the public path structure", () => {
       setupTree({
         testApp: {
           parallel: {
@@ -527,7 +527,9 @@ describe("route-scanner", () => {
         tmpPath("testApp"),
       );
       expect(pathStructure).equals(`{
-  "parallel": Endpoint
+  "parallel": Endpoint & {
+    "home": Endpoint
+  }
 }`);
     });
 
