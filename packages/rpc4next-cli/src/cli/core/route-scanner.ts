@@ -1,8 +1,3 @@
-/*!
- * Inspired by pathpida (https://github.com/aspida/pathpida),
- * especially the design and UX of its CLI.
- */
-
 import fs from "node:fs";
 import path from "node:path";
 import {
@@ -31,6 +26,41 @@ type ImportObj = {
 type ParamsType = {
   paramsType: string;
   dirPath: string;
+};
+
+type RouteType = {
+  isDynamic: boolean;
+  isCatchAll: boolean;
+  isOptionalCatchAll: boolean;
+  isGroup: boolean;
+  isParallel: boolean;
+};
+
+type ParentParam = {
+  paramName: string;
+  routeType: RouteType;
+};
+
+type DirectoryMeta = ReturnType<typeof getDirectoryMeta>;
+
+type ScanResult = {
+  pathStructure: string;
+  imports: ImportObj[];
+  paramsTypes: ParamsType[];
+};
+
+type ScanContext = {
+  output: string;
+  previousIndent: string;
+  currentIndent: string;
+  params: ParentParam[];
+};
+
+type ScanAccumulator = {
+  pathStructures: string[];
+  imports: ImportObj[];
+  typeFragments: string[];
+  paramsTypes: ParamsType[];
 };
 
 const endPointFileNames = new Set(END_POINT_FILE_NAMES);
@@ -100,13 +130,36 @@ const getDirectoryMeta = (entryName: string) => {
   };
 };
 
+const createEmptyScanAccumulator = (): ScanAccumulator => ({
+  pathStructures: [],
+  imports: [],
+  typeFragments: [],
+  paramsTypes: [],
+});
+
+const isIgnoredDirectory = (dirName: string): boolean => {
+  return dirName === "node_modules" || getDirectoryMeta(dirName).isPrivate;
+};
+
+const getScannableEntries = (dirPath: string) => {
+  return fs
+    .readdirSync(dirPath, { withFileTypes: true })
+    .filter((entry) => {
+      if (entry.isDirectory()) {
+        return hasTargetFiles(path.join(dirPath, entry.name));
+      }
+
+      return endPointFileNames.has(entry.name as EndPointFileNames);
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
+};
+
 export const hasTargetFiles = (dirPath: string): boolean => {
   const cachedHasTargetFiles = visitedDirsCache.get(dirPath);
   if (cachedHasTargetFiles !== undefined) return cachedHasTargetFiles;
 
   const dirName = path.basename(dirPath);
-  const dirMeta = getDirectoryMeta(dirName);
-  if (dirName === "node_modules" || dirMeta.isPrivate) {
+  if (isIgnoredDirectory(dirName)) {
     visitedDirsCache.set(dirPath, false);
 
     return false;
@@ -116,9 +169,8 @@ export const hasTargetFiles = (dirPath: string): boolean => {
   for (const entry of entries) {
     const { name } = entry;
     const entryPath = path.join(dirPath, name);
-    const entryMeta = getDirectoryMeta(name);
 
-    if (name === "node_modules" || entryMeta.isPrivate) {
+    if (isIgnoredDirectory(name)) {
       continue;
     }
 
@@ -142,13 +194,10 @@ export const hasTargetFiles = (dirPath: string): boolean => {
 
 const extractParamInfo = (
   entryName: string,
-  {
-    isDynamic,
-    isCatchAll,
-    isOptionalCatchAll,
-  }: { isDynamic: boolean; isCatchAll: boolean; isOptionalCatchAll: boolean },
+  routeType: Pick<RouteType, "isDynamic" | "isCatchAll" | "isOptionalCatchAll">,
 ): { paramName: string; keyName: string } => {
   let param = entryName;
+  const { isDynamic, isCatchAll, isOptionalCatchAll } = routeType;
 
   // Remove brackets if it's a dynamic segment
   if (isDynamic) {
@@ -171,209 +220,231 @@ const extractParamInfo = (
   return { paramName: param, keyName: `${prefix}${param}` };
 };
 
-export const scanAppDir = (
-  output: string,
-  input: string,
-  indent = "",
-  parentParams: {
-    paramName: string;
-    routeType: {
-      isDynamic: boolean;
-      isCatchAll: boolean;
-      isOptionalCatchAll: boolean;
-      isGroup: boolean;
-      isParallel: boolean;
-    };
-  }[] = [],
-): {
-  pathStructure: string;
-  imports: ImportObj[];
-  paramsTypes: ParamsType[];
-} => {
-  const cachedScanResult = scanAppDirCache.get(input);
-  if (cachedScanResult !== undefined) return cachedScanResult;
-
-  const previousIndent = indent;
-  const currentIndent = indent + INDENT;
-  const pathStructures: string[] = [];
-  const imports: ImportObj[] = [];
-  const typeFragments: string[] = [];
-  const paramsTypes: ParamsType[] = [];
-  const params = [...parentParams];
-
-  // Get entries under the directory (only target files or directories) and sort them
-  const entries = fs
-    .readdirSync(input, { withFileTypes: true })
-    .filter((entry) => {
-      if (entry.isDirectory()) {
-        const dirPath = path.join(input, entry.name);
-
-        return hasTargetFiles(dirPath);
-      }
-
-      return endPointFileNames.has(entry.name as EndPointFileNames);
-    })
-    .sort((a, b) => a.name.localeCompare(b.name));
-
-  for (const entry of entries) {
-    const fullPath = toPosixPath(path.join(input, entry.name));
-
-    if (entry.isDirectory()) {
-      const entryName = entry.name;
-      const {
-        isGroup,
-        isParallel,
-        isOptionalCatchAll,
-        isCatchAll,
-        isDynamic,
-        isPrivate,
-        isIntercept,
-        segmentName,
-        staticKeyName,
-      } = getDirectoryMeta(entryName);
-
-      if (isPrivate) {
-        continue;
-      }
-
-      const { paramName, keyName } = extractParamInfo(segmentName, {
-        isDynamic,
-        isCatchAll,
-        isOptionalCatchAll,
-      });
-
-      // If it's a dynamic segment, inherit the parameters
-      const nextParams =
-        isDynamic || isCatchAll || isOptionalCatchAll
-          ? [
-              ...params,
-              {
-                paramName,
-                routeType: {
-                  isDynamic,
-                  isCatchAll,
-                  isOptionalCatchAll,
-                  isGroup,
-                  isParallel,
-                },
-              },
-            ]
-          : params;
-
-      const isFlattenDir = isGroup || isParallel;
-      const isHiddenFromPathStructure = isIntercept;
-
-      const {
-        pathStructure: childPathStructure,
-        imports: childImports,
-        paramsTypes: childParamsTypes,
-      } = scanAppDir(
-        output,
-        fullPath,
-        isFlattenDir || isParallel ? previousIndent : currentIndent,
-        nextParams,
-      );
-
-      paramsTypes.push(...childParamsTypes);
-
-      if (isHiddenFromPathStructure) {
-        continue;
-      }
-
-      imports.push(...childImports);
-
-      if (isFlattenDir) {
-        // Extract only the inner part inside `{}` from the child output
-        const match = childPathStructure.match(/^\s*\{([\s\S]*)\}\s*$/);
-        const trimmedChildPathStructure = childPathStructure.trim();
-        if (!childPathStructure) {
-          continue;
-        }
-
-        if (match) {
-          pathStructures.push(`${currentIndent}${match[1].trim()}`);
-        } else if (trimmedChildPathStructure) {
-          // Preserve non-object child structures (e.g. "Endpoint")
-          typeFragments.push(trimmedChildPathStructure);
-        } else {
-          throw new Error(
-            `Invalid empty child path structure in grouped/parallel route: ${fullPath}`,
-          );
-        }
-      } else {
-        if (!childPathStructure.trim()) {
-          continue;
-        }
-
-        const segmentKeyName =
-          isDynamic || isCatchAll || isOptionalCatchAll
-            ? keyName
-            : staticKeyName;
-        pathStructures.push(
-          `${currentIndent}"${segmentKeyName}": ${childPathStructure}`,
-        );
-      }
-    } else {
-      // Process endpoint file
-      const { query: queryDef, routes } = scanEndpointFile(output, fullPath);
-      if (queryDef) {
-        const { importStatement, importPath, type } = queryDef;
-        imports.push({ statement: importStatement, path: importPath });
-        typeFragments.push(type);
-      }
-
-      // Process routes for each HTTP method (excluding OPTIONS)
-      routes.forEach((routeDef) => {
-        const { importStatement, importPath, type } = routeDef;
-        imports.push({ statement: importStatement, path: importPath });
-        typeFragments.push(type);
-      });
-
-      // Add endpoint type
-      typeFragments.push(TYPE_END_POINT);
-
-      // If parameters exist, generate their type definition
-      if (params.length > 0) {
-        const fields = params.map(({ paramName, routeType }) => {
-          const paramType = routeType.isCatchAll
-            ? "string[]"
-            : routeType.isOptionalCatchAll
-              ? "string[] | undefined"
-              : "string";
-
-          return { name: paramName, type: paramType };
-        });
-        const paramsTypeStr = createObjectType(fields);
-        paramsTypes.push({
-          paramsType: paramsTypeStr,
-          dirPath: path.dirname(fullPath),
-        });
-        typeFragments.push(createRecodeType(TYPE_KEY_PARAMS, paramsTypeStr));
-      }
-    }
+const appendParamsType = (
+  accumulator: ScanAccumulator,
+  params: ParentParam[],
+  fullPath: string,
+) => {
+  if (params.length === 0) {
+    return;
   }
 
-  // Combine all type definitions
-  const typeString = typeFragments.join(" & ");
+  const fields = params.map(({ paramName, routeType }) => {
+    const paramType = routeType.isCatchAll
+      ? "string[]"
+      : routeType.isOptionalCatchAll
+        ? "string[] | undefined"
+        : "string";
 
-  // Construct the nested path structure
+    return { name: paramName, type: paramType };
+  });
+  const paramsTypeStr = createObjectType(fields);
+
+  accumulator.paramsTypes.push({
+    paramsType: paramsTypeStr,
+    dirPath: path.dirname(fullPath),
+  });
+  accumulator.typeFragments.push(
+    createRecodeType(TYPE_KEY_PARAMS, paramsTypeStr),
+  );
+};
+
+const appendEndpointFile = (
+  accumulator: ScanAccumulator,
+  context: Pick<ScanContext, "output" | "params">,
+  fullPath: string,
+) => {
+  const { query: queryDef, routes } = scanEndpointFile(
+    context.output,
+    fullPath,
+  );
+
+  if (queryDef) {
+    const { importStatement, importPath, type } = queryDef;
+    accumulator.imports.push({ statement: importStatement, path: importPath });
+    accumulator.typeFragments.push(type);
+  }
+
+  routes.forEach((routeDef) => {
+    const { importStatement, importPath, type } = routeDef;
+    accumulator.imports.push({ statement: importStatement, path: importPath });
+    accumulator.typeFragments.push(type);
+  });
+
+  accumulator.typeFragments.push(TYPE_END_POINT);
+  appendParamsType(accumulator, context.params, fullPath);
+};
+
+const mergeFlattenedChildPathStructure = (
+  accumulator: ScanAccumulator,
+  childPathStructure: string,
+  fullPath: string,
+  currentIndent: string,
+) => {
+  const match = childPathStructure.match(/^\s*\{([\s\S]*)\}\s*$/);
+  const trimmedChildPathStructure = childPathStructure.trim();
+
+  if (!childPathStructure) {
+    return;
+  }
+
+  if (match) {
+    accumulator.pathStructures.push(`${currentIndent}${match[1].trim()}`);
+
+    return;
+  }
+
+  if (trimmedChildPathStructure) {
+    accumulator.typeFragments.push(trimmedChildPathStructure);
+
+    return;
+  }
+
+  throw new Error(
+    `Invalid empty child path structure in grouped/parallel route: ${fullPath}`,
+  );
+};
+
+const buildPathStructure = (
+  typeFragments: string[],
+  pathStructures: string[],
+  previousIndent: string,
+) => {
+  const typeString = typeFragments.join(" & ");
   const pathStructureBody =
     pathStructures.length > 0
       ? `{${NEWLINE}${pathStructures.join(`,${NEWLINE}`)}${NEWLINE}${previousIndent}}`
       : "";
 
-  const pathStructure =
-    typeString && pathStructureBody
-      ? `${typeString} & ${pathStructureBody}`
-      : typeString || pathStructureBody;
+  return typeString && pathStructureBody
+    ? `${typeString} & ${pathStructureBody}`
+    : typeString || pathStructureBody;
+};
+
+const createNextParams = (
+  params: ParentParam[],
+  meta: DirectoryMeta,
+): ParentParam[] => {
+  if (!meta.isDynamic && !meta.isCatchAll && !meta.isOptionalCatchAll) {
+    return params;
+  }
+
+  const { paramName } = extractParamInfo(meta.segmentName, meta);
+
+  return [
+    ...params,
+    {
+      paramName,
+      routeType: {
+        isDynamic: meta.isDynamic,
+        isCatchAll: meta.isCatchAll,
+        isOptionalCatchAll: meta.isOptionalCatchAll,
+        isGroup: meta.isGroup,
+        isParallel: meta.isParallel,
+      },
+    },
+  ];
+};
+
+const appendChildDirectory = (
+  accumulator: ScanAccumulator,
+  context: ScanContext,
+  fullPath: string,
+  meta: DirectoryMeta,
+) => {
+  if (meta.isPrivate) {
+    return;
+  }
+
+  const nextParams = createNextParams(context.params, meta);
+  const isFlattenDir = meta.isGroup || meta.isParallel;
+  const childIndent = isFlattenDir
+    ? context.previousIndent
+    : context.currentIndent;
+  const childResult = scanAppDir(
+    context.output,
+    fullPath,
+    childIndent,
+    nextParams,
+  );
+
+  accumulator.paramsTypes.push(...childResult.paramsTypes);
+
+  if (meta.isIntercept) {
+    return;
+  }
+
+  accumulator.imports.push(...childResult.imports);
+
+  if (isFlattenDir) {
+    mergeFlattenedChildPathStructure(
+      accumulator,
+      childResult.pathStructure,
+      fullPath,
+      context.currentIndent,
+    );
+
+    return;
+  }
+
+  if (!childResult.pathStructure.trim()) {
+    return;
+  }
+
+  const { keyName } = extractParamInfo(meta.segmentName, meta);
+  const segmentKeyName =
+    meta.isDynamic || meta.isCatchAll || meta.isOptionalCatchAll
+      ? keyName
+      : meta.staticKeyName;
+
+  accumulator.pathStructures.push(
+    `${context.currentIndent}"${segmentKeyName}": ${childResult.pathStructure}`,
+  );
+};
+
+export const scanAppDir = (
+  output: string,
+  input: string,
+  indent = "",
+  parentParams: ParentParam[] = [],
+): ScanResult => {
+  const cachedScanResult = scanAppDirCache.get(input);
+  if (cachedScanResult !== undefined) return cachedScanResult;
+
+  const context: ScanContext = {
+    output,
+    previousIndent: indent,
+    currentIndent: indent + INDENT,
+    params: [...parentParams],
+  };
+  const accumulator = createEmptyScanAccumulator();
+  const entries = getScannableEntries(input);
+
+  for (const entry of entries) {
+    const fullPath = toPosixPath(path.join(input, entry.name));
+
+    if (entry.isDirectory()) {
+      appendChildDirectory(
+        accumulator,
+        context,
+        fullPath,
+        getDirectoryMeta(entry.name),
+      );
+    } else {
+      appendEndpointFile(accumulator, context, fullPath);
+    }
+  }
 
   const result = {
-    pathStructure,
-    imports,
-    paramsTypes,
+    pathStructure: buildPathStructure(
+      accumulator.typeFragments,
+      accumulator.pathStructures,
+      context.previousIndent,
+    ),
+    imports: accumulator.imports,
+    paramsTypes: accumulator.paramsTypes,
   };
 
-  // Cache the result for reuse
   scanAppDirCache.set(input, result);
 
   return result;
