@@ -71,21 +71,15 @@ type Params<T = unknown> = T extends IsParams
   ? T[ParamsKey]
   : Record<string, string>;
 
-type QueryUrlOptions<TQuery> =
-  AllOptional<TQuery> extends true
-    ? { query?: TQuery; hash?: string }
-    : { query: TQuery; hash?: string };
-
-type UrlOptionsForEndpoint<T, TQuery> = T extends IsQuery
-  ? QueryUrlOptions<T[QueryKey]>
+export type UrlOptions<T = unknown, TQuery = unknown> = T extends IsQuery
+  ? AllOptional<T[QueryKey]> extends true
+    ? { query?: T[QueryKey]; hash?: string }
+    : { query: T[QueryKey]; hash?: string }
   : IsNever<TQuery> extends true
     ? { hash?: string }
-    : QueryUrlOptions<TQuery>;
-
-export type UrlOptions<T = unknown, TQuery = unknown> = UrlOptionsForEndpoint<
-  T,
-  TQuery
->;
+    : AllOptional<TQuery> extends true
+      ? { query?: TQuery; hash?: string }
+      : { query: TQuery; hash?: string };
 
 export type UrlResult<T = unknown> = {
   pathname: string;
@@ -114,7 +108,7 @@ export type HeadersOptions<THeaders = unknown, TCookies = unknown> = {
   headers: THeaders;
   cookies: TCookies;
 };
-type RequestHeadersArgs<THeaders = unknown, TCookies = unknown> =
+type HeadersArgsObj<THeaders = unknown, TCookies = unknown> =
   IsNever<THeaders> extends true
     ? IsNever<TCookies> extends true
       ? unknown
@@ -123,47 +117,25 @@ type RequestHeadersArgs<THeaders = unknown, TCookies = unknown> =
       ? { requestHeaders: Pick<HeadersOptions<THeaders, TCookies>, "headers"> }
       : { requestHeaders: HeadersOptions<THeaders, TCookies> };
 
-type MethodParameterBase<
-  T,
-  TValidationSchema extends ValidationSchema,
-> = UrlArgsObj<T, ValidationInputFor<"query", TValidationSchema>> &
-  BodyArgsObj<ValidationInputFor<"json", TValidationSchema>> &
-  RequestHeadersArgs<
-    ValidationInputFor<"headers", TValidationSchema>,
-    ValidationInputFor<"cookies", TValidationSchema>
-  >;
-
-type ClientOptionRestrictedHeaders<TValidationSchema extends ValidationSchema> =
-  | (IsNever<ValidationInputFor<"json", TValidationSchema>> extends true
-      ? never
-      : "Content-Type")
-  | (IsNever<ValidationInputFor<"cookies", TValidationSchema>> extends true
-      ? never
-      : "Cookie");
-
-type ClientOptionRestrictedInit<TValidationSchema extends ValidationSchema> =
-  | (IsNever<ValidationInputFor<"json", TValidationSchema>> extends true
-      ? never
-      : "body")
-  | (IsNever<ValidationInputFor<"headers", TValidationSchema>> extends true
-      ? never
-      : "headers" | "headersInit");
-
-type MethodParameterTuple<TBaseArgs> = [
-  ...(AllOptional<TBaseArgs> extends true
-    ? [methodParam?: TBaseArgs]
-    : [methodParam: TBaseArgs]),
-];
-
 type HttpMethodsArgs<
   T,
   TValidationSchema extends ValidationSchema,
-  TBaseArgs = MethodParameterBase<T, TValidationSchema>,
+  TQuery = ValidationInputFor<"query", TValidationSchema>,
+  TJson = ValidationInputFor<"json", TValidationSchema>,
+  THeaders = ValidationInputFor<"headers", TValidationSchema>,
+  TCookies = ValidationInputFor<"cookies", TValidationSchema>,
+  TBaseArgs = UrlArgsObj<T, TQuery> &
+    BodyArgsObj<TJson> &
+    HeadersArgsObj<THeaders, TCookies>,
 > = [
-  ...MethodParameterTuple<TBaseArgs>,
+  ...(AllOptional<TBaseArgs> extends true
+    ? [methodParam?: TBaseArgs]
+    : [methodParam: TBaseArgs]),
   option?: ClientOptions<
-    ClientOptionRestrictedHeaders<TValidationSchema>,
-    ClientOptionRestrictedInit<TValidationSchema>
+    | (IsNever<TJson> extends true ? never : "Content-Type")
+    | (IsNever<TCookies> extends true ? never : "Cookie"),
+    | (IsNever<TJson> extends true ? never : "body")
+    | (IsNever<THeaders> extends true ? never : "headers" | "headersInit")
   >,
 ];
 
