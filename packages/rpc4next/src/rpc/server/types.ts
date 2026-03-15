@@ -40,12 +40,11 @@ export type TypedResponseInit<
   | ({
       headers?: HttpResponseHeaders<TContentType> & Record<string, string>;
       headersInit?: never;
-      status?: TStatus;
-    } & Omit<ResponseInit, "headers" | "status">)
+    } & Omit<ResponseInit, "headers">)
   | (({
       headers?: never;
       headersInit?: HeadersInit;
-    } & Omit<ResponseInit, "headers" | "status">) & {
+    } & Omit<ResponseInit, "headers">) & {
       status?: TStatus;
     });
 
@@ -229,15 +228,15 @@ type ValidationFor<
   ? TSchema[TDirection][TTarget]
   : never;
 
-type ValidationOutputFor<
-  TTarget extends ValidationTarget,
-  TSchema extends ValidationSchema,
-> = ValidationFor<"output", TTarget, TSchema>;
-
 export type ValidationInputFor<
   TTarget extends ValidationTarget,
   TSchema extends ValidationSchema,
 > = ValidationFor<"input", TTarget, TSchema>;
+
+type ValidationOutputFor<
+  TTarget extends ValidationTarget,
+  TSchema extends ValidationSchema,
+> = ValidationFor<"output", TTarget, TSchema>;
 
 export type ConditionalValidationInput<
   TTarget extends ValidationTarget,
