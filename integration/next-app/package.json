@@ -8,9 +8,9 @@
     "test": "bun run generate:rpc && tsc --noEmit && vitest run --config ../../vitest.config.ts src/*.test.ts",
     "e2e": "bun run generate:rpc && playwright test",
     "typecheck": "bun run generate:rpc && tsc --noEmit",
-    "dev": "bun run generate:rpc && next dev",
+    "dev": "node ./scripts/run-next.mjs dev",
     "build": "bun run generate:rpc && next build",
-    "start": "next start"
+    "start": "node ./scripts/run-next.mjs start"
   },
   "dependencies": {
     "react": "^19.1.0",
