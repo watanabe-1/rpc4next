@@ -12,6 +12,28 @@ This workspace intentionally resolves `rpc4next` imports to the monorepo source 
 Generated files are committed in this workspace so CLI output diffs are reviewable in Git, including `src/generated/rpc.ts` and `app/**/params.ts`.
 The local `rpc4next.config.json` keeps the generator command short by pinning `baseDir`, `outputPath`, and `paramsFile`.
 
+If you are reading the repository from the root README, this is the best place to see the whole flow in one app:
+
+1. run `bun run integration:next-app:generate`
+2. inspect `src/generated/rpc.ts`
+3. inspect `src/lib/rpc-client.ts`
+4. inspect the example routes and pages under `app/**`
+
+## Example map
+
+Use these files as entry points, depending on what you want to understand:
+
+- Basic typed route handler: `app/api/users/[userId]/route.ts`
+- Typed client setup: `src/lib/rpc-client.ts`
+- Generated output shape: `src/generated/rpc.ts`
+- Generated sibling params types: `app/api/users/[userId]/params.ts`
+- Plain Next.js handler with `NextResponse.json(...)`: `app/api/next-native/[itemId]/route.ts`
+- Plain Next.js handler with `Response.json(...)`: `app/api/next-native-response/route.ts`
+- Redirect-only handler example: `app/api/redirect-me/route.ts`
+- Route-level error handler example: `app/api/error-demo/route.ts`
+- Page-path typing examples: `app/photo/[id]/page.tsx` and `app/feed/page.tsx`
+- App Router folder-pattern coverage: `app/patterns/**`
+
 ## Development workflow
 
 If a change touches route scanning, generated client shape, params generation, or integration fixture routes under `app/**`, run `bun run integration:next-app:generate` and review the committed generated diffs.
@@ -57,6 +79,8 @@ bun run typecheck
 ```
 
 Inside `integration/next-app`, `bun run test` runs the integration workspace test suite: a normal workspace typecheck, runtime Vitest checks, direct server-route handler checks for validation, redirects, and error handling, folder-pattern Vitest checks, and the TypeScript-only pattern assertions used to validate generated `PathStructure`.
+
+The API fixtures also include `routeHandlerFactory()` examples without Zod validation, including a redirect-only handler in `app/api/redirect-me/route.ts` and a route-level error-handler example in `app/api/error-demo/route.ts`.
 
 The API fixtures also include plain Next.js routes written without `routeHandlerFactory`, including a static `NextResponse.json(...)` route, a dynamic route that reads `params` and `nextUrl.searchParams`, and a `Response.json(...)` route. The generated client can still call them as RPC, but their response types are intentionally broader than rpc4next's `TypedNextResponse` helpers.
 
