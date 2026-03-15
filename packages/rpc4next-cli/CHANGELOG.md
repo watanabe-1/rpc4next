@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.3.2...rpc4next-cli-v0.4.0) (2026-03-15)
+
+
+### Features
+
+* **cli:** Add rpc4next config file support ([#325](https://github.com/watanabe-1/rpc4next/issues/325)) ([1361935](https://github.com/watanabe-1/rpc4next/commit/13619359ab35405566b920d8837978a9a58745e1))
+
+
+### Bug Fixes
+
+* **cli:** Handle params in intercepting routes ([#303](https://github.com/watanabe-1/rpc4next/issues/303)) ([3b32c7b](https://github.com/watanabe-1/rpc4next/commit/3b32c7b7c8e4793b81f283ab906bed6d4a52a9a8))
+* **cli:** Hide internal route branches from path structure ([#318](https://github.com/watanabe-1/rpc4next/issues/318)) ([668c231](https://github.com/watanabe-1/rpc4next/commit/668c231157036c6d13cd86b9eb27dee77334893c))
+
 ## [0.3.2](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.3.1...rpc4next-cli-v0.3.2) (2026-03-13)
 
 
