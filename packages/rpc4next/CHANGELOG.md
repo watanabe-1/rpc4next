@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.5.1...rpc4next-v0.6.0) (2026-03-15)
+
+
+### Features
+
+* **monorepo:** add Next 16 peer dependency support ([#337](https://github.com/watanabe-1/rpc4next/issues/337)) ([fe6e9df](https://github.com/watanabe-1/rpc4next/commit/fe6e9dfee8005b7494e2fe4200c6aae23750aa41))
+
 ## [0.5.1](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.5.0...rpc4next-v0.5.1) (2026-03-15)
 
 
