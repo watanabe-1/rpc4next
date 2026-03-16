@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.1](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.6.0...rpc4next-v0.6.1) (2026-03-16)
+
+
+### Bug Fixes
+
+* **rpc:** Clarify validation and client type helpers ([#345](https://github.com/watanabe-1/rpc4next/issues/345)) ([737ca33](https://github.com/watanabe-1/rpc4next/commit/737ca33a27bd4cb1efc326ac23b66f00c4eb6a8f))
+
+
+### Reverts
+
+* **main:** roll back to aa0e728 ([#348](https://github.com/watanabe-1/rpc4next/issues/348)) ([6436b9f](https://github.com/watanabe-1/rpc4next/commit/6436b9fede96c8df940125c7d614dcdbd9e193d3))
+
 ## [0.6.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.5.1...rpc4next-v0.6.0) (2026-03-15)
 
 
