@@ -30,9 +30,16 @@ jobs:
           bun-version: aqua
           bun-cache: "true"
 
-      - name: Install base dependencies
+      - name: Install dependencies
         shell: bash
-        run: bun install --frozen-lockfile
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+        run: |
+          if [ "$GITHUB_ACTOR" = "dependabot[bot]" ]; then
+            bun install
+          else
+            bun install --frozen-lockfile
+          fi
 
       - name: Setup aqua
         uses: aquaproj/aqua-installer@11dd79b4e498d471a9385aa9fb7f62bb5f52a73c # v4.0.4
