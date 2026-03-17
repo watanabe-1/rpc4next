@@ -23,12 +23,16 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup Node.js and Bun
+      - name: Setup Bun
         uses: ./.github/actions/setup-runtime
         with:
-          node-version: aqua
           bun-version: aqua
           bun-cache: "true"
+
+      - name: Setup aqua
+        uses: aquaproj/aqua-installer@11dd79b4e498d471a9385aa9fb7f62bb5f52a73c # v4.0.4
+        with:
+          aqua_version: v2.57.0
 
       - name: Install dependencies
         shell: bash
@@ -40,11 +44,6 @@ jobs:
           else
             bun install --frozen-lockfile
           fi
-
-      - name: Setup aqua
-        uses: aquaproj/aqua-installer@11dd79b4e498d471a9385aa9fb7f62bb5f52a73c # v4.0.4
-        with:
-          aqua_version: v2.57.0
 
       - name: Run check:fix
         shell: bash
