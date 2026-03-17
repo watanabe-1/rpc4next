@@ -16,6 +16,7 @@ jobs:
     name: renovate
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    environment: renovate
     permissions:
       contents: read
     steps:
