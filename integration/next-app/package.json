@@ -11,7 +11,9 @@
     "e2e": "bun run generate:rpc && playwright test",
     "typecheck": "bun run generate:rpc && tsc --noEmit",
     "generate:rpc": "bun --bun ../../packages/rpc4next-cli/src/cli/index.ts",
-    "generate:rpc:watch": "bun --bun ../../packages/rpc4next-cli/src/cli/index.ts --watch"
+    "generate:rpc:watch": "bun --bun ../../packages/rpc4next-cli/src/cli/index.ts --watch",
+    "generate:rpc:dist": "rpc4next",
+    "generate:rpc:dist:watch": "rpc4next --watch"
   },
   "dependencies": {
     "react": "^19.2.4",
