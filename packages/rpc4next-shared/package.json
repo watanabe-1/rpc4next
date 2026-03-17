@@ -60,7 +60,7 @@
     "clean": "bun -e \"const fs=require('fs'); fs.rmSync('dist',{recursive:true,force:true}); fs.rmSync('tsconfig.build-types.tsbuildinfo',{force:true}); fs.rmSync('tsconfig.tsbuildinfo',{force:true});\"",
     "typecheck": "tsc --noEmit",
     "lint": "biome check src",
-    "lint:fix": "biome check --write src",
+    "check:fix": "biome check --write src",
     "test": "vitest run"
   }
 }

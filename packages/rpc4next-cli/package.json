@@ -28,7 +28,7 @@
     "test:ui": "vitest --ui --coverage.enabled true",
     "test:watch": "vitest --watch",
     "lint": "biome check src",
-    "lint:fix": "biome check --write src",
+    "check:fix": "biome check --write src",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
