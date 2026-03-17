@@ -22,7 +22,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        node-version: [20.19.2, 22, aqua]
+        node-version: [20.19.2, 22, 24, aqua]
         next-version: ["15.0.0", "from-package"]
         include:
           - os: windows-latest
