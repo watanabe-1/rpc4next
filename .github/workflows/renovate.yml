@@ -13,6 +13,8 @@ concurrency:
 
 jobs:
   renovate:
+    # workflow_dispatch allows selecting any branch, so restrict to main
+    if: github.ref == 'refs/heads/main'
     name: renovate
     runs-on: ubuntu-latest
     timeout-minutes: 15
