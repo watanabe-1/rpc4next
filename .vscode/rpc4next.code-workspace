@@ -5,16 +5,19 @@
     }
   ],
   "settings": {
+    "diffEditor.ignoreTrimWhitespace": false,
     "editor.bracketPairColorization.enabled": true,
     "editor.guides.bracketPairs": "active",
     "editor.formatOnSave": true,
     "editor.formatOnType": true,
+    "editor.lineNumbers": "on",
+    "editor.rulers": [80],
+    "editor.wordWrap": "on",
     "editor.codeActionsOnSave": {
       "quickfix.biome": "explicit",
       "source.organizeImports.biome": "explicit"
     },
     "editor.defaultFormatter": "biomejs.biome",
-    "markuplint.enable": true,
     "[javascript]": {
       "editor.defaultFormatter": "biomejs.biome"
     },
@@ -36,15 +39,16 @@
     "[markdown]": {
       "editor.defaultFormatter": "biomejs.biome"
     },
-    "editor.lineNumbers": "on",
-    "editor.rulers": [80],
-    "editor.wordWrap": "on",
-    "files.insertFinalNewline": true,
+    "markuplint.enable": true,
     "js/ts.tsdk.promptToUseWorkspaceVersion": true,
     "js/ts.preferences.importModuleSpecifier": "non-relative",
-    "files.autoGuessEncoding": true,
-    "diffEditor.ignoreTrimWhitespace": false,
     "js/ts.updateImportsOnFileMove.enabled": "always",
+    "json.schemaDownload.enable": true,
+    "json.schemaDownload.trustedDomains": {
+      "https://docs.renovatebot.com/": true
+    },
+    "files.insertFinalNewline": true,
+    "files.autoGuessEncoding": true,
     "files.exclude": {
       "**/.next": true
     },
