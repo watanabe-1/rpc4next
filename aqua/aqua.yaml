@@ -20,5 +20,5 @@ packages:
 - name: rhysd/actionlint@v1.7.11
 - name: reviewdog/reviewdog@v0.21.0
 - name: suzuki-shunsuke/ghalint@v1.5.5
-- name: zizmorcore/zizmor@v1.22.0
+- name: zizmorcore/zizmor@v1.23.1
 - name: suzuki-shunsuke/pinact@v3.9.0
