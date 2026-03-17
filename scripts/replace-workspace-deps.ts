@@ -12,6 +12,7 @@ export type ReplaceOptions = {
     | "optionalDependencies"
   )[];
   defaultRange?: "^" | "~"; // Which range to use for "workspace:*" (usually "^")
+  logger?: (message: string) => void;
 };
 
 export type ReplaceResult = {
@@ -88,7 +89,7 @@ export function replaceWorkspaceDepsFromManifest(
 
         const next = `${prefix}${version}`;
 
-        console.log(
+        options.logger?.(
           `[replace] ${pkg.name}: ${field}.${depName} ${deps[depName]} -> ${next}`,
         );
 
@@ -115,11 +116,16 @@ export function replaceWorkspaceDepsFromManifest(
 export function runCli(
   cwd = process.cwd(),
   manifestFile = process.argv[2],
+  logger?: (message: string) => void,
 ): ReplaceResult {
-  return replaceWorkspaceDepsFromManifest({ repoRoot: cwd, manifestFile });
+  return replaceWorkspaceDepsFromManifest({
+    repoRoot: cwd,
+    manifestFile,
+    logger,
+  });
 }
 
 // CLI entry point (used by CI)
 /* c8 ignore start */
-if (import.meta.main) runCli();
+if (import.meta.main) runCli(process.cwd(), process.argv[2], console.log);
 /* c8 ignore end */

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { copyRootFiles, runCli } from "./copy-root-files.js";
 
 const readText = (file: string) => fs.readFileSync(file, "utf8");
@@ -120,5 +120,40 @@ describe("copyRootFiles", () => {
       "README.md": ["rpc4next"],
       LICENSE: ["rpc4next"],
     });
+  });
+
+  it("does not log by default", () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "rpc4next-test-"));
+
+    const pkg = path.join(tmpDir, "packages", "rpc4next");
+    mkdirp(pkg);
+
+    writeText(path.join(tmpDir, "README.md"), "root readme\n");
+
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    copyRootFiles(tmpDir, { fileNames: ["README.md"] });
+
+    expect(logSpy).not.toHaveBeenCalled();
+    logSpy.mockRestore();
+  });
+
+  it("logs when logger is provided", () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "rpc4next-test-"));
+
+    const pkg = path.join(tmpDir, "packages", "rpc4next");
+    mkdirp(pkg);
+
+    writeText(path.join(tmpDir, "README.md"), "root readme\n");
+
+    const messages: string[] = [];
+
+    copyRootFiles(tmpDir, {
+      fileNames: ["README.md"],
+      logger: (message) => messages.push(message),
+    });
+
+    expect(messages.length).toBeGreaterThan(0);
+    expect(messages[0]).toContain("[copy-root-files] start");
   });
 });
