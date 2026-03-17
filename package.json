@@ -17,7 +17,7 @@
     "build": "bun --filter \"./packages/*\" --if-present build",
     "clean": "bun --filter \"./packages/*\" --if-present clean",
     "typecheck": "bun run --parallel typecheck:scripts typecheck:workspaces",
-    "typecheck:scripts": "tsc -p scripts/tsconfig.json --pretty false",
+    "typecheck:scripts": "tsc -p scripts/tsconfig.json",
     "typecheck:workspaces": "bun run --parallel --filter \"./packages/*\" --filter \"./integration/*\" --if-present typecheck",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
