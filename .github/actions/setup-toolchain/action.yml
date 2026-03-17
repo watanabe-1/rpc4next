@@ -1,7 +1,11 @@
-name: Setup Runtime
-description: Resolve Node.js/Bun versions from aqua/aqua.yaml, set up runtimes, and optionally restore Bun package cache.
+name: Setup Toolchain
+description: Resolve Node.js/Bun versions from aqua/aqua.yaml, optionally set up aqua, and optionally restore the Bun package cache.
 
 inputs:
+  setup-aqua:
+    description: Install the aqua CLI so later steps can run tools from aqua/aqua.yaml.
+    required: false
+    default: "false"
   node-version:
     description: Node.js version to install. Use `aqua` to resolve from aqua/aqua.yaml. Leave empty to skip Node.js setup.
     required: false
@@ -30,6 +34,14 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Setup aqua
+      if: ${{ inputs.setup-aqua == 'true' }}
+      uses: aquaproj/aqua-installer@11dd79b4e498d471a9385aa9fb7f62bb5f52a73c # v4.0.4
+      with:
+        aqua_version: v2.57.0
+      env:
+        AQUA_GITHUB_TOKEN: ${{ github.token }}
+
     - name: Resolve runtime versions
       id: resolve
       shell: bash

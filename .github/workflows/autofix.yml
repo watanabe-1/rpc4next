@@ -23,16 +23,12 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup Bun
-        uses: ./.github/actions/setup-runtime
+      - name: Setup toolchain
+        uses: ./.github/actions/setup-toolchain
         with:
+          setup-aqua: "true"
           bun-version: aqua
           bun-cache: "true"
-
-      - name: Setup aqua
-        uses: aquaproj/aqua-installer@11dd79b4e498d471a9385aa9fb7f62bb5f52a73c # v4.0.4
-        with:
-          aqua_version: v2.57.0
 
       - name: Install dependencies
         shell: bash
