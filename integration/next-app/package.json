@@ -3,14 +3,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "generate:rpc": "bun --bun ../../packages/rpc4next-cli/src/cli/index.ts",
-    "generate:rpc:watch": "bun --bun ../../packages/rpc4next-cli/src/cli/index.ts --watch",
+    "dev": "bun --bun next dev",
+    "dev:e2e": "bun --bun next dev --port 3100",
+    "build": "bun run generate:rpc && bun --bun next build",
+    "start": "bun --bun next start",
     "test": "bun run generate:rpc && tsc --noEmit && vitest run --config ../../vitest.config.ts src/*.test.ts",
     "e2e": "bun run generate:rpc && playwright test",
     "typecheck": "bun run generate:rpc && tsc --noEmit",
-    "dev": "node ./scripts/run-next.mjs dev",
-    "build": "bun run generate:rpc && next build",
-    "start": "node ./scripts/run-next.mjs start"
+    "generate:rpc": "bun --bun ../../packages/rpc4next-cli/src/cli/index.ts",
+    "generate:rpc:watch": "bun --bun ../../packages/rpc4next-cli/src/cli/index.ts --watch"
   },
   "dependencies": {
     "react": "^19.2.4",
