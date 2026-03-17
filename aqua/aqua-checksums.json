@@ -146,28 +146,28 @@
       "algorithm": "sha256"
     },
     {
-      "id": "github_release/github.com/zizmorcore/zizmor/v1.22.0/zizmor-aarch64-apple-darwin.tar.gz",
-      "checksum": "24BEE9D58AC48639A3B10CA3CF5F797D52937AB2D7D2DAF73C62BBFC0651A6ED",
+      "id": "github_release/github.com/zizmorcore/zizmor/v1.23.1/zizmor-aarch64-apple-darwin.tar.gz",
+      "checksum": "2632561B974C69F952258C1AB4B7432D5C7F92E555704155C3AC28A2910BD717",
       "algorithm": "sha256"
     },
     {
-      "id": "github_release/github.com/zizmorcore/zizmor/v1.22.0/zizmor-aarch64-unknown-linux-gnu.tar.gz",
-      "checksum": "AFA6EA4AD183582ADAF1610399ED9E697322A2374D377CCDB149216840F5171D",
+      "id": "github_release/github.com/zizmorcore/zizmor/v1.23.1/zizmor-aarch64-unknown-linux-gnu.tar.gz",
+      "checksum": "3725D7CD7102E4D70827186389F7D5930B6878232930D0A3EB058D7E5B47E658",
       "algorithm": "sha256"
     },
     {
-      "id": "github_release/github.com/zizmorcore/zizmor/v1.22.0/zizmor-x86_64-apple-darwin.tar.gz",
-      "checksum": "952175C0CFCD8D9AB3BBC86A4258813B97962BBD2585C95F04485F7E1A8CA044",
+      "id": "github_release/github.com/zizmorcore/zizmor/v1.23.1/zizmor-x86_64-apple-darwin.tar.gz",
+      "checksum": "89D5ED42081DD9D0433A10B7545FAC42B35F1F030885C278B9712B32C66F2597",
       "algorithm": "sha256"
     },
     {
-      "id": "github_release/github.com/zizmorcore/zizmor/v1.22.0/zizmor-x86_64-pc-windows-msvc.zip",
-      "checksum": "354AD2461D69D255FC7BFB8B359D4486440DF9AE15AF1EFB8F497B9F56F87E74",
+      "id": "github_release/github.com/zizmorcore/zizmor/v1.23.1/zizmor-x86_64-pc-windows-msvc.zip",
+      "checksum": "33C2293FF02834720DD7CD8B47348AAFB2E95A19BDC993C0ECACA9C804ADE92A",
       "algorithm": "sha256"
     },
     {
-      "id": "github_release/github.com/zizmorcore/zizmor/v1.22.0/zizmor-x86_64-unknown-linux-gnu.tar.gz",
-      "checksum": "F7633BBF155CDDEBD3FDFDCBFAA777A4E89E4DA1BC719B08DFA9AE50E5DAAE46",
+      "id": "github_release/github.com/zizmorcore/zizmor/v1.23.1/zizmor-x86_64-unknown-linux-gnu.tar.gz",
+      "checksum": "67A8DF0A14352DD81882E14876653D097B99B0F4F6B6FE798EDC0320CFF27AFF",
       "algorithm": "sha256"
     },
     {
