@@ -15,6 +15,12 @@ type CopyRootFilesOptions = {
    * e.g. ["README.md", "LICENSE"]
    */
   fileNames: string[];
+
+  /**
+   * Optional logger for CLI/debug output.
+   * Default: no logging
+   */
+  logger?: (message: string) => void;
 };
 
 export type CopyRootFilesResult = {
@@ -33,7 +39,7 @@ export function copyRootFiles(
   options: CopyRootFilesOptions,
 ): CopyRootFilesResult {
   const packagesDir = path.join(rootDir, options.packagesDirName ?? "packages");
-  console.log(
+  options.logger?.(
     `[copy-root-files] start rootDir=${rootDir} packagesDir=${packagesDir} files=${options.fileNames.join(",")}`,
   );
 
@@ -61,10 +67,10 @@ export function copyRootFiles(
 
       if (!fs.existsSync(destPath)) {
         fs.writeFileSync(destPath, rootContents[fileName]);
-        console.log(`[copy-root-files] copied ${fileName} -> ${destPath}`);
+        options.logger?.(`[copy-root-files] copied ${fileName} -> ${destPath}`);
         copied[fileName].push(pkgName);
       } else {
-        console.log(
+        options.logger?.(
           `[copy-root-files] skipped (already exists) ${fileName} -> ${destPath}`,
         );
       }
@@ -75,16 +81,22 @@ export function copyRootFiles(
     (total, names) => total + names.length,
     0,
   );
-  console.log(`[copy-root-files] done copied=${copiedCount}`);
+  options.logger?.(`[copy-root-files] done copied=${copiedCount}`);
 
   return { copied };
 }
 
-export function runCli(cwd = process.cwd()) {
-  return copyRootFiles(cwd, { fileNames: ["README.md", "LICENSE"] });
+export function runCli(
+  cwd = process.cwd(),
+  logger?: (message: string) => void,
+) {
+  return copyRootFiles(cwd, {
+    fileNames: ["README.md", "LICENSE"],
+    logger,
+  });
 }
 
 // CLI entry point (used by CI)
 /* c8 ignore start */
-if (import.meta.main) runCli();
+if (import.meta.main) runCli(process.cwd(), console.log);
 /* c8 ignore end */

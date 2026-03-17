@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   replaceWorkspaceDepsFromManifest,
   runCli,
@@ -271,5 +271,77 @@ describe("replaceWorkspaceDepsFromManifest", () => {
     const core = readJson<any>(path.join(pCore, "package.json"));
     expect(core.dependencies["rpc4next-shared"]).toBe("^1.7.3");
     expect(res.updatedFiles.length).toBe(1);
+  });
+
+  it("does not log by default", () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "rpc4next-test-"));
+
+    const pShared = path.join(tmpDir, "packages/rpc4next-shared");
+    const pCore = path.join(tmpDir, "packages/rpc4next");
+    mkdirp(pShared);
+    mkdirp(pCore);
+
+    writeJson(path.join(tmpDir, ".release-please-manifest.json"), {
+      "packages/rpc4next": "2.0.0",
+      "packages/rpc4next-shared": "1.7.3",
+    });
+
+    writeJson(path.join(pShared, "package.json"), {
+      name: "rpc4next-shared",
+      version: "0.0.0-ignored",
+    });
+
+    writeJson(path.join(pCore, "package.json"), {
+      name: "rpc4next",
+      version: "0.0.0-ignored",
+      dependencies: {
+        "rpc4next-shared": "workspace:*",
+      },
+    });
+
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    replaceWorkspaceDepsFromManifest({ repoRoot: tmpDir });
+
+    expect(logSpy).not.toHaveBeenCalled();
+    logSpy.mockRestore();
+  });
+
+  it("logs when logger is provided", () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "rpc4next-test-"));
+
+    const pShared = path.join(tmpDir, "packages/rpc4next-shared");
+    const pCore = path.join(tmpDir, "packages/rpc4next");
+    mkdirp(pShared);
+    mkdirp(pCore);
+
+    writeJson(path.join(tmpDir, ".release-please-manifest.json"), {
+      "packages/rpc4next": "2.0.0",
+      "packages/rpc4next-shared": "1.7.3",
+    });
+
+    writeJson(path.join(pShared, "package.json"), {
+      name: "rpc4next-shared",
+      version: "0.0.0-ignored",
+    });
+
+    writeJson(path.join(pCore, "package.json"), {
+      name: "rpc4next",
+      version: "0.0.0-ignored",
+      dependencies: {
+        "rpc4next-shared": "workspace:*",
+      },
+    });
+
+    const messages: string[] = [];
+
+    replaceWorkspaceDepsFromManifest({
+      repoRoot: tmpDir,
+      logger: (message) => messages.push(message),
+    });
+
+    expect(messages).toEqual([
+      "[replace] rpc4next: dependencies.rpc4next-shared workspace:* -> ^1.7.3",
+    ]);
   });
 });
