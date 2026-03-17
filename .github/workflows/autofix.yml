@@ -33,9 +33,9 @@ jobs:
       - name: Install dependencies
         shell: bash
         env:
-          GITHUB_ACTOR: ${{ github.actor }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
         run: |
-          if [ "$GITHUB_ACTOR" = "dependabot[bot]" ]; then
+          if [ "$PR_AUTHOR" = "dependabot[bot]" ]; then
             bun install
           else
             bun install --frozen-lockfile
