@@ -48,8 +48,8 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Setup Node.js and Bun
-        uses: ./.github/actions/setup-runtime
+      - name: Setup toolchain
+        uses: ./.github/actions/setup-toolchain
         with:
           node-version: aqua
           bun-version: aqua
