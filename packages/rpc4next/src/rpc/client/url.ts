@@ -1,4 +1,4 @@
-import type { FuncParams, UrlOptions, UrlResult } from "./types";
+import type { PathParamsInput, UrlOptions, UrlResult } from "./types";
 
 /**
  * Builds a URL suffix string from optional query and hash values.
@@ -175,7 +175,7 @@ const getPathnameSegment = (segment: string) => {
  */
 export const createUrl = (
   paths: string[],
-  params: FuncParams,
+  params: PathParamsInput,
   dynamicKeys: string[],
 ) => {
   const baseUrl = paths.shift();
@@ -206,7 +206,7 @@ export const createUrl = (
     const relativePath = `${dynamicPath}${buildUrlSuffix(url)}`;
     const pathname = buildPathFromSegments(paths.map(getPathnameSegment));
 
-    const cleanedParams: FuncParams = {};
+    const cleanedParams: PathParamsInput = {};
     for (const key in params) {
       const cleanedKey = key.replace(/^_+/, "");
       cleanedParams[cleanedKey] = params[key];

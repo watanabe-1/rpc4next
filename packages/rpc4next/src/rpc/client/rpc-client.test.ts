@@ -17,7 +17,7 @@ import {
   type TypedNextResponse,
 } from "../server";
 import { createRpcClient } from "./rpc-client";
-import type { Endpoint, ParamsKey, QueryKey } from "./types";
+import type { ParamsKey, QueryKey, RpcEndpoint } from "./types";
 
 const createRouteHandler = routeHandlerFactory();
 
@@ -49,16 +49,16 @@ const { DELETE: _delete_1 } = createRouteHandler().delete(async (rc) => {
   return rc.json(headers);
 });
 
-type PathStructure = Endpoint & {
-  fuga: Endpoint & {
-    _foo: Endpoint &
+type PathStructure = RpcEndpoint & {
+  fuga: RpcEndpoint & {
+    _foo: RpcEndpoint &
       Record<ParamsKey, { foo: string }> &
       Record<QueryKey, { baz: string }> & {
-        _piyo: Endpoint;
+        _piyo: RpcEndpoint;
       };
   };
-  hoge: Endpoint & {
-    _foo: Endpoint;
+  hoge: RpcEndpoint & {
+    _foo: RpcEndpoint;
   };
   api: {
     hoge: {
@@ -67,9 +67,9 @@ type PathStructure = Endpoint & {
       $head: typeof _head_0;
       $patch: typeof _patch_0;
       $put: typeof _put_0;
-    } & Endpoint & {
-        _foo: { $get: typeof _get_0 } & Endpoint & {
-            _bar: { $delete: typeof _delete_1 } & Endpoint;
+    } & RpcEndpoint & {
+        _foo: { $get: typeof _get_0 } & RpcEndpoint & {
+            _bar: { $delete: typeof _delete_1 } & RpcEndpoint;
           };
       };
   };
@@ -478,7 +478,7 @@ describe("createRpcClient", () => {
     });
 
     it("throws when a dynamic parameter is called without an argument", () => {
-      type FailurePath = Endpoint & { _fuga: Endpoint };
+      type FailurePath = RpcEndpoint & { _fuga: RpcEndpoint };
       const client = createRpcClient<FailurePath>("");
       expect(() => (client._fuga as unknown as (v?: string) => void)()).toThrow(
         "Missing value for dynamic parameter: _fuga",
@@ -486,14 +486,15 @@ describe("createRpcClient", () => {
     });
   });
 
-  type FalierPathStructure = Endpoint & {
-    _fuga: Endpoint;
-    hoge: Endpoint;
+  type FalierPathStructure = RpcEndpoint & {
+    _fuga: RpcEndpoint;
+    hoge: RpcEndpoint;
   };
 
-  type OptionalCatchAllPath = Endpoint & {
+  type OptionalCatchAllPath = RpcEndpoint & {
     patterns: {
-      _____parts: Endpoint & Record<ParamsKey, { parts: string[] | undefined }>;
+      _____parts: RpcEndpoint &
+        Record<ParamsKey, { parts: string[] | undefined }>;
     };
   };
 
@@ -541,11 +542,11 @@ describe("createRpcClient", () => {
     return NextResponse.json({ default: "true" });
   }
 
-  type PathStructureForTypeTest = Endpoint & {
-    fuga: Endpoint & {
-      _foo: Endpoint &
+  type PathStructureForTypeTest = RpcEndpoint & {
+    fuga: RpcEndpoint & {
+      _foo: RpcEndpoint &
         Record<ParamsKey, { foo: string }> & {
-          _piyo: Endpoint &
+          _piyo: RpcEndpoint &
             Record<QueryKey, { baz: string }> &
             Record<ParamsKey, { foo: string; piyo: string }>;
         };
@@ -553,10 +554,10 @@ describe("createRpcClient", () => {
     api: {
       hoge: {
         $post: typeof _post_1;
-      } & Endpoint & {
-          _foo: { $get: typeof _get_1 } & Endpoint &
+      } & RpcEndpoint & {
+          _foo: { $get: typeof _get_1 } & RpcEndpoint &
             Record<ParamsKey, { foo: string }>;
-          _bar: { $get: typeof _get_2 } & Endpoint &
+          _bar: { $get: typeof _get_2 } & RpcEndpoint &
             Record<ParamsKey, { bar: string }>;
         };
     };

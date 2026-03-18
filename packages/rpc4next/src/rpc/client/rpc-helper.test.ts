@@ -3,7 +3,7 @@ import { z } from "zod";
 import { routeHandlerFactory } from "../server";
 import { zValidator } from "../server/validators/zod";
 import { createRpcHelper } from "./rpc-helper";
-import type { Endpoint, ParamsKey, QueryKey } from "./types";
+import type { ParamsKey, QueryKey, RpcEndpoint } from "./types";
 
 const createRouteHandler = routeHandlerFactory();
 
@@ -16,17 +16,17 @@ const { POST: _post_query } = createRouteHandler<{
   query: z.input<typeof schema>;
 }>().post(zValidator("query", schema), (rc) => rc.text("text"));
 
-type PathStructure = Endpoint & {
-  fuga: Endpoint & {
-    _foo: Endpoint &
+type PathStructure = RpcEndpoint & {
+  fuga: RpcEndpoint & {
+    _foo: RpcEndpoint &
       Record<ParamsKey, { foo: string }> & {
-        _piyo: Endpoint &
+        _piyo: RpcEndpoint &
           Record<QueryKey, { baz: string }> &
           Record<ParamsKey, { foo: string; piyo: string }>;
       };
   };
   api: {
-    query: { $post: typeof _post_query } & Endpoint;
+    query: { $post: typeof _post_query } & RpcEndpoint;
   };
 };
 

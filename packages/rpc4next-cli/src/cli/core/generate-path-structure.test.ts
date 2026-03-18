@@ -5,9 +5,9 @@ import {
   NEWLINE,
   RPC4NEXT_CLIENT_IMPORT_PATH,
   STATEMENT_TERMINATOR,
-  TYPE_END_POINT,
   TYPE_KEY_PARAMS,
   TYPE_KEY_QUERY,
+  TYPE_RPC_ENDPOINT,
 } from "./constants.js";
 import { generatePathStructure } from "./generate-path-structure.js";
 
@@ -35,7 +35,7 @@ describe("generatePathStructure", () => {
     tmpDir = makeTempDir();
 
     scanAppDir.mockReturnValue({
-      pathStructure: `{ home: ${TYPE_END_POINT}, user: { id: ${TYPE_KEY_PARAMS} }, ${TYPE_KEY_QUERY}}`,
+      pathStructure: `{ home: ${TYPE_RPC_ENDPOINT}, user: { id: ${TYPE_KEY_PARAMS} }, ${TYPE_KEY_QUERY}}`,
       imports: [
         {
           path: "./routes/home",
@@ -62,10 +62,10 @@ describe("generatePathStructure", () => {
     );
 
     const expectedImports =
-      `import type { ${TYPE_END_POINT} ,${TYPE_KEY_PARAMS} ,${TYPE_KEY_QUERY} } from "${RPC4NEXT_CLIENT_IMPORT_PATH}"${STATEMENT_TERMINATOR}${NEWLINE}` +
+      `import type { ${TYPE_RPC_ENDPOINT} ,${TYPE_KEY_PARAMS} ,${TYPE_KEY_QUERY} } from "${RPC4NEXT_CLIENT_IMPORT_PATH}"${STATEMENT_TERMINATOR}${NEWLINE}` +
       `import Home from './routes/home';${NEWLINE}import User from './routes/user';`;
 
-    const expectedTypeDefinition = `export type PathStructure = { home: ${TYPE_END_POINT}, user: { id: ${TYPE_KEY_PARAMS} }, ${TYPE_KEY_QUERY}}${STATEMENT_TERMINATOR}`;
+    const expectedTypeDefinition = `export type PathStructure = { home: ${TYPE_RPC_ENDPOINT}, user: { id: ${TYPE_KEY_PARAMS} }, ${TYPE_KEY_QUERY}}${STATEMENT_TERMINATOR}`;
 
     expect(pathStructure).toBe(
       `${expectedImports}${NEWLINE}${NEWLINE}${expectedTypeDefinition}`,
@@ -82,7 +82,7 @@ describe("generatePathStructure", () => {
     tmpDir = makeTempDir();
 
     scanAppDir.mockReturnValue({
-      pathStructure: `{ dashboard: ${TYPE_END_POINT} }`,
+      pathStructure: `{ dashboard: ${TYPE_RPC_ENDPOINT} }`,
       imports: [],
       paramsTypes: [],
     });
@@ -94,8 +94,8 @@ describe("generatePathStructure", () => {
       baseDir,
     );
 
-    const expectedImports = `import type { ${TYPE_END_POINT} } from "${RPC4NEXT_CLIENT_IMPORT_PATH}"${STATEMENT_TERMINATOR}${NEWLINE}${NEWLINE}`;
-    const expectedTypeDefinition = `export type PathStructure = { dashboard: ${TYPE_END_POINT} }${STATEMENT_TERMINATOR}`;
+    const expectedImports = `import type { ${TYPE_RPC_ENDPOINT} } from "${RPC4NEXT_CLIENT_IMPORT_PATH}"${STATEMENT_TERMINATOR}${NEWLINE}${NEWLINE}`;
+    const expectedTypeDefinition = `export type PathStructure = { dashboard: ${TYPE_RPC_ENDPOINT} }${STATEMENT_TERMINATOR}`;
 
     expect(pathStructure).toBe(
       `${expectedImports}${NEWLINE}${expectedTypeDefinition}`,

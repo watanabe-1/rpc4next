@@ -241,7 +241,7 @@ describe("route-scanner", () => {
       expect(pathStructure).equals(`{
   "api": {
     "users": {
-      "_id": { "$get": typeof GET_asmocked } & { "$head": typeof HEAD_asmocked } & { "$post": typeof POST_asmocked } & { "$put": typeof PUT_asmocked } & { "$delete": typeof DELETE_asmocked } & { "$patch": typeof PATCH_asmocked } & Endpoint & Record<ParamsKey, { "id": string }>
+      "_id": { "$get": typeof GET_asmocked } & { "$head": typeof HEAD_asmocked } & { "$post": typeof POST_asmocked } & { "$put": typeof PUT_asmocked } & { "$delete": typeof DELETE_asmocked } & { "$patch": typeof PATCH_asmocked } & RpcEndpoint & Record<ParamsKey, { "id": string }>
     }
   }
 }`);
@@ -289,7 +289,7 @@ describe("route-scanner", () => {
       expect(pathStructure).equals(`{
   "page": {
     "_user": {
-      "home": Endpoint & Record<ParamsKey, { "user": string }>
+      "home": RpcEndpoint & Record<ParamsKey, { "user": string }>
     }
   }
 }`);
@@ -313,7 +313,7 @@ describe("route-scanner", () => {
       );
       expect(pathStructure).equals(`{
   "query": {
-    "home": Record<QueryKey, Query_asmocked> & Endpoint
+    "home": Record<QueryKey, Query_asmocked> & RpcEndpoint
   }
 }`);
     });
@@ -341,7 +341,7 @@ describe("route-scanner", () => {
   "dynamic": {
     "_user": {
       "_id": {
-        "home": Endpoint & Record<ParamsKey, { "user": string; "id": string; }>
+        "home": RpcEndpoint & Record<ParamsKey, { "user": string; "id": string; }>
       }
     }
   }
@@ -368,7 +368,7 @@ describe("route-scanner", () => {
       expect(pathStructure).equals(`{
   "catchAll": {
     "_user": {
-      "___names": Endpoint & Record<ParamsKey, { "user": string; "names": string[]; }>
+      "___names": RpcEndpoint & Record<ParamsKey, { "user": string; "names": string[]; }>
     }
   }
 }`);
@@ -394,7 +394,7 @@ describe("route-scanner", () => {
       expect(pathStructure).equals(`{
   "OptionalCatchAll": {
     "user": {
-      "_____names": Endpoint & Record<ParamsKey, { "names": string[] | undefined }>
+      "_____names": RpcEndpoint & Record<ParamsKey, { "names": string[] | undefined }>
     }
   }
 }`);
@@ -419,7 +419,7 @@ describe("route-scanner", () => {
       );
       expect(pathStructure).equals(`{
   "group": {
-    "home": Endpoint
+    "home": RpcEndpoint
   }
 }`);
     });
@@ -440,7 +440,7 @@ describe("route-scanner", () => {
         tmpPath("testApp"),
       );
       expect(pathStructure).equals(`{
-  "group": Endpoint
+  "group": RpcEndpoint
 }`);
     });
 
@@ -468,7 +468,7 @@ describe("route-scanner", () => {
       );
       expect(pathStructure).equals(`{
   "group": {
-    "base": Endpoint
+    "base": RpcEndpoint
   }
 }`);
       expect(paramsTypes).toStrictEqual([
@@ -527,8 +527,8 @@ describe("route-scanner", () => {
         tmpPath("testApp"),
       );
       expect(pathStructure).equals(`{
-  "parallel": Endpoint & {
-    "home": Endpoint
+  "parallel": RpcEndpoint & {
+    "home": RpcEndpoint
   }
 }`);
     });
@@ -569,7 +569,7 @@ describe("route-scanner", () => {
         tmpPath("testApp"),
       );
       expect(pathStructure).equals(`{
-  "base": Endpoint
+  "base": RpcEndpoint
 }`);
       expect(paramsTypes).toStrictEqual([
         {
@@ -631,7 +631,7 @@ describe("route-scanner", () => {
         tmpPath("testApp"),
       );
       expect(pathStructure).equals(`{
-  "base": Endpoint
+  "base": RpcEndpoint
 }`);
     });
 
@@ -652,7 +652,7 @@ describe("route-scanner", () => {
       );
       expect(pathStructure).equals(`{
   "patterns": {
-    "%5Fescaped": Endpoint
+    "%5Fescaped": RpcEndpoint
   }
 }`);
     });
@@ -674,7 +674,7 @@ describe("route-scanner", () => {
       );
       expect(pathStructure).equals(`{
   "patterns": {
-    "%E0%A4%A": Endpoint
+    "%E0%A4%A": RpcEndpoint
   }
 }`);
     });
@@ -717,7 +717,7 @@ describe("route-scanner", () => {
       );
       expect(pathStructure).equals(`{
   "parent": {
-    "public": Endpoint
+    "public": RpcEndpoint
   }
 }`);
       expect(paramsTypes).toStrictEqual([
@@ -749,7 +749,7 @@ describe("route-scanner", () => {
         tmpPath("testApp"),
       );
       expect(pathStructure).equals(`{
-  "feed": Endpoint
+  "feed": RpcEndpoint
 }`);
       expect(paramsTypes).toStrictEqual([
         {
@@ -906,7 +906,7 @@ describe("route-scanner", () => {
       });
       const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(initial.pathStructure).toBe(`{
-  "sub": Endpoint
+  "sub": RpcEndpoint
 }`);
 
       resetTree({
@@ -919,7 +919,7 @@ describe("route-scanner", () => {
       clearScanAppDirCacheAbove(tmpPath("testApp", "sub", "page.tsx"));
       const modified = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(modified.pathStructure).toBe(`{
-  "sub": { "$get": typeof GET_asmocked } & Endpoint
+  "sub": { "$get": typeof GET_asmocked } & RpcEndpoint
 }`);
     });
 
@@ -933,7 +933,7 @@ describe("route-scanner", () => {
       });
       const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(initial.pathStructure).toBe(`{
-  "mid": Endpoint
+  "mid": RpcEndpoint
 }`);
 
       resetTree({
@@ -946,7 +946,7 @@ describe("route-scanner", () => {
       clearScanAppDirCacheAbove(tmpPath("testApp", "mid", "page.tsx"));
       const modified = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(modified.pathStructure).toBe(`{
-  "mid": { "$get": typeof GET_asmocked } & Endpoint
+  "mid": { "$get": typeof GET_asmocked } & RpcEndpoint
 }`);
     });
 
@@ -957,7 +957,7 @@ describe("route-scanner", () => {
         },
       });
       const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
-      expect(initial.pathStructure).toBe("Endpoint");
+      expect(initial.pathStructure).toBe("RpcEndpoint");
 
       resetTree({
         testApp: {
@@ -967,7 +967,7 @@ describe("route-scanner", () => {
       clearScanAppDirCacheAbove(tmpPath("testApp", "index.ts"));
       const modified = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(modified.pathStructure).toBe(
-        '{ "$get": typeof GET_asmocked } & Endpoint',
+        '{ "$get": typeof GET_asmocked } & RpcEndpoint',
       );
     });
 
@@ -981,7 +981,7 @@ describe("route-scanner", () => {
       });
       const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(initial.pathStructure).toBe(`{
-  "sub": Endpoint
+  "sub": RpcEndpoint
 }`);
 
       resetTree({
@@ -997,8 +997,8 @@ describe("route-scanner", () => {
       clearScanAppDirCacheAbove(tmpPath("testApp", "sub", "newFolder"));
       const modified = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(modified.pathStructure).toBe(`{
-  "sub": Endpoint & {
-    "newFolder": Endpoint
+  "sub": RpcEndpoint & {
+    "newFolder": RpcEndpoint
   }
 }`);
     });
@@ -1016,7 +1016,7 @@ describe("route-scanner", () => {
       const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(initial.pathStructure).toBe(`{
   "mid": {
-    "sub": Endpoint
+    "sub": RpcEndpoint
   }
 }`);
 
@@ -1036,8 +1036,8 @@ describe("route-scanner", () => {
       const modified = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(modified.pathStructure).toBe(`{
   "mid": {
-    "newFolder": Endpoint,
-    "sub": Endpoint
+    "newFolder": RpcEndpoint,
+    "sub": RpcEndpoint
   }
 }`);
     });
@@ -1049,7 +1049,7 @@ describe("route-scanner", () => {
         },
       });
       const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
-      expect(initial.pathStructure).toBe("Endpoint");
+      expect(initial.pathStructure).toBe("RpcEndpoint");
 
       resetTree({
         testApp: {
@@ -1061,8 +1061,8 @@ describe("route-scanner", () => {
       });
       clearScanAppDirCacheAbove(tmpPath("testApp", "newFolder"));
       const modified = scanAppDir(tmpPath("output"), tmpPath("testApp"));
-      expect(modified.pathStructure).toBe(`Endpoint & {
-  "newFolder": Endpoint
+      expect(modified.pathStructure).toBe(`RpcEndpoint & {
+  "newFolder": RpcEndpoint
 }`);
     });
   });
@@ -1086,7 +1086,7 @@ describe("route-scanner", () => {
       const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(initial.pathStructure).toBe(`{
   "_user": {
-    "home": Endpoint & Record<ParamsKey, { "user": string }>
+    "home": RpcEndpoint & Record<ParamsKey, { "user": string }>
   }
 }`);
 
@@ -1106,7 +1106,7 @@ describe("route-scanner", () => {
       expect(modified.pathStructure).toBe(`{
   "_user": {
     "_id": {
-      "home": Endpoint & Record<ParamsKey, { "user": string; "id": string; }>
+      "home": RpcEndpoint & Record<ParamsKey, { "user": string; "id": string; }>
     }
   }
 }`);
@@ -1125,7 +1125,7 @@ describe("route-scanner", () => {
       const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(initial.pathStructure).toBe(`{
   "_user": {
-    "home": Endpoint & Record<ParamsKey, { "user": string }>
+    "home": RpcEndpoint & Record<ParamsKey, { "user": string }>
   }
 }`);
 
@@ -1148,7 +1148,7 @@ describe("route-scanner", () => {
   "_user": {
     "_id": {
       "_detail": {
-        "home": Endpoint & Record<ParamsKey, { "user": string; "id": string; "detail": string; }>
+        "home": RpcEndpoint & Record<ParamsKey, { "user": string; "id": string; "detail": string; }>
       }
     }
   }
@@ -1171,7 +1171,7 @@ describe("route-scanner", () => {
       expect(initial.pathStructure).toBe(`{
   "_user": {
     "_id": {
-      "home": Endpoint & Record<ParamsKey, { "user": string; "id": string; }>
+      "home": RpcEndpoint & Record<ParamsKey, { "user": string; "id": string; }>
     }
   }
 }`);
@@ -1195,7 +1195,7 @@ describe("route-scanner", () => {
   "_user": {
     "_lang": {
       "_id": {
-        "home": Endpoint & Record<ParamsKey, { "user": string; "lang": string; "id": string; }>
+        "home": RpcEndpoint & Record<ParamsKey, { "user": string; "lang": string; "id": string; }>
       }
     }
   }
@@ -1233,13 +1233,13 @@ describe("route-scanner", () => {
       const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(initial.pathStructure).toBe(`{
   "_admin": {
-    "home": Endpoint & Record<ParamsKey, { "admin": string }>
+    "home": RpcEndpoint & Record<ParamsKey, { "admin": string }>
   },
   "_user": {
-    "home": Endpoint & Record<ParamsKey, { "user": string }>
+    "home": RpcEndpoint & Record<ParamsKey, { "user": string }>
   },
   "static": {
-    "home": Endpoint
+    "home": RpcEndpoint
   }
 }`);
 
@@ -1274,16 +1274,16 @@ describe("route-scanner", () => {
       expect(modified.pathStructure).toBe(`{
   "_admin": {
     "_id": {
-      "home": Endpoint & Record<ParamsKey, { "admin": string; "id": string; }>
+      "home": RpcEndpoint & Record<ParamsKey, { "admin": string; "id": string; }>
     }
   },
   "_user": {
     "_id": {
-      "home": Endpoint & Record<ParamsKey, { "user": string; "id": string; }>
+      "home": RpcEndpoint & Record<ParamsKey, { "user": string; "id": string; }>
     }
   },
   "static": {
-    "home": Endpoint
+    "home": RpcEndpoint
   }
 }`);
     });
@@ -1307,10 +1307,10 @@ describe("route-scanner", () => {
       const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(initial.pathStructure).toBe(`{
   "_group": {
-    "dashboard": Endpoint & Record<ParamsKey, { "group": string }>
+    "dashboard": RpcEndpoint & Record<ParamsKey, { "group": string }>
   },
   "_user": {
-    "home": Endpoint & Record<ParamsKey, { "user": string }>
+    "home": RpcEndpoint & Record<ParamsKey, { "user": string }>
   }
 }`);
 
@@ -1340,12 +1340,12 @@ describe("route-scanner", () => {
       expect(modified.pathStructure).toBe(`{
   "_group": {
     "_id": {
-      "dashboard": Endpoint & Record<ParamsKey, { "group": string; "id": string; }>
+      "dashboard": RpcEndpoint & Record<ParamsKey, { "group": string; "id": string; }>
     }
   },
   "_user": {
     "_id": {
-      "home": Endpoint & Record<ParamsKey, { "user": string; "id": string; }>
+      "home": RpcEndpoint & Record<ParamsKey, { "user": string; "id": string; }>
     }
   }
 }`);
