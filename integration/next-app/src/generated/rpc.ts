@@ -1,4 +1,4 @@
-import type { Endpoint ,ParamsKey ,QueryKey } from "rpc4next/client";
+import type { RpcEndpoint ,ParamsKey ,QueryKey } from "rpc4next/client";
 import type { GET as GET_871f64658e86ddce } from "../../app/api/error-demo/route";
 import type { GET as GET_f6b301e60ff73f39 } from "../../app/api/next-native-response/route";
 import type { GET as GET_de7c3f3aefa104c1 } from "../../app/api/next-native/[itemId]/route";
@@ -9,47 +9,47 @@ import type { GET as GET_fbb09db60ba2ae51 } from "../../app/api/request-meta/rou
 import type { Query as Query_96533c19a2b0de99 } from "../../app/api/users/[userId]/route";
 import type { GET as GET_b6e4799d411d6efe } from "../../app/api/users/[userId]/route";
 
-export type PathStructure = Endpoint & {
+export type PathStructure = RpcEndpoint & {
   "api": {
-    "error-demo": { "$get": typeof GET_871f64658e86ddce } & Endpoint,
-    "next-native": { "$get": typeof GET_ac9bcfb08eed44cd } & Endpoint & {
-      "_itemId": { "$get": typeof GET_de7c3f3aefa104c1 } & Endpoint & Record<ParamsKey, { "itemId": string }>
+    "error-demo": { "$get": typeof GET_871f64658e86ddce } & RpcEndpoint,
+    "next-native": { "$get": typeof GET_ac9bcfb08eed44cd } & RpcEndpoint & {
+      "_itemId": { "$get": typeof GET_de7c3f3aefa104c1 } & RpcEndpoint & Record<ParamsKey, { "itemId": string }>
     },
-    "next-native-response": { "$get": typeof GET_f6b301e60ff73f39 } & Endpoint,
-    "posts": { "$post": typeof POST_90625e305d8eaaef } & Endpoint,
-    "redirect-me": { "$get": typeof GET_61a9f4b9fd49ccf5 } & Endpoint,
-    "request-meta": { "$get": typeof GET_fbb09db60ba2ae51 } & Endpoint,
+    "next-native-response": { "$get": typeof GET_f6b301e60ff73f39 } & RpcEndpoint,
+    "posts": { "$post": typeof POST_90625e305d8eaaef } & RpcEndpoint,
+    "redirect-me": { "$get": typeof GET_61a9f4b9fd49ccf5 } & RpcEndpoint,
+    "request-meta": { "$get": typeof GET_fbb09db60ba2ae51 } & RpcEndpoint,
     "users": {
-      "_userId": Record<QueryKey, Query_96533c19a2b0de99> & { "$get": typeof GET_b6e4799d411d6efe } & Endpoint & Record<ParamsKey, { "userId": string }>
+      "_userId": Record<QueryKey, Query_96533c19a2b0de99> & { "$get": typeof GET_b6e4799d411d6efe } & RpcEndpoint & Record<ParamsKey, { "userId": string }>
     }
   },
-  "e2e-client": Endpoint,
-  "feed": Endpoint,
-  "patterns": Endpoint & {
-    "reports": Endpoint,
-    "%5Fescaped": Endpoint,
-    "%E3%81%ZZ": Endpoint,
+  "e2e-client": RpcEndpoint,
+  "feed": RpcEndpoint,
+  "patterns": RpcEndpoint & {
+    "reports": RpcEndpoint,
+    "%5Fescaped": RpcEndpoint,
+    "%E3%81%ZZ": RpcEndpoint,
     "catch-all": {
-      "___parts": Endpoint & Record<ParamsKey, { "parts": string[] }>
+      "___parts": RpcEndpoint & Record<ParamsKey, { "parts": string[] }>
     },
     "dynamic": {
-      "_category": Endpoint & Record<ParamsKey, { "category": string }> & {
-        "_item": Endpoint & Record<ParamsKey, { "category": string; "item": string; }>
+      "_category": RpcEndpoint & Record<ParamsKey, { "category": string }> & {
+        "_item": RpcEndpoint & Record<ParamsKey, { "category": string; "item": string; }>
       }
     },
     "optional-catch-all": {
-      "_____parts": Endpoint & Record<ParamsKey, { "parts": string[] | undefined }>
+      "_____parts": RpcEndpoint & Record<ParamsKey, { "parts": string[] | undefined }>
     },
-    "parallel": Endpoint & {
-      "views": Endpoint,
-      "members": Endpoint
+    "parallel": RpcEndpoint & {
+      "views": RpcEndpoint,
+      "members": RpcEndpoint
     },
-    "search": Endpoint
+    "search": RpcEndpoint
   },
   "photo": {
-    "_id": Endpoint & Record<ParamsKey, { "id": string }> & {
+    "_id": RpcEndpoint & Record<ParamsKey, { "id": string }> & {
       "comments": {
-        "_commentId": Endpoint & Record<ParamsKey, { "id": string; "commentId": string; }>
+        "_commentId": RpcEndpoint & Record<ParamsKey, { "id": string; "commentId": string; }>
       }
     }
   }

@@ -38,7 +38,7 @@ export type TypedRequestInit<
       }
   );
 
-export type ClientOptions<
+export type RpcClientOptions<
   TWithoutHeaders extends "Content-Type" | "Cookie" = never,
   TWithoutInit extends "body" | "headers" | "headersInit" = never,
 > = {
@@ -47,31 +47,31 @@ export type ClientOptions<
 };
 
 declare const __proxy: unique symbol;
-export type Endpoint = { [__proxy]?: true };
+export type RpcEndpoint = { [__proxy]?: true };
 
 export type ParamsKey = "__params";
-type IsParams = Record<ParamsKey, unknown>;
+type HasParamsMarker = Record<ParamsKey, unknown>;
 export type QueryKey = "__query";
-type IsQuery = Record<QueryKey, unknown>;
+type HasQueryMarker = Record<QueryKey, unknown>;
 
 export type HttpMethodFuncKey = (typeof HTTP_METHOD_FUNC_KEYS)[number];
-type IsHttpMethod = {
+type HttpMethodMapLike = {
   [K in HttpMethodFuncKey]?: unknown;
 };
 
-type IsOptionalCatchAll = `${typeof OPTIONAL_CATCH_ALL_PREFIX}${string}`;
-type IsCatchAll = `${typeof CATCH_ALL_PREFIX}${string}`;
-type IsDynamic = `${typeof DYNAMIC_PREFIX}${string}`;
+type OptionalCatchAllKey = `${typeof OPTIONAL_CATCH_ALL_PREFIX}${string}`;
+type CatchAllKey = `${typeof CATCH_ALL_PREFIX}${string}`;
+type DynamicKey = `${typeof DYNAMIC_PREFIX}${string}`;
 
-export type FuncParams<
+export type PathParamsInput<
   T = Record<string, string | number | string[] | undefined>,
 > = T;
 
-type Params<T = unknown> = T extends IsParams
+type ExtractParams<T = unknown> = T extends HasParamsMarker
   ? T[ParamsKey]
   : Record<string, string>;
 
-export type UrlOptions<T = unknown, TQuery = unknown> = T extends IsQuery
+export type UrlOptions<T = unknown, TQuery = unknown> = T extends HasQueryMarker
   ? AllOptional<T[QueryKey]> extends true
     ? { query?: T[QueryKey]; hash?: string }
     : { query: T[QueryKey]; hash?: string }
@@ -85,7 +85,7 @@ export type UrlResult<T = unknown> = {
   pathname: string;
   path: string;
   relativePath: string;
-  params: Params<T>;
+  params: ExtractParams<T>;
 };
 
 type IsNever<T> = [T] extends [never] ? true : false;
@@ -100,22 +100,33 @@ type UrlArgsObj<T, TQuery, TUrlOptions = UrlOptions<T, TQuery>> =
     ? { url?: TUrlOptions }
     : { url: TUrlOptions };
 
-export type BodyOptions<TJson = unknown> = { json: TJson };
+export type JsonBodyOptions<TJson = unknown> = { json: TJson };
 type BodyArgsObj<TJson> =
-  IsNever<TJson> extends true ? unknown : { body: BodyOptions<TJson> };
+  IsNever<TJson> extends true ? unknown : { body: JsonBodyOptions<TJson> };
 
-export type HeadersOptions<THeaders = unknown, TCookies = unknown> = {
+export type RequestHeadersOptions<THeaders = unknown, TCookies = unknown> = {
   headers: THeaders;
   cookies: TCookies;
 };
+type RequestHeadersArgs<THeaders = unknown, TCookies = unknown> =
+  IsNever<THeaders> extends true
+    ? Pick<RequestHeadersOptions<THeaders, TCookies>, "cookies">
+    : IsNever<TCookies> extends true
+      ? Pick<RequestHeadersOptions<THeaders, TCookies>, "headers">
+      : RequestHeadersOptions<THeaders, TCookies>;
 type HeadersArgsObj<THeaders = unknown, TCookies = unknown> =
   IsNever<THeaders> extends true
     ? IsNever<TCookies> extends true
       ? unknown
-      : { requestHeaders: Pick<HeadersOptions<THeaders, TCookies>, "cookies"> }
-    : IsNever<TCookies> extends true
-      ? { requestHeaders: Pick<HeadersOptions<THeaders, TCookies>, "headers"> }
-      : { requestHeaders: HeadersOptions<THeaders, TCookies> };
+      : { requestHeaders: RequestHeadersArgs<THeaders, TCookies> }
+    : { requestHeaders: RequestHeadersArgs<THeaders, TCookies> };
+
+type MethodInitExclusions<TJson, TCookies> =
+  | (IsNever<TJson> extends true ? never : "Content-Type")
+  | (IsNever<TCookies> extends true ? never : "Cookie");
+type MethodOptionExclusions<TJson, THeaders> =
+  | (IsNever<TJson> extends true ? never : "body")
+  | (IsNever<THeaders> extends true ? never : "headers" | "headersInit");
 
 type HttpMethodsArgs<
   T,
@@ -131,15 +142,13 @@ type HttpMethodsArgs<
   ...(AllOptional<TBaseArgs> extends true
     ? [methodParam?: TBaseArgs]
     : [methodParam: TBaseArgs]),
-  option?: ClientOptions<
-    | (IsNever<TJson> extends true ? never : "Content-Type")
-    | (IsNever<TCookies> extends true ? never : "Cookie"),
-    | (IsNever<TJson> extends true ? never : "body")
-    | (IsNever<THeaders> extends true ? never : "headers" | "headersInit")
+  option?: RpcClientOptions<
+    MethodInitExclusions<TJson, TCookies>,
+    MethodOptionExclusions<TJson, THeaders>
   >,
 ];
 
-type InferHttpMethods<T extends IsHttpMethod> = {
+type InferHttpMethods<T extends HttpMethodMapLike> = {
   [K in keyof T as K extends HttpMethodFuncKey ? K : never]: (
     ...args: HttpMethodsArgs<T, InferValidationSchema<T[K]>>
   ) => Promise<InferTypedNextResponseType<T[K]>>;
@@ -175,7 +184,7 @@ type InferTypedNextResponseType<T> = T extends (
 type PathProxyAsProperty<T> = {
   $match: (path: string) =>
     | ({
-        params: Params<T>;
+        params: ExtractParams<T>;
       } & Partial<UrlOptions<T, InferQuery<T>>>)
     | null;
 };
@@ -187,7 +196,7 @@ type InferQuery<T> = ValidationInputFor<
 
 type PathProxyAsFunction<T> = {
   $url: (...args: UrlArgs<T, InferQuery<T>>) => UrlResult<T>;
-} & (T extends IsHttpMethod ? InferHttpMethods<T> : unknown);
+} & (T extends HttpMethodMapLike ? InferHttpMethods<T> : unknown);
 
 type ParamFunction<T, TParamArgs extends unknown[]> = (
   ...args: TParamArgs
@@ -196,12 +205,12 @@ type ParamFunction<T, TParamArgs extends unknown[]> = (
 type NonEmptyArray<T> = [T, ...T[]];
 
 export type DynamicPathProxyAsFunction<T> = Omit<
-  (T extends Endpoint ? PathProxyAsFunction<T> : unknown) & {
-    [K in keyof T]: K extends IsOptionalCatchAll
+  (T extends RpcEndpoint ? PathProxyAsFunction<T> : unknown) & {
+    [K in keyof T]: K extends OptionalCatchAllKey
       ? ParamFunction<T[K], [value?: string[]]>
-      : K extends IsCatchAll
+      : K extends CatchAllKey
         ? ParamFunction<T[K], [value: NonEmptyArray<string>]>
-        : K extends IsDynamic
+        : K extends DynamicKey
           ? ParamFunction<T[K], [value: string | number]>
           : DynamicPathProxyAsFunction<T[K]>;
   },
@@ -209,7 +218,7 @@ export type DynamicPathProxyAsFunction<T> = Omit<
 >;
 
 export type DynamicPathProxyAsProperty<T> = Omit<
-  (T extends Endpoint ? PathProxyAsProperty<T> : unknown) & {
+  (T extends RpcEndpoint ? PathProxyAsProperty<T> : unknown) & {
     [K in keyof T]: K extends unknown
       ? DynamicPathProxyAsProperty<T[K]>
       : DynamicPathProxyAsProperty<T[K]>;
@@ -217,12 +226,12 @@ export type DynamicPathProxyAsProperty<T> = Omit<
   QueryKey | ParamsKey
 >;
 
-export type RpcHandler = (
+export type RpcProxyHandler = (
   key: string,
   context: {
     paths: string[];
-    params: FuncParams;
+    params: PathParamsInput;
     dynamicKeys: string[];
-    options: ClientOptions;
+    options: RpcClientOptions;
   },
 ) => unknown | undefined;

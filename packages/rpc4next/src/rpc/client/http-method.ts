@@ -2,17 +2,17 @@ import type { ContentType } from "../lib/content-type-types";
 import { normalizeHeaders } from "../lib/headers";
 import { deepMerge } from "./client-utils";
 import type {
-  BodyOptions,
-  ClientOptions,
-  FuncParams,
-  HeadersOptions,
+  JsonBodyOptions,
+  PathParamsInput,
+  RequestHeadersOptions,
+  RpcClientOptions,
   TypedRequestInit,
   UrlOptions,
 } from "./types";
 import { createUrl } from "./url";
 
 /** Local, non-breaking extension for future body shapes */
-type ExtendedBodyOptions = BodyOptions & {
+type ExtendedBodyOptions = JsonBodyOptions & {
   text?: string;
   formData?: FormData;
   urlencoded?: URLSearchParams;
@@ -48,17 +48,17 @@ const hasUserContentType = (h: Record<string, string>): boolean => {
 export const httpMethod = (
   key: string,
   paths: string[],
-  params: FuncParams,
+  params: PathParamsInput,
   dynamicKeys: string[],
-  defaultOptions: ClientOptions,
+  defaultOptions: RpcClientOptions,
 ) => {
   return async (
     methodParam?: {
       url?: UrlOptions;
       body?: ExtendedBodyOptions;
-      requestHeaders?: HeadersOptions;
+      requestHeaders?: RequestHeadersOptions;
     },
-    options?: ClientOptions,
+    options?: RpcClientOptions,
   ) => {
     // Resolve method (e.g. "$get" -> "GET")
     const method = key.replace(/^\$/, "").toUpperCase();

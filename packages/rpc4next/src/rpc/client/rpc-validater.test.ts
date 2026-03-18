@@ -14,7 +14,7 @@ import { searchParamsToObject } from "../lib/search-params";
 import { routeHandlerFactory } from "../server";
 import { zValidator } from "../server/validators/zod/zod-validator";
 import { createRpcClient } from "./rpc-client";
-import type { ClientOptions, Endpoint } from "./types";
+import type { RpcClientOptions, RpcEndpoint } from "./types";
 
 const schema = z.object({
   name: z.string(),
@@ -65,17 +65,17 @@ const { POST: _post_all } = createRouteHandler<{
 
 const server = setupServer();
 
-type PathStructure = Endpoint & {
+type PathStructure = RpcEndpoint & {
   api: {
     none: {
       $get: typeof _get_1;
-    } & Endpoint & {
-        _json: { $post: typeof _post_1 } & Endpoint;
-        headers: { $post: typeof _post_2 } & Endpoint;
-        cookies: { $post: typeof _post_3 } & Endpoint;
-        query: { $post: typeof _post_4 } & Endpoint;
-        optionalQuery: { $post: typeof _post_5 } & Endpoint;
-        all: { $post: typeof _post_all } & Endpoint;
+    } & RpcEndpoint & {
+        _json: { $post: typeof _post_1 } & RpcEndpoint;
+        headers: { $post: typeof _post_2 } & RpcEndpoint;
+        cookies: { $post: typeof _post_3 } & RpcEndpoint;
+        query: { $post: typeof _post_4 } & RpcEndpoint;
+        optionalQuery: { $post: typeof _post_5 } & RpcEndpoint;
+        all: { $post: typeof _post_all } & RpcEndpoint;
       };
   };
 };
@@ -336,7 +336,7 @@ describe("createHandler type definitions", () => {
           hash?: string;
         };
       },
-      option?: ClientOptions<never, never>,
+      option?: RpcClientOptions<never, never>,
     ];
 
     expectTypeOf<
@@ -356,7 +356,7 @@ describe("createHandler type definitions", () => {
           };
         };
       },
-      option?: ClientOptions<"Content-Type", "body">,
+      option?: RpcClientOptions<"Content-Type", "body">,
     ];
 
     const _post1 = client.api.none._json("").$post;
@@ -378,7 +378,7 @@ describe("createHandler type definitions", () => {
           };
         };
       },
-      option?: ClientOptions<never, "headers" | "headersInit">,
+      option?: RpcClientOptions<never, "headers" | "headersInit">,
     ];
 
     expectTypeOf<
@@ -398,7 +398,7 @@ describe("createHandler type definitions", () => {
           };
         };
       },
-      option?: ClientOptions<"Cookie", never>,
+      option?: RpcClientOptions<"Cookie", never>,
     ];
 
     expectTypeOf<
@@ -415,7 +415,7 @@ describe("createHandler type definitions", () => {
           hash?: string;
         };
       },
-      option?: ClientOptions<never, never>,
+      option?: RpcClientOptions<never, never>,
     ];
 
     expectTypeOf<
@@ -446,7 +446,7 @@ describe("createHandler type definitions", () => {
           hash?: string;
         };
       },
-      option?: ClientOptions<never, never>,
+      option?: RpcClientOptions<never, never>,
     ];
 
     expectTypeOf<
@@ -495,7 +495,7 @@ describe("createHandler type definitions", () => {
           };
         };
       },
-      option?: ClientOptions<
+      option?: RpcClientOptions<
         "Cookie" | "Content-Type",
         "headers" | "headersInit" | "body"
       >,

@@ -1,16 +1,16 @@
 import { isHttpMethod } from "./client-utils";
 import { httpMethod } from "./http-method";
 import { makeCreateRpc } from "./rpc";
-import type { ClientOptions, DynamicPathProxyAsFunction } from "./types";
+import type { DynamicPathProxyAsFunction, RpcClientOptions } from "./types";
 import { createUrl } from "./url";
 
 /**
  * Creates an RPC client proxy for making HTTP requests with a strongly typed API.
  *
- * @template T - The type defining the RPC endpoint structure.
- * @param baseUrl - The base URL for the RPC client. This URL will be used as the root for all generated endpoint URLs.
+ * @template T - The type defining the RPC path structure.
+ * @param baseUrl - The base URL for the RPC client. This URL will be used as the root for all generated client URLs.
  * @param options - (Optional) Client options to customize the behavior of the RPC client. These options may include a custom fetch function and default request initialization options.
- * @returns An object that enables you to dynamically build endpoint URLs and execute HTTP requests (such as GET, POST, DELETE, etc.) with full type support.
+ * @returns An object that enables you to dynamically build client URLs and execute HTTP requests (such as GET, POST, DELETE, etc.) with full type support.
  *
  * @example
  * ```ts
@@ -20,14 +20,14 @@ import { createUrl } from "./url";
  * // Create an RPC client with a base URL
  * const client = createRpcClient<PathStructure>("http://localhost:3000");
  *
- * // Generate a URL for a dynamic endpoint
+ * // Generate a URL for a dynamic route
  * const urlResult = client.fuga._foo("test").$url();
  * console.log(urlResult.path);         // "http://localhost:3000/fuga/test"
  * console.log(urlResult.relativePath);   // "/fuga/test"
  * console.log(urlResult.pathname);       // "/fuga/[foo]"
  * console.log(urlResult.params);         // { foo: "test" }
  *
- * // Execute a GET request on an endpoint
+ * // Execute a GET request on a route
  * const response = await client.api.hoge._foo("test").$get();
  * console.log(await response.json());    // Expected response: { method: "get" }
  * ```
@@ -47,5 +47,5 @@ export const createRpcClient = makeCreateRpc(
   },
 ) as <T extends object>(
   baseUrl: string,
-  options?: ClientOptions,
+  options?: RpcClientOptions,
 ) => DynamicPathProxyAsFunction<T>;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { makeCreateRpc } from "./rpc";
-import type { RpcHandler } from "./types";
+import type { RpcProxyHandler } from "./types";
 
 // Minimal recursive chain type for arbitrary property access + callability
 type Chain = {
@@ -20,7 +20,7 @@ type ChainWithCtx = Chain & {
 };
 
 describe("apply trap fallback messages (nullish coalescing branches)", () => {
-  const passthroughHandler: RpcHandler = () => undefined;
+  const passthroughHandler: RpcProxyHandler = () => undefined;
   const create = makeCreateRpc(passthroughHandler);
 
   it('uses empty-string fallback when lastPath is "" (nullish fallback branch)', () => {
@@ -57,7 +57,7 @@ describe("get trap behavior (symbols / thenable safety)", () => {
 });
 
 describe("chaining, dynamic params, and handler short-circuit", () => {
-  const handler: RpcHandler = (key, ctx) => {
+  const handler: RpcProxyHandler = (key, ctx) => {
     if (key === "__ctx") {
       return {
         paths: ctx.paths,
@@ -125,7 +125,7 @@ describe("chaining, dynamic params, and handler short-circuit", () => {
 
   describe("coverage: nullish fallback branch when lastPath becomes undefined", () => {
     // Expose a mutator via handler that empties the *same* paths array the proxy closes over.
-    const handler: RpcHandler = (key, ctx) => {
+    const handler: RpcProxyHandler = (key, ctx) => {
       if (key === "__mutatePathsToEmpty") {
         return () => {
           // Make lastPath === undefined -> triggers `${lastPath ?? ""}` fallback

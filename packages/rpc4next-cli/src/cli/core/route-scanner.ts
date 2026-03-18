@@ -11,8 +11,8 @@ import { scanAppDirCache, visitedDirsCache } from "./cache.js";
 import {
   INDENT,
   NEWLINE,
-  TYPE_END_POINT,
   TYPE_KEY_PARAMS,
+  TYPE_RPC_ENDPOINT,
 } from "./constants.js";
 import { toPosixPath } from "./path-utils.js";
 import { scanEndpointFile } from "./scan-utils.js";
@@ -271,7 +271,7 @@ const appendEndpointFile = (
     accumulator.typeFragments.push(type);
   });
 
-  accumulator.typeFragments.push(TYPE_END_POINT);
+  accumulator.typeFragments.push(TYPE_RPC_ENDPOINT);
   appendParamsType(accumulator, context.params, fullPath);
 };
 
