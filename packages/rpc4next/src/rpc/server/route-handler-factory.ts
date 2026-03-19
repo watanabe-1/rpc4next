@@ -5,6 +5,13 @@
 
 import type { NextRequest } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
+import { isRpcError } from "./error";
+import type { RpcMeta } from "./meta";
+import type {
+  MergeProcedureDefinition,
+  ProcedureDefinition,
+} from "./procedure-types";
+import { attachProcedureDefinition } from "./procedure-types";
 import { createRouteContext } from "./route-context";
 import type {
   ErrorHandler,
@@ -12,6 +19,7 @@ import type {
   MethodRouteDefinition,
   RequiredRouteResponse,
   RouteBindings,
+  RouteDefinitionBuilder,
   ValidationSchema,
 } from "./route-types";
 import type { Params, Query } from "./types";
@@ -26,6 +34,7 @@ const composeHandlersWithError = <
 >(
   handlers: THandlers,
   onError: ErrorHandler<TOnErrorResponse, TParams, TQuery, TValidationSchema>,
+  hasCustomOnError: boolean,
 ) => {
   return async (
     req: NextRequest,
@@ -46,6 +55,10 @@ const composeHandlersWithError = <
 
       throw new Error("No handler returned a response");
     } catch (error) {
+      if (!hasCustomOnError && isRpcError(error)) {
+        return routeContext.json(error.toJSON(), { status: error.status });
+      }
+
       return await onError(error, routeContext);
     }
   };
@@ -71,36 +84,100 @@ export const routeHandlerFactory =
     onError?: ErrorHandler<TOnErrorResponse>,
   ) =>
   <TBindings extends RouteBindings>() => {
-    const defineRouteForMethod = <THttpMethod extends HttpMethod>(
-      method: THttpMethod,
-    ) => {
-      // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
-      return ((...handlers: any[]) => {
-        const resolvedOnError =
-          onError ??
-          ((error, _) => {
-            throw error;
-          });
+    const createBuilder = <
+      TProcedureDefinition extends ProcedureDefinition = ProcedureDefinition,
+    >(
+      definition: Partial<TProcedureDefinition> = {},
+    ): RouteDefinitionBuilder<
+      TBindings,
+      TOnErrorResponse,
+      TProcedureDefinition
+    > => {
+      const defineRouteForMethod = <THttpMethod extends HttpMethod>(
+        method: THttpMethod,
+      ) => {
+        // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
+        return ((...handlers: any[]) => {
+          const resolvedOnError =
+            onError ??
+            ((error, _) => {
+              throw error;
+            });
 
-        const routeHandler = composeHandlersWithError(
-          handlers,
-          resolvedOnError,
-        );
+          const routeHandler = composeHandlersWithError(
+            handlers,
+            resolvedOnError,
+            onError !== undefined,
+          );
 
-        return { [method]: routeHandler } as Record<
+          return {
+            [method]: attachProcedureDefinition(routeHandler, {
+              ...definition,
+              method,
+            }),
+          } as Record<THttpMethod, typeof routeHandler>;
+        }) as MethodRouteDefinition<
           THttpMethod,
-          typeof routeHandler
+          TBindings,
+          TOnErrorResponse,
+          TProcedureDefinition
         >;
-      }) as MethodRouteDefinition<THttpMethod, TBindings, TOnErrorResponse>;
+      };
+
+      return {
+        meta: <TMeta extends RpcMeta>(meta: TMeta) =>
+          createBuilder<
+            MergeProcedureDefinition<TProcedureDefinition, { meta: TMeta }>
+          >({
+            ...definition,
+            meta,
+          } as Partial<
+            MergeProcedureDefinition<TProcedureDefinition, { meta: TMeta }>
+          >),
+        output: <TOutput>(
+          schema:
+            | { _output: TOutput }
+            | { _type: TOutput }
+            | { output: TOutput },
+        ) =>
+          createBuilder<
+            MergeProcedureDefinition<
+              TProcedureDefinition,
+              {
+                output: NonNullable<TProcedureDefinition["output"]> & {
+                  response: TOutput;
+                };
+              }
+            >
+          >({
+            ...definition,
+            output: {
+              ...(definition.output ?? {}),
+              schema,
+            },
+          } as Partial<
+            MergeProcedureDefinition<
+              TProcedureDefinition,
+              {
+                output: NonNullable<TProcedureDefinition["output"]> & {
+                  response: TOutput;
+                };
+              }
+            >
+          >),
+        get: defineRouteForMethod("GET"),
+        post: defineRouteForMethod("POST"),
+        put: defineRouteForMethod("PUT"),
+        delete: defineRouteForMethod("DELETE"),
+        patch: defineRouteForMethod("PATCH"),
+        head: defineRouteForMethod("HEAD"),
+        options: defineRouteForMethod("OPTIONS"),
+      } as unknown as RouteDefinitionBuilder<
+        TBindings,
+        TOnErrorResponse,
+        TProcedureDefinition
+      >;
     };
 
-    return {
-      get: defineRouteForMethod("GET"),
-      post: defineRouteForMethod("POST"),
-      put: defineRouteForMethod("PUT"),
-      delete: defineRouteForMethod("DELETE"),
-      patch: defineRouteForMethod("PATCH"),
-      head: defineRouteForMethod("HEAD"),
-      options: defineRouteForMethod("OPTIONS"),
-    };
+    return createBuilder();
   };

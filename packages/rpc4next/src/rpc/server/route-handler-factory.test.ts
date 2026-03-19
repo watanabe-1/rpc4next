@@ -1,5 +1,8 @@
 import { NextRequest } from "next/server";
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
+import { rpcError } from "./error";
+import { getRouteMeta } from "./meta";
+import { getProcedureDefinition } from "./procedure-types";
 import { routeHandlerFactory } from "./route-handler-factory";
 import type { TypedNextResponse } from "./types";
 
@@ -194,6 +197,82 @@ describe("routeHandlerFactory", () => {
     });
     expect(await res.text()).toBe("Non-async (synchronous) params OK");
   });
+
+  it("serializes thrown RpcError with the standard envelope when no onError is provided", async () => {
+    const createRouteHandler = routeHandlerFactory()();
+    const handler = createRouteHandler.get(async () => {
+      throw rpcError("FORBIDDEN", {
+        message: "blocked",
+        details: { reason: "policy" },
+      });
+    });
+
+    const req = new NextRequest("http://localhost");
+    const res = (await handler.GET(req, {
+      params: Promise.resolve({}),
+    })) as TypedNextResponse<
+      {
+        error: {
+          code: "FORBIDDEN";
+          message: string;
+          details?: { reason: string };
+        };
+      },
+      403,
+      "application/json"
+    >;
+
+    expect(res.status).toBe(403);
+    await expect(res.json()).resolves.toEqual({
+      error: {
+        code: "FORBIDDEN",
+        message: "blocked",
+        details: { reason: "policy" },
+      },
+    });
+  });
+
+  it("attaches meta and output contracts through the route builder", async () => {
+    const createRouteHandler = routeHandlerFactory()();
+    const handler = createRouteHandler
+      .meta({ tags: ["users"], auth: "optional" as const })
+      .output({
+        _output: {
+          ok: true as const,
+          source: "builder-contract" as const,
+        },
+      })
+      .get(async (rc) => {
+        return rc.json({
+          ok: true,
+          source: "builder-contract",
+        });
+      });
+
+    const definition = getProcedureDefinition(handler.GET);
+    const meta = getRouteMeta(handler.GET);
+    const response = await handler.GET(new NextRequest("http://localhost"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(meta).toEqual({ tags: ["users"], auth: "optional" });
+    expect(definition).toMatchObject({
+      method: "GET",
+      meta: { tags: ["users"], auth: "optional" },
+      output: {
+        schema: {
+          _output: {
+            ok: true,
+            source: "builder-contract",
+          },
+        },
+      },
+    });
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      source: "builder-contract",
+    });
+  });
 });
 
 describe("routeHandlerFactory type definitions", () => {
@@ -287,5 +366,41 @@ describe("routeHandlerFactory type definitions", () => {
     expectTypeOf<
       Awaited<ReturnType<typeof _handler.POST>>
     >().toEqualTypeOf<ExpectedResponse>();
+  });
+
+  it("should preserve output contract types on the builder API", () => {
+    const createRouteHandler = routeHandlerFactory();
+    const handler = createRouteHandler()
+      .meta({ tags: ["contracts"] })
+      .output({
+        _output: {
+          ok: true as const,
+          source: "typed-output" as const,
+        },
+      })
+      .get(
+        async (
+          rc,
+        ): Promise<
+          TypedNextResponse<
+            {
+              ok: boolean;
+              source: string;
+            },
+            200,
+            "application/json"
+          >
+        > =>
+          rc.json({
+            ok: true,
+            source: "typed-output",
+          }),
+      );
+
+    type ExpectedMeta = {
+      tags: string[];
+    };
+
+    expectTypeOf(getRouteMeta(handler.GET)).toEqualTypeOf<ExpectedMeta>();
   });
 });

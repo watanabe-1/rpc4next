@@ -9,6 +9,7 @@
 
 import type { HttpMethod } from "rpc4next-shared";
 import type { ZodSchema, z } from "zod";
+import { type RpcErrorEnvelope, rpcError } from "../../error";
 import type { ValidationSchema } from "../../route-types";
 import type {
   ConditionalValidationInput,
@@ -47,7 +48,11 @@ export const zValidator = <
     output: Record<TValidationTarget, TOutput>;
   },
   THookReturn extends TypedNextResponse | undefined =
-    | TypedNextResponse<z.ZodSafeParseError<TInput>, 400, "application/json">
+    | TypedNextResponse<
+        RpcErrorEnvelope<"BAD_REQUEST", z.ZodError<TInput>>,
+        400,
+        "application/json"
+      >
     | undefined,
 >(
   target: TValidationTarget,
@@ -61,7 +66,13 @@ export const zValidator = <
     hook ??
     ((result, rc) => {
       if (!result.success) {
-        return rc.json(result, { status: 400 });
+        return rc.json(
+          rpcError("BAD_REQUEST", {
+            message: result.error.message,
+            details: result.error,
+          }).toJSON(),
+          { status: 400 },
+        );
       }
     });
 
