@@ -1,5 +1,7 @@
 import type { RpcEndpoint ,ParamsKey ,QueryKey } from "rpc4next/client";
+import type { GET as GET_1cdff2d46851497f } from "../../app/api/contract-route/route";
 import type { GET as GET_871f64658e86ddce } from "../../app/api/error-demo/route";
+import type { GET as GET_9a772c8949962aeb } from "../../app/api/explicit-output/route";
 import type { GET as GET_f6b301e60ff73f39 } from "../../app/api/next-native-response/route";
 import type { GET as GET_de7c3f3aefa104c1 } from "../../app/api/next-native/[itemId]/route";
 import type { GET as GET_ac9bcfb08eed44cd } from "../../app/api/next-native/route";
@@ -11,7 +13,9 @@ import type { GET as GET_b6e4799d411d6efe } from "../../app/api/users/[userId]/r
 
 export type PathStructure = RpcEndpoint & {
   "api": {
+    "contract-route": { "$get": typeof GET_1cdff2d46851497f } & RpcEndpoint,
     "error-demo": { "$get": typeof GET_871f64658e86ddce } & RpcEndpoint,
+    "explicit-output": { "$get": typeof GET_9a772c8949962aeb } & RpcEndpoint,
     "next-native": { "$get": typeof GET_ac9bcfb08eed44cd } & RpcEndpoint & {
       "_itemId": { "$get": typeof GET_de7c3f3aefa104c1 } & RpcEndpoint & Record<ParamsKey, { "itemId": string }>
     },

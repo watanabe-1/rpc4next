@@ -92,6 +92,30 @@ describe("integration next-app generated RPC type coverage", () => {
       >
     >();
 
+    const _explicitOutputResponse = await client.api["explicit-output"].$get();
+    expectTypeOf<typeof _explicitOutputResponse>().toEqualTypeOf<
+      TypedNextResponse<
+        {
+          ok: true;
+          source: "explicit-output";
+        },
+        HttpStatusCode,
+        ContentType
+      >
+    >();
+
+    const _contractRouteResponse = await client.api["contract-route"].$get();
+    expectTypeOf<typeof _contractRouteResponse>().toEqualTypeOf<
+      TypedNextResponse<
+        {
+          ok: true;
+          source: "contract-route";
+        },
+        200,
+        "application/json"
+      >
+    >();
+
     const _nativeDynamicResponse = await client.api["next-native"]
       ._itemId("native-item")
       .$get();

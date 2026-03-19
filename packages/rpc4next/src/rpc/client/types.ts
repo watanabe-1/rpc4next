@@ -7,7 +7,14 @@ import type {
 } from "rpc4next-shared";
 import type { ContentType } from "../lib/content-type-types";
 import type { HttpRequestHeaders } from "../lib/http-request-headers-types";
-import type { HttpStatusCode } from "../lib/http-status-code-types";
+import type {
+  HttpStatusCode,
+  SuccessfulHttpStatusCode,
+} from "../lib/http-status-code-types";
+import type {
+  ProcedureOutputContract,
+  WithProcedureDefinition,
+} from "../server/procedure-types";
 import type {
   RouteHandlerResponse,
   RouteResponse,
@@ -174,11 +181,47 @@ type InferNextResponseType<T> = T extends (
   ? U
   : never;
 
+type InferProcedureOutput<T> =
+  T extends WithProcedureDefinition<unknown, infer TDefinition>
+    ? TDefinition extends {
+        output: ProcedureOutputContract<infer TOutput>;
+      }
+      ? TOutput
+      : never
+    : never;
+
+type ReplaceSuccessResponseBody<TResponse, TOutput> =
+  TResponse extends TypedNextResponse<
+    unknown,
+    infer TStatus,
+    infer TContentType
+  >
+    ? TStatus extends SuccessfulHttpStatusCode
+      ? TypedNextResponse<TOutput, TStatus, TContentType>
+      : TResponse
+    : never;
+
+type InferTypedNextResponseTypeFromOutput<T, TOutput> = T extends (
+  // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
+  ...args: any[]
+) => Promise<infer TResponse>
+  ? [ReplaceSuccessResponseBody<TResponse, TOutput>] extends [never]
+    ? TypedNextResponse<TOutput, HttpStatusCode, ContentType>
+    : ReplaceSuccessResponseBody<TResponse, TOutput>
+  : TypedNextResponse<TOutput, HttpStatusCode, ContentType>;
+
 type InferTypedNextResponseType<T> = T extends (
   // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
   ...args: any[]
-) => Promise<TypedNextResponse>
-  ? Awaited<ReturnType<T>>
+) => Promise<unknown>
+  ? IsNever<InferProcedureOutput<T>> extends true
+    ? T extends (
+        // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
+        ...args: any[]
+      ) => Promise<TypedNextResponse>
+      ? Awaited<ReturnType<T>>
+      : TypedNextResponse<InferNextResponseType<T>, HttpStatusCode, ContentType>
+    : InferTypedNextResponseTypeFromOutput<T, InferProcedureOutput<T>>
   : TypedNextResponse<InferNextResponseType<T>, HttpStatusCode, ContentType>;
 
 type PathProxyAsProperty<T> = {

@@ -5,10 +5,10 @@ import { POST } from "../app/api/posts/route";
 import { GET } from "../app/api/users/[userId]/route";
 
 type ValidationErrorPayload = {
-  success: false;
   error: {
-    name: string;
+    code: string;
     message: string;
+    details?: unknown;
   };
 };
 
@@ -18,13 +18,11 @@ const expectValidationErrorPayload = (
   if (
     typeof payload !== "object" ||
     payload === null ||
-    !("success" in payload) ||
-    payload.success !== false ||
     !("error" in payload) ||
     typeof payload.error !== "object" ||
     payload.error === null ||
-    !("name" in payload.error) ||
-    typeof payload.error.name !== "string" ||
+    !("code" in payload.error) ||
+    typeof payload.error.code !== "string" ||
     !("message" in payload.error) ||
     typeof payload.error.message !== "string"
   ) {
@@ -65,6 +63,37 @@ describe("integration next-app server route handlers", () => {
     await expect(response.json()).resolves.toEqual({
       ok: true,
       mode: "native-next",
+    });
+  });
+
+  it("serves a plain Next.js route handler with an explicit output contract", async () => {
+    const { GET: explicitOutputGet } = await import(
+      "../app/api/explicit-output/route"
+    );
+    const response = await explicitOutputGet();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("application/json");
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      source: "explicit-output",
+    });
+  });
+
+  it("serves a routeHandlerFactory route with explicit contract metadata/output", async () => {
+    const { GET: contractRouteGet } = await import(
+      "../app/api/contract-route/route"
+    );
+    const response = await contractRouteGet(
+      new NextRequest("http://127.0.0.1:3000/api/contract-route"),
+      { params: Promise.resolve({}) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("application/json");
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      source: "contract-route",
     });
   });
 
@@ -116,7 +145,7 @@ describe("integration next-app server route handlers", () => {
 
     const payload = await response.json();
     const errorPayload = expectValidationErrorPayload(payload);
-    expect(errorPayload.error.name).toBe("ZodError");
+    expect(errorPayload.error.code).toBe("BAD_REQUEST");
     expect(errorPayload.error.message).toContain('"path": [');
     expect(errorPayload.error.message).toContain('"includePosts"');
   });
@@ -160,7 +189,7 @@ describe("integration next-app server route handlers", () => {
 
     const payload = await response.json();
     const errorPayload = expectValidationErrorPayload(payload);
-    expect(errorPayload.error.name).toBe("ZodError");
+    expect(errorPayload.error.code).toBe("BAD_REQUEST");
     expect(errorPayload.error.message).toContain('"path": [');
     expect(errorPayload.error.message).toContain('"title"');
   });
@@ -204,7 +233,7 @@ describe("integration next-app server route handlers", () => {
 
     const payload = await response.json();
     const errorPayload = expectValidationErrorPayload(payload);
-    expect(errorPayload.error.name).toBe("ZodError");
+    expect(errorPayload.error.code).toBe("BAD_REQUEST");
   });
 
   it("returns redirect responses from integration routes", async () => {

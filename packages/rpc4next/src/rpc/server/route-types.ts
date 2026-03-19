@@ -9,6 +9,12 @@
 
 import type { NextRequest } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
+import type { RpcMeta } from "./meta";
+import type {
+  MergeProcedureDefinition,
+  ProcedureDefinition,
+  WithProcedureDefinition,
+} from "./procedure-types";
 import type { Params, Query, RouteContext, TypedNextResponse } from "./types";
 
 export type RouteResponse =
@@ -64,25 +70,36 @@ export type RouteHandler<
   TParams extends RouteBindings["params"],
   TRouteResponse extends RouteResponse,
   TValidationSchema extends ValidationSchema,
-> = (
-  req: NextRequest,
-  segmentData: { params: Promise<TParams> },
-) => RouteHandlerResponse<TRouteResponse, TValidationSchema>;
+  TProcedureDefinition extends ProcedureDefinition = ProcedureDefinition,
+> = WithProcedureDefinition<
+  (
+    req: NextRequest,
+    segmentData: { params: Promise<TParams> },
+  ) => RouteHandlerResponse<TRouteResponse, TValidationSchema>,
+  TProcedureDefinition
+>;
 
 type HttpMethodMapping<
   THttpMethod extends HttpMethod,
   TParams extends RouteBindings["params"],
   TRouteResponse extends RouteResponse,
   TValidationSchema extends ValidationSchema,
+  TProcedureDefinition extends ProcedureDefinition = ProcedureDefinition,
 > = Record<
   THttpMethod,
-  RouteHandler<TParams, TRouteResponse, TValidationSchema>
+  RouteHandler<
+    TParams,
+    TRouteResponse,
+    TValidationSchema,
+    MergeProcedureDefinition<TProcedureDefinition, { method: THttpMethod }>
+  >
 >;
 
 export interface MethodRouteDefinition<
   THttpMethod extends HttpMethod,
   TBindings extends RouteBindings,
   TOnErrorResponse extends RequiredRouteResponse,
+  TProcedureDefinition extends ProcedureDefinition = ProcedureDefinition,
   TParams extends TBindings["params"] = TBindings extends {
     params: infer TValue;
   }
@@ -98,7 +115,13 @@ export interface MethodRouteDefinition<
     TR1 extends RequiredRouteResponse = RequiredRouteResponse,
   >(
     handler: Handler<THttpMethod, TParams, TQuery, TV1, TR1>,
-  ): HttpMethodMapping<THttpMethod, TParams, TR1 | TOnErrorResponse, TV1>;
+  ): HttpMethodMapping<
+    THttpMethod,
+    TParams,
+    TR1 | TOnErrorResponse,
+    TV1,
+    TProcedureDefinition
+  >;
 
   // 2 handlers
   <
@@ -109,7 +132,13 @@ export interface MethodRouteDefinition<
   >(
     handler1: Handler<THttpMethod, TParams, TQuery, TV1, TR1>,
     handler2: Handler<THttpMethod, TParams, TQuery, TV2, TR2>,
-  ): HttpMethodMapping<THttpMethod, TParams, TR1 | TR2 | TOnErrorResponse, TV2>;
+  ): HttpMethodMapping<
+    THttpMethod,
+    TParams,
+    TR1 | TR2 | TOnErrorResponse,
+    TV2,
+    TProcedureDefinition
+  >;
 
   // 3 handlers
   <
@@ -127,7 +156,8 @@ export interface MethodRouteDefinition<
     THttpMethod,
     TParams,
     TR1 | TR2 | TR3 | TOnErrorResponse,
-    TV3
+    TV3,
+    TProcedureDefinition
   >;
 
   // 4 handlers
@@ -149,7 +179,8 @@ export interface MethodRouteDefinition<
     THttpMethod,
     TParams,
     TR1 | TR2 | TR3 | TR4 | TOnErrorResponse,
-    TV4
+    TV4,
+    TProcedureDefinition
   >;
 
   // 5 handlers
@@ -174,7 +205,8 @@ export interface MethodRouteDefinition<
     THttpMethod,
     TParams,
     TR1 | TR2 | TR3 | TR4 | TR5 | TOnErrorResponse,
-    TV5
+    TV5,
+    TProcedureDefinition
   >;
 
   // 6 handlers
@@ -202,6 +234,75 @@ export interface MethodRouteDefinition<
     THttpMethod,
     TParams,
     TR1 | TR2 | TR3 | TR4 | TR5 | TR6 | TOnErrorResponse,
-    TV6
+    TV6,
+    TProcedureDefinition
+  >;
+}
+
+export interface RouteDefinitionBuilder<
+  TBindings extends RouteBindings,
+  TOnErrorResponse extends RequiredRouteResponse,
+  TProcedureDefinition extends ProcedureDefinition = ProcedureDefinition,
+> {
+  meta<TMeta extends RpcMeta>(
+    meta: TMeta,
+  ): RouteDefinitionBuilder<
+    TBindings,
+    TOnErrorResponse,
+    MergeProcedureDefinition<TProcedureDefinition, { meta: TMeta }>
+  >;
+
+  output<TOutput>(
+    schema: { _output: TOutput } | { _type: TOutput } | { output: TOutput },
+  ): RouteDefinitionBuilder<
+    TBindings,
+    TOnErrorResponse,
+    MergeProcedureDefinition<
+      TProcedureDefinition,
+      { output: ProcedureDefinition["output"] & { response: TOutput } }
+    >
+  >;
+
+  get: MethodRouteDefinition<
+    "GET",
+    TBindings,
+    TOnErrorResponse,
+    TProcedureDefinition
+  >;
+  post: MethodRouteDefinition<
+    "POST",
+    TBindings,
+    TOnErrorResponse,
+    TProcedureDefinition
+  >;
+  put: MethodRouteDefinition<
+    "PUT",
+    TBindings,
+    TOnErrorResponse,
+    TProcedureDefinition
+  >;
+  delete: MethodRouteDefinition<
+    "DELETE",
+    TBindings,
+    TOnErrorResponse,
+    TProcedureDefinition
+  >;
+  patch: MethodRouteDefinition<
+    "PATCH",
+    TBindings,
+    TOnErrorResponse,
+    TProcedureDefinition
+  >;
+  head: MethodRouteDefinition<
+    "HEAD",
+    TBindings,
+    TOnErrorResponse,
+    TProcedureDefinition
+  >;
+  options: MethodRouteDefinition<
+    "OPTIONS",
+    TBindings,
+    TOnErrorResponse,
+    TProcedureDefinition
   >;
 }

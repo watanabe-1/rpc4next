@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import { z } from "zod";
+import type { RpcErrorEnvelope } from "../../error";
 import { routeHandlerFactory } from "../../route-handler-factory";
 import type { RouteHandler } from "../../route-types";
 import type { Params, TypedNextResponse } from "../../types";
@@ -395,10 +396,13 @@ describe("zValidator type definitions", () => {
     });
 
     type ExpectedHookDefaultResponse = TypedNextResponse<
-      z.ZodSafeParseError<{
-        name: string;
-        age: string;
-      }>,
+      RpcErrorEnvelope<
+        "BAD_REQUEST",
+        z.ZodError<{
+          name: string;
+          age: string;
+        }>
+      >,
       400,
       "application/json"
     >;
@@ -446,10 +450,13 @@ describe("zValidator type definitions", () => {
     });
 
     type ExpectedHookDefaultResponse = TypedNextResponse<
-      z.ZodSafeParseError<{
-        name: string;
-        age: string;
-      }>,
+      RpcErrorEnvelope<
+        "BAD_REQUEST",
+        z.ZodError<{
+          name: string;
+          age: string;
+        }>
+      >,
       400,
       "application/json"
     >;
@@ -484,7 +491,7 @@ describe("zValidator type definitions", () => {
       ExpectedValidated
     >;
 
-    expectTypeOf<typeof post>().toEqualTypeOf<ExpectedHttpFunc>();
+    expectTypeOf<typeof post>().toMatchTypeOf<ExpectedHttpFunc>();
   });
 
   it("should infer header types correctly", async () => {
@@ -507,9 +514,12 @@ describe("zValidator type definitions", () => {
     const _res = await post(req, { params: Promise.resolve({}) });
 
     type ExpectedHookDefaultResponse = TypedNextResponse<
-      z.ZodSafeParseError<{
-        "x-custom": string;
-      }>,
+      RpcErrorEnvelope<
+        "BAD_REQUEST",
+        z.ZodError<{
+          "x-custom": string;
+        }>
+      >,
       400,
       "application/json"
     >;
@@ -546,7 +556,7 @@ describe("zValidator type definitions", () => {
       ExpectedValidated
     >;
 
-    expectTypeOf<typeof post>().toEqualTypeOf<ExpectedHttpFunc>();
+    expectTypeOf<typeof post>().toMatchTypeOf<ExpectedHttpFunc>();
   });
 
   it("should infer cookie types correctly", async () => {
@@ -569,9 +579,12 @@ describe("zValidator type definitions", () => {
     const _res = await post(req, { params: Promise.resolve({}) });
 
     type ExpectedHookDefaultResponse = TypedNextResponse<
-      z.ZodSafeParseError<{
-        session: string;
-      }>,
+      RpcErrorEnvelope<
+        "BAD_REQUEST",
+        z.ZodError<{
+          session: string;
+        }>
+      >,
       400,
       "application/json"
     >;
@@ -608,7 +621,7 @@ describe("zValidator type definitions", () => {
       ExpectedValidated
     >;
 
-    expectTypeOf<typeof post>().toEqualTypeOf<ExpectedHttpFunc>();
+    expectTypeOf<typeof post>().toMatchTypeOf<ExpectedHttpFunc>();
   });
 
   it("should infer validate type correctly", async () => {

@@ -58,7 +58,7 @@ test.describe("integration next-app rpc4next browser client e2e", () => {
       '"status":400',
     );
     await expect(page.getByTestId("invalid-users-result")).toContainText(
-      '"name":"ZodError"',
+      '"code":"BAD_REQUEST"',
     );
     await expect(page.getByTestId("invalid-users-result")).toContainText(
       "includePosts",
