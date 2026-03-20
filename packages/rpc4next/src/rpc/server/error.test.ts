@@ -24,6 +24,7 @@ describe("rpcError", () => {
       },
     });
     expect(isRpcError(error)).toBe(true);
+    expectTypeOf(error.status).toEqualTypeOf<401>();
   });
 
   it("creates envelopes from RpcError-like input", () => {
@@ -53,5 +54,12 @@ describe("rpcError", () => {
     >;
 
     expectTypeOf(error.toJSON()).toEqualTypeOf<ExpectedEnvelope>();
+  });
+
+  it("rejects status overrides that do not match the error code", () => {
+    // @ts-expect-error FORBIDDEN must remain aligned with HTTP 403
+    rpcError("FORBIDDEN", { status: 418 });
+
+    expect(true).toBe(true);
   });
 });

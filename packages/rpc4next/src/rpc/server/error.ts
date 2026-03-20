@@ -68,7 +68,7 @@ export interface RpcErrorInit<
 > {
   message?: string;
   details?: TDetails;
-  status?: number;
+  status?: RpcErrorStatus<TCode>;
   cause?: unknown;
   code?: TCode;
 }
@@ -79,7 +79,7 @@ export class RpcError<
 > extends Error {
   readonly code: TCode;
   readonly details: TDetails | undefined;
-  readonly status: number;
+  readonly status: RpcErrorStatus<TCode>;
 
   constructor(code: TCode, init: RpcErrorInit<TCode, TDetails> = {}) {
     super(init.message ?? DEFAULT_RPC_ERROR_MESSAGES[code], {
@@ -89,7 +89,8 @@ export class RpcError<
     this.name = "RpcError";
     this.code = init.code ?? code;
     this.details = init.details;
-    this.status = init.status ?? DEFAULT_RPC_ERROR_STATUS[code];
+    this.status = (init.status ??
+      DEFAULT_RPC_ERROR_STATUS[code]) as RpcErrorStatus<TCode>;
   }
 
   toJSON(): RpcErrorEnvelope<TCode, TDetails> {

@@ -313,4 +313,49 @@ describe("nextRoute", () => {
     void _fromExpected;
     expect(true).toBe(true);
   });
+
+  it("includes implicit BAD_REQUEST responses for validated procedure routes", () => {
+    const route = nextRoute(
+      procedure
+        .query(
+          z.object({
+            includePosts: z.enum(["true", "false"]).optional(),
+          }),
+        )
+        .handle(async ({ query }) => ({
+          body: {
+            ok: true as const,
+            includePosts: query.includePosts === "true",
+          },
+        })),
+    );
+
+    type ActualResponse = Awaited<ReturnType<typeof route>>;
+    type ExpectedResponse =
+      | TypedNextResponse<
+          {
+            ok: true;
+            includePosts: boolean;
+          },
+          200,
+          "application/json"
+        >
+      | TypedNextResponse<
+          {
+            error: {
+              code: "BAD_REQUEST";
+              message: string;
+              details?: unknown;
+            };
+          },
+          400,
+          "application/json"
+        >;
+    const _fromActual: ExpectedResponse = {} as ActualResponse;
+    const _fromExpected: ActualResponse = {} as ExpectedResponse;
+
+    void _fromActual;
+    void _fromExpected;
+    expect(true).toBe(true);
+  });
 });

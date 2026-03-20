@@ -23,6 +23,7 @@ import {
   type MergeProcedureDefinition,
   type ProcedureDefinition,
   type ProcedureErrorContract,
+  type ProcedureInputContract,
   type WithProcedureDefinition,
 } from "./procedure-types";
 import { createRouteContext } from "./route-context";
@@ -143,6 +144,17 @@ type InferProcedureErrorResponse<TProcedure extends ProcedureTypeCarrier> =
       : never
     : never;
 
+type InferProcedureValidationErrorResponse<
+  TProcedure extends ProcedureTypeCarrier,
+> =
+  InferProcedureDefinition<TProcedure> extends {
+    input: ProcedureInputContract<infer TValidationSchema>;
+  }
+    ? keyof TValidationSchema["input"] extends never
+      ? never
+      : ProcedureErrorResponse<"BAD_REQUEST">
+    : never;
+
 type InferProcedureHandlerResult<TProcedure extends ProcedureTypeCarrier> =
   TProcedure extends {
     handler: (...args: never[]) => infer TResult;
@@ -200,11 +212,13 @@ type NextRouteResponse<TProcedure extends ProcedureTypeCarrier> =
   IsNever<InferProcedureHandlerResult<TProcedure>> extends true
     ?
         | TypedNextResponse<unknown, HttpStatusCode, ContentType>
+        | InferProcedureValidationErrorResponse<TProcedure>
         | InferProcedureErrorResponse<TProcedure>
     :
         | NormalizeProcedureHandlerResult<
             InferProcedureHandlerResult<TProcedure>
           >
+        | InferProcedureValidationErrorResponse<TProcedure>
         | InferProcedureErrorResponse<TProcedure>;
 
 export type NextRouteHandler<
