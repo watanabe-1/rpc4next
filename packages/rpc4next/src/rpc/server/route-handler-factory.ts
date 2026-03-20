@@ -6,8 +6,15 @@
 import type { NextRequest } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
 import type { RpcErrorCode } from "./error";
-import { isRpcError } from "./error";
 import type { RpcMeta } from "./meta";
+import {
+  executePipeline,
+  normalizeRpcErrorResponse,
+  withProcedureError,
+  withProcedureMeta,
+  withProcedureMethod,
+  withProcedureOutput,
+} from "./procedure-internals";
 import type {
   MergeProcedureDefinition,
   ProcedureDefinition,
@@ -48,17 +55,21 @@ const composeHandlersWithError = <
     );
 
     try {
-      for (const handler of handlers) {
-        const result = await handler(routeContext);
-        if (result instanceof Response) {
-          return result;
-        }
+      const response = await executePipeline(handlers, routeContext, {
+        isTerminal: (result): result is Exclude<typeof result, undefined> =>
+          result !== undefined,
+      });
+
+      if (response) {
+        return response;
       }
 
       throw new Error("No handler returned a response");
     } catch (error) {
-      if (!hasCustomOnError && isRpcError(error)) {
-        return routeContext.json(error.toJSON(), { status: error.status });
+      const rpcErrorResponse =
+        !hasCustomOnError && normalizeRpcErrorResponse(error, routeContext);
+      if (rpcErrorResponse) {
+        return rpcErrorResponse;
       }
 
       return await onError(error, routeContext);
@@ -113,10 +124,10 @@ export const routeHandlerFactory =
           );
 
           return {
-            [method]: attachProcedureDefinition(routeHandler, {
-              ...definition,
-              method,
-            }),
+            [method]: attachProcedureDefinition(
+              routeHandler,
+              withProcedureMethod(definition, method),
+            ),
           } as Record<THttpMethod, typeof routeHandler>;
         }) as MethodRouteDefinition<
           THttpMethod,
@@ -130,12 +141,14 @@ export const routeHandlerFactory =
         meta: <TMeta extends RpcMeta>(meta: TMeta) =>
           createBuilder<
             MergeProcedureDefinition<TProcedureDefinition, { meta: TMeta }>
-          >({
-            ...definition,
-            meta,
-          } as Partial<
-            MergeProcedureDefinition<TProcedureDefinition, { meta: TMeta }>
-          >),
+          >(
+            withProcedureMeta(
+              definition as TProcedureDefinition,
+              meta,
+            ) as Partial<
+              MergeProcedureDefinition<TProcedureDefinition, { meta: TMeta }>
+            >,
+          ),
         output: <TOutput>(
           schema:
             | { _output: TOutput }
@@ -151,39 +164,38 @@ export const routeHandlerFactory =
                 };
               }
             >
-          >({
-            ...definition,
-            output: {
-              ...(definition.output ?? {}),
+          >(
+            withProcedureOutput<TProcedureDefinition, TOutput, typeof schema>(
+              definition as TProcedureDefinition,
               schema,
-            },
-          } as Partial<
-            MergeProcedureDefinition<
-              TProcedureDefinition,
-              {
-                output: NonNullable<TProcedureDefinition["output"]> & {
-                  response: TOutput;
-                };
-              }
-            >
-          >),
+            ) as Partial<
+              MergeProcedureDefinition<
+                TProcedureDefinition,
+                {
+                  output: NonNullable<TProcedureDefinition["output"]> & {
+                    response: TOutput;
+                  };
+                }
+              >
+            >,
+          ),
         error: <TCode extends RpcErrorCode, TDetails = unknown>(code: TCode) =>
           createBuilder<
             MergeProcedureDefinition<
               TProcedureDefinition,
               { error: ProcedureErrorContract<TCode, TDetails> }
             >
-          >({
-            ...definition,
-            error: {
+          >(
+            withProcedureError<TProcedureDefinition, TCode, TDetails>(
+              definition as TProcedureDefinition,
               code,
-            },
-          } as Partial<
-            MergeProcedureDefinition<
-              TProcedureDefinition,
-              { error: ProcedureErrorContract<TCode, TDetails> }
-            >
-          >),
+            ) as Partial<
+              MergeProcedureDefinition<
+                TProcedureDefinition,
+                { error: ProcedureErrorContract<TCode, TDetails> }
+              >
+            >,
+          ),
         get: defineRouteForMethod("GET"),
         post: defineRouteForMethod("POST"),
         put: defineRouteForMethod("PUT"),
