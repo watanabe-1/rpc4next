@@ -227,10 +227,13 @@ type ProcedureErrorResponse<
   : never;
 
 type InferProcedureErrorResponse<T> =
-  ExtractAttachedProcedureDefinition<T> extends {
-    error: ProcedureErrorContract<infer TCode, infer TDetails>;
-  }
-    ? ProcedureErrorResponse<TCode, TDetails>
+  "error" extends keyof ExtractAttachedProcedureDefinition<T>
+    ? ExtractAttachedProcedureDefinition<T>["error"] extends ProcedureErrorContract<
+        infer TCode,
+        infer TDetails
+      >
+      ? ProcedureErrorResponse<TCode, TDetails>
+      : never
     : never;
 
 type ReplaceSuccessResponseBody<TResponse, TOutput> =

@@ -60,11 +60,12 @@ describe("nextRoute", () => {
             requestId: ctx.requestId,
           },
         })),
+      { method: "POST" },
     );
 
     const definition = getProcedureDefinition(route);
     expect(definition).toMatchObject({
-      error: {},
+      method: "POST",
       meta: { tags: ["procedure-contract"], auth: "optional" },
       output: {
         schema: {
@@ -144,6 +145,17 @@ describe("nextRoute", () => {
         message: "blocked",
       },
     });
+  });
+
+  it("can attach an explicit method to the generated route contract", () => {
+    const route = nextRoute(
+      procedure.handle(async () => ({
+        status: 204 as const,
+      })),
+      { method: "GET" },
+    );
+
+    expect(getProcedureDefinition(route)).toEqual({ method: "GET" });
   });
 
   it("rejects JSON contracts on GET and HEAD requests", async () => {

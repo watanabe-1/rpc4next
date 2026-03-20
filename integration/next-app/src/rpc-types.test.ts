@@ -177,29 +177,17 @@ describe("integration next-app generated RPC type coverage", () => {
       .$get({
         url: { query: { includePosts: "true" } },
       });
-    type ExpectedProcedureContractResponse =
-      | TypedNextResponse<
-          {
-            ok: true;
-            userId: string;
-            includePosts: boolean;
-            source: "procedure-contract";
-            requestId: string;
-          },
-          200,
-          "application/json"
-        >
-      | TypedNextResponse<
-          {
-            error: {
-              code: string;
-              message: string;
-              details?: unknown;
-            };
-          },
-          400 | 401 | 403 | 404 | 409 | 422 | 429 | 500,
-          "application/json"
-        >;
+    type ExpectedProcedureContractResponse = TypedNextResponse<
+      {
+        ok: true;
+        userId: string;
+        includePosts: boolean;
+        source: "procedure-contract";
+        requestId: string;
+      },
+      200,
+      "application/json"
+    >;
     const _procedureContractResponseFromActual: ExpectedProcedureContractResponse =
       _procedureContractResponse;
 
@@ -316,29 +304,17 @@ describe("integration next-app generated RPC type coverage", () => {
         cookies: { session: "cookie-ok" },
       },
     });
-    type ExpectedProcedureSubmitResponse =
-      | TypedNextResponse<
-          {
-            ok: true;
-            title: string;
-            header: string;
-            session: string;
-            source: "procedure-submit";
-          },
-          201,
-          "application/json"
-        >
-      | TypedNextResponse<
-          {
-            error: {
-              code: string;
-              message: string;
-              details?: unknown;
-            };
-          },
-          400 | 401 | 403 | 404 | 409 | 422 | 429 | 500,
-          "application/json"
-        >;
+    type ExpectedProcedureSubmitResponse = TypedNextResponse<
+      {
+        ok: true;
+        title: string;
+        header: string;
+        session: string;
+        source: "procedure-submit";
+      },
+      201,
+      "application/json"
+    >;
     const _procedureSubmitResponseFromActual: ExpectedProcedureSubmitResponse =
       procedureSubmitResponse;
 

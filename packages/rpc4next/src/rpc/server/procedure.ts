@@ -344,8 +344,6 @@ const createProcedureBuilder = <
 };
 
 export const procedure = createProcedureBuilder<
-  ProcedureDefinition,
+  Record<never, never>,
   Record<never, never>
->({
-  error: {},
-});
+>({});

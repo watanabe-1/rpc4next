@@ -41,6 +41,6 @@ const getProcedureUser = procedure
     },
   }));
 
-export const GET = nextRoute(getProcedureUser);
+export const GET = nextRoute(getProcedureUser, { method: "GET" });
 
 export type Query = z.input<typeof querySchema>;
