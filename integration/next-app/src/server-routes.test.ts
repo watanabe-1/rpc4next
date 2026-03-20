@@ -240,13 +240,6 @@ describe("integration next-app server route handlers", () => {
   });
 
   it("serves a procedure-based POST route with json, headers, and cookies", async () => {
-    vi.spyOn(validatorUtils, "getHeadersObject").mockResolvedValueOnce({
-      "x-procedure-test": "header-ok",
-    });
-    vi.spyOn(validatorUtils, "getCookiesObject").mockResolvedValueOnce({
-      session: "cookie-ok",
-    });
-
     const { POST: procedureSubmitPost } = await import(
       "../app/api/procedure-submit/route"
     );
@@ -256,6 +249,8 @@ describe("integration next-app server route handlers", () => {
         body: JSON.stringify({ title: "procedure-submit" }),
         headers: {
           "content-type": "application/json",
+          "x-procedure-test": "header-ok",
+          cookie: "session=cookie-ok",
         },
       }),
       { params: Promise.resolve({}) },
