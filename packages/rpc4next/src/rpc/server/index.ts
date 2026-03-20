@@ -1,6 +1,11 @@
 export type { ContentType } from "../lib/content-type-types";
 export type { HttpStatusCode } from "../lib/http-status-code-types";
-export type { RpcErrorCode, RpcErrorEnvelope, RpcErrorInit } from "./error";
+export type {
+  RpcErrorCode,
+  RpcErrorEnvelope,
+  RpcErrorInit,
+  RpcErrorStatus,
+} from "./error";
 export {
   createRpcErrorEnvelope,
   isRpcError,

@@ -2,17 +2,17 @@ import type { NextRequest, NextResponse } from "next/server";
 import type { ContentType } from "../lib/content-type-types";
 import type { HttpStatusCode } from "../lib/http-status-code-types";
 import { searchParamsToObject } from "../lib/search-params";
+import type { RpcErrorCode, RpcErrorEnvelope, RpcErrorStatus } from "./error";
 import { isRpcError, rpcError } from "./error";
 import type { ProcedureMiddleware, ProcedureResult } from "./procedure";
 import type { ProcedureInputTarget } from "./procedure-types";
 import {
   attachProcedureDefinition,
   type ProcedureDefinition,
-  type ProcedureInputContract,
+  type ProcedureErrorContract,
   type WithProcedureDefinition,
 } from "./procedure-types";
 import { createRouteContext } from "./route-context";
-import type { RouteHandlerResponse, ValidationSchema } from "./route-types";
 import type { Params, TypedNextResponse } from "./types";
 import {
   getCookiesObject,
@@ -90,7 +90,7 @@ const getContractValue = async (
   }
 
   if (target === "query") {
-    return Object.fromEntries(request.nextUrl.searchParams.entries());
+    return searchParamsToObject(request.nextUrl.searchParams);
   }
 
   if (target === "json") {
@@ -153,12 +153,23 @@ type ProcedureTypeCarrier<
 type InferProcedureDefinition<TProcedure extends ProcedureTypeCarrier> =
   TProcedure["definition"];
 
-type InferProcedureValidationSchema<TProcedure extends ProcedureTypeCarrier> =
+type ProcedureErrorResponse<
+  TCode extends RpcErrorCode = RpcErrorCode,
+  TDetails = unknown,
+> = TCode extends RpcErrorCode
+  ? TypedNextResponse<
+      RpcErrorEnvelope<TCode, TDetails>,
+      RpcErrorStatus<TCode>,
+      "application/json"
+    >
+  : never;
+
+type InferProcedureErrorResponse<TProcedure extends ProcedureTypeCarrier> =
   InferProcedureDefinition<TProcedure> extends {
-    input: ProcedureInputContract<infer TValidationSchema>;
+    error: ProcedureErrorContract<infer TCode, infer TDetails>;
   }
-    ? TValidationSchema
-    : ValidationSchema;
+    ? ProcedureErrorResponse<TCode, TDetails>
+    : ProcedureErrorResponse;
 
 type InferProcedureHandlerResult<TProcedure extends ProcedureTypeCarrier> =
   TProcedure extends {
@@ -215,23 +226,22 @@ type NormalizeProcedureHandlerResult<TResult> = TResult extends
 
 type NextRouteResponse<TProcedure extends ProcedureTypeCarrier> =
   IsNever<InferProcedureHandlerResult<TProcedure>> extends true
-    ? TypedNextResponse<unknown, HttpStatusCode, ContentType>
-    : NormalizeProcedureHandlerResult<InferProcedureHandlerResult<TProcedure>>;
+    ?
+        | TypedNextResponse<unknown, HttpStatusCode, ContentType>
+        | InferProcedureErrorResponse<TProcedure>
+    :
+        | NormalizeProcedureHandlerResult<
+            InferProcedureHandlerResult<TProcedure>
+          >
+        | InferProcedureErrorResponse<TProcedure>;
 
 export type NextRouteHandler<
   TProcedure extends ProcedureTypeCarrier = ProcedureTypeCarrier,
 > = WithProcedureDefinition<
-  ((
+  (
     request: NextRequest,
     segmentData: { params: Promise<Params> },
-  ) => Promise<NextRouteResponse<TProcedure>>) &
-    ((
-      request: NextRequest,
-      segmentData: { params: Promise<Params> },
-    ) => RouteHandlerResponse<
-      TypedNextResponse,
-      InferProcedureValidationSchema<TProcedure>
-    >),
+  ) => Promise<NextRouteResponse<TProcedure>>,
   InferProcedureDefinition<TProcedure>
 >;
 
@@ -263,12 +273,22 @@ export const nextRoute = <TProcedure extends ProcedureTypeCarrier>(
             await getContractValue(request, segmentData, "query"),
           )
         : searchParamsToObject(request.nextUrl.searchParams);
-      const json = contracts.json
-        ? await parseWithSchema(
-            contracts.json,
-            await getContractValue(request, segmentData, "json"),
-          )
-        : undefined;
+      const json =
+        request.method === "GET" || request.method === "HEAD"
+          ? contracts.json
+            ? (() => {
+                throw rpcError("BAD_REQUEST", {
+                  message:
+                    "JSON input contracts are not supported for GET or HEAD requests.",
+                });
+              })()
+            : undefined
+          : contracts.json
+            ? await parseWithSchema(
+                contracts.json,
+                await getContractValue(request, segmentData, "json"),
+              )
+            : undefined;
       const headers = contracts.headers
         ? await parseWithSchema(
             contracts.headers,

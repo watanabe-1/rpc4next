@@ -12,8 +12,15 @@ import type {
   SuccessfulHttpStatusCode,
 } from "../lib/http-status-code-types";
 import type {
+  RpcErrorCode,
+  RpcErrorEnvelope,
+  RpcErrorStatus,
+} from "../server/error";
+import type {
+  ProcedureErrorContract,
   ProcedureInputContract,
   ProcedureOutputContract,
+  procedureDefinitionSymbol,
   WithProcedureDefinition,
 } from "../server/procedure-types";
 import type {
@@ -137,10 +144,13 @@ type MethodOptionExclusions<TJson, THeaders> =
   | (IsNever<THeaders> extends true ? never : "headers" | "headersInit");
 
 type HttpMethodsArgs<
+  TMethod extends HttpMethodFuncKey,
   T,
   TValidationSchema extends ValidationSchema,
   TQuery = ValidationInputFor<"query", TValidationSchema>,
-  TJson = ValidationInputFor<"json", TValidationSchema>,
+  TJson = TMethod extends "$get" | "$head"
+    ? never
+    : ValidationInputFor<"json", TValidationSchema>,
   THeaders = ValidationInputFor<"headers", TValidationSchema>,
   TCookies = ValidationInputFor<"cookies", TValidationSchema>,
   TBaseArgs = UrlArgsObj<T, TQuery> &
@@ -158,7 +168,11 @@ type HttpMethodsArgs<
 
 type InferHttpMethods<T extends HttpMethodMapLike> = {
   [K in keyof T as K extends HttpMethodFuncKey ? K : never]: (
-    ...args: HttpMethodsArgs<T, InferValidationSchema<T[K]>>
+    ...args: HttpMethodsArgs<
+      Extract<K, HttpMethodFuncKey>,
+      T,
+      InferValidationSchema<T[K]>
+    >
   ) => Promise<InferTypedNextResponseType<T[K]>>;
 };
 
@@ -168,18 +182,24 @@ type InferHttpMethodValidationSchema<T> = {
     : never;
 }[keyof T & HttpMethodFuncKey];
 
-type InferValidationSchema<T> = T extends (
-  // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
-  ...args: any[]
-) => RouteHandlerResponse<RouteResponse, infer TValidationSchema>
-  ? TValidationSchema
-  : T extends WithProcedureDefinition<unknown, infer TDefinition>
-    ? TDefinition extends {
-        input: ProcedureInputContract<infer TValidationSchema>;
-      }
+type ExtractAttachedProcedureDefinition<T> =
+  typeof procedureDefinitionSymbol extends keyof T
+    ? T extends WithProcedureDefinition<unknown, infer TDefinition>
+      ? TDefinition
+      : never
+    : never;
+
+type InferValidationSchema<T> =
+  ExtractAttachedProcedureDefinition<T> extends {
+    input: ProcedureInputContract<infer TValidationSchema>;
+  }
+    ? TValidationSchema
+    : T extends (
+          // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
+          ...args: any[]
+        ) => RouteHandlerResponse<RouteResponse, infer TValidationSchema>
       ? TValidationSchema
-      : ValidationSchema
-    : ValidationSchema;
+      : ValidationSchema;
 
 type InferNextResponseType<T> = T extends (
   // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
@@ -189,12 +209,28 @@ type InferNextResponseType<T> = T extends (
   : never;
 
 type InferProcedureOutput<T> =
-  T extends WithProcedureDefinition<unknown, infer TDefinition>
-    ? TDefinition extends {
-        output: ProcedureOutputContract<infer TOutput>;
-      }
-      ? TOutput
-      : never
+  ExtractAttachedProcedureDefinition<T> extends {
+    output: ProcedureOutputContract<infer TOutput>;
+  }
+    ? TOutput
+    : never;
+
+type ProcedureErrorResponse<
+  TCode extends RpcErrorCode = RpcErrorCode,
+  TDetails = unknown,
+> = TCode extends RpcErrorCode
+  ? TypedNextResponse<
+      RpcErrorEnvelope<TCode, TDetails>,
+      RpcErrorStatus<TCode>,
+      "application/json"
+    >
+  : never;
+
+type InferProcedureErrorResponse<T> =
+  ExtractAttachedProcedureDefinition<T> extends {
+    error: ProcedureErrorContract<infer TCode, infer TDetails>;
+  }
+    ? ProcedureErrorResponse<TCode, TDetails>
     : never;
 
 type ReplaceSuccessResponseBody<TResponse, TOutput> =
@@ -226,9 +262,17 @@ type InferTypedNextResponseType<T> = T extends (
         // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
         ...args: any[]
       ) => Promise<TypedNextResponse>
-      ? Awaited<ReturnType<T>>
-      : TypedNextResponse<InferNextResponseType<T>, HttpStatusCode, ContentType>
-    : InferTypedNextResponseTypeFromOutput<T, InferProcedureOutput<T>>
+      ? Awaited<ReturnType<T>> | InferProcedureErrorResponse<T>
+      :
+          | TypedNextResponse<
+              InferNextResponseType<T>,
+              HttpStatusCode,
+              ContentType
+            >
+          | InferProcedureErrorResponse<T>
+    :
+        | InferTypedNextResponseTypeFromOutput<T, InferProcedureOutput<T>>
+        | InferProcedureErrorResponse<T>
   : TypedNextResponse<InferNextResponseType<T>, HttpStatusCode, ContentType>;
 
 type PathProxyAsProperty<T> = {

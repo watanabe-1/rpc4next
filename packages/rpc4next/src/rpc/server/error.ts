@@ -32,6 +32,25 @@ const DEFAULT_RPC_ERROR_STATUS: Record<RpcErrorCode, number> = {
   INTERNAL_SERVER_ERROR: 500,
 };
 
+export type RpcErrorStatus<TCode extends RpcErrorCode = RpcErrorCode> =
+  TCode extends "BAD_REQUEST"
+    ? 400
+    : TCode extends "UNAUTHORIZED"
+      ? 401
+      : TCode extends "FORBIDDEN"
+        ? 403
+        : TCode extends "NOT_FOUND"
+          ? 404
+          : TCode extends "CONFLICT"
+            ? 409
+            : TCode extends "UNPROCESSABLE_CONTENT"
+              ? 422
+              : TCode extends "TOO_MANY_REQUESTS"
+                ? 429
+                : TCode extends "INTERNAL_SERVER_ERROR"
+                  ? 500
+                  : never;
+
 export interface RpcErrorEnvelope<
   TCode extends RpcErrorCode = RpcErrorCode,
   TDetails = unknown,
