@@ -96,7 +96,14 @@ const getContractValue = async (
   }
 
   if (target === "json") {
-    return await request.json();
+    try {
+      return await request.json();
+    } catch (error) {
+      throw rpcError("BAD_REQUEST", {
+        message: "Invalid JSON body.",
+        cause: error,
+      });
+    }
   }
 
   if (target === "headers") {

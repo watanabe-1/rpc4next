@@ -403,4 +403,17 @@ describe("routeHandlerFactory type definitions", () => {
 
     expectTypeOf(getRouteMeta(handler.GET)).toEqualTypeOf<ExpectedMeta>();
   });
+
+  it("should preserve explicit error contract types on the builder API", () => {
+    const createRouteHandler = routeHandlerFactory();
+    const handler = createRouteHandler()
+      .error<"FORBIDDEN", { reason: string }>("FORBIDDEN")
+      .get(async (rc) => rc.body(null, { status: 204 as const }));
+
+    expect(getProcedureDefinition(handler.GET)).toMatchObject({
+      error: {
+        code: "FORBIDDEN",
+      },
+    });
+  });
 });

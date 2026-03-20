@@ -61,6 +61,7 @@ describe("procedure contract internals", () => {
       };
     }>();
     expectTypeOf<ExpectedError>().toEqualTypeOf<{
+      code?: "BAD_REQUEST";
       envelope?: {
         error: {
           code: "BAD_REQUEST";

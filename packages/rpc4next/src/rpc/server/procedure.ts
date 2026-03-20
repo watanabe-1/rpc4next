@@ -1,9 +1,11 @@
 import type { NextRequest, NextResponse } from "next/server";
 import type { HttpStatusCode } from "../lib/http-status-code-types";
+import type { RpcErrorCode } from "./error";
 import type { RpcMeta } from "./meta";
 import type {
   MergeProcedureDefinition,
   ProcedureDefinition,
+  ProcedureErrorContract,
   ProcedureInputContract,
   ProcedureInputTarget,
   ProcedureOutputContract,
@@ -135,7 +137,7 @@ export type ProcedureHandler<
 ) => ProcedureHandlerResult<TOutput>;
 
 export interface Procedure<
-  TDefinition extends ProcedureDefinition = ProcedureDefinition,
+  TDefinition extends ProcedureDefinition = Record<never, never>,
   TContext extends object = Record<never, never>,
   TOutput = ExtractProcedureOutput<TDefinition>,
   THandler extends ProcedureHandler<
@@ -150,7 +152,7 @@ export interface Procedure<
 }
 
 export interface ProcedureBuilder<
-  TDefinition extends ProcedureDefinition = ProcedureDefinition,
+  TDefinition extends ProcedureDefinition = Record<never, never>,
   TContext extends object = Record<never, never>,
 > {
   meta<TMeta extends RpcMeta>(
@@ -202,6 +204,18 @@ export interface ProcedureBuilder<
       TDefinition,
       {
         output: ProcedureOutputContract<TOutput>;
+      }
+    >,
+    TContext
+  >;
+
+  error<TCode extends RpcErrorCode, TDetails = unknown>(
+    code: TCode,
+  ): ProcedureBuilder<
+    MergeProcedureDefinition<
+      TDefinition,
+      {
+        error: ProcedureErrorContract<TCode, TDetails>;
       }
     >,
     TContext
@@ -307,6 +321,29 @@ const createProcedureBuilder = <
     );
   };
 
+  const withError = <TCode extends RpcErrorCode, TDetails = unknown>(
+    code: TCode,
+  ): ProcedureBuilder<
+    MergeProcedureDefinition<
+      TDefinition,
+      { error: ProcedureErrorContract<TCode, TDetails> }
+    >,
+    TContext
+  > => {
+    return createProcedureBuilder(
+      {
+        ...definition,
+        error: {
+          code,
+        },
+      } as MergeProcedureDefinition<
+        TDefinition,
+        { error: ProcedureErrorContract<TCode, TDetails> }
+      >,
+      middlewares,
+    );
+  };
+
   const withMiddleware = <TContextExtension extends object>(
     middleware: ProcedureMiddleware<
       ExtractValidationSchema<TDefinition>,
@@ -328,6 +365,7 @@ const createProcedureBuilder = <
     headers: (schema) => withInputContract("headers", schema),
     cookies: (schema) => withInputContract("cookies", schema),
     output: withOutput,
+    error: withError,
     use: withMiddleware,
     handle: (handler) =>
       ({

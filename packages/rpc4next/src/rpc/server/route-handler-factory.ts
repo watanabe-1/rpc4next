@@ -5,11 +5,13 @@
 
 import type { NextRequest } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
+import type { RpcErrorCode } from "./error";
 import { isRpcError } from "./error";
 import type { RpcMeta } from "./meta";
 import type {
   MergeProcedureDefinition,
   ProcedureDefinition,
+  ProcedureErrorContract,
 } from "./procedure-types";
 import { attachProcedureDefinition } from "./procedure-types";
 import { createRouteContext } from "./route-context";
@@ -85,7 +87,7 @@ export const routeHandlerFactory =
   ) =>
   <TBindings extends RouteBindings>() => {
     const createBuilder = <
-      TProcedureDefinition extends ProcedureDefinition = ProcedureDefinition,
+      TProcedureDefinition extends ProcedureDefinition = Record<never, never>,
     >(
       definition: Partial<TProcedureDefinition> = {},
     ): RouteDefinitionBuilder<
@@ -163,6 +165,23 @@ export const routeHandlerFactory =
                   response: TOutput;
                 };
               }
+            >
+          >),
+        error: <TCode extends RpcErrorCode, TDetails = unknown>(code: TCode) =>
+          createBuilder<
+            MergeProcedureDefinition<
+              TProcedureDefinition,
+              { error: ProcedureErrorContract<TCode, TDetails> }
+            >
+          >({
+            ...definition,
+            error: {
+              code,
+            },
+          } as Partial<
+            MergeProcedureDefinition<
+              TProcedureDefinition,
+              { error: ProcedureErrorContract<TCode, TDetails> }
             >
           >),
         get: defineRouteForMethod("GET"),
