@@ -12,6 +12,7 @@ import type {
   SuccessfulHttpStatusCode,
 } from "../lib/http-status-code-types";
 import type {
+  ProcedureInputContract,
   ProcedureOutputContract,
   WithProcedureDefinition,
 } from "../server/procedure-types";
@@ -172,7 +173,13 @@ type InferValidationSchema<T> = T extends (
   ...args: any[]
 ) => RouteHandlerResponse<RouteResponse, infer TValidationSchema>
   ? TValidationSchema
-  : ValidationSchema;
+  : T extends WithProcedureDefinition<unknown, infer TDefinition>
+    ? TDefinition extends {
+        input: ProcedureInputContract<infer TValidationSchema>;
+      }
+      ? TValidationSchema
+      : ValidationSchema
+    : ValidationSchema;
 
 type InferNextResponseType<T> = T extends (
   // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns

@@ -52,6 +52,9 @@ describe("procedure contract internals", () => {
     >;
 
     expectTypeOf<ExpectedInput>().toEqualTypeOf<{
+      contracts?: Partial<
+        Record<"params" | "query" | "json" | "headers" | "cookies", unknown>
+      >;
       validationSchema?: {
         input: { query: { page: string } };
         output: { query: { page: number } };

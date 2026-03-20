@@ -3,9 +3,21 @@ import type { RpcErrorCode, RpcErrorEnvelope } from "./error";
 import type { RpcMeta } from "./meta";
 import type { ValidationSchema } from "./route-types";
 
+export type ProcedureInputTarget =
+  | "params"
+  | "query"
+  | "json"
+  | "headers"
+  | "cookies";
+
+export type ProcedureInputContracts = Partial<
+  Record<ProcedureInputTarget, unknown>
+>;
+
 export interface ProcedureInputContract<
   TValidationSchema extends ValidationSchema = ValidationSchema,
 > {
+  contracts?: ProcedureInputContracts;
   validationSchema?: TValidationSchema;
 }
 

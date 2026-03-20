@@ -5,6 +5,7 @@ import type {
   TypedNextResponse,
 } from "rpc4next/server";
 import { describe, expect, expectTypeOf, it } from "vitest";
+import type { Query as ProcedureContractQuery } from "../app/api/procedure-contract/[userId]/route";
 import type { Query as UsersQuery } from "../app/api/users/[userId]/route";
 import type { PathStructure } from "./generated/rpc";
 
@@ -44,6 +45,23 @@ describe("integration next-app generated RPC type coverage", () => {
 
     expectTypeOf<UsersUrl>().toEqualTypeOf<ExpectedUsersUrl>();
 
+    type ProcedureContractNode = (typeof client.api)["procedure-contract"];
+    type ProcedureContractUrl = ReturnType<
+      ProcedureContractNode["_userId"]
+    >["$url"];
+    type ExpectedProcedureContractUrl = (url?: {
+      query?: ProcedureContractQuery;
+      hash?: string;
+    }) => {
+      pathname: string;
+      path: string;
+      relativePath: string;
+      params: {
+        userId: string;
+      };
+    };
+    expectTypeOf<ProcedureContractUrl>().toEqualTypeOf<ExpectedProcedureContractUrl>();
+
     type PostsArg = Parameters<typeof client.api.posts.$post>[0];
     type ExpectedPostsArg = {
       url?: {
@@ -77,6 +95,31 @@ describe("integration next-app generated RPC type coverage", () => {
       {} as RequestMetaArg;
     const _requestMetaArgFromExpected: RequestMetaArg =
       {} as ExpectedRequestMetaArg;
+
+    type ProcedureSubmitPost = (typeof client.api)["procedure-submit"]["$post"];
+    type ProcedureSubmitArg = Parameters<ProcedureSubmitPost>[0];
+    type ExpectedProcedureSubmitArg = {
+      url?: {
+        hash?: string;
+      };
+      body: {
+        json: {
+          title: string;
+        };
+      };
+      requestHeaders: {
+        headers: {
+          "x-procedure-test": string;
+        };
+        cookies: {
+          session: string;
+        };
+      };
+    };
+    const _procedureSubmitArgFromActual: ExpectedProcedureSubmitArg =
+      {} as ProcedureSubmitArg;
+    const _procedureSubmitArgFromExpected: ProcedureSubmitArg =
+      {} as ExpectedProcedureSubmitArg;
   });
 
   it("infers the generated response types for integration routes", async () => {
@@ -115,6 +158,17 @@ describe("integration next-app generated RPC type coverage", () => {
         "application/json"
       >
     >();
+
+    const _procedureContractResponse = await client.api["procedure-contract"]
+      ._userId("procedure-user")
+      .$get({
+        url: { query: { includePosts: "true" } },
+      });
+    const _procedureContractResponseBase: TypedNextResponse<
+      unknown,
+      HttpStatusCode,
+      ContentType
+    > = _procedureContractResponse;
 
     const _nativeDynamicResponse = await client.api["next-native"]
       ._itemId("native-item")
@@ -209,6 +263,19 @@ describe("integration next-app generated RPC type coverage", () => {
         requestMetaResponse;
     }
 
+    const procedureSubmitResponse = await client.api["procedure-submit"].$post({
+      body: { json: { title: "procedure-submit" } },
+      requestHeaders: {
+        headers: { "x-procedure-test": "header-ok" },
+        cookies: { session: "cookie-ok" },
+      },
+    });
+    const _procedureSubmitResponseBase: TypedNextResponse<
+      unknown,
+      HttpStatusCode,
+      ContentType
+    > = procedureSubmitResponse;
+
     type RedirectGet = (typeof client.api)["redirect-me"]["$get"];
     type RedirectResponse = Awaited<ReturnType<RedirectGet>>;
     expectTypeOf<RedirectResponse>().toEqualTypeOf<
@@ -252,6 +319,23 @@ describe("integration next-app generated RPC type coverage", () => {
       // @ts-expect-error request-meta requires both validated headers and cookies
       requestHeaders: { headers: { "x-integration-test": "header-ok" } },
     });
+
+    client.api["procedure-submit"].$post({
+      body: { json: { title: "ok" } },
+      requestHeaders: {
+        headers: { "x-procedure-test": "header-ok" },
+        cookies: { session: "cookie-ok" },
+      },
+    });
+
+    client.api["procedure-contract"]._userId("procedure-user").$url({
+      query: { includePosts: "false" },
+    });
+
+    client.api["procedure-contract"]
+      ._userId("procedure-user")
+      // @ts-expect-error invalid procedure query literal should be rejected
+      .$url({ query: { includePosts: "maybe" } });
 
     client.patterns["catch-all"].___parts(["alpha"]);
 
