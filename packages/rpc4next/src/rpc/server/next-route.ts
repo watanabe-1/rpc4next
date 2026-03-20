@@ -4,8 +4,19 @@ import type { ContentType } from "../lib/content-type-types";
 import type { HttpStatusCode } from "../lib/http-status-code-types";
 import { searchParamsToObject } from "../lib/search-params";
 import type { RpcErrorCode, RpcErrorEnvelope, RpcErrorStatus } from "./error";
-import { isRpcError, rpcError } from "./error";
-import type { ProcedureMiddleware, ProcedureResult } from "./procedure";
+import { rpcError } from "./error";
+import type {
+  ProcedureMiddleware,
+  ProcedureMiddlewareResult,
+  ProcedureResult,
+} from "./procedure";
+import {
+  executePipeline,
+  isProcedureResult,
+  normalizeProcedureResult,
+  normalizeRpcErrorResponse,
+  withProcedureMethod,
+} from "./procedure-internals";
 import type { ProcedureInputTarget } from "./procedure-types";
 import {
   attachProcedureDefinition,
@@ -20,19 +31,6 @@ import {
   getCookiesObject,
   getHeadersObject,
 } from "./validators/validator-utils";
-
-const isProcedureResult = (value: unknown): value is ProcedureResult => {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-
-  return (
-    "status" in value ||
-    "headers" in value ||
-    "body" in value ||
-    "redirect" in value
-  );
-};
 
 const getValidationErrorMessage = (error: unknown) => {
   if (error instanceof Error) {
@@ -111,44 +109,6 @@ const getContractValue = async (
   }
 
   return await getCookiesObject();
-};
-
-const normalizeProcedureResult = (
-  routeContext: Pick<
-    ReturnType<typeof createRouteContext>,
-    "redirect" | "body" | "text" | "json"
-  >,
-  result: Response | NextResponse | ProcedureResult,
-) => {
-  if (result instanceof Response) {
-    return result;
-  }
-
-  if (result.redirect) {
-    return routeContext.redirect(result.redirect, {
-      headersInit: result.headers,
-      status: (result.status ?? 307) as 307,
-    });
-  }
-
-  if (result.body === undefined) {
-    return routeContext.body(null, {
-      headersInit: result.headers,
-      status: result.status,
-    });
-  }
-
-  if (typeof result.body === "string") {
-    return routeContext.text(result.body, {
-      headersInit: result.headers,
-      status: result.status,
-    });
-  }
-
-  return routeContext.json(result.body, {
-    headersInit: result.headers,
-    status: result.status,
-  });
 };
 
 type ProcedureTypeCarrier<
@@ -328,43 +288,44 @@ export const nextRoute = <
           )
         : undefined;
 
-      let ctx: Record<string, unknown> = {};
-
-      for (const middleware of procedure.middlewares) {
-        const result = await middleware({
-          request,
-          params,
-          query,
-          json,
-          headers,
-          cookies,
-          ctx,
-        });
-
-        if (result instanceof Response || isProcedureResult(result)) {
-          return normalizeProcedureResult(
-            routeContext,
-            result,
-          ) as NextRouteResponse<TProcedure>;
-        }
-
-        if (result && typeof result === "object" && "ctx" in result) {
-          ctx = {
-            ...ctx,
-            ...(result.ctx as Record<string, unknown>),
-          };
-        }
-      }
-
-      const result = await handler({
+      const executionContext = {
         request,
         params,
         query,
         json,
         headers,
         cookies,
-        ctx,
-      } as InferProcedureHandlerContext<TProcedure>);
+        ctx: {} as Record<string, unknown>,
+      };
+
+      const result = await executePipeline<
+        typeof executionContext,
+        ProcedureMiddlewareResult | InferProcedureHandlerResult<TProcedure>,
+        Response | NextResponse | ProcedureResult
+      >(
+        [
+          ...procedure.middlewares,
+          (context) =>
+            handler(
+              context as InferProcedureHandlerContext<TProcedure>,
+            ) as InferProcedureHandlerResult<TProcedure>,
+        ],
+        executionContext,
+        {
+          isTerminal: (
+            value,
+          ): value is Response | NextResponse | ProcedureResult =>
+            value instanceof Response || isProcedureResult(value),
+          applyResult: (context, value) => {
+            if (value && typeof value === "object" && "ctx" in value) {
+              context.ctx = {
+                ...context.ctx,
+                ...(value.ctx as Record<string, unknown>),
+              };
+            }
+          },
+        },
+      );
 
       return normalizeProcedureResult(
         routeContext,
@@ -375,10 +336,9 @@ export const nextRoute = <
         return error as NextRouteResponse<TProcedure>;
       }
 
-      if (isRpcError(error)) {
-        return routeContext.json(error.toJSON(), {
-          status: error.status,
-        }) as NextRouteResponse<TProcedure>;
+      const rpcErrorResponse = normalizeRpcErrorResponse(error, routeContext);
+      if (rpcErrorResponse) {
+        return rpcErrorResponse as NextRouteResponse<TProcedure>;
       }
 
       throw error;
@@ -388,10 +348,7 @@ export const nextRoute = <
   return attachProcedureDefinition(
     routeHandler,
     options.method
-      ? {
-          ...procedure.definition,
-          method: options.method,
-        }
+      ? withProcedureMethod(procedure.definition, options.method)
       : procedure.definition,
   ) as NextRouteHandler<TProcedure, TMethod>;
 };

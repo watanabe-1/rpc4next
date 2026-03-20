@@ -2,6 +2,12 @@ import type { NextRequest, NextResponse } from "next/server";
 import type { HttpStatusCode } from "../lib/http-status-code-types";
 import type { RpcErrorCode } from "./error";
 import type { RpcMeta } from "./meta";
+import {
+  withProcedureError,
+  withProcedureInputContract,
+  withProcedureMeta,
+  withProcedureOutput,
+} from "./procedure-internals";
 import type {
   MergeProcedureDefinition,
   ProcedureDefinition,
@@ -260,21 +266,11 @@ const createProcedureBuilder = <
     TContext
   > => {
     return createProcedureBuilder(
-      {
-        ...definition,
-        input: {
-          contracts: {
-            ...(definition.input?.contracts ?? {}),
-            [target]: schema,
-          },
-          validationSchema: {
-            ...(definition.input?.validationSchema ?? {
-              input: {},
-              output: {},
-            }),
-          },
-        },
-      } as unknown as ExtendProcedureInputDefinition<
+      withProcedureInputContract(
+        definition,
+        target,
+        schema,
+      ) as unknown as ExtendProcedureInputDefinition<
         TDefinition,
         TTarget,
         TSchema
@@ -290,10 +286,7 @@ const createProcedureBuilder = <
     TContext
   > => {
     return createProcedureBuilder(
-      {
-        ...definition,
-        meta,
-      } as MergeProcedureDefinition<TDefinition, { meta: TMeta }>,
+      withProcedureMeta(definition, meta),
       middlewares,
     );
   };
@@ -308,15 +301,7 @@ const createProcedureBuilder = <
     TContext
   > => {
     return createProcedureBuilder(
-      {
-        ...definition,
-        output: {
-          schema,
-        },
-      } as MergeProcedureDefinition<
-        TDefinition,
-        { output: ProcedureOutputContract<TOutput> }
-      >,
+      withProcedureOutput<TDefinition, TOutput, TSchema>(definition, schema),
       middlewares,
     );
   };
@@ -331,15 +316,7 @@ const createProcedureBuilder = <
     TContext
   > => {
     return createProcedureBuilder(
-      {
-        ...definition,
-        error: {
-          code,
-        },
-      } as MergeProcedureDefinition<
-        TDefinition,
-        { error: ProcedureErrorContract<TCode, TDetails> }
-      >,
+      withProcedureError<TDefinition, TCode, TDetails>(definition, code),
       middlewares,
     );
   };

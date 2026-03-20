@@ -232,6 +232,27 @@ describe("routeHandlerFactory", () => {
     });
   });
 
+  it("prefers the configured onError handler over default RpcError serialization", async () => {
+    const onError = vi.fn((_error, rc) =>
+      rc.text("custom rpc error", { status: 418 }),
+    );
+    const createRouteHandler = routeHandlerFactory(onError)();
+    const handler = createRouteHandler.get(async () => {
+      throw rpcError("FORBIDDEN", {
+        message: "blocked",
+      });
+    });
+
+    const req = new NextRequest("http://localhost");
+    const res = await handler.GET(req, {
+      params: Promise.resolve({}),
+    });
+
+    expect(res.status).toBe(418);
+    await expect(res.text()).resolves.toBe("custom rpc error");
+    expect(onError).toHaveBeenCalledTimes(1);
+  });
+
   it("attaches meta and output contracts through the route builder", async () => {
     const createRouteHandler = routeHandlerFactory()();
     const handler = createRouteHandler

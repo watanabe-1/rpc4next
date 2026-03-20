@@ -249,6 +249,36 @@ describe("nextRoute", () => {
     expect(response.headers.get("location")).toBe("http://127.0.0.1:3000/feed");
   });
 
+  it("short-circuits middleware responses before later middleware or handler execution", async () => {
+    const laterMiddleware = vi.fn(() => ({
+      ctx: { reached: true },
+    }));
+    const handler = vi.fn(async () => ({
+      body: { ok: true },
+    }));
+    const route = nextRoute(
+      procedure
+        .use(() => ({
+          body: { ok: false, source: "middleware" as const },
+          status: 202,
+        }))
+        .use(laterMiddleware)
+        .handle(handler),
+    );
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(202);
+    await expect(response.json()).resolves.toEqual({
+      ok: false,
+      source: "middleware",
+    });
+    expect(laterMiddleware).not.toHaveBeenCalled();
+    expect(handler).not.toHaveBeenCalled();
+  });
+
   it("preserves explicit procedure error contracts in the route type", () => {
     const route = nextRoute(
       procedure
