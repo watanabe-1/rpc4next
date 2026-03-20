@@ -236,6 +236,15 @@ type InferProcedureErrorResponse<T> =
       : never
     : never;
 
+type InferProcedureValidationErrorResponse<T> =
+  ExtractAttachedProcedureDefinition<T> extends {
+    input: ProcedureInputContract<infer TValidationSchema>;
+  }
+    ? keyof TValidationSchema["input"] extends never
+      ? never
+      : ProcedureErrorResponse<"BAD_REQUEST">
+    : never;
+
 type ReplaceSuccessResponseBody<TResponse, TOutput> =
   TResponse extends TypedNextResponse<
     unknown,
@@ -265,16 +274,21 @@ type InferTypedNextResponseType<T> = T extends (
         // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
         ...args: any[]
       ) => Promise<TypedNextResponse>
-      ? Awaited<ReturnType<T>> | InferProcedureErrorResponse<T>
+      ?
+          | Awaited<ReturnType<T>>
+          | InferProcedureValidationErrorResponse<T>
+          | InferProcedureErrorResponse<T>
       :
           | TypedNextResponse<
               InferNextResponseType<T>,
               HttpStatusCode,
               ContentType
             >
+          | InferProcedureValidationErrorResponse<T>
           | InferProcedureErrorResponse<T>
     :
         | InferTypedNextResponseTypeFromOutput<T, InferProcedureOutput<T>>
+        | InferProcedureValidationErrorResponse<T>
         | InferProcedureErrorResponse<T>
   : TypedNextResponse<InferNextResponseType<T>, HttpStatusCode, ContentType>;
 
