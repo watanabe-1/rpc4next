@@ -28,10 +28,6 @@ import {
 } from "./procedure-types";
 import { createRouteContext } from "./route-context";
 import type { Params, TypedNextResponse } from "./types";
-import {
-  getCookiesObject,
-  getHeadersObject,
-} from "./validators/validator-utils";
 
 const getValidationErrorMessage = (error: unknown) => {
   if (error instanceof Error) {
@@ -106,10 +102,12 @@ const getContractValue = async (
   }
 
   if (target === "headers") {
-    return await getHeadersObject();
+    return Object.fromEntries(request.headers.entries());
   }
 
-  return await getCookiesObject();
+  return Object.fromEntries(
+    request.cookies.getAll().map((cookie) => [cookie.name, cookie.value]),
+  );
 };
 
 type ProcedureTypeCarrier<
@@ -122,6 +120,26 @@ type ProcedureTypeCarrier<
 
 type InferProcedureDefinition<TProcedure extends ProcedureTypeCarrier> =
   TProcedure["definition"];
+
+type ProcedureHasJsonContract<TProcedure extends ProcedureTypeCarrier> =
+  InferProcedureDefinition<TProcedure> extends {
+    input: ProcedureInputContract<infer TValidationSchema>;
+  }
+    ? "json" extends keyof TValidationSchema["input"]
+      ? true
+      : false
+    : false;
+
+type NextRouteMethodConstraint<
+  TProcedure extends ProcedureTypeCarrier,
+  TMethod extends HttpMethod | undefined,
+> = TMethod extends "GET" | "HEAD"
+  ? ProcedureHasJsonContract<TProcedure> extends true
+    ? {
+        __error__: "JSON input contracts are not supported for GET or HEAD procedures.";
+      }
+    : unknown
+  : unknown;
 
 type ProcedureErrorResponse<
   TCode extends RpcErrorCode = RpcErrorCode,
@@ -246,7 +264,11 @@ export const nextRoute = <
   TMethod extends HttpMethod | undefined = undefined,
 >(
   procedure: TProcedure,
-  options: NextRouteOptions<Exclude<TMethod, undefined>> = {},
+  options: NextRouteOptions<Exclude<TMethod, undefined>> &
+    NextRouteMethodConstraint<TProcedure, TMethod> = {} as NextRouteOptions<
+    Exclude<TMethod, undefined>
+  > &
+    NextRouteMethodConstraint<TProcedure, TMethod>,
 ): NextRouteHandler<TProcedure, TMethod> => {
   const handler = procedure.handler as (
     context: InferProcedureHandlerContext<TProcedure>,

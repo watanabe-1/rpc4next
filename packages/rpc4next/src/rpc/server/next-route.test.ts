@@ -6,7 +6,6 @@ import { nextRoute } from "./next-route";
 import { procedure } from "./procedure";
 import { getProcedureDefinition } from "./procedure-types";
 import type { TypedNextResponse } from "./types";
-import * as validatorUtils from "./validators/validator-utils";
 
 describe("nextRoute", () => {
   afterEach(() => {
@@ -14,13 +13,6 @@ describe("nextRoute", () => {
   });
 
   it("normalizes validated input, middleware context, and response contracts", async () => {
-    vi.spyOn(validatorUtils, "getHeadersObject").mockResolvedValueOnce({
-      "x-procedure-test": "header-ok",
-    });
-    vi.spyOn(validatorUtils, "getCookiesObject").mockResolvedValueOnce({
-      session: "cookie-ok",
-    });
-
     const route = nextRoute(
       procedure
         .meta({ tags: ["procedure-contract"], auth: "optional" as const })
@@ -83,6 +75,8 @@ describe("nextRoute", () => {
         body: JSON.stringify({ title: "phase-3" }),
         headers: {
           "content-type": "application/json",
+          "x-procedure-test": "header-ok",
+          cookie: "session=cookie-ok",
         },
       }),
       { params: Promise.resolve({ userId: "user-1" }) },
@@ -180,6 +174,19 @@ describe("nextRoute", () => {
           "JSON input contracts are not supported for GET or HEAD requests.",
       },
     });
+  });
+
+  it("rejects GET procedure definitions with JSON contracts at compile time", () => {
+    const invalidProcedure = procedure
+      .json(z.object({ title: z.string() }))
+      .handle(async ({ json }) => ({
+        body: json,
+      }));
+
+    // @ts-expect-error GET procedures must not declare JSON input contracts
+    nextRoute(invalidProcedure, { method: "GET" });
+
+    expect(true).toBe(true);
   });
 
   it("serializes malformed JSON bodies as BAD_REQUEST errors", async () => {
