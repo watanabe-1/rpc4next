@@ -37,4 +37,4 @@ const submitProcedure = procedure
     },
   }));
 
-export const POST = nextRoute(submitProcedure);
+export const POST = nextRoute(submitProcedure, { method: "POST" });

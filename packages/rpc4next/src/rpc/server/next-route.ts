@@ -1,4 +1,5 @@
 import type { NextRequest, NextResponse } from "next/server";
+import type { HttpMethod } from "rpc4next-shared";
 import type { ContentType } from "../lib/content-type-types";
 import type { HttpStatusCode } from "../lib/http-status-code-types";
 import { searchParamsToObject } from "../lib/search-params";
@@ -8,6 +9,7 @@ import type { ProcedureMiddleware, ProcedureResult } from "./procedure";
 import type { ProcedureInputTarget } from "./procedure-types";
 import {
   attachProcedureDefinition,
+  type MergeProcedureDefinition,
   type ProcedureDefinition,
   type ProcedureErrorContract,
   type WithProcedureDefinition,
@@ -165,11 +167,14 @@ type ProcedureErrorResponse<
   : never;
 
 type InferProcedureErrorResponse<TProcedure extends ProcedureTypeCarrier> =
-  InferProcedureDefinition<TProcedure> extends {
-    error: ProcedureErrorContract<infer TCode, infer TDetails>;
-  }
-    ? ProcedureErrorResponse<TCode, TDetails>
-    : ProcedureErrorResponse;
+  "error" extends keyof InferProcedureDefinition<TProcedure>
+    ? InferProcedureDefinition<TProcedure>["error"] extends ProcedureErrorContract<
+        infer TCode,
+        infer TDetails
+      >
+      ? ProcedureErrorResponse<TCode, TDetails>
+      : never
+    : never;
 
 type InferProcedureHandlerResult<TProcedure extends ProcedureTypeCarrier> =
   TProcedure extends {
@@ -237,17 +242,31 @@ type NextRouteResponse<TProcedure extends ProcedureTypeCarrier> =
 
 export type NextRouteHandler<
   TProcedure extends ProcedureTypeCarrier = ProcedureTypeCarrier,
+  TMethod extends HttpMethod | undefined = undefined,
 > = WithProcedureDefinition<
   (
     request: NextRequest,
     segmentData: { params: Promise<Params> },
   ) => Promise<NextRouteResponse<TProcedure>>,
-  InferProcedureDefinition<TProcedure>
+  TMethod extends HttpMethod
+    ? MergeProcedureDefinition<
+        InferProcedureDefinition<TProcedure>,
+        { method: TMethod }
+      >
+    : InferProcedureDefinition<TProcedure>
 >;
 
-export const nextRoute = <TProcedure extends ProcedureTypeCarrier>(
+export interface NextRouteOptions<TMethod extends HttpMethod = HttpMethod> {
+  method?: TMethod;
+}
+
+export const nextRoute = <
+  TProcedure extends ProcedureTypeCarrier,
+  TMethod extends HttpMethod | undefined = undefined,
+>(
   procedure: TProcedure,
-): NextRouteHandler<TProcedure> => {
+  options: NextRouteOptions<Exclude<TMethod, undefined>> = {},
+): NextRouteHandler<TProcedure, TMethod> => {
   const handler = procedure.handler as (
     context: InferProcedureHandlerContext<TProcedure>,
   ) =>
@@ -361,6 +380,11 @@ export const nextRoute = <TProcedure extends ProcedureTypeCarrier>(
 
   return attachProcedureDefinition(
     routeHandler,
-    procedure.definition,
-  ) as NextRouteHandler<TProcedure>;
+    options.method
+      ? {
+          ...procedure.definition,
+          method: options.method,
+        }
+      : procedure.definition,
+  ) as NextRouteHandler<TProcedure, TMethod>;
 };
