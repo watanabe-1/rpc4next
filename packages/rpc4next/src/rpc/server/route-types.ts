@@ -9,10 +9,12 @@
 
 import type { NextRequest } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
+import type { RpcErrorCode } from "./error";
 import type { RpcMeta } from "./meta";
 import type {
   MergeProcedureDefinition,
   ProcedureDefinition,
+  ProcedureErrorContract,
   WithProcedureDefinition,
 } from "./procedure-types";
 import type { Params, Query, RouteContext, TypedNextResponse } from "./types";
@@ -70,7 +72,7 @@ export type RouteHandler<
   TParams extends RouteBindings["params"],
   TRouteResponse extends RouteResponse,
   TValidationSchema extends ValidationSchema,
-  TProcedureDefinition extends ProcedureDefinition = ProcedureDefinition,
+  TProcedureDefinition extends ProcedureDefinition = Record<never, never>,
 > = WithProcedureDefinition<
   (
     req: NextRequest,
@@ -99,7 +101,7 @@ export interface MethodRouteDefinition<
   THttpMethod extends HttpMethod,
   TBindings extends RouteBindings,
   TOnErrorResponse extends RequiredRouteResponse,
-  TProcedureDefinition extends ProcedureDefinition = ProcedureDefinition,
+  TProcedureDefinition extends ProcedureDefinition = Record<never, never>,
   TParams extends TBindings["params"] = TBindings extends {
     params: infer TValue;
   }
@@ -242,7 +244,7 @@ export interface MethodRouteDefinition<
 export interface RouteDefinitionBuilder<
   TBindings extends RouteBindings,
   TOnErrorResponse extends RequiredRouteResponse,
-  TProcedureDefinition extends ProcedureDefinition = ProcedureDefinition,
+  TProcedureDefinition extends ProcedureDefinition = Record<never, never>,
 > {
   meta<TMeta extends RpcMeta>(
     meta: TMeta,
@@ -260,6 +262,17 @@ export interface RouteDefinitionBuilder<
     MergeProcedureDefinition<
       TProcedureDefinition,
       { output: ProcedureDefinition["output"] & { response: TOutput } }
+    >
+  >;
+
+  error<TCode extends RpcErrorCode, TDetails = unknown>(
+    code: TCode,
+  ): RouteDefinitionBuilder<
+    TBindings,
+    TOnErrorResponse,
+    MergeProcedureDefinition<
+      TProcedureDefinition,
+      { error: ProcedureErrorContract<TCode, TDetails> }
     >
   >;
 

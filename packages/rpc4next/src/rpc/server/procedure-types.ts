@@ -30,6 +30,7 @@ export interface ProcedureErrorContract<
   TCode extends RpcErrorCode = RpcErrorCode,
   TDetails = unknown,
 > {
+  code?: TCode;
   envelope?: RpcErrorEnvelope<TCode, TDetails>;
 }
 
