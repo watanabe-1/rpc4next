@@ -98,6 +98,32 @@ describe("nextRoute", () => {
     });
   });
 
+  it("preserves repeated query parameters for procedure validation", async () => {
+    const route = nextRoute(
+      procedure
+        .query(
+          z.object({
+            tag: z.array(z.string()).min(2),
+          }),
+        )
+        .handle(async ({ query }) => ({
+          body: query,
+        })),
+    );
+
+    const response = await route(
+      new NextRequest("http://127.0.0.1:3000/api/procedure?tag=a&tag=b"),
+      {
+        params: Promise.resolve({}),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      tag: ["a", "b"],
+    });
+  });
+
   it("serializes thrown RpcError with the default envelope", async () => {
     const route = nextRoute(
       procedure.handle(async () => {
@@ -116,6 +142,29 @@ describe("nextRoute", () => {
       error: {
         code: "FORBIDDEN",
         message: "blocked",
+      },
+    });
+  });
+
+  it("rejects JSON contracts on GET and HEAD requests", async () => {
+    const route = nextRoute(
+      procedure
+        .json(z.object({ title: z.string() }))
+        .handle(async ({ json }) => ({
+          body: json,
+        })),
+    );
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: "BAD_REQUEST",
+        message:
+          "JSON input contracts are not supported for GET or HEAD requests.",
       },
     });
   });

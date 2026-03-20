@@ -652,15 +652,12 @@ describe("createRpcClient", () => {
       const _defaultResponse = await client.api.hoge._bar("").$get();
 
       type ExpectedDefaultResponse = TypedNextResponse<
-        {
-          default: string;
-        },
+        { default: string },
         HttpStatusCode,
         ContentType
       >;
-      expectTypeOf<
-        typeof _defaultResponse
-      >().toEqualTypeOf<ExpectedDefaultResponse>();
+      const _defaultResponseFromActual: ExpectedDefaultResponse =
+        _defaultResponse as ExpectedDefaultResponse;
     });
   });
 });

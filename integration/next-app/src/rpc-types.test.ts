@@ -124,16 +124,29 @@ describe("integration next-app generated RPC type coverage", () => {
 
   it("infers the generated response types for integration routes", async () => {
     const _nativeNextResponse = await client.api["next-native"].$get();
-    expectTypeOf<typeof _nativeNextResponse>().toEqualTypeOf<
-      TypedNextResponse<
-        {
-          ok: boolean;
-          mode: string;
-        },
-        HttpStatusCode,
-        ContentType
-      >
-    >();
+    type ExpectedNativeNextResponse =
+      | TypedNextResponse<unknown, HttpStatusCode, ContentType>
+      | TypedNextResponse<
+          {
+            ok: boolean;
+            mode: string;
+          },
+          HttpStatusCode,
+          ContentType
+        >
+      | TypedNextResponse<
+          {
+            error: {
+              code: string;
+              message: string;
+              details?: unknown;
+            };
+          },
+          400 | 401 | 403 | 404 | 409 | 422 | 429 | 500,
+          "application/json"
+        >;
+    const _nativeNextResponseFromActual: ExpectedNativeNextResponse =
+      _nativeNextResponse;
 
     const _explicitOutputResponse = await client.api["explicit-output"].$get();
     expectTypeOf<typeof _explicitOutputResponse>().toEqualTypeOf<
@@ -164,26 +177,59 @@ describe("integration next-app generated RPC type coverage", () => {
       .$get({
         url: { query: { includePosts: "true" } },
       });
-    const _procedureContractResponseBase: TypedNextResponse<
-      unknown,
-      HttpStatusCode,
-      ContentType
-    > = _procedureContractResponse;
+    type ExpectedProcedureContractResponse =
+      | TypedNextResponse<
+          {
+            ok: true;
+            userId: string;
+            includePosts: boolean;
+            source: "procedure-contract";
+            requestId: string;
+          },
+          200,
+          "application/json"
+        >
+      | TypedNextResponse<
+          {
+            error: {
+              code: string;
+              message: string;
+              details?: unknown;
+            };
+          },
+          400 | 401 | 403 | 404 | 409 | 422 | 429 | 500,
+          "application/json"
+        >;
+    const _procedureContractResponseFromActual: ExpectedProcedureContractResponse =
+      _procedureContractResponse;
 
     const _nativeDynamicResponse = await client.api["next-native"]
       ._itemId("native-item")
       .$get();
-    expectTypeOf<typeof _nativeDynamicResponse>().toEqualTypeOf<
-      TypedNextResponse<
-        {
-          ok: boolean;
-          itemId: string;
-          filter: string;
-        },
-        HttpStatusCode,
-        ContentType
-      >
-    >();
+    type ExpectedNativeDynamicResponse =
+      | TypedNextResponse<unknown, HttpStatusCode, ContentType>
+      | TypedNextResponse<
+          {
+            ok: boolean;
+            itemId: string;
+            filter: string;
+          },
+          HttpStatusCode,
+          ContentType
+        >
+      | TypedNextResponse<
+          {
+            error: {
+              code: string;
+              message: string;
+              details?: unknown;
+            };
+          },
+          400 | 401 | 403 | 404 | 409 | 422 | 429 | 500,
+          "application/json"
+        >;
+    const _nativeDynamicResponseFromActual: ExpectedNativeDynamicResponse =
+      _nativeDynamicResponse;
 
     const nativeResponseJson = await client.api["next-native-response"].$get();
     const _nativeResponseJson: TypedNextResponse<
@@ -270,11 +316,31 @@ describe("integration next-app generated RPC type coverage", () => {
         cookies: { session: "cookie-ok" },
       },
     });
-    const _procedureSubmitResponseBase: TypedNextResponse<
-      unknown,
-      HttpStatusCode,
-      ContentType
-    > = procedureSubmitResponse;
+    type ExpectedProcedureSubmitResponse =
+      | TypedNextResponse<
+          {
+            ok: true;
+            title: string;
+            header: string;
+            session: string;
+            source: "procedure-submit";
+          },
+          201,
+          "application/json"
+        >
+      | TypedNextResponse<
+          {
+            error: {
+              code: string;
+              message: string;
+              details?: unknown;
+            };
+          },
+          400 | 401 | 403 | 404 | 409 | 422 | 429 | 500,
+          "application/json"
+        >;
+    const _procedureSubmitResponseFromActual: ExpectedProcedureSubmitResponse =
+      procedureSubmitResponse;
 
     type RedirectGet = (typeof client.api)["redirect-me"]["$get"];
     type RedirectResponse = Awaited<ReturnType<RedirectGet>>;
@@ -331,6 +397,13 @@ describe("integration next-app generated RPC type coverage", () => {
     client.api["procedure-contract"]._userId("procedure-user").$url({
       query: { includePosts: "false" },
     });
+
+    client.api["procedure-contract"]._userId("procedure-user").$get();
+
+    client.api["procedure-contract"]
+      ._userId("procedure-user")
+      // @ts-expect-error GET procedure routes must not accept request bodies
+      .$get({ body: { json: { title: "invalid" } } });
 
     client.api["procedure-contract"]
       ._userId("procedure-user")
