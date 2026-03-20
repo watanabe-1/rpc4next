@@ -97,6 +97,28 @@ describe("integration next-app server route handlers", () => {
     });
   });
 
+  it("serves a procedure-based dynamic route with params and query", async () => {
+    const { GET: procedureContractGet } = await import(
+      "../app/api/procedure-contract/[userId]/route"
+    );
+    const response = await procedureContractGet(
+      new NextRequest(
+        "http://127.0.0.1:3000/api/procedure-contract/procedure-user?includePosts=true",
+      ),
+      { params: Promise.resolve({ userId: "procedure-user" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("application/json");
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      userId: "procedure-user",
+      includePosts: true,
+      source: "procedure-contract",
+      requestId: "procedure-ctx",
+    });
+  });
+
   it("serves a plain Next.js dynamic route handler with params and query", async () => {
     const { GET: nativeDynamicGet } = await import(
       "../app/api/next-native/[itemId]/route"
@@ -214,6 +236,38 @@ describe("integration next-app server route handlers", () => {
     await expect(response.json()).resolves.toEqual({
       header: "header-ok",
       session: "cookie-ok",
+    });
+  });
+
+  it("serves a procedure-based POST route with json, headers, and cookies", async () => {
+    vi.spyOn(validatorUtils, "getHeadersObject").mockResolvedValueOnce({
+      "x-procedure-test": "header-ok",
+    });
+    vi.spyOn(validatorUtils, "getCookiesObject").mockResolvedValueOnce({
+      session: "cookie-ok",
+    });
+
+    const { POST: procedureSubmitPost } = await import(
+      "../app/api/procedure-submit/route"
+    );
+    const response = await procedureSubmitPost(
+      new NextRequest("http://127.0.0.1:3000/api/procedure-submit", {
+        method: "POST",
+        body: JSON.stringify({ title: "procedure-submit" }),
+        headers: {
+          "content-type": "application/json",
+        },
+      }),
+      { params: Promise.resolve({}) },
+    );
+
+    expect(response.status).toBe(201);
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      title: "procedure-submit",
+      header: "header-ok",
+      session: "cookie-ok",
+      source: "procedure-submit",
     });
   });
 

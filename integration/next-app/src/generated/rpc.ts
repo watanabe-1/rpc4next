@@ -6,6 +6,9 @@ import type { GET as GET_f6b301e60ff73f39 } from "../../app/api/next-native-resp
 import type { GET as GET_de7c3f3aefa104c1 } from "../../app/api/next-native/[itemId]/route";
 import type { GET as GET_ac9bcfb08eed44cd } from "../../app/api/next-native/route";
 import type { POST as POST_90625e305d8eaaef } from "../../app/api/posts/route";
+import type { Query as Query_328fe40401e7f48d } from "../../app/api/procedure-contract/[userId]/route";
+import type { GET as GET_3919bdb64fa44631 } from "../../app/api/procedure-contract/[userId]/route";
+import type { POST as POST_ff7e41c09dae8fb9 } from "../../app/api/procedure-submit/route";
 import type { GET as GET_61a9f4b9fd49ccf5 } from "../../app/api/redirect-me/route";
 import type { GET as GET_fbb09db60ba2ae51 } from "../../app/api/request-meta/route";
 import type { Query as Query_96533c19a2b0de99 } from "../../app/api/users/[userId]/route";
@@ -21,6 +24,10 @@ export type PathStructure = RpcEndpoint & {
     },
     "next-native-response": { "$get": typeof GET_f6b301e60ff73f39 } & RpcEndpoint,
     "posts": { "$post": typeof POST_90625e305d8eaaef } & RpcEndpoint,
+    "procedure-contract": {
+      "_userId": Record<QueryKey, Query_328fe40401e7f48d> & { "$get": typeof GET_3919bdb64fa44631 } & RpcEndpoint & Record<ParamsKey, { "userId": string }>
+    },
+    "procedure-submit": { "$post": typeof POST_ff7e41c09dae8fb9 } & RpcEndpoint,
     "redirect-me": { "$get": typeof GET_61a9f4b9fd49ccf5 } & RpcEndpoint,
     "request-meta": { "$get": typeof GET_fbb09db60ba2ae51 } & RpcEndpoint,
     "users": {

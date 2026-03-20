@@ -9,7 +9,17 @@ export {
 } from "./error";
 export type { InferRouteMeta, RpcMeta, RpcMetaBase } from "./meta";
 export { getRouteMeta, withMeta } from "./meta";
+export { nextRoute } from "./next-route";
 export type { OutputContract } from "./output";
 export { output, withOutput } from "./output";
+export type {
+  Procedure,
+  ProcedureBuilder,
+  ProcedureHandler,
+  ProcedureHandlerContext,
+  ProcedureMiddleware,
+  ProcedureResult,
+} from "./procedure";
+export { procedure } from "./procedure";
 export { routeHandlerFactory } from "./route-handler-factory";
 export type { TypedNextResponse } from "./types";
