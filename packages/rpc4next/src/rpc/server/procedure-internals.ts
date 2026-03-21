@@ -1,7 +1,7 @@
 import type { NextResponse } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
 import type { RpcErrorCode } from "./error";
-import { isRpcError } from "./error";
+import { defaultRpcErrorFormatter } from "./error-formatter";
 import type { RpcMeta } from "./meta";
 import type { ProcedureResult } from "./procedure";
 import type {
@@ -242,13 +242,7 @@ export const normalizeRpcErrorResponse = (
   error: unknown,
   routeContext: Pick<RouteContextResponseHelpers, "json">,
 ) => {
-  if (!isRpcError(error)) {
-    return undefined;
-  }
-
-  return routeContext.json(error.toJSON(), {
-    status: error.status,
-  });
+  return defaultRpcErrorFormatter(error, routeContext);
 };
 
 export const executePipeline = async <

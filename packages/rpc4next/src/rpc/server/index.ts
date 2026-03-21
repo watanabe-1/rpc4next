@@ -12,6 +12,11 @@ export {
   RpcError,
   rpcError,
 } from "./error";
+export type {
+  ProcedureErrorFormatter,
+  ProcedureErrorFormatterRouteContext,
+} from "./error-formatter";
+export { defaultRpcErrorFormatter } from "./error-formatter";
 export type { InferRouteMeta, RpcMeta, RpcMetaBase } from "./meta";
 export { getRouteMeta, withMeta } from "./meta";
 export { nextRoute } from "./next-route";
@@ -27,6 +32,12 @@ export type {
   ProcedureResult,
 } from "./procedure";
 export { procedure } from "./procedure";
+export type {
+  CreateProcedureKitOptions,
+  ProcedureErrorRegistry,
+  ProcedureErrorRegistryEntry,
+} from "./procedure-kit";
+export { createProcedureKit } from "./procedure-kit";
 export type { ProcedureRouteContract } from "./procedure-types";
 export { routeHandlerFactory } from "./route-handler-factory";
 export type {

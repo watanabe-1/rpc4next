@@ -761,7 +761,78 @@ Notes:
 - the initial phase should focus on server-side authoring and validation; generator and client ergonomics for multipart requests can remain a follow-up
 - validator expectations should stay Standard Schema V1-compatible at the public boundary even if the internal `FormData` normalization logic is rpc4next-specific
 
-## Phase 10: optional client ergonomics
+## Phase 10: configurable project-level error strategy
+
+Scope:
+
+- keep the built-in rpc4next error envelope as the default experience
+- allow projects to opt into that default rather than hard-coding it as the only supported runtime path
+- let projects customize how recognized procedure errors are serialized to HTTP responses
+- make room for project-defined error conventions without requiring every route to drop down to ad hoc `Response` handling
+
+Deliverables:
+
+- an overridable error formatting hook for `nextRoute(...)`, such as `errorFormatter`
+- a project-level factory or preset API, such as `createProcedureKit(...)`, that can provide shared error behavior
+- a documented distinction between rpc4next's default error codes and optional project-defined codes or registries
+- fixture coverage showing:
+  - the default rpc4next formatter
+  - a project-custom formatter
+  - a route or project that chooses not to use rpc4next's default envelope
+
+Target authoring shape:
+
+```ts
+const procedureKit = createProcedureKit({
+  errorFormatter: defaultRpcErrorFormatter,
+});
+
+const procedure = procedureKit.procedure;
+const nextRoute = procedureKit.nextRoute;
+const rpcError = procedureKit.rpcError;
+```
+
+Possible project-level customization:
+
+```ts
+const procedureKit = createProcedureKit({
+  errorRegistry: {
+    BAD_REQUEST: { status: 400 },
+    AUTH_EXPIRED: { status: 401 },
+    PLAN_LIMIT_EXCEEDED: { status: 403 },
+  },
+  errorFormatter: (error, rc) => {
+    if (!isProjectError(error)) return;
+
+    return rc.json(
+      {
+        success: false,
+        error: {
+          code: error.code,
+          message: error.message,
+          meta: error.details,
+        },
+      },
+      { status: error.status },
+    );
+  },
+});
+```
+
+Why tenth:
+
+- error envelopes are one of the areas most likely to vary across projects, even when route typing and procedure composition stay shared
+- rpc4next should provide a strong standard path without forcing every application into the same operational or product-level error vocabulary
+- allowing formatter and registry customization is a better escape hatch than requiring projects to abandon `procedure` and `nextRoute()` entirely
+
+Notes:
+
+- the built-in rpc4next formatter should remain the default for zero-config users
+- `procedure.error(...)` should continue to describe the route contract first; runtime HTTP shaping should be delegated to a formatter layer
+- initial customization can focus on formatting hooks and project presets before introducing full user-defined error-code extensibility at the type level
+- if project-defined codes are added later, they should be documented as an extension layer on top of the default rpc4next codes rather than a replacement for the default ergonomics
+
+## Phase 11: optional client ergonomics
 
 Possible items:
 

@@ -211,6 +211,68 @@ describe("nextRoute", () => {
     });
   });
 
+  it("prefers a route-level custom errorFormatter over the default envelope", async () => {
+    const errorFormatter = vi.fn((error: unknown, rc) => {
+      if (!(error instanceof Error)) {
+        return undefined;
+      }
+
+      return rc.json(
+        {
+          success: false,
+          message: error.message,
+        },
+        { status: 500 },
+      );
+    });
+    const route = nextRoute(
+      procedure.forRoute(staticRouteContract).handle(async () => {
+        throw new Error("custom formatter");
+      }),
+      {
+        errorFormatter,
+      },
+    );
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(errorFormatter).toHaveBeenCalledTimes(1);
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({
+      success: false,
+      message: "custom formatter",
+    });
+  });
+
+  it("falls back to the default formatter when a route-level errorFormatter skips an RpcError", async () => {
+    const errorFormatter = vi.fn(() => undefined);
+    const route = nextRoute(
+      procedure.forRoute(staticRouteContract).handle(async () => {
+        throw rpcError("FORBIDDEN", {
+          message: "blocked",
+        });
+      }),
+      {
+        errorFormatter,
+      },
+    );
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(errorFormatter).toHaveBeenCalledTimes(1);
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: "FORBIDDEN",
+        message: "blocked",
+      },
+    });
+  });
+
   it("can attach an explicit method to the generated route contract", () => {
     const route = nextRoute(
       procedure.forRoute(staticRouteContract).handle(async () => ({
