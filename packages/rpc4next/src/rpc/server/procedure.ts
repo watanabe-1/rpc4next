@@ -228,18 +228,55 @@ export type ProcedureResult<TBody = unknown> = {
   redirect?: string;
 };
 
+type ProcedureValidatedContext<
+  TValidationSchema extends ValidationSchema,
+  TBoundParams,
+> = ("params" extends keyof TValidationSchema["output"]
+  ? {
+      params: ProcedureValueFor<TValidationSchema, "params", TBoundParams>;
+    }
+  : Record<never, never>) &
+  ("query" extends keyof TValidationSchema["output"]
+    ? {
+        query: ProcedureValueFor<TValidationSchema, "query", Query>;
+      }
+    : Record<never, never>) &
+  ("json" extends keyof TValidationSchema["output"]
+    ? {
+        json: ProcedureValueFor<TValidationSchema, "json", undefined>;
+      }
+    : Record<never, never>) &
+  ("formData" extends keyof TValidationSchema["output"]
+    ? {
+        formData: ProcedureValueFor<TValidationSchema, "formData", undefined>;
+      }
+    : Record<never, never>) &
+  ("headers" extends keyof TValidationSchema["output"]
+    ? {
+        headers: ProcedureValueFor<TValidationSchema, "headers", undefined>;
+      }
+    : Record<never, never>) &
+  ("cookies" extends keyof TValidationSchema["output"]
+    ? {
+        cookies: ProcedureValueFor<TValidationSchema, "cookies", undefined>;
+      }
+    : Record<never, never>);
+
 export type ProcedureHandlerContext<
   TValidationSchema extends ValidationSchema = ValidationSchema,
   TBoundParams = Params,
   TContext extends object = Record<never, never>,
-> = {
+> = ProcedureValidatedContext<TValidationSchema, TBoundParams> & {
   request: NextRequest;
-  params: ProcedureValueFor<TValidationSchema, "params", TBoundParams>;
-  query: ProcedureValueFor<TValidationSchema, "query", Query>;
-  json: ProcedureValueFor<TValidationSchema, "json", undefined>;
-  formData: ProcedureValueFor<TValidationSchema, "formData", undefined>;
-  headers: ProcedureValueFor<TValidationSchema, "headers", undefined>;
-  cookies: ProcedureValueFor<TValidationSchema, "cookies", undefined>;
+  ctx: TContext;
+};
+
+export type ProcedureMiddlewareContext<
+  TValidationSchema extends ValidationSchema = ValidationSchema,
+  TBoundParams = Params,
+  TContext extends object = Record<never, never>,
+> = ProcedureValidatedContext<TValidationSchema, TBoundParams> & {
+  request: NextRequest;
   ctx: TContext;
 };
 
@@ -258,7 +295,11 @@ export type ProcedureMiddleware<
   TContext extends object = Record<never, never>,
   TContextExtension extends object = Record<never, never>,
 > = (
-  context: ProcedureHandlerContext<TValidationSchema, TBoundParams, TContext>,
+  context: ProcedureMiddlewareContext<
+    TValidationSchema,
+    TBoundParams,
+    TContext
+  >,
 ) =>
   | Promise<ProcedureMiddlewareResult<TContextExtension>>
   | ProcedureMiddlewareResult<TContextExtension>;
