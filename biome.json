@@ -9,7 +9,7 @@
       "**/*.json",
       "**/*.jsonc",
       "**/*.code-workspace",
-      "!integration/**/app/**/params.ts",
+      "!integration/**/app/**/route-contract.ts",
       "!integration/**/src/generated",
       "!**/node_modules",
       "!**/dist",

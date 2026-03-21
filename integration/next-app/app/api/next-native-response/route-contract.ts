@@ -1,0 +1,9 @@
+import type { ProcedureRouteContract } from "rpc4next/server";
+
+export type Params = {};
+export type RouteContract = ProcedureRouteContract<"/api/next-native-response", Params>;
+
+export const routeContract = {
+  pathname: "/api/next-native-response",
+  params: {} as Params,
+} as RouteContract;

@@ -15,9 +15,9 @@
 - `packages/rpc4next` provides the runtime client/server helpers.
 
 ## Generated Artifacts
-- Treat `integration/next-app/src/generated/rpc.ts` and `integration/next-app/app/**/params.ts` as generated files.
+- Treat `integration/next-app/src/generated/rpc.ts` and `integration/next-app/app/**/route-contract.ts` as generated files.
 - Do not hand-edit generated files unless the task is specifically about generator output.
-- Run `bun run integration:next-app:generate` when changes affect CLI scanning, generated path structure output, params generation, or integration fixture routes.
+- Run `bun run integration:next-app:generate` when changes affect CLI scanning, generated path structure output, route contract generation, or integration fixture routes.
 
 ## Working Rules
 - Prefer `rg` / `rg --files` for search.

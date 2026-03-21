@@ -1,0 +1,9 @@
+import type { ProcedureRouteContract } from "rpc4next/server";
+
+export type Params = {};
+export type RouteContract = ProcedureRouteContract<"/patterns/search", Params>;
+
+export const routeContract = {
+  pathname: "/patterns/search",
+  params: {} as Params,
+} as RouteContract;

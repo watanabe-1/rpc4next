@@ -1,0 +1,9 @@
+import type { ProcedureRouteContract } from "rpc4next/server";
+
+export type Params = { "category": string };
+export type RouteContract = ProcedureRouteContract<"/patterns/dynamic/[category]", Params>;
+
+export const routeContract = {
+  pathname: "/patterns/dynamic/[category]",
+  params: {} as Params,
+} as RouteContract;

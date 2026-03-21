@@ -4,11 +4,25 @@ import { z } from "zod";
 import { rpcError } from "./error";
 import { nextRoute } from "./next-route";
 import { procedure } from "./procedure";
-import { getProcedureDefinition } from "./procedure-types";
+import {
+  getProcedureDefinition,
+  type ProcedureRouteContract,
+} from "./procedure-types";
 import type { StandardSchemaV1 } from "./standard-schema";
 import type { TypedNextResponse } from "./types";
 
 describe("nextRoute", () => {
+  type EmptyParams = Record<never, never>;
+
+  const staticRouteContract = {
+    pathname: "/api/test",
+    params: {} as EmptyParams,
+  } as ProcedureRouteContract<"/api/test", EmptyParams>;
+  const dynamicUserRouteContract = {
+    pathname: "/api/procedure/[userId]",
+    params: {} as { userId: string },
+  } as ProcedureRouteContract<"/api/procedure/[userId]", { userId: string }>;
+
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -16,6 +30,7 @@ describe("nextRoute", () => {
   it("normalizes validated input, middleware context, and response contracts", async () => {
     const route = nextRoute(
       procedure
+        .forRoute(dynamicUserRouteContract)
         .meta({ tags: ["procedure-contract"], auth: "optional" as const })
         .params(z.object({ userId: z.string().min(1) }))
         .query(
@@ -98,6 +113,7 @@ describe("nextRoute", () => {
   it("preserves repeated query parameters for procedure validation", async () => {
     const route = nextRoute(
       procedure
+        .forRoute(staticRouteContract)
         .query(
           z.object({
             tag: z.array(z.string()).min(2),
@@ -152,9 +168,12 @@ describe("nextRoute", () => {
     };
 
     const route = nextRoute(
-      procedure.query(pageSchema).handle(async ({ query }) => ({
-        body: query,
-      })),
+      procedure
+        .forRoute(staticRouteContract)
+        .query(pageSchema)
+        .handle(async ({ query }) => ({
+          body: query,
+        })),
     );
 
     const response = await route(
@@ -172,7 +191,7 @@ describe("nextRoute", () => {
 
   it("serializes thrown RpcError with the default envelope", async () => {
     const route = nextRoute(
-      procedure.handle(async () => {
+      procedure.forRoute(staticRouteContract).handle(async () => {
         throw rpcError("FORBIDDEN", {
           message: "blocked",
         });
@@ -194,18 +213,19 @@ describe("nextRoute", () => {
 
   it("can attach an explicit method to the generated route contract", () => {
     const route = nextRoute(
-      procedure.handle(async () => ({
+      procedure.forRoute(staticRouteContract).handle(async () => ({
         status: 204 as const,
       })),
       { method: "GET" },
     );
 
-    expect(getProcedureDefinition(route)).toEqual({ method: "GET" });
+    expect(getProcedureDefinition(route)).toMatchObject({ method: "GET" });
   });
 
   it("rejects JSON contracts on GET and HEAD requests", async () => {
     const route = nextRoute(
       procedure
+        .forRoute(staticRouteContract)
         .json(z.object({ title: z.string() }))
         .handle(async ({ json }) => ({
           body: json,
@@ -228,6 +248,7 @@ describe("nextRoute", () => {
 
   it("rejects GET procedure definitions with JSON contracts at compile time", () => {
     const invalidProcedure = procedure
+      .forRoute(staticRouteContract)
       .json(z.object({ title: z.string() }))
       .handle(async ({ json }) => ({
         body: json,
@@ -242,6 +263,7 @@ describe("nextRoute", () => {
   it("serializes malformed JSON bodies as BAD_REQUEST errors", async () => {
     const route = nextRoute(
       procedure
+        .forRoute(staticRouteContract)
         .json(z.object({ title: z.string() }))
         .handle(async ({ json }) => ({
           body: json,
@@ -273,7 +295,7 @@ describe("nextRoute", () => {
 
   it("preserves raw Response escape hatches", async () => {
     const route = nextRoute(
-      procedure.handle(async () => {
+      procedure.forRoute(staticRouteContract).handle(async () => {
         return new Response("raw-response", {
           status: 202,
           headers: {
@@ -294,6 +316,7 @@ describe("nextRoute", () => {
   it("validates procedure output bodies at runtime when enabled", async () => {
     const route = nextRoute(
       procedure
+        .forRoute(staticRouteContract)
         .output(
           z.object({
             ok: z.literal(true),
@@ -324,6 +347,7 @@ describe("nextRoute", () => {
   it("normalizes invalid runtime output as INTERNAL_SERVER_ERROR", async () => {
     const route = nextRoute(
       procedure
+        .forRoute(staticRouteContract)
         .output(
           z.object({
             ok: z.literal(true),
@@ -357,6 +381,7 @@ describe("nextRoute", () => {
   it("skips runtime output validation for raw Response escape hatches", async () => {
     const route = nextRoute(
       procedure
+        .forRoute(staticRouteContract)
         .output(
           z.object({
             ok: z.literal(true),
@@ -387,6 +412,7 @@ describe("nextRoute", () => {
     expect(() =>
       nextRoute(
         procedure
+          .forRoute(staticRouteContract)
           .output({
             _output: {
               ok: true as const,
@@ -406,7 +432,7 @@ describe("nextRoute", () => {
 
   it("supports redirects from normalized procedure results", async () => {
     const route = nextRoute(
-      procedure.handle(async () => ({
+      procedure.forRoute(staticRouteContract).handle(async () => ({
         redirect: "http://127.0.0.1:3000/feed",
       })),
     );
@@ -428,6 +454,7 @@ describe("nextRoute", () => {
     }));
     const route = nextRoute(
       procedure
+        .forRoute(staticRouteContract)
         .use(() => ({
           body: { ok: false, source: "middleware" as const },
           status: 202,
@@ -451,6 +478,7 @@ describe("nextRoute", () => {
 
   it("reuses shared baseProcedure presets without mutating earlier routes", async () => {
     const baseProcedure = procedure
+      .forRoute(staticRouteContract)
       .headers(
         z.object({
           "x-demo-role": z.enum(["reader", "editor"]).optional(),
@@ -530,6 +558,7 @@ describe("nextRoute", () => {
   it("preserves explicit procedure error contracts in the route type", () => {
     const route = nextRoute(
       procedure
+        .forRoute(staticRouteContract)
         .error<"FORBIDDEN", { reason: string }>("FORBIDDEN")
         .handle(async () => ({
           status: 204 as const,
@@ -564,6 +593,7 @@ describe("nextRoute", () => {
 
   it("preserves shared procedure error contracts in extended route types", () => {
     const guardedBaseProcedure = procedure
+      .forRoute(staticRouteContract)
       .error<"UNAUTHORIZED", { reason: "missing_demo_user" }>("UNAUTHORIZED")
       .error<"FORBIDDEN", { reason: "suspended_account" }>("FORBIDDEN");
 
@@ -626,6 +656,7 @@ describe("nextRoute", () => {
   it("includes implicit BAD_REQUEST responses for validated procedure routes", () => {
     const route = nextRoute(
       procedure
+        .forRoute(staticRouteContract)
         .query(
           z.object({
             includePosts: z.enum(["true", "false"]).optional(),
@@ -671,6 +702,7 @@ describe("nextRoute", () => {
   it("includes implicit INTERNAL_SERVER_ERROR responses for runtime-enforced output routes", () => {
     const route = nextRoute(
       procedure
+        .forRoute(staticRouteContract)
         .output(
           z.object({
             ok: z.literal(true),

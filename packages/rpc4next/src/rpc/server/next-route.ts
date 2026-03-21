@@ -97,6 +97,15 @@ type InferProcedureDefinition<TProcedure extends ProcedureTypeCarrier> =
     ? TDefinition
     : ProcedureDefinition;
 
+type ProcedureIsRouteBound<TProcedure extends ProcedureTypeCarrier> =
+  InferProcedureDefinition<TProcedure> extends {
+    route: infer TRoute;
+  }
+    ? Exclude<TRoute, undefined> extends never
+      ? false
+      : true
+    : false;
+
 type ProcedureHasJsonContract<TProcedure extends ProcedureTypeCarrier> =
   InferProcedureDefinition<TProcedure> extends {
     input: ProcedureInputContract<infer TValidationSchema>;
@@ -109,13 +118,18 @@ type ProcedureHasJsonContract<TProcedure extends ProcedureTypeCarrier> =
 type NextRouteMethodConstraint<
   TProcedure extends ProcedureTypeCarrier,
   TMethod extends HttpMethod | undefined,
-> = TMethod extends "GET" | "HEAD"
-  ? ProcedureHasJsonContract<TProcedure> extends true
+> =
+  ProcedureIsRouteBound<TProcedure> extends false
     ? {
-        __error__: "JSON input contracts are not supported for GET or HEAD procedures.";
+        __error__: "nextRoute() only accepts procedures that were bound with forRoute(routeContract).";
       }
-    : unknown
-  : unknown;
+    : TMethod extends "GET" | "HEAD"
+      ? ProcedureHasJsonContract<TProcedure> extends true
+        ? {
+            __error__: "JSON input contracts are not supported for GET or HEAD procedures.";
+          }
+        : unknown
+      : unknown;
 
 type ProcedureErrorResponse<
   TCode extends RpcErrorCode = RpcErrorCode,

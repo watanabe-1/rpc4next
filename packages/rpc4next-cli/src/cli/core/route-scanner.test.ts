@@ -265,6 +265,7 @@ describe("route-scanner", () => {
         {
           paramsType: '{ "id": string }',
           dirPath: tmpPosixPath("testApp", "api", "users", "[id]"),
+          pathname: "/api/users/[id]",
         },
       ]);
     });
@@ -481,6 +482,12 @@ describe("route-scanner", () => {
             "[id]",
           ),
           paramsType: '{ "id": string }',
+          pathname: "/group/modal/[id]",
+        },
+        {
+          dirPath: tmpPosixPath("testApp", "group", "base"),
+          paramsType: "{}",
+          pathname: "/group/base",
         },
       ]);
     });
@@ -573,6 +580,11 @@ describe("route-scanner", () => {
 }`);
       expect(paramsTypes).toStrictEqual([
         {
+          dirPath: tmpPosixPath("testApp", "base"),
+          paramsType: "{}",
+          pathname: "/base",
+        },
+        {
           dirPath: tmpPosixPath(
             "testApp",
             "intercepts",
@@ -580,6 +592,7 @@ describe("route-scanner", () => {
             "[[...optionalParts]]",
           ),
           paramsType: '{ "optionalParts": string[] | undefined }',
+          pathname: "/intercepts/intercept/[[...optionalParts]]",
         },
         {
           dirPath: tmpPosixPath(
@@ -589,6 +602,7 @@ describe("route-scanner", () => {
             "[...parts]",
           ),
           paramsType: '{ "parts": string[] }',
+          pathname: "/intercepts/intercept/[...parts]",
         },
         {
           dirPath: tmpPosixPath(
@@ -599,6 +613,7 @@ describe("route-scanner", () => {
             "[slug]",
           ),
           paramsType: '{ "slug": string }',
+          pathname: "/intercepts/intercept/nested/[slug]",
         },
         {
           dirPath: tmpPosixPath(
@@ -608,6 +623,7 @@ describe("route-scanner", () => {
             "[id]",
           ),
           paramsType: '{ "id": string }',
+          pathname: "/intercepts/intercept/[id]",
         },
       ]);
     });
@@ -724,6 +740,12 @@ describe("route-scanner", () => {
         {
           dirPath: tmpPosixPath("testApp", "parent", "(.)modal", "[id]"),
           paramsType: '{ "id": string }',
+          pathname: "/parent/modal/[id]",
+        },
+        {
+          dirPath: tmpPosixPath("testApp", "parent", "public"),
+          paramsType: "{}",
+          pathname: "/parent/public",
         },
       ]);
     });
@@ -761,6 +783,12 @@ describe("route-scanner", () => {
             "[id]",
           ),
           paramsType: '{ "id": string }',
+          pathname: "/feed/photo/[id]",
+        },
+        {
+          dirPath: tmpPosixPath("testApp", "feed"),
+          paramsType: "{}",
+          pathname: "/feed",
         },
       ]);
     });
@@ -799,6 +827,7 @@ describe("route-scanner", () => {
         {
           paramsType: '{ "user": string; "names": string[]; }',
           dirPath: tmpPosixPath("testApp", "catchAll", "[user]", "[...names]"),
+          pathname: "/catchAll/[user]/[...names]",
         },
         {
           paramsType: '{ "names": string[] | undefined }',
@@ -808,6 +837,7 @@ describe("route-scanner", () => {
             "user",
             "[[...names]]",
           ),
+          pathname: "/OptionalCatchAll/user/[[...names]]",
         },
       ]);
     });

@@ -50,6 +50,7 @@ describe("generatePathStructure", () => {
         {
           paramsType: '{ "hoge": string }',
           dirPath: path.join(tmpDir, "[hoge]", "bar"),
+          pathname: "/demo/[hoge]/bar",
         },
       ],
     });
@@ -72,7 +73,17 @@ describe("generatePathStructure", () => {
     );
     expect(paramsTypes).toStrictEqual([
       {
-        paramsType: 'export type Params = { "hoge": string };',
+        paramsType: [
+          'import type { ProcedureRouteContract } from "rpc4next/server";',
+          "",
+          'export type Params = { "hoge": string };',
+          'export type RouteContract = ProcedureRouteContract<"/demo/[hoge]/bar", Params>;',
+          "",
+          "export const routeContract = {",
+          '  pathname: "/demo/[hoge]/bar",',
+          "  params: {} as Params,",
+          "} as RouteContract;",
+        ].join(NEWLINE),
         dirPath: path.join(tmpDir, "[hoge]", "bar"),
       },
     ]);

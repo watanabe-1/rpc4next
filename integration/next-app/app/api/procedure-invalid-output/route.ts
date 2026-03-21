@@ -1,5 +1,6 @@
 import { nextRoute, procedure } from "rpc4next/server";
 import { z } from "zod";
+import { routeContract } from "./route-contract";
 
 const outputSchema = z.object({
   ok: z.literal(true),
@@ -8,6 +9,7 @@ const outputSchema = z.object({
 });
 
 const getProcedureInvalidOutput = procedure
+  .forRoute(routeContract)
   .meta({
     summary:
       "Phase 7 fixture that demonstrates runtime-enforced output validation failures",

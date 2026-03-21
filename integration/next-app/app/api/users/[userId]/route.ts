@@ -1,7 +1,7 @@
 import { routeHandlerFactory } from "rpc4next/server";
 import { zValidator } from "rpc4next/server/validators/zod";
 import { z } from "zod";
-import type { Params } from "./params";
+import type { Params } from "./route-contract";
 
 export type Query = {
   includePosts?: "true" | "false";

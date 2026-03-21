@@ -1,5 +1,5 @@
 {
   "baseDir": "app",
   "outputPath": "src/generated/rpc.ts",
-  "paramsFile": "params.ts"
+  "paramsFile": "route-contract.ts"
 }

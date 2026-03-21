@@ -7,6 +7,7 @@ import {
   withProcedureInputContract,
   withProcedureMeta,
   withProcedureOutput,
+  withProcedureRouteBinding,
 } from "./procedure-internals";
 import type {
   AppendProcedureErrorDefinition,
@@ -17,6 +18,8 @@ import type {
   ProcedureInputContract,
   ProcedureInputTarget,
   ProcedureOutputContract,
+  ProcedureRouteBinding,
+  ProcedureRouteContract,
 } from "./procedure-types";
 import type { ValidationSchema } from "./route-types";
 import type { StandardSchemaV1 } from "./standard-schema";
@@ -61,6 +64,52 @@ type ExtractProcedureOutput<TDefinition extends ProcedureDefinition> =
     ? TOutput
     : unknown;
 
+type ExtractProcedureRouteBinding<TDefinition extends ProcedureDefinition> =
+  TDefinition extends ProcedureDefinition<
+    infer _THttpMethod,
+    infer _TValidationSchema,
+    infer _TRouteResponse,
+    infer _TMeta,
+    infer _TError,
+    infer TRoute
+  >
+    ? TRoute
+    : undefined;
+
+type ExtractBoundRouteParams<TDefinition extends ProcedureDefinition> =
+  ExtractProcedureRouteBinding<TDefinition> extends ProcedureRouteBinding<
+    string,
+    infer TParams
+  >
+    ? TParams
+    : never;
+
+type HasBoundRouteParams<TDefinition extends ProcedureDefinition> = [
+  ExtractBoundRouteParams<TDefinition>,
+] extends [never]
+  ? false
+  : keyof ExtractBoundRouteParams<TDefinition> extends never
+    ? false
+    : true;
+
+type HasValidatedParams<TDefinition extends ProcedureDefinition> =
+  ExtractValidationSchema<TDefinition>["output"] extends {
+    params: unknown;
+  }
+    ? true
+    : false;
+
+type InferProcedureParams<TDefinition extends ProcedureDefinition> =
+  "params" extends keyof ExtractValidationSchema<TDefinition>["output"]
+    ? ProcedureValueFor<
+        ExtractValidationSchema<TDefinition>,
+        "params",
+        ExtractBoundRouteParams<TDefinition>
+      >
+    : [ExtractBoundRouteParams<TDefinition>] extends [never]
+      ? Params
+      : ExtractBoundRouteParams<TDefinition>;
+
 type ProcedureValueFor<
   TValidationSchema extends ValidationSchema,
   TTarget extends ProcedureInputTarget,
@@ -100,6 +149,46 @@ type ExtendProcedureInputDefinition<
   }
 >;
 
+type InvalidBoundRouteParamsSchema<TExpected, TActual> = {
+  __error__: "Procedure params schema output must cover the generated route params contract.";
+  __expectedParams__: TExpected;
+  __actualParams__: TActual;
+};
+
+type BoundRouteParamsSchemaArg<
+  TDefinition extends ProcedureDefinition,
+  TSchema extends StandardSchemaV1,
+> =
+  HasBoundRouteParams<TDefinition> extends true
+    ? InferSchemaOutput<TSchema> extends ExtractBoundRouteParams<TDefinition>
+      ? TSchema
+      : TSchema &
+          InvalidBoundRouteParamsSchema<
+            ExtractBoundRouteParams<TDefinition>,
+            InferSchemaOutput<TSchema>
+          >
+    : TSchema;
+
+type MissingBoundRouteParamsError = {
+  __error__: "Bound procedures with generated params must call .params(schema) before .handle().";
+};
+
+type ProcedureHandleArgs<
+  TDefinition extends ProcedureDefinition,
+  TContext extends object,
+  THandler extends ProcedureHandler<
+    ExtractValidationSchema<TDefinition>,
+    InferProcedureParams<TDefinition>,
+    TContext,
+    ExtractProcedureOutput<TDefinition>
+  >,
+> =
+  HasBoundRouteParams<TDefinition> extends true
+    ? HasValidatedParams<TDefinition> extends true
+      ? [handler: THandler]
+      : [handler: THandler & MissingBoundRouteParamsError]
+    : [handler: THandler];
+
 export type ProcedureResult<TBody = unknown> = {
   status?: HttpStatusCode;
   headers?: HeadersInit;
@@ -109,10 +198,11 @@ export type ProcedureResult<TBody = unknown> = {
 
 export type ProcedureHandlerContext<
   TValidationSchema extends ValidationSchema = ValidationSchema,
+  TBoundParams = Params,
   TContext extends object = Record<never, never>,
 > = {
   request: NextRequest;
-  params: ProcedureValueFor<TValidationSchema, "params", Params>;
+  params: ProcedureValueFor<TValidationSchema, "params", TBoundParams>;
   query: ProcedureValueFor<TValidationSchema, "query", Query>;
   json: ProcedureValueFor<TValidationSchema, "json", undefined>;
   headers: ProcedureValueFor<TValidationSchema, "headers", undefined>;
@@ -131,10 +221,11 @@ export type ProcedureMiddlewareResult<
 
 export type ProcedureMiddleware<
   TValidationSchema extends ValidationSchema = ValidationSchema,
+  TBoundParams = Params,
   TContext extends object = Record<never, never>,
   TContextExtension extends object = Record<never, never>,
 > = (
-  context: ProcedureHandlerContext<TValidationSchema, TContext>,
+  context: ProcedureHandlerContext<TValidationSchema, TBoundParams, TContext>,
 ) =>
   | Promise<ProcedureMiddlewareResult<TContextExtension>>
   | ProcedureMiddlewareResult<TContextExtension>;
@@ -147,10 +238,11 @@ export type ProcedureHandlerResult<TOutput = unknown> =
 
 export type ProcedureHandler<
   TValidationSchema extends ValidationSchema = ValidationSchema,
+  TBoundParams = Params,
   TContext extends object = Record<never, never>,
   TOutput = unknown,
 > = (
-  context: ProcedureHandlerContext<TValidationSchema, TContext>,
+  context: ProcedureHandlerContext<TValidationSchema, TBoundParams, TContext>,
 ) => ProcedureHandlerResult<TOutput>;
 
 export interface Procedure<
@@ -159,9 +251,15 @@ export interface Procedure<
   TOutput = ExtractProcedureOutput<TDefinition>,
   THandler extends ProcedureHandler<
     ExtractValidationSchema<TDefinition>,
+    InferProcedureParams<TDefinition>,
     TContext,
     TOutput
-  > = ProcedureHandler<ExtractValidationSchema<TDefinition>, TContext, TOutput>,
+  > = ProcedureHandler<
+    ExtractValidationSchema<TDefinition>,
+    InferProcedureParams<TDefinition>,
+    TContext,
+    TOutput
+  >,
 > {
   readonly definition: TDefinition;
   readonly middlewares: readonly ProcedureMiddleware[];
@@ -179,8 +277,23 @@ export interface ProcedureBuilder<
     TContext
   >;
 
+  forRoute<TRouteContract extends ProcedureRouteContract>(
+    routeContract: TRouteContract,
+  ): ProcedureBuilder<
+    MergeProcedureDefinition<
+      TDefinition,
+      {
+        route: ProcedureRouteBinding<
+          TRouteContract["pathname"],
+          TRouteContract["params"]
+        >;
+      }
+    >,
+    TContext
+  >;
+
   params<TSchema extends StandardSchemaV1>(
-    schema: TSchema,
+    schema: BoundRouteParamsSchemaArg<TDefinition, TSchema>,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "params", TSchema>,
     TContext
@@ -239,6 +352,7 @@ export interface ProcedureBuilder<
   use<TContextExtension extends object>(
     middleware: ProcedureMiddleware<
       ExtractValidationSchema<TDefinition>,
+      InferProcedureParams<TDefinition>,
       TContext,
       TContextExtension
     >,
@@ -247,11 +361,12 @@ export interface ProcedureBuilder<
   handle<
     THandler extends ProcedureHandler<
       ExtractValidationSchema<TDefinition>,
+      InferProcedureParams<TDefinition>,
       TContext,
       ExtractProcedureOutput<TDefinition>
     >,
   >(
-    handler: THandler,
+    ...args: ProcedureHandleArgs<TDefinition, TContext, THandler>
   ): Procedure<
     TDefinition,
     TContext,
@@ -303,6 +418,35 @@ const createProcedureBuilder = <
     );
   };
 
+  const withRoute = <TRouteContract extends ProcedureRouteContract>(
+    routeContract: TRouteContract,
+  ): ProcedureBuilder<
+    MergeProcedureDefinition<
+      TDefinition,
+      {
+        route: ProcedureRouteBinding<
+          TRouteContract["pathname"],
+          TRouteContract["params"]
+        >;
+      }
+    >,
+    TContext
+  > => {
+    return createProcedureBuilder(
+      withProcedureRouteBinding(definition, routeContract),
+      middlewares,
+    );
+  };
+
+  const withParams = <TSchema extends StandardSchemaV1>(
+    schema: BoundRouteParamsSchemaArg<TDefinition, TSchema>,
+  ): ProcedureBuilder<
+    ExtendProcedureInputDefinition<TDefinition, "params", TSchema>,
+    TContext
+  > => {
+    return withInputContract("params", schema as TSchema);
+  };
+
   const withOutput = <TSchema, TOutput = InferSchemaOutput<TSchema>>(
     schema: TSchema,
   ): ProcedureBuilder<
@@ -336,6 +480,7 @@ const createProcedureBuilder = <
   const withMiddleware = <TContextExtension extends object>(
     middleware: ProcedureMiddleware<
       ExtractValidationSchema<TDefinition>,
+      InferProcedureParams<TDefinition>,
       TContext,
       TContextExtension
     >,
@@ -348,7 +493,8 @@ const createProcedureBuilder = <
 
   return {
     meta: withMeta,
-    params: (schema) => withInputContract("params", schema),
+    forRoute: withRoute,
+    params: withParams,
     query: (schema) => withInputContract("query", schema),
     json: (schema) => withInputContract("json", schema),
     headers: (schema) => withInputContract("headers", schema),
@@ -356,16 +502,16 @@ const createProcedureBuilder = <
     output: withOutput,
     error: withError,
     use: withMiddleware,
-    handle: (handler) =>
+    handle: (...args) =>
       ({
         definition,
         middlewares,
-        handler,
+        handler: args[0],
       }) as Procedure<
         TDefinition,
         TContext,
         ExtractProcedureOutput<TDefinition>,
-        typeof handler
+        (typeof args)[0]
       >,
   };
 };
