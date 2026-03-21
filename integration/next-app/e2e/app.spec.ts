@@ -59,6 +59,9 @@ test.describe("integration next-app e2e", () => {
     await expect(
       page.getByText("Phase 5: shared baseProcedure presets"),
     ).toBeVisible();
+    await expect(
+      page.getByText("Phase 6: shared policy error contracts"),
+    ).toBeVisible();
   });
 
   test("guarded procedure route returns success and typed forbidden errors", async ({
@@ -68,6 +71,7 @@ test.describe("integration next-app e2e", () => {
       "/api/procedure-guarded/e2e-user?includeDrafts=true",
       {
         headers: {
+          "x-demo-user": "e2e-user",
           "x-demo-role": "editor",
         },
       },
@@ -80,11 +84,16 @@ test.describe("integration next-app e2e", () => {
       includeDrafts: true,
       role: "editor",
       source: "procedure-guarded",
-      requestId: "guarded:editor",
+      requestId: "guarded:e2e-user",
     });
 
     const forbiddenResponse = await request.get(
       "/api/procedure-guarded/e2e-user?includeDrafts=true",
+      {
+        headers: {
+          "x-demo-user": "e2e-user",
+        },
+      },
     );
 
     expect(forbiddenResponse.status()).toBe(403);

@@ -7,11 +7,13 @@ const examples = [
     route: "/api/procedure-guarded/[userId]",
     notes: [
       "meta() annotates the route with summary, tags, auth, and idempotency.",
-      'error("FORBIDDEN") + rpcError(...) exposes a typed error envelope to the client.',
+      'Shared .error("UNAUTHORIZED") / .error("FORBIDDEN") presets and route-local .error("FORBIDDEN") variants stay visible to the client.',
     ],
     snippet: `await rpcClient.api["procedure-guarded"]._userId("demo-user").$get({
   url: { query: { includeDrafts: "true" } },
-  requestHeaders: { headers: { "x-demo-role": "editor" } },
+  requestHeaders: {
+    headers: { "x-demo-user": "demo-user", "x-demo-role": "editor" },
+  },
 });`,
   },
   {
@@ -60,7 +62,23 @@ const examples = [
   ._userId("demo-user")
   .$get({
     url: { query: { includeDrafts: "true" } },
-    requestHeaders: { headers: { "x-demo-role": "editor" } },
+    requestHeaders: {
+      headers: { "x-demo-user": "demo-user", "x-demo-role": "editor" },
+    },
+  });`,
+  },
+  {
+    phase: "Phase 6",
+    title: "shared policy error contracts",
+    route: "/api/procedure-guarded/[userId]",
+    notes: [
+      "The shared guarded baseProcedure now declares UNAUTHORIZED and FORBIDDEN envelopes before the route adds its own editor_only FORBIDDEN variant.",
+      "Generated client response unions preserve all shared and route-local error contracts without adding a global router.",
+    ],
+    snippet: `const response = await rpcClient.api["procedure-guarded"]
+  ._userId("demo-user")
+  .$get({
+    requestHeaders: { headers: { "x-demo-user": "demo-user" } },
   });`,
   },
 ];
@@ -85,7 +103,7 @@ export default function ProcedureExamplesPage() {
       <h1>Procedure examples</h1>
       <p>
         This page groups the integration fixtures that correspond to
-        `procedure-design.md` phases 1 through 5.
+        `procedure-design.md` phases 1 through 6.
       </p>
       <ul>
         <li>

@@ -1,6 +1,7 @@
 import { describe, expectTypeOf, it } from "vitest";
 import { z } from "zod";
 import { procedure } from "./procedure";
+import type { ProcedureErrorContract } from "./procedure-types";
 import type { StandardSchemaV1 } from "./standard-schema";
 
 describe("procedure builder type definitions", () => {
@@ -270,5 +271,26 @@ describe("procedure builder type definitions", () => {
         };
       };
     }>();
+  });
+
+  it("accumulates shared and route-local procedure error contracts", () => {
+    const guardedBaseProcedure = procedure
+      .error<"UNAUTHORIZED", { reason: "missing_demo_user" }>("UNAUTHORIZED")
+      .error<"FORBIDDEN", { reason: "suspended_account" }>("FORBIDDEN");
+
+    const guardedProcedure = guardedBaseProcedure
+      .error<"FORBIDDEN", { reason: "editor_only" }>("FORBIDDEN")
+      .handle(() => ({
+        status: 204 as const,
+      }));
+
+    type ExpectedErrors =
+      | ProcedureErrorContract<"UNAUTHORIZED", { reason: "missing_demo_user" }>
+      | ProcedureErrorContract<"FORBIDDEN", { reason: "suspended_account" }>
+      | ProcedureErrorContract<"FORBIDDEN", { reason: "editor_only" }>;
+
+    expectTypeOf(guardedProcedure.definition.error).toMatchTypeOf<
+      ExpectedErrors | undefined
+    >();
   });
 });

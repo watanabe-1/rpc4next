@@ -5,6 +5,7 @@ import { isRpcError } from "./error";
 import type { RpcMeta } from "./meta";
 import type { ProcedureResult } from "./procedure";
 import type {
+  AppendProcedureErrorDefinition,
   MergeProcedureDefinition,
   ProcedureDefinition,
   ProcedureErrorContract,
@@ -80,18 +81,35 @@ export const withProcedureError = <
 >(
   definition: TDefinition,
   code: TCode,
-): MergeProcedureDefinition<
+): AppendProcedureErrorDefinition<
   TDefinition,
-  { error: ProcedureErrorContract<TCode, TDetails> }
+  ProcedureErrorContract<TCode, TDetails>
 > => {
+  const existingError = definition.error as ProcedureErrorContract | undefined;
+  const variants =
+    existingError?.variants ??
+    (existingError?.code
+      ? [
+          {
+            code: existingError.code,
+          },
+        ]
+      : []);
+
   return {
     ...definition,
     error: {
       code,
+      variants: [
+        ...variants,
+        {
+          code,
+        },
+      ],
     },
-  } as MergeProcedureDefinition<
+  } as AppendProcedureErrorDefinition<
     TDefinition,
-    { error: ProcedureErrorContract<TCode, TDetails> }
+    ProcedureErrorContract<TCode, TDetails>
   >;
 };
 

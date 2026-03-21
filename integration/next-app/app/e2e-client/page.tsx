@@ -112,7 +112,10 @@ export default function E2eClientPage() {
             .$get({
               url: { query: { includeDrafts: "true" } },
               requestHeaders: {
-                headers: { "x-demo-role": "editor" },
+                headers: {
+                  "x-demo-user": "browser-user",
+                  "x-demo-role": "editor",
+                },
               },
             });
           const payload = await stringifyResponse(response);
@@ -130,7 +133,7 @@ export default function E2eClientPage() {
             .$get({
               url: { query: { includeDrafts: "true" } },
               requestHeaders: {
-                headers: {},
+                headers: { "x-demo-user": "browser-user" },
               },
             });
           const payload = await stringifyResponse(response);

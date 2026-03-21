@@ -226,14 +226,16 @@ type ProcedureErrorResponse<
     >
   : never;
 
+type InferProcedureErrorContractResponse<TError> =
+  TError extends ProcedureErrorContract<infer TCode, infer TDetails>
+    ? ProcedureErrorResponse<TCode, TDetails>
+    : never;
+
 type InferProcedureErrorResponse<T> =
   "error" extends keyof ExtractAttachedProcedureDefinition<T>
-    ? ExtractAttachedProcedureDefinition<T>["error"] extends ProcedureErrorContract<
-        infer TCode,
-        infer TDetails
+    ? InferProcedureErrorContractResponse<
+        ExtractAttachedProcedureDefinition<T>["error"]
       >
-      ? ProcedureErrorResponse<TCode, TDetails>
-      : never
     : never;
 
 type InferProcedureValidationErrorResponse<T> =

@@ -577,6 +577,12 @@ Deliverables:
 - preserve typed error envelopes when errors are introduced by shared middleware
 - fixture coverage for shared auth/authorization procedures that can surface common error envelopes
 
+Current fixture coverage:
+
+- `integration/next-app/app/api/_shared/base-procedure.ts` now declares shared `UNAUTHORIZED` and `FORBIDDEN` contracts on the guarded preset itself
+- `integration/next-app/app/api/procedure-guarded/[userId]/route.ts` extends that preset with route-local params/query/output plus an additional `FORBIDDEN` variant for `editor_only`
+- `integration/next-app/src/rpc-types.test.ts` and `integration/next-app/src/server-routes.test.ts` cover that the route type and generated client inference retain the shared and route-local error envelopes together
+
 Why sixth:
 
 - shared `baseProcedure` becomes much more valuable once common failures can also be declared contractually

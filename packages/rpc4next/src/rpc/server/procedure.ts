@@ -9,6 +9,8 @@ import {
   withProcedureOutput,
 } from "./procedure-internals";
 import type {
+  AppendProcedureErrorDefinition,
+  EmptyProcedureDefinition,
   MergeProcedureDefinition,
   ProcedureDefinition,
   ProcedureErrorContract,
@@ -152,7 +154,7 @@ export type ProcedureHandler<
 ) => ProcedureHandlerResult<TOutput>;
 
 export interface Procedure<
-  TDefinition extends ProcedureDefinition = Record<never, never>,
+  TDefinition extends ProcedureDefinition = EmptyProcedureDefinition,
   TContext extends object = Record<never, never>,
   TOutput = ExtractProcedureOutput<TDefinition>,
   THandler extends ProcedureHandler<
@@ -167,7 +169,7 @@ export interface Procedure<
 }
 
 export interface ProcedureBuilder<
-  TDefinition extends ProcedureDefinition = Record<never, never>,
+  TDefinition extends ProcedureDefinition = EmptyProcedureDefinition,
   TContext extends object = Record<never, never>,
 > {
   meta<TMeta extends RpcMeta>(
@@ -227,11 +229,9 @@ export interface ProcedureBuilder<
   error<TCode extends RpcErrorCode, TDetails = unknown>(
     code: TCode,
   ): ProcedureBuilder<
-    MergeProcedureDefinition<
+    AppendProcedureErrorDefinition<
       TDefinition,
-      {
-        error: ProcedureErrorContract<TCode, TDetails>;
-      }
+      ProcedureErrorContract<TCode, TDetails>
     >,
     TContext
   >;
@@ -321,9 +321,9 @@ const createProcedureBuilder = <
   const withError = <TCode extends RpcErrorCode, TDetails = unknown>(
     code: TCode,
   ): ProcedureBuilder<
-    MergeProcedureDefinition<
+    AppendProcedureErrorDefinition<
       TDefinition,
-      { error: ProcedureErrorContract<TCode, TDetails> }
+      ProcedureErrorContract<TCode, TDetails>
     >,
     TContext
   > => {
@@ -371,6 +371,6 @@ const createProcedureBuilder = <
 };
 
 export const procedure = createProcedureBuilder<
-  Record<never, never>,
+  EmptyProcedureDefinition,
   Record<never, never>
 >({});

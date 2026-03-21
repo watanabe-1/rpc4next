@@ -275,6 +275,7 @@ describe("integration next-app server route handlers", () => {
         "http://127.0.0.1:3000/api/procedure-guarded/procedure-user?includeDrafts=true",
         {
           headers: {
+            "x-demo-user": "procedure-user",
             "x-demo-role": "editor",
           },
         },
@@ -289,7 +290,7 @@ describe("integration next-app server route handlers", () => {
       includeDrafts: true,
       role: "editor",
       source: "procedure-guarded",
-      requestId: "guarded:editor",
+      requestId: "guarded:procedure-user",
     });
   });
 
@@ -300,6 +301,11 @@ describe("integration next-app server route handlers", () => {
     const response = await procedureGuardedGet(
       new NextRequest(
         "http://127.0.0.1:3000/api/procedure-guarded/procedure-user?includeDrafts=true",
+        {
+          headers: {
+            "x-demo-user": "procedure-user",
+          },
+        },
       ),
       { params: Promise.resolve({ userId: "procedure-user" }) },
     );
@@ -311,6 +317,58 @@ describe("integration next-app server route handlers", () => {
         message: "Editor role required to include drafts.",
         details: {
           reason: "editor_only",
+        },
+      },
+    });
+  });
+
+  it("returns a typed UNAUTHORIZED envelope from the shared guarded baseProcedure", async () => {
+    const { GET: procedureGuardedGet } = await import(
+      "../app/api/procedure-guarded/[userId]/route"
+    );
+    const response = await procedureGuardedGet(
+      new NextRequest(
+        "http://127.0.0.1:3000/api/procedure-guarded/procedure-user?includeDrafts=true",
+      ),
+      { params: Promise.resolve({ userId: "procedure-user" }) },
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: "UNAUTHORIZED",
+        message: "Demo user header required.",
+        details: {
+          reason: "missing_demo_user",
+        },
+      },
+    });
+  });
+
+  it("returns a typed shared FORBIDDEN envelope from the guarded baseProcedure", async () => {
+    const { GET: procedureGuardedGet } = await import(
+      "../app/api/procedure-guarded/[userId]/route"
+    );
+    const response = await procedureGuardedGet(
+      new NextRequest(
+        "http://127.0.0.1:3000/api/procedure-guarded/procedure-user",
+        {
+          headers: {
+            "x-demo-user": "procedure-user",
+            "x-demo-role": "suspended",
+          },
+        },
+      ),
+      { params: Promise.resolve({ userId: "procedure-user" }) },
+    );
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: "FORBIDDEN",
+        message: "Suspended demo users cannot access guarded procedures.",
+        details: {
+          reason: "suspended_account",
         },
       },
     });

@@ -81,7 +81,7 @@ test.describe("integration next-app rpc4next browser client e2e", () => {
           includeDrafts: true,
           role: "editor",
           source: "procedure-guarded",
-          requestId: "guarded:editor",
+          requestId: "guarded:browser-user",
         },
       }),
     );

@@ -12,6 +12,7 @@ import type { HttpMethod } from "rpc4next-shared";
 import type { RpcErrorCode } from "./error";
 import type { RpcMeta } from "./meta";
 import type {
+  AppendProcedureErrorDefinition,
   MergeProcedureDefinition,
   ProcedureDefinition,
   ProcedureErrorContract,
@@ -270,9 +271,9 @@ export interface RouteDefinitionBuilder<
   ): RouteDefinitionBuilder<
     TBindings,
     TOnErrorResponse,
-    MergeProcedureDefinition<
+    AppendProcedureErrorDefinition<
       TProcedureDefinition,
-      { error: ProcedureErrorContract<TCode, TDetails> }
+      ProcedureErrorContract<TCode, TDetails>
     >
   >;
 
