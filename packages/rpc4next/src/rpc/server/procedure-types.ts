@@ -1,8 +1,14 @@
+import type { NextRequest, NextResponse } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
 import type { RpcErrorCode, RpcErrorEnvelope } from "./error";
+import type { ProcedureErrorFormatterRouteContext } from "./error-formatter";
 import type { RpcMeta } from "./meta";
+import type { ProcedureResult } from "./procedure";
 import type { ValidationSchema } from "./route-types";
-import type { StandardSchemaV1 } from "./standard-schema";
+import type {
+  StandardSchemaV1,
+  StandardSchemaV1Issue,
+} from "./standard-schema";
 
 export type ProcedureInputTarget =
   | "params"
@@ -16,10 +22,43 @@ export type ProcedureInputContracts = Partial<
   Record<ProcedureInputTarget, StandardSchemaV1>
 >;
 
+export interface ProcedureValidationErrorContext<
+  TTarget extends ProcedureInputTarget = ProcedureInputTarget,
+  TValue = unknown,
+> {
+  target: TTarget;
+  value: TValue;
+  issues: readonly StandardSchemaV1Issue[];
+  request: NextRequest;
+  routeContext: ProcedureErrorFormatterRouteContext;
+}
+
+export type ProcedureValidationErrorHandlerResult =
+  | undefined
+  | Response
+  | NextResponse
+  | ProcedureResult;
+
+export interface ProcedureInputOptions<
+  TTarget extends ProcedureInputTarget = ProcedureInputTarget,
+  TValue = unknown,
+> {
+  onValidationError?: (
+    context: ProcedureValidationErrorContext<TTarget, TValue>,
+  ) =>
+    | ProcedureValidationErrorHandlerResult
+    | Promise<ProcedureValidationErrorHandlerResult>;
+}
+
+export type ProcedureInputOptionMap = Partial<
+  Record<ProcedureInputTarget, ProcedureInputOptions>
+>;
+
 export interface ProcedureInputContract<
   TValidationSchema extends ValidationSchema = ValidationSchema,
 > {
   contracts?: ProcedureInputContracts;
+  options?: ProcedureInputOptionMap;
   validationSchema?: TValidationSchema;
 }
 

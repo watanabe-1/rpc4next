@@ -1,9 +1,10 @@
-import { describe, expect, expectTypeOf, it } from "vitest";
+import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import { z } from "zod";
 import { procedure } from "./procedure";
 import type {
   ProcedureErrorContract,
   ProcedureRouteContract,
+  ProcedureValidationErrorContext,
 } from "./procedure-types";
 import type { StandardSchemaV1 } from "./standard-schema";
 
@@ -219,6 +220,47 @@ describe("procedure builder type definitions", () => {
       });
 
     expectTypeOf(customValidatorProcedure.handler).parameters.toMatchTypeOf<
+      [
+        {
+          query: {
+            page: number;
+          };
+        },
+      ]
+    >();
+  });
+
+  it("types validator-stage customization against the target input shape", () => {
+    const onValidationError = vi.fn(
+      ({ target, value, issues }: ProcedureValidationErrorContext<"query">) => {
+        const _target: "query" = target;
+        const _value: unknown = value;
+        const _issues: readonly { message: string }[] = issues;
+
+        void _target;
+        void _value;
+        void _issues;
+
+        return undefined;
+      },
+    );
+
+    const pagedProcedure = procedure
+      .query(
+        z.object({
+          page: z.coerce.number().int().positive(),
+        }),
+        {
+          onValidationError,
+        },
+      )
+      .handle(({ query }) => ({
+        body: {
+          page: query.page,
+        },
+      }));
+
+    expectTypeOf(pagedProcedure.handler).parameters.toMatchTypeOf<
       [
         {
           query: {
@@ -512,6 +554,41 @@ describe("procedure builder type definitions", () => {
         };
       };
     }>();
+  });
+
+  it("supports validator-stage customization on shared baseProcedure presets", () => {
+    const baseProcedure = procedure.query(
+      z.object({
+        page: z.coerce.number().int().positive(),
+      }),
+      {
+        onValidationError: ({ target, value }) => {
+          const _target: "query" = target;
+          const _value: { page: unknown } = value;
+
+          void _target;
+          void _value;
+
+          return undefined;
+        },
+      },
+    );
+
+    const derivedProcedure = baseProcedure.handle(({ query }) => ({
+      body: {
+        page: query.page,
+      },
+    }));
+
+    expectTypeOf(derivedProcedure.handler).parameters.toMatchTypeOf<
+      [
+        {
+          query: {
+            page: number;
+          };
+        },
+      ]
+    >();
   });
 
   it("requires params before handling bound routes with generated params", () => {

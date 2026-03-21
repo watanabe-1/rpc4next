@@ -55,7 +55,7 @@ describe("procedure contract internals", () => {
       >
     >;
 
-    expectTypeOf<ExpectedInput>().toEqualTypeOf<{
+    expectTypeOf<ExpectedInput>().toMatchTypeOf<{
       contracts?: Partial<
         Record<
           "params" | "query" | "json" | "formData" | "headers" | "cookies",

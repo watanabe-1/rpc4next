@@ -16,6 +16,7 @@ import type {
   ProcedureDefinition,
   ProcedureErrorContract,
   ProcedureInputContract,
+  ProcedureInputOptions,
   ProcedureInputTarget,
   ProcedureOutputContract,
   ProcedureRouteBinding,
@@ -368,6 +369,7 @@ export interface ProcedureBuilder<
 
   params<TSchema extends StandardSchemaV1>(
     schema: BoundRouteParamsSchemaArg<TDefinition, TSchema>,
+    options?: ProcedureInputOptions<"params", InferSchemaInput<TSchema>>,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "params", TSchema>,
     TContext
@@ -375,6 +377,7 @@ export interface ProcedureBuilder<
 
   query<TSchema extends StandardSchemaV1>(
     schema: TSchema,
+    options?: ProcedureInputOptions<"query", InferSchemaInput<TSchema>>,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "query", TSchema>,
     TContext
@@ -382,6 +385,7 @@ export interface ProcedureBuilder<
 
   json<TSchema extends StandardSchemaV1>(
     schema: BodyContractSchemaArg<TDefinition, "json", TSchema>,
+    options?: ProcedureInputOptions<"json", InferSchemaInput<TSchema>>,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "json", TSchema>,
     TContext
@@ -389,6 +393,7 @@ export interface ProcedureBuilder<
 
   formData<TSchema extends StandardSchemaV1>(
     schema: BodyContractSchemaArg<TDefinition, "formData", TSchema>,
+    options?: ProcedureInputOptions<"formData", InferSchemaInput<TSchema>>,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "formData", TSchema>,
     TContext
@@ -396,6 +401,7 @@ export interface ProcedureBuilder<
 
   headers<TSchema extends StandardSchemaV1>(
     schema: TSchema,
+    options?: ProcedureInputOptions<"headers", InferSchemaInput<TSchema>>,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "headers", TSchema>,
     TContext
@@ -403,6 +409,7 @@ export interface ProcedureBuilder<
 
   cookies<TSchema extends StandardSchemaV1>(
     schema: TSchema,
+    options?: ProcedureInputOptions<"cookies", InferSchemaInput<TSchema>>,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "cookies", TSchema>,
     TContext
@@ -469,6 +476,7 @@ const createProcedureBuilder = <
   >(
     target: TTarget,
     schema: TSchema,
+    options?: ProcedureInputOptions<TTarget, InferSchemaInput<TSchema>>,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, TTarget, TSchema>,
     TContext
@@ -478,6 +486,7 @@ const createProcedureBuilder = <
         definition,
         target,
         schema,
+        options,
       ) as unknown as ExtendProcedureInputDefinition<
         TDefinition,
         TTarget,
@@ -521,29 +530,32 @@ const createProcedureBuilder = <
 
   const withParams = <TSchema extends StandardSchemaV1>(
     schema: BoundRouteParamsSchemaArg<TDefinition, TSchema>,
+    options?: ProcedureInputOptions<"params", InferSchemaInput<TSchema>>,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "params", TSchema>,
     TContext
   > => {
-    return withInputContract("params", schema as TSchema);
+    return withInputContract("params", schema as TSchema, options);
   };
 
   const withJson = <TSchema extends StandardSchemaV1>(
     schema: BodyContractSchemaArg<TDefinition, "json", TSchema>,
+    options?: ProcedureInputOptions<"json", InferSchemaInput<TSchema>>,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "json", TSchema>,
     TContext
   > => {
-    return withInputContract("json", schema as TSchema);
+    return withInputContract("json", schema as TSchema, options);
   };
 
   const withFormData = <TSchema extends StandardSchemaV1>(
     schema: BodyContractSchemaArg<TDefinition, "formData", TSchema>,
+    options?: ProcedureInputOptions<"formData", InferSchemaInput<TSchema>>,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "formData", TSchema>,
     TContext
   > => {
-    return withInputContract("formData", schema as TSchema);
+    return withInputContract("formData", schema as TSchema, options);
   };
 
   const withOutput = <TSchema, TOutput = InferSchemaOutput<TSchema>>(
@@ -594,11 +606,11 @@ const createProcedureBuilder = <
     meta: withMeta,
     forRoute: withRoute,
     params: withParams,
-    query: (schema) => withInputContract("query", schema),
+    query: (schema, options) => withInputContract("query", schema, options),
     json: withJson,
     formData: withFormData,
-    headers: (schema) => withInputContract("headers", schema),
-    cookies: (schema) => withInputContract("cookies", schema),
+    headers: (schema, options) => withInputContract("headers", schema, options),
+    cookies: (schema, options) => withInputContract("cookies", schema, options),
     output: withOutput,
     error: withError,
     use: withMiddleware,

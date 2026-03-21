@@ -25,6 +25,7 @@ import {
   type ProcedureDefinition,
   type ProcedureErrorContract,
   type ProcedureInputContract,
+  type ProcedureValidationErrorHandlerResult,
   type WithProcedureDefinition,
 } from "./procedure-types";
 import { createRouteContext } from "./route-context";
@@ -39,17 +40,10 @@ const getStandardSchemaMessage = (issues: readonly StandardSchemaV1Issue[]) => {
   return issues[0]?.message ?? "Validation failed.";
 };
 
-const parseWithSchema = async (schema: StandardSchemaV1, value: unknown) => {
-  const result = await schema["~standard"].validate(value);
-
-  if (result.issues) {
-    throw rpcError("BAD_REQUEST", {
-      message: getStandardSchemaMessage(result.issues),
-      details: result.issues,
-    });
-  }
-
-  return result.value;
+const isValidationTerminalResult = (
+  value: ProcedureValidationErrorHandlerResult,
+): value is Response | NextResponse | ProcedureResult => {
+  return value instanceof Response || isProcedureResult(value);
 };
 
 const formDataToObject = (formData: FormData) => {
@@ -355,6 +349,159 @@ const shouldValidateProcedureOutput = (
   return isSuccessfulStatus(result.status);
 };
 
+const validateProcedureInputs = async (
+  request: NextRequest,
+  segmentData: { params: Promise<Params> },
+  routeContext: ReturnType<typeof createRouteContext>,
+  procedureDefinition: ProcedureDefinition,
+) => {
+  const contracts = procedureDefinition.input?.contracts ?? {};
+  const inputOptions = procedureDefinition.input?.options ?? {};
+
+  if (contracts.json && contracts.formData) {
+    throw new Error(
+      "Procedure body contracts are mutually exclusive; use either .json(schema) or .formData(schema), not both.",
+    );
+  }
+
+  if (
+    Object.values(contracts).some((contract) => !isStandardSchemaV1(contract))
+  ) {
+    throw new Error(
+      "Procedure input contracts must implement Standard Schema V1.",
+    );
+  }
+
+  const parseContract = async <TTarget extends ProcedureInputTarget>(
+    target: TTarget,
+    schema: StandardSchemaV1 | undefined,
+    fallback: () => Promise<unknown>,
+  ) => {
+    if (!schema) {
+      return {
+        ok: true as const,
+        value: await fallback(),
+      };
+    }
+
+    const rawValue = await getContractValue(request, segmentData, target);
+    const result = await schema["~standard"].validate(rawValue);
+
+    if (!result.issues) {
+      return {
+        ok: true as const,
+        value: result.value,
+      };
+    }
+
+    const hookResult = await inputOptions[target]?.onValidationError?.({
+      target,
+      value: rawValue,
+      issues: result.issues,
+      request,
+      routeContext,
+    });
+
+    if (isValidationTerminalResult(hookResult)) {
+      return {
+        ok: false as const,
+        response: hookResult,
+      };
+    }
+
+    throw rpcError("BAD_REQUEST", {
+      message: getStandardSchemaMessage(result.issues),
+      details: result.issues,
+    });
+  };
+
+  const paramsResult = await parseContract(
+    "params",
+    contracts.params,
+    async () => segmentData.params,
+  );
+  if (!paramsResult.ok) {
+    return paramsResult;
+  }
+
+  const queryResult = await parseContract("query", contracts.query, async () =>
+    searchParamsToObject(request.nextUrl.searchParams),
+  );
+  if (!queryResult.ok) {
+    return queryResult;
+  }
+
+  const jsonResult =
+    request.method === "GET" || request.method === "HEAD"
+      ? contracts.json
+        ? (() => {
+            throw rpcError("BAD_REQUEST", {
+              message:
+                "JSON input contracts are not supported for GET or HEAD requests.",
+            });
+          })()
+        : {
+            ok: true as const,
+            value: undefined,
+          }
+      : await parseContract("json", contracts.json, async () => undefined);
+  if (!jsonResult.ok) {
+    return jsonResult;
+  }
+
+  const formDataResult =
+    request.method === "GET" || request.method === "HEAD"
+      ? contracts.formData
+        ? (() => {
+            throw rpcError("BAD_REQUEST", {
+              message:
+                "FormData input contracts are not supported for GET or HEAD requests.",
+            });
+          })()
+        : {
+            ok: true as const,
+            value: undefined,
+          }
+      : await parseContract(
+          "formData",
+          contracts.formData,
+          async () => undefined,
+        );
+  if (!formDataResult.ok) {
+    return formDataResult;
+  }
+
+  const headersResult = await parseContract(
+    "headers",
+    contracts.headers,
+    async () => undefined,
+  );
+  if (!headersResult.ok) {
+    return headersResult;
+  }
+
+  const cookiesResult = await parseContract(
+    "cookies",
+    contracts.cookies,
+    async () => undefined,
+  );
+  if (!cookiesResult.ok) {
+    return cookiesResult;
+  }
+
+  return {
+    ok: true as const,
+    values: {
+      params: paramsResult.value,
+      query: queryResult.value,
+      json: jsonResult.value,
+      formData: formDataResult.value,
+      headers: headersResult.value,
+      cookies: cookiesResult.value,
+    },
+  };
+};
+
 export const nextRoute = <
   TProcedure extends ProcedureTypeCarrier,
   TMethod extends HttpMethod | undefined = undefined,
@@ -391,79 +538,23 @@ export const nextRoute = <
     segmentData: { params: Promise<Params> },
   ): Promise<NextRouteResponse<TProcedure, TValidateOutput>> => {
     const routeContext = createRouteContext(request, segmentData);
-    const contracts = procedure.definition.input?.contracts ?? {};
-
-    if (contracts.json && contracts.formData) {
-      throw new Error(
-        "Procedure body contracts are mutually exclusive; use either .json(schema) or .formData(schema), not both.",
-      );
-    }
-
-    if (
-      Object.values(contracts).some((contract) => !isStandardSchemaV1(contract))
-    ) {
-      throw new Error(
-        "Procedure input contracts must implement Standard Schema V1.",
-      );
-    }
 
     try {
-      const params = contracts.params
-        ? await parseWithSchema(
-            contracts.params,
-            await getContractValue(request, segmentData, "params"),
-          )
-        : await segmentData.params;
-      const query = contracts.query
-        ? await parseWithSchema(
-            contracts.query,
-            await getContractValue(request, segmentData, "query"),
-          )
-        : searchParamsToObject(request.nextUrl.searchParams);
-      const json =
-        request.method === "GET" || request.method === "HEAD"
-          ? contracts.json
-            ? (() => {
-                throw rpcError("BAD_REQUEST", {
-                  message:
-                    "JSON input contracts are not supported for GET or HEAD requests.",
-                });
-              })()
-            : undefined
-          : contracts.json
-            ? await parseWithSchema(
-                contracts.json,
-                await getContractValue(request, segmentData, "json"),
-              )
-            : undefined;
-      const formData =
-        request.method === "GET" || request.method === "HEAD"
-          ? contracts.formData
-            ? (() => {
-                throw rpcError("BAD_REQUEST", {
-                  message:
-                    "FormData input contracts are not supported for GET or HEAD requests.",
-                });
-              })()
-            : undefined
-          : contracts.formData
-            ? await parseWithSchema(
-                contracts.formData,
-                await getContractValue(request, segmentData, "formData"),
-              )
-            : undefined;
-      const headers = contracts.headers
-        ? await parseWithSchema(
-            contracts.headers,
-            await getContractValue(request, segmentData, "headers"),
-          )
-        : undefined;
-      const cookies = contracts.cookies
-        ? await parseWithSchema(
-            contracts.cookies,
-            await getContractValue(request, segmentData, "cookies"),
-          )
-        : undefined;
+      const inputResult = await validateProcedureInputs(
+        request,
+        segmentData,
+        routeContext,
+        procedure.definition,
+      );
+      if (!inputResult.ok) {
+        return normalizeProcedureResult(
+          routeContext,
+          inputResult.response,
+        ) as NextRouteResponse<TProcedure, TValidateOutput>;
+      }
+
+      const { params, query, json, formData, headers, cookies } =
+        inputResult.values;
 
       const executionContext = {
         request,

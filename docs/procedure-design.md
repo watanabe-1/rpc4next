@@ -6,11 +6,14 @@
 - Intended audience: maintainers of `rpc4next` and Codex-based implementation work
 - Scope: `packages/rpc4next`, `packages/rpc4next-cli`, and `integration/next-app`
 - Current implementation status:
-  - Phases 1 through 8 are implemented
+  - Phases 1 through 11 are implemented
   - `procedure` and `nextRoute` are available publicly
   - procedure input contracts are executed through Standard Schema V1-compatible validators
   - the integration fixture includes a shared `baseProcedure` preset under `integration/next-app/app/api/_shared/base-procedure.ts`
   - shared guarded procedures can declare multiple error variants and opt into runtime output validation
+  - `procedure.formData(...)` is available publicly and validated by `nextRoute()`
+  - `createProcedureKit(...)` can provide shared project-level error formatting for procedure routes
+  - procedure input contracts accept validator-stage failure branching through `procedure.<target>(schema, { onValidationError(...) { ... } })`
 
 ## Background
 
@@ -832,7 +835,137 @@ Notes:
 - initial customization can focus on formatting hooks and project presets before introducing full user-defined error-code extensibility at the type level
 - if project-defined codes are added later, they should be documented as an extension layer on top of the default rpc4next codes rather than a replacement for the default ergonomics
 
-## Phase 11: optional client ergonomics
+## Phase 11: validator-stage customization for procedure input
+
+Scope:
+
+- close the last major extensibility gap between `procedure` and validator middleware routes
+- allow projects to customize validation-failure behavior closer to the input contract boundary
+- preserve the `procedure` model as schema-first rather than reverting to middleware-first public typing
+
+Deliverables:
+
+- add an optional second argument to `procedure.params/query/json/formData/headers/cookies`
+- support the main practical replacement for `zValidator(target, schema, hook)`-style branching
+- document the intended boundary between schema validation, middleware policy, and route-level error formatting
+- test coverage proving the mechanism works with shared `baseProcedure` presets and current inference
+
+Why eleventh:
+
+- after phase 10, this is the clearest remaining feature gap versus the legacy API
+- addressing it first reduces the number of routes that need to stay on `routeHandlerFactory()` for non-historical reasons
+- it clarifies whether `procedure` is intended to fully subsume validator-driven route authoring
+
+Notes:
+
+- the design should avoid reintroducing ad hoc validator wrappers as a required public concept
+- route-level `errorFormatter` and middleware should remain the preferred places for broad policy decisions
+- the new mechanism should solve targeted validation branching rather than reopening full middleware-style validator composition
+
+Adopted API shape:
+
+```ts
+const getUsers = procedure
+  .query(
+    z.object({
+      page: z.coerce.number().int().positive(),
+    }),
+    {
+      onValidationError: ({
+        target,
+        value,
+        issues,
+        routeContext,
+      }) => {
+        return routeContext.json(
+          {
+            source: "validator",
+            target,
+            issues,
+            received: value,
+          },
+          { status: 422 },
+        );
+      },
+    },
+  )
+  .handle(async ({ query }) => {
+    return {
+      body: {
+        page: query.page,
+      },
+    };
+  });
+```
+
+Behavior and constraints:
+
+- `onValidationError(...)` only runs when Standard Schema validation reports issues for that specific input target
+- success-path coercion and transformation remain the schema's job; the hook is for failure branching only
+- returning `Response`, `NextResponse`, or a normalized `ProcedureResult` short-circuits the procedure before middleware and handler execution
+- returning `undefined` falls back to the normal `rpcError("BAD_REQUEST", ...)` path
+- if that fallback throws, route-level or project-level `errorFormatter` can still reshape the resulting error response
+- this keeps validator-stage branching narrower than `use()` middleware and earlier than `errorFormatter`
+- shared presets such as `baseProcedure` can define these hooks once and reuse them across derived procedures
+
+Relationship to the legacy API:
+
+- `zValidator(target, schema, hook)` maps most directly to `procedure.<target>(schema, { onValidationError(...) { ... } })`
+- the legacy hook received validator-library-specific parse results; the new hook receives Standard Schema issues plus the raw extracted input value
+- `routeHandlerFactory()` and `zValidator(...)` remain supported as compatibility paths for middleware-first routes
+
+## Phase 12: documentation default shift to procedure-first authoring
+
+Scope:
+
+- make `procedure` the documented default for new typed route authoring
+- retain `routeHandlerFactory()` as a supported compatibility path with clearer positioning
+- reduce ambiguity for new users choosing between server APIs
+
+Deliverables:
+
+- update README and integration docs so new typed examples lead with `procedure` / `nextRoute()`
+- explain when `routeHandlerFactory()` is still appropriate and when migration is recommended
+- align fixture walkthroughs and example pages with the procedure-first recommendation
+- remove stale documentation that still frames older milestones as the current next step
+
+Why twelfth:
+
+- once the main capability gap is addressed or intentionally bounded, the docs should stop presenting the legacy API as a co-equal default
+- documentation drift is now a larger adoption risk than missing runtime primitives
+
+Notes:
+
+- this phase is about recommendation and framing, not deprecation
+- examples should still preserve at least a small compatibility surface for legacy users
+
+## Phase 13: incremental migration of legacy integration fixtures
+
+Scope:
+
+- migrate legacy integration routes that still use `zValidator(...)` when the `procedure` builder improves clarity, precision, or reuse
+- keep a small number of legacy fixtures only where they still demonstrate compatibility or an unresolved feature gap
+- use the fixture app to prove that `procedure` is viable as the default authoring path
+
+Deliverables:
+
+- convert representative validator-based fixtures such as simple query/json routes to `procedure`
+- preserve at least one intentional legacy fixture for `routeHandlerFactory()` compatibility coverage
+- update tests and generated outputs as needed after fixture migration
+- document which remaining legacy fixtures are intentionally kept and why
+
+Why thirteenth:
+
+- once docs recommend `procedure`, the integration app should reflect that recommendation
+- fixture migration is the most visible proof that the new API is practical for day-to-day route authoring
+- keeping migration incremental avoids losing compatibility coverage for the old API
+
+Notes:
+
+- prioritize migrations that reduce duplicated contracts or improve shared policy reuse
+- thin redirect-only or plain compatibility examples do not need forced migration
+
+## Phase 14: optional client ergonomics
 
 Possible items:
 
@@ -1056,14 +1189,35 @@ Mitigation:
 - Should `nextRoute()` eventually reject unbound procedures entirely once the route-bound workflow is stable?
 - Should `procedure.formData(...)` validate against a normalized plain object only, or should rpc4next also expose a lower-level way to validate the raw `FormData` object when a schema library can support it?
 
+## Current assessment after phase 11
+
+With phases 1 through 11 in place, the `procedure` / `nextRoute()` path now covers nearly all practical authoring scenarios previously handled by the legacy `routeHandlerFactory()` style.
+
+What is now covered:
+
+- direct schema-based input contracts for params, query, json, headers, cookies, and formData
+- route-bound params enforcement through generated `route-contract.ts`
+- reusable shared presets such as `baseProcedure`
+- shared and route-local typed error contracts
+- optional runtime output validation
+- project-level error formatting through `createProcedureKit(...)`
+- validator-stage failure branching on procedure input contracts
+- raw `Response` / `NextResponse` escape hatches
+- middleware short-circuiting and incremental context widening
+
+Remaining notable gap versus the legacy validator-middleware path:
+
+- no major functional gap remains for standard input-validation branching; remaining differences are mostly ergonomic or validator-library-specific
+
+The center of gravity for new server authoring should therefore move to `procedure` rather than expanding `routeHandlerFactory()` further.
+
 ## Recommended immediate next step
 
-With phases 1 through 8 implemented, the next design work should focus on making multipart/form-data a first-class part of `procedure` authoring before adding broader ecosystem features.
+With phases 1 through 11 implemented, the next design work should focus on consolidating `procedure` as the primary server authoring model and finishing the documentation and fixture migration around that shift.
 
 Recommended priorities:
 
-1. add `procedure.formData(schema)` and thread `formData` through the typed handler context
-2. implement `request.formData()` extraction plus `FormData` normalization in `nextRoute()`
-3. reject invalid body contract combinations such as `.json(...)` with `.formData(...)`
-4. add type and runtime constraints that reject `formData` contracts for `GET` and `HEAD`
-5. add integration fixtures and tests for scalar fields, repeated keys, and `File` uploads
+1. phase 12: shift documentation and examples to a procedure-first default
+2. phase 13: migrate legacy integration fixtures where the new builder is clearly better
+3. decide whether route-bound procedures should become mandatory for all `procedure` routes once the generated `route-contract.ts` workflow is considered stable
+4. evaluate whether richer output contracts, such as success variants by status code, are needed before pursuing broader ecosystem features

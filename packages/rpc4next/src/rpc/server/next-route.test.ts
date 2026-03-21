@@ -137,6 +137,172 @@ describe("nextRoute", () => {
     });
   });
 
+  it("runs validator-stage custom branches before the procedure pipeline", async () => {
+    const errorFormatter = vi.fn((error: unknown, rc) =>
+      rc.json(
+        {
+          source: "formatter",
+          error: error instanceof Error ? error.message : "unknown",
+        },
+        { status: 499 },
+      ),
+    );
+    const middleware = vi.fn(() => ({
+      ctx: { reached: true },
+    }));
+    const handler = vi.fn(() => ({
+      body: {
+        ok: true,
+      },
+    }));
+    const route = nextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .query(
+          z.object({
+            page: z.coerce.number().int().positive(),
+          }),
+          {
+            onValidationError: ({ issues, routeContext, target, value }) =>
+              routeContext.json(
+                {
+                  source: "validator",
+                  target,
+                  issueCount: issues.length,
+                  receivedPage:
+                    typeof value === "object" &&
+                    value !== null &&
+                    "page" in value
+                      ? value.page
+                      : undefined,
+                },
+                { status: 422 },
+              ),
+          },
+        )
+        .use(middleware)
+        .handle(handler),
+      {
+        errorFormatter,
+      },
+    );
+
+    const response = await route(
+      new NextRequest("http://127.0.0.1:3000/api/test?page=0"),
+      {
+        params: Promise.resolve({}),
+      },
+    );
+
+    expect(response.status).toBe(422);
+    await expect(response.json()).resolves.toEqual({
+      source: "validator",
+      target: "query",
+      issueCount: 1,
+      receivedPage: "0",
+    });
+    expect(errorFormatter).not.toHaveBeenCalled();
+    expect(middleware).not.toHaveBeenCalled();
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it("keeps the default BAD_REQUEST normalization when no custom branch is configured", async () => {
+    const route = nextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .query(
+          z.object({
+            page: z.coerce.number().int().positive(),
+          }),
+        )
+        .handle(async ({ query }) => ({
+          body: query,
+        })),
+    );
+
+    const response = await route(
+      new NextRequest("http://127.0.0.1:3000/api/test?page=0"),
+      {
+        params: Promise.resolve({}),
+      },
+    );
+
+    expect(response.status).toBe(400);
+    const payload = await response.json();
+    expect(payload).toMatchObject({
+      error: {
+        code: "BAD_REQUEST",
+        details: expect.any(Array),
+      },
+    });
+    expect(
+      typeof payload === "object" &&
+        payload !== null &&
+        "error" in payload &&
+        typeof payload.error === "object" &&
+        payload.error !== null &&
+        "message" in payload.error
+        ? payload.error.message
+        : "",
+    ).toContain(">0");
+  });
+
+  it("lets errorFormatter shape validation errors when validator-stage customization falls back", async () => {
+    const errorFormatter = vi.fn((error: unknown, rc) => {
+      if (!(error instanceof Error)) {
+        return undefined;
+      }
+
+      return rc.json(
+        {
+          source: "formatter",
+          message: error.message,
+        },
+        { status: 418 },
+      );
+    });
+    const route = nextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .query(
+          z.object({
+            page: z.coerce.number().int().positive(),
+          }),
+          {
+            onValidationError: () => undefined,
+          },
+        )
+        .handle(async ({ query }) => ({
+          body: query,
+        })),
+      {
+        errorFormatter,
+      },
+    );
+
+    const response = await route(
+      new NextRequest("http://127.0.0.1:3000/api/test?page=0"),
+      {
+        params: Promise.resolve({}),
+      },
+    );
+
+    expect(errorFormatter).toHaveBeenCalledTimes(1);
+    expect(response.status).toBe(418);
+    const payload = await response.json();
+    expect(payload).toMatchObject({
+      source: "formatter",
+    });
+    expect(
+      typeof payload === "object" &&
+        payload !== null &&
+        "message" in payload &&
+        typeof payload.message === "string"
+        ? payload.message
+        : "",
+    ).toContain(">0");
+  });
+
   it("supports injected procedure validators", async () => {
     const pageSchema: StandardSchemaV1<
       { page?: string | string[] },
@@ -751,6 +917,46 @@ describe("nextRoute", () => {
       role: "editor",
       includeDrafts: true,
       source: "extended",
+    });
+  });
+
+  it("supports validator-stage customization on shared baseProcedure presets", async () => {
+    const baseProcedure = procedure.forRoute(staticRouteContract).query(
+      z.object({
+        page: z.coerce.number().int().positive(),
+      }),
+      {
+        onValidationError: ({ routeContext, target }) =>
+          routeContext.json(
+            {
+              source: "shared-base",
+              target,
+            },
+            { status: 409 },
+          ),
+      },
+    );
+
+    const route = nextRoute(
+      baseProcedure.handle(async ({ query }) => ({
+        body: {
+          page: query.page,
+        },
+      })),
+      { method: "GET" },
+    );
+
+    const response = await route(
+      new NextRequest("http://127.0.0.1:3000/api/test?page=0"),
+      {
+        params: Promise.resolve({}),
+      },
+    );
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      source: "shared-base",
+      target: "query",
     });
   });
 
