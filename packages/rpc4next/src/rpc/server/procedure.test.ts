@@ -229,6 +229,36 @@ describe("procedure builder type definitions", () => {
     >();
   });
 
+  it("limits handle context to validated inputs only", () => {
+    procedure
+      .query(
+        z.object({
+          page: z.coerce.number().int().positive(),
+        }),
+      )
+      .handle((context) => {
+        const { query, request, ctx } = context;
+        const _query: { page: number } = query;
+        const _request: Request = request;
+        const _ctx: Record<never, never> = ctx;
+
+        void _query;
+        void _request;
+        void _ctx;
+
+        // @ts-expect-error params are not available without params(schema)
+        void context.params;
+        // @ts-expect-error json is not available without json(schema)
+        void context.json;
+
+        return {
+          status: 200 as const,
+        };
+      });
+
+    expect(true).toBe(true);
+  });
+
   it("rejects formData after json at compile time", () => {
     procedure
       .json(z.object({ title: z.string() }))
@@ -283,6 +313,56 @@ describe("procedure builder type definitions", () => {
         },
       ]
     >();
+  });
+
+  it("limits middleware context to validated inputs only", () => {
+    procedure
+      .query(
+        z.object({
+          page: z.coerce.number().int().positive(),
+        }),
+      )
+      .use((context) => {
+        const _query: { page: number } = context.query;
+        const _request: Request = context.request;
+        const _ctx: Record<never, never> = context.ctx;
+
+        void _query;
+        void _request;
+        void _ctx;
+
+        // @ts-expect-error params are not available without params(schema)
+        void context.params;
+        // @ts-expect-error json is not available without json(schema)
+        void context.json;
+
+        return undefined;
+      })
+      .handle(({ query }) => ({
+        body: {
+          page: query.page,
+        },
+      }));
+
+    expect(true).toBe(true);
+  });
+
+  it("exposes params to middleware after params(schema)", () => {
+    procedure
+      .forRoute(guardedUserRouteContract)
+      .params(z.object({ userId: z.string().min(1) }))
+      .use(({ params }) => ({
+        ctx: {
+          requestId: params.userId,
+        },
+      }))
+      .handle(({ ctx }) => ({
+        body: {
+          requestId: ctx.requestId,
+        },
+      }));
+
+    expect(true).toBe(true);
   });
 
   it("supports immutable shared baseProcedure presets", () => {
@@ -391,9 +471,9 @@ describe("procedure builder type definitions", () => {
           "x-demo-role": z.enum(["reader", "editor"]).optional(),
         }),
       )
-      .use(({ params, headers }) => ({
+      .use(({ headers }) => ({
         ctx: {
-          requestId: params.userId,
+          requestId: "guarded",
           viewer: {
             role: headers["x-demo-role"] ?? "reader",
           },

@@ -23,6 +23,7 @@ export type {
   ProcedureHandler,
   ProcedureHandlerContext,
   ProcedureMiddleware,
+  ProcedureMiddlewareContext,
   ProcedureResult,
 } from "./procedure";
 export { procedure } from "./procedure";
