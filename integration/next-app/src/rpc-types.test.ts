@@ -6,6 +6,7 @@ import type {
 } from "rpc4next/server";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import type { Query as ProcedureContractQuery } from "../app/api/procedure-contract/[userId]/route";
+import type { Query as ProcedureGuardedQuery } from "../app/api/procedure-guarded/[userId]/route";
 import type { Query as UsersQuery } from "../app/api/users/[userId]/route";
 import type { PathStructure } from "./generated/rpc";
 
@@ -61,6 +62,23 @@ describe("integration next-app generated RPC type coverage", () => {
       };
     };
     expectTypeOf<ProcedureContractUrl>().toEqualTypeOf<ExpectedProcedureContractUrl>();
+
+    type ProcedureGuardedNode = (typeof client.api)["procedure-guarded"];
+    type ProcedureGuardedUrl = ReturnType<
+      ProcedureGuardedNode["_userId"]
+    >["$url"];
+    type ExpectedProcedureGuardedUrl = (url?: {
+      query?: ProcedureGuardedQuery;
+      hash?: string;
+    }) => {
+      pathname: string;
+      path: string;
+      relativePath: string;
+      params: {
+        userId: string;
+      };
+    };
+    expectTypeOf<ProcedureGuardedUrl>().toEqualTypeOf<ExpectedProcedureGuardedUrl>();
 
     type PostsArg = Parameters<typeof client.api.posts.$post>[0];
     type ExpectedPostsArg = {
@@ -342,6 +360,52 @@ describe("integration next-app generated RPC type coverage", () => {
     const _procedureSubmitResponseFromActual: ExpectedProcedureSubmitResponse =
       procedureSubmitResponse;
 
+    const procedureGuardedResponse = await client.api["procedure-guarded"]
+      ._userId("procedure-user")
+      .$get({
+        url: { query: { includeDrafts: "true" } },
+        requestHeaders: {
+          headers: { "x-demo-role": "editor" },
+        },
+      });
+    type ExpectedProcedureGuardedResponse =
+      | TypedNextResponse<
+          {
+            ok: true;
+            userId: string;
+            includeDrafts: boolean;
+            role: "reader" | "editor";
+            source: "procedure-guarded";
+            requestId: string;
+          },
+          200,
+          "application/json"
+        >
+      | TypedNextResponse<
+          {
+            error: {
+              code: "BAD_REQUEST";
+              message: string;
+              details?: unknown;
+            };
+          },
+          400,
+          "application/json"
+        >
+      | TypedNextResponse<
+          {
+            error: {
+              code: "FORBIDDEN";
+              message: string;
+              details?: { reason: "editor_only" };
+            };
+          },
+          403,
+          "application/json"
+        >;
+    const _procedureGuardedResponseFromActual: ExpectedProcedureGuardedResponse =
+      procedureGuardedResponse;
+
     type RedirectGet = (typeof client.api)["redirect-me"]["$get"];
     type RedirectResponse = Awaited<ReturnType<RedirectGet>>;
     expectTypeOf<RedirectResponse>().toEqualTypeOf<
@@ -409,6 +473,21 @@ describe("integration next-app generated RPC type coverage", () => {
       ._userId("procedure-user")
       // @ts-expect-error invalid procedure query literal should be rejected
       .$url({ query: { includePosts: "maybe" } });
+
+    client.api["procedure-guarded"]._userId("procedure-user").$get({
+      requestHeaders: {
+        headers: { "x-demo-role": "reader" },
+      },
+    });
+
+    client.api["procedure-guarded"]._userId("procedure-user").$url({
+      query: { includeDrafts: "false" },
+    });
+
+    client.api["procedure-guarded"]
+      ._userId("procedure-user")
+      // @ts-expect-error invalid guarded procedure header literal should be rejected
+      .$get({ requestHeaders: { headers: { "x-demo-role": "owner" } } });
 
     client.patterns["catch-all"].___parts(["alpha"]);
 

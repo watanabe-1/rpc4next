@@ -266,6 +266,56 @@ describe("integration next-app server route handlers", () => {
     });
   });
 
+  it("serves a guarded procedure route when the required role is present", async () => {
+    const { GET: procedureGuardedGet } = await import(
+      "../app/api/procedure-guarded/[userId]/route"
+    );
+    const response = await procedureGuardedGet(
+      new NextRequest(
+        "http://127.0.0.1:3000/api/procedure-guarded/procedure-user?includeDrafts=true",
+        {
+          headers: {
+            "x-demo-role": "editor",
+          },
+        },
+      ),
+      { params: Promise.resolve({ userId: "procedure-user" }) },
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      userId: "procedure-user",
+      includeDrafts: true,
+      role: "editor",
+      source: "procedure-guarded",
+      requestId: "guarded:editor",
+    });
+  });
+
+  it("returns a typed FORBIDDEN envelope from the guarded procedure route", async () => {
+    const { GET: procedureGuardedGet } = await import(
+      "../app/api/procedure-guarded/[userId]/route"
+    );
+    const response = await procedureGuardedGet(
+      new NextRequest(
+        "http://127.0.0.1:3000/api/procedure-guarded/procedure-user?includeDrafts=true",
+      ),
+      { params: Promise.resolve({ userId: "procedure-user" }) },
+    );
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: "FORBIDDEN",
+        message: "Editor role required to include drafts.",
+        details: {
+          reason: "editor_only",
+        },
+      },
+    });
+  });
+
   it("returns a validation error when required request metadata is missing", async () => {
     vi.spyOn(validatorUtils, "getHeadersObject").mockResolvedValueOnce({});
     vi.spyOn(validatorUtils, "getCookiesObject").mockResolvedValueOnce({});

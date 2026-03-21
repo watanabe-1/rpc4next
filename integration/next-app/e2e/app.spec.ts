@@ -39,6 +39,63 @@ test.describe("integration next-app e2e", () => {
     });
   });
 
+  test("procedure examples page renders the phase walkthrough", async ({
+    page,
+  }) => {
+    await page.goto("/procedure-examples");
+
+    await expect(
+      page.getByRole("heading", { name: "Procedure examples" }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("/api/procedure-guarded/demo-user", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Phase 1: metadata + error envelope"),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Phase 4: shared internals with routeHandlerFactory()"),
+    ).toBeVisible();
+  });
+
+  test("guarded procedure route returns success and typed forbidden errors", async ({
+    request,
+  }) => {
+    const okResponse = await request.get(
+      "/api/procedure-guarded/e2e-user?includeDrafts=true",
+      {
+        headers: {
+          "x-demo-role": "editor",
+        },
+      },
+    );
+
+    expect(okResponse.ok()).toBe(true);
+    await expect(okResponse.json()).resolves.toEqual({
+      ok: true,
+      userId: "e2e-user",
+      includeDrafts: true,
+      role: "editor",
+      source: "procedure-guarded",
+      requestId: "guarded:editor",
+    });
+
+    const forbiddenResponse = await request.get(
+      "/api/procedure-guarded/e2e-user?includeDrafts=true",
+    );
+
+    expect(forbiddenResponse.status()).toBe(403);
+    await expect(forbiddenResponse.json()).resolves.toEqual({
+      error: {
+        code: "FORBIDDEN",
+        message: "Editor role required to include drafts.",
+        details: {
+          reason: "editor_only",
+        },
+      },
+    });
+  });
+
   test("static API route accepts JSON POST bodies", async ({ request }) => {
     const response = await request.post("/api/posts", {
       data: { title: "hello from playwright" },
