@@ -1,14 +1,12 @@
 import type { NextResponse } from "next/server";
 import { createRpcErrorEnvelope, isRpcError } from "./error";
-import type { createRouteContext } from "./route-context";
+import type { ResponseHelpers } from "./types";
 
 export type ProcedureErrorFormatterRouteContext = Pick<
-  ReturnType<typeof createRouteContext>,
+  ResponseHelpers,
   "json"
 > &
-  Partial<
-    Pick<ReturnType<typeof createRouteContext>, "body" | "redirect" | "text">
-  >;
+  Partial<Pick<ResponseHelpers, "body" | "redirect" | "text">>;
 
 export type ProcedureErrorFormatter = (
   error: unknown,

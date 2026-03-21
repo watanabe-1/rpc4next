@@ -29,6 +29,7 @@ export type {
   ProcedureHandlerContext,
   ProcedureMiddleware,
   ProcedureMiddlewareContext,
+  ProcedureResponseHelpers,
   ProcedureResult,
 } from "./procedure";
 export { procedure } from "./procedure";
@@ -49,4 +50,4 @@ export type {
   StandardSchemaV1,
   StandardSchemaV1Issue,
 } from "./standard-schema";
-export type { TypedNextResponse } from "./types";
+export type { ResponseHelpers, TypedNextResponse } from "./types";

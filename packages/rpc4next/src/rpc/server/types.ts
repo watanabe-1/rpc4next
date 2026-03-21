@@ -91,26 +91,48 @@ export interface TypedNextResponse<
   readonly status: HttpStatus<TStatus>["status"];
 }
 
+export type JsonResponseHelper<TJson = unknown> = [unknown] extends [TJson]
+  ? <TData, TStatus extends HttpStatusCode = 200>(
+      data: TData,
+      init?: TStatus | TypedResponseInit<TStatus, "application/json">,
+    ) => TypedNextResponse<TData, TStatus, "application/json">
+  : <TStatus extends HttpStatusCode = 200>(
+      data: TJson,
+      init?: TStatus | TypedResponseInit<TStatus, "application/json">,
+    ) => TypedNextResponse<TJson, TStatus, "application/json">;
+
+export interface ResponseHelpers<TJson = unknown> {
+  body: <
+    TData extends BodyInit | null,
+    TContentType extends ContentType,
+    TStatus extends HttpStatusCode = 200,
+  >(
+    data: TData,
+    init?: TStatus | TypedResponseInit<TStatus, TContentType>,
+  ) => TypedNextResponse<TData, TStatus, TContentType>;
+
+  json: JsonResponseHelper<TJson>;
+
+  text: <TData extends string, TStatus extends HttpStatusCode = 200>(
+    data: TData,
+    init?: TStatus | TypedResponseInit<TStatus, "text/plain">,
+  ) => TypedNextResponse<TData, TStatus, "text/plain">;
+
+  redirect: <TStatus extends RedirectionHttpStatusCode = 307>(
+    url: string,
+    init?: TStatus | TypedResponseInit<TStatus, "">,
+  ) => TypedNextResponse<undefined, TStatus, "">;
+}
+
 export type Params = Record<string, string | string[]>;
 
 export type Query = Record<string, string | string[]>;
 
-/**
- * A typed wrapper around Next.js request/response utilities for API route handling.
- *
- * ## Features:
- * - Enhanced `req` with helpers to parse query parameters, route params, and perform schema validation.
- * - Typed response helpers (`json`, `text`, `body`) that return custom `TypedNextResponse` objects.
- *
- * @template TParams - Shape of dynamic route parameters.
- * @template TQuery - Shape of parsed URL query parameters.
- * @template TValidationSchema - Validation schema used to validate body/query/params.
- */
 export interface RouteContext<
   TParams = Params,
   TQuery = Query,
   TValidationSchema extends ValidationSchema = ValidationSchema,
-> {
+> extends ResponseHelpers {
   /**
    * The original `NextRequest` object, extended with helper methods
    * for parsing parameters, query, and managing validation.
@@ -151,61 +173,6 @@ export interface RouteContext<
      */
     addValidatedData: (target: ValidationTarget, value: ValidatedData) => void;
   };
-
-  /**
-   * Creates a typed response with an optional status.
-   * Internally wraps `new NextResponse(...)`.
-   *
-   * @param data - The response body.
-   * @param init - Optional response init.
-   * @returns A typed response.
-   */
-  body: <
-    TData extends BodyInit | null,
-    TContentType extends ContentType,
-    TStatus extends HttpStatusCode = 200,
-  >(
-    data: TData,
-    init?: TStatus | TypedResponseInit<TStatus, TContentType>,
-  ) => TypedNextResponse<TData, TStatus, TContentType>;
-
-  /**
-   * Creates a typed JSON response using `NextResponse.json(...)`.
-   *
-   * @param data - The response body as JSON.
-   * @param init - Optional response init.
-   * @returns A JSON response.
-   */
-  json: <TData, TStatus extends HttpStatusCode = 200>(
-    data: TData,
-    init?: TStatus | TypedResponseInit<TStatus, "application/json">,
-  ) => TypedNextResponse<TData, TStatus, "application/json">;
-
-  /**
-   * Creates a plain text response with `Content-Type: text/plain`.
-   * Internally uses `new NextResponse(...)` with headers.
-   *
-   * @param data - The response body as plain text.
-   * @param init - Optional response init.
-   * @returns A plain text response.
-   */
-  text: <TData extends string, TStatus extends HttpStatusCode = 200>(
-    data: TData,
-    init?: TStatus | TypedResponseInit<TStatus, "text/plain">,
-  ) => TypedNextResponse<TData, TStatus, "text/plain">;
-
-  /**
-   * Issues a redirect response.
-   * Internally wraps `NextResponse.redirect(...)`.
-   *
-   * @param url - The URL to redirect to.
-   * @param init - Optional redirect status code (default: 307).
-   * @returns A redirect response.
-   */
-  redirect: <TStatus extends RedirectionHttpStatusCode = 307>(
-    url: string,
-    init?: TStatus | TypedResponseInit<TStatus, "">,
-  ) => TypedNextResponse<undefined, TStatus, "">;
 }
 
 declare const __validatedBrand: unique symbol;

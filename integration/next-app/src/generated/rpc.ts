@@ -13,6 +13,8 @@ import type { Query as Query_a31809be53fb5dc9 } from "../../app/api/procedure-gu
 import type { GET as GET_98a6cb8e2c497f98 } from "../../app/api/procedure-guarded/[userId]/route";
 import type { GET as GET_deded1d327aade95 } from "../../app/api/procedure-invalid-output/route";
 import type { GET as GET_8bc66acff0eaa243 } from "../../app/api/procedure-kit-error/route";
+import type { GET as GET_6f931f4b52452942 } from "../../app/api/procedure-response-redirect/route";
+import type { GET as GET_606490d8c1f931f7 } from "../../app/api/procedure-response-text/route";
 import type { POST as POST_ff7e41c09dae8fb9 } from "../../app/api/procedure-submit/route";
 import type { GET as GET_9e56a535c83ceae0 } from "../../app/api/procedure-validation-branch/route";
 import type { GET as GET_61a9f4b9fd49ccf5 } from "../../app/api/redirect-me/route";
@@ -39,6 +41,8 @@ export type PathStructure = RpcEndpoint & {
     },
     "procedure-invalid-output": { "$get": typeof GET_deded1d327aade95 } & RpcEndpoint,
     "procedure-kit-error": { "$get": typeof GET_8bc66acff0eaa243 } & RpcEndpoint,
+    "procedure-response-redirect": { "$get": typeof GET_6f931f4b52452942 } & RpcEndpoint,
+    "procedure-response-text": { "$get": typeof GET_606490d8c1f931f7 } & RpcEndpoint,
     "procedure-submit": { "$post": typeof POST_ff7e41c09dae8fb9 } & RpcEndpoint,
     "procedure-validation-branch": { "$get": typeof GET_9e56a535c83ceae0 } & RpcEndpoint,
     "redirect-me": { "$get": typeof GET_61a9f4b9fd49ccf5 } & RpcEndpoint,

@@ -966,7 +966,60 @@ Notes:
 - prioritize migrations that reduce duplicated contracts or improve shared policy reuse
 - thin redirect-only or plain compatibility examples do not need forced migration
 
-## Phase 14: optional client ergonomics
+## Phase 14: procedure response helpers for handler ergonomics
+
+Scope:
+
+- improve `procedure.handle(...)` authoring ergonomics without reverting to the full `RouteContext` model
+- align success-path response authoring more closely with existing `routeHandlerFactory()` and validation-error hooks
+- improve editor completion quality by steering authors toward a narrow response helper surface instead of broad `Response` instance methods
+
+Deliverables:
+
+- add a response helper object to the procedure handler context, for example `response.json(...)`, `response.text(...)`, `response.body(...)`, and `response.redirect(...)`
+- keep `Response` / `NextResponse` return support as escape hatches rather than removing them
+- type `response.json(...)` against `.output(...)` when an explicit output contract exists, while keeping the untyped path available when no output contract is declared
+- document the distinction between the preferred normalized `ProcedureResult` path and the optional response-helper path
+- fixture and type-test coverage showing improved completion-oriented authoring in `procedure.handle(...)`
+
+Target authoring shape:
+
+```ts
+const getUsers = procedure
+  .forRoute(routeContract)
+  .query(
+    z.object({
+      page: z.coerce.number().int().positive(),
+    }),
+  )
+  .output(
+    z.object({
+      ok: z.literal(true),
+      page: z.number().int().positive(),
+    }),
+  )
+  .handle(async ({ query, response }) => {
+    return response.json({
+      ok: true,
+      page: query.page,
+    });
+  });
+```
+
+Why fourteenth:
+
+- phases 1 through 13 cover the major contract and migration work, so the next remaining gap is largely ergonomic rather than functional
+- current handler return types allow `Response` / `NextResponse`, which weakens editor suggestions by surfacing many unrelated instance members
+- a narrow response helper surface preserves the procedure-first design while matching the most familiar and productive part of the legacy `rc.json(...)` style
+
+Notes:
+
+- this should not expose the full legacy `RouteContext` inside `procedure.handle(...)`; specifically, it should not reintroduce `req.valid(...)` or middleware-style request mutation as the primary procedure model
+- the helper should ideally share the same underlying typed response primitives already used by `createRouteContext(...)`
+- `onValidationError(...)`, `errorFormatter`, and `procedure.handle(...)` should converge on the same response helper vocabulary where practical
+- docs should continue to recommend plain `{ body, status }` returns as the most framework-agnostic procedure result, with `response.*(...)` documented as an ergonomic helper and escape hatch
+
+## Phase 15: optional client ergonomics
 
 Possible items:
 
@@ -1221,11 +1274,12 @@ Current documentation stance:
 
 ## Recommended immediate next step
 
-With phases 1 through 12 implemented, the next design work should focus on the incremental fixture migration and any remaining ergonomics questions around the now-recommended procedure-first path.
+With phases 1 through 12 implemented, the next design work should focus on the incremental fixture migration and the remaining handler ergonomics questions around the now-recommended procedure-first path.
 
 Recommended priorities:
 
 1. phase 13: migrate legacy integration fixtures where the new builder is clearly better
-2. decide whether route-bound procedures should become mandatory for all `procedure` routes once the generated `route-contract.ts` workflow is considered stable
-3. evaluate whether richer output contracts, such as success variants by status code, are needed before pursuing broader ecosystem features
-4. keep validating that the remaining `routeHandlerFactory()` fixtures are intentional compatibility coverage rather than accidental recommendation drift
+2. phase 14: add narrow response helpers to `procedure.handle(...)` so completion and authoring consistency improve without reintroducing full `RouteContext`
+3. decide whether route-bound procedures should become mandatory for all `procedure` routes once the generated `route-contract.ts` workflow is considered stable
+4. evaluate whether richer output contracts, such as success variants by status code, are needed before pursuing broader ecosystem features
+5. keep validating that the remaining `routeHandlerFactory()` fixtures are intentional compatibility coverage rather than accidental recommendation drift

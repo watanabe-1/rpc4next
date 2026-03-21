@@ -41,32 +41,39 @@ describe("procedure builder type definitions", () => {
           requestId: headers["x-procedure-test"],
         },
       }))
-      .handle(async ({ params, query, json, headers, cookies, ctx }) => {
-        const _params: { userId: string } = params;
-        const _query: {
-          includePosts?: "true" | "false" | undefined;
-        } = query;
-        const _json: { title: string } = json;
-        const _headers: { "x-procedure-test": string } = headers;
-        const _cookies: { session: string } = cookies;
-        const _ctx: { requestId: string } = ctx;
+      .handle(
+        async ({ params, query, json, headers, cookies, ctx, response }) => {
+          const _params: { userId: string } = params;
+          const _query: {
+            includePosts?: "true" | "false" | undefined;
+          } = query;
+          const _json: { title: string } = json;
+          const _headers: { "x-procedure-test": string } = headers;
+          const _cookies: { session: string } = cookies;
+          const _ctx: { requestId: string } = ctx;
+          const _response: {
+            json: (data: {
+              ok: true;
+              userId: string;
+              source: "procedure";
+            }) => unknown;
+          } = response;
 
-        void _params;
-        void _query;
-        void _json;
-        void _headers;
-        void _cookies;
-        void _ctx;
+          void _params;
+          void _query;
+          void _json;
+          void _headers;
+          void _cookies;
+          void _ctx;
+          void _response;
 
-        return {
-          status: 200 as const,
-          body: {
+          return response.json({
             ok: true as const,
             userId: params.userId,
             source: "procedure" as const,
-          },
-        };
-      });
+          });
+        },
+      );
 
     expectTypeOf(userProcedure.definition).toMatchTypeOf<{
       input?: {
@@ -279,14 +286,18 @@ describe("procedure builder type definitions", () => {
         }),
       )
       .handle((context) => {
-        const { query, request, ctx } = context;
+        const { query, request, ctx, response } = context;
         const _query: { page: number } = query;
         const _request: Request = request;
         const _ctx: Record<never, never> = ctx;
+        const _response = response.json({
+          page: query.page,
+        });
 
         void _query;
         void _request;
         void _ctx;
+        void _response;
 
         // @ts-expect-error params are not available without params(schema)
         void context.params;
@@ -296,6 +307,47 @@ describe("procedure builder type definitions", () => {
         return {
           status: 200 as const,
         };
+      });
+
+    expect(true).toBe(true);
+  });
+
+  it("types response helpers against explicit output contracts", () => {
+    procedure
+      .output(
+        z.object({
+          ok: z.literal(true),
+          count: z.number().int().nonnegative(),
+        }),
+      )
+      .handle(({ response }) => {
+        response.json({
+          ok: true,
+          count: 1,
+        });
+
+        response.json({
+          // @ts-expect-error response.json payload should follow the output contract
+          ok: false,
+          count: 1,
+        });
+
+        const _text = response.text("ok");
+        const _body = response.body("ok", {
+          headers: {
+            "Content-Type": "text/plain",
+          },
+        });
+        const _redirect = response.redirect("http://localhost/next");
+
+        void _text;
+        void _body;
+        void _redirect;
+
+        return response.json({
+          ok: true,
+          count: 1,
+        });
       });
 
     expect(true).toBe(true);
@@ -377,6 +429,8 @@ describe("procedure builder type definitions", () => {
         void context.params;
         // @ts-expect-error json is not available without json(schema)
         void context.json;
+        // @ts-expect-error response helpers are only available inside handle(...)
+        void context.response;
 
         return undefined;
       })

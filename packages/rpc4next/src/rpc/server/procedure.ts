@@ -24,7 +24,7 @@ import type {
 } from "./procedure-types";
 import type { ValidationSchema } from "./route-types";
 import type { StandardSchemaV1 } from "./standard-schema";
-import type { Params, Query } from "./types";
+import type { Params, Query, ResponseHelpers } from "./types";
 
 type InferSchemaInput<TSchema> = TSchema extends {
   readonly "~standard": { readonly types?: { readonly input: infer TInput } };
@@ -229,6 +229,9 @@ export type ProcedureResult<TBody = unknown> = {
   redirect?: string;
 };
 
+export type ProcedureResponseHelpers<TOutput = unknown> =
+  ResponseHelpers<TOutput>;
+
 type ProcedureValidatedContext<
   TValidationSchema extends ValidationSchema,
   TBoundParams,
@@ -267,9 +270,11 @@ export type ProcedureHandlerContext<
   TValidationSchema extends ValidationSchema = ValidationSchema,
   TBoundParams = Params,
   TContext extends object = Record<never, never>,
+  TOutput = unknown,
 > = ProcedureValidatedContext<TValidationSchema, TBoundParams> & {
   request: NextRequest;
   ctx: TContext;
+  response: ProcedureResponseHelpers<TOutput>;
 };
 
 export type ProcedureMiddlewareContext<
@@ -317,7 +322,12 @@ export type ProcedureHandler<
   TContext extends object = Record<never, never>,
   TOutput = unknown,
 > = (
-  context: ProcedureHandlerContext<TValidationSchema, TBoundParams, TContext>,
+  context: ProcedureHandlerContext<
+    TValidationSchema,
+    TBoundParams,
+    TContext,
+    TOutput
+  >,
 ) => ProcedureHandlerResult<TOutput>;
 
 export interface Procedure<
