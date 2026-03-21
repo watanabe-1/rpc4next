@@ -2,63 +2,26 @@ import { rpcClient } from "@/lib/rpc-client";
 
 const examples = [
   {
-    phase: "Phase 1",
-    title: "metadata + error envelope",
-    route: "/api/procedure-guarded/[userId]",
-    notes: [
-      "meta() annotates the route with summary, tags, auth, and idempotency.",
-      'Shared .error("UNAUTHORIZED") / .error("FORBIDDEN") presets and route-local .error("FORBIDDEN") variants stay visible to the client.',
-    ],
-    snippet: `await rpcClient.api["procedure-guarded"]._userId("demo-user").$get({
-  url: { query: { includeDrafts: "true" } },
-  requestHeaders: {
-    headers: { "x-demo-user": "demo-user", "x-demo-role": "editor" },
-  },
-});`,
-  },
-  {
-    phase: "Phase 2",
-    title: "output contracts",
-    route: "/api/contract-route",
-    notes: [
-      "routeHandlerFactory() can still publish explicit output() contracts.",
-      "generated client response types pick up the declared output shape.",
-    ],
-    snippet: `const response = await rpcClient.api["contract-route"].$get();`,
-  },
-  {
-    phase: "Phase 3",
-    title: "procedure + nextRoute",
+    phase: "Recommended start",
+    title: "route-bound procedure + nextRoute",
     route: "/api/procedure-contract/[userId]",
     notes: [
-      "procedure() collects params/query/input contracts and middleware in one place.",
-      'nextRoute(procedure, { method: "GET" }) adapts it to a real App Router file.',
+      "Bind the generated routeContract first, then declare params/query/output on one builder.",
+      "nextRoute(procedure, { method: 'GET' }) keeps the App Router file export explicit while preserving typed input and output contracts.",
     ],
-    snippet: `const response = await rpcClient.api["procedure-contract"]
+    snippet: `await rpcClient.api["procedure-contract"]
   ._userId("demo-user")
   .$get({ url: { query: { includePosts: "true" } } });`,
   },
   {
-    phase: "Phase 4",
-    title: "shared internals with routeHandlerFactory()",
-    route: "/api/users/[userId]",
-    notes: [
-      "Existing routeHandlerFactory() fixtures still work beside the new procedure API.",
-      "The integration package keeps both styles visible while runtime internals stay shared.",
-    ],
-    snippet: `const response = await rpcClient.api.users
-  ._userId("demo-user")
-  .$get({ url: { query: { includePosts: "true" } } });`,
-  },
-  {
-    phase: "Phase 5",
-    title: "shared baseProcedure presets",
+    phase: "Shared policy",
+    title: "baseProcedure + typed error contracts",
     route: "/api/procedure-guarded/[userId]",
     notes: [
-      "A shared baseProcedure centralizes headers validation, metadata, and auth/context setup.",
-      "The route file stays the source of truth and only adds params(), query(), output(), error(), and handle().",
+      "A shared baseProcedure centralizes headers validation, metadata, auth/context setup, and shared error envelopes.",
+      'Route-local .error("FORBIDDEN") variants still compose on top of shared UNAUTHORIZED / FORBIDDEN contracts.',
     ],
-    snippet: `const response = await rpcClient.api["procedure-guarded"]
+    snippet: `await rpcClient.api["procedure-guarded"]
   ._userId("demo-user")
   .$get({
     url: { query: { includeDrafts: "true" } },
@@ -68,30 +31,45 @@ const examples = [
   });`,
   },
   {
-    phase: "Phase 6",
-    title: "shared policy error contracts",
-    route: "/api/procedure-guarded/[userId]",
+    phase: "Extended input",
+    title: "json, headers, cookies, and formData",
+    route: "/api/procedure-submit + /api/procedure-form-data",
     notes: [
-      "The shared guarded baseProcedure now declares UNAUTHORIZED and FORBIDDEN envelopes before the route adds its own editor_only FORBIDDEN variant.",
-      "Generated client response unions preserve all shared and route-local error contracts without adding a global router.",
+      "procedure handles json/header/cookie contracts directly without validator wrappers.",
+      "formData contracts follow the same builder model for uploads and browser-native form posts.",
     ],
-    snippet: `const response = await rpcClient.api["procedure-guarded"]
-  ._userId("demo-user")
-  .$get({
-    requestHeaders: { headers: { "x-demo-user": "demo-user" } },
-  });`,
+    snippet: `await rpcClient.api["procedure-submit"].$post({
+  body: { json: { title: "hello" } },
+  requestHeaders: {
+    headers: { "x-procedure-test": "demo" },
+    cookies: { session: "abc123" },
+  },
+});`,
   },
   {
-    phase: "Phase 7",
-    title: "runtime output enforcement",
-    route: "/api/procedure-invalid-output",
+    phase: "Customization",
+    title: "output validation + formatter + validation branching",
+    route:
+      "/api/procedure-invalid-output + /api/procedure-kit-error + /api/procedure-validation-branch",
     notes: [
-      "This fixture opts into runtime output validation with `nextRoute(procedure, { validateOutput: true })`.",
-      "Its output schema is a real Standard Schema validator, and the handler deliberately returns an invalid successful body so the response normalizes to `INTERNAL_SERVER_ERROR`.",
+      "The recommended path covers runtime output validation, project-level error formatting, and validator-stage failure branching.",
+      "These features close the main practical gap that previously kept some routes on middleware-oriented validators.",
     ],
     snippet: `const response = await rpcClient.api["procedure-invalid-output"].$get();
 // response.status === 500
 // response.error.code === "INTERNAL_SERVER_ERROR"`,
+  },
+  {
+    phase: "Compatibility path",
+    title: "routeHandlerFactory() remains supported",
+    route: "/api/users/[userId] + /api/posts + /api/request-meta",
+    notes: [
+      "The integration fixture still keeps middleware-first routes for compatibility coverage and migration reference.",
+      "Use this path when preserving existing routeHandlerFactory() / zValidator(...) code is more practical than rewriting the route.",
+    ],
+    snippet: `await rpcClient.api.users
+  ._userId("demo-user")
+  .$get({ url: { query: { includePosts: "true" } } });`,
   },
 ];
 
@@ -115,8 +93,9 @@ export default function ProcedureExamplesPage() {
     <main>
       <h1>Procedure examples</h1>
       <p>
-        This page groups the integration fixtures that correspond to
-        `procedure-design.md` phases 1 through 7.
+        This page groups the integration fixtures around the recommended
+        `procedure` / `nextRoute()` authoring path and its supported
+        compatibility surface.
       </p>
       <ul>
         <li>

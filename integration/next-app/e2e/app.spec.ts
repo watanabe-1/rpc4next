@@ -39,7 +39,7 @@ test.describe("integration next-app e2e", () => {
     });
   });
 
-  test("procedure examples page renders the phase walkthrough", async ({
+  test("procedure examples page renders the procedure-first walkthrough", async ({
     page,
   }) => {
     await page.goto("/procedure-examples");
@@ -51,16 +51,18 @@ test.describe("integration next-app e2e", () => {
       page.getByText("/api/procedure-guarded/demo-user", { exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByText("Phase 1: metadata + error envelope"),
+      page.getByText("Recommended start: route-bound procedure + nextRoute"),
     ).toBeVisible();
     await expect(
-      page.getByText("Phase 4: shared internals with routeHandlerFactory()"),
+      page.getByText("Shared policy: baseProcedure + typed error contracts"),
     ).toBeVisible();
     await expect(
-      page.getByText("Phase 5: shared baseProcedure presets"),
+      page.getByText("Extended input: json, headers, cookies, and formData"),
     ).toBeVisible();
     await expect(
-      page.getByText("Phase 6: shared policy error contracts"),
+      page.getByText(
+        "Compatibility path: routeHandlerFactory() remains supported",
+      ),
     ).toBeVisible();
   });
 
