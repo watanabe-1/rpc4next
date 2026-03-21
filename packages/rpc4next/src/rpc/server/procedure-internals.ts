@@ -16,14 +16,11 @@ import type {
   ProcedureRouteBinding,
   ProcedureRouteContract,
 } from "./procedure-types";
-import type { createRouteContext } from "./route-context";
 import type { ValidationSchema } from "./route-types";
 import type { StandardSchemaV1 } from "./standard-schema";
+import type { ResponseHelpers } from "./types";
 
-type RouteContextResponseHelpers = Pick<
-  ReturnType<typeof createRouteContext>,
-  "body" | "json" | "redirect" | "text"
->;
+type RouteContextResponseHelpers = ResponseHelpers;
 
 export const withProcedureMethod = <
   TDefinition extends ProcedureDefinition,

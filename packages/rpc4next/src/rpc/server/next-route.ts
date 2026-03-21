@@ -28,7 +28,7 @@ import {
   type ProcedureValidationErrorHandlerResult,
   type WithProcedureDefinition,
 } from "./procedure-types";
-import { createRouteContext } from "./route-context";
+import { createResponseHelpers, createRouteContext } from "./route-context";
 import {
   isStandardSchemaV1,
   type StandardSchemaV1,
@@ -233,6 +233,13 @@ type InferProcedureHandlerContext<TProcedure extends ProcedureTypeCarrier> =
   InferProcedureHandler<TProcedure> extends (context: infer TContext) => unknown
     ? TContext
     : never;
+
+type InferProcedureDeclaredOutput<TProcedure extends ProcedureTypeCarrier> =
+  InferProcedureDefinition<TProcedure>["output"] extends {
+    response?: infer TResponse;
+  }
+    ? TResponse
+    : unknown;
 
 type IsNever<T> = [T] extends [never] ? true : false;
 
@@ -538,6 +545,8 @@ export const nextRoute = <
     segmentData: { params: Promise<Params> },
   ): Promise<NextRouteResponse<TProcedure, TValidateOutput>> => {
     const routeContext = createRouteContext(request, segmentData);
+    const response =
+      createResponseHelpers<InferProcedureDeclaredOutput<TProcedure>>();
 
     try {
       const inputResult = await validateProcedureInputs(
@@ -579,9 +588,10 @@ export const nextRoute = <
             | ProcedureMiddlewareResult
             | Promise<ProcedureMiddlewareResult>)[]),
           (context) =>
-            handler(
-              context as InferProcedureHandlerContext<TProcedure>,
-            ) as InferProcedureHandlerResult<TProcedure>,
+            handler({
+              ...context,
+              response,
+            } as InferProcedureHandlerContext<TProcedure>) as InferProcedureHandlerResult<TProcedure>,
         ],
         executionContext,
         {

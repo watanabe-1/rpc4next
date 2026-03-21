@@ -140,6 +140,37 @@ describe("integration next-app server route handlers", () => {
     });
   });
 
+  it("serves a procedure-based route using response.text(...)", async () => {
+    const { GET: procedureResponseTextGet } = await import(
+      "../app/api/procedure-response-text/route"
+    );
+    const response = await procedureResponseTextGet(
+      new NextRequest(
+        "http://127.0.0.1:3000/api/procedure-response-text?name=server-test",
+      ),
+      { params: Promise.resolve({}) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/plain");
+    await expect(response.text()).resolves.toBe(
+      "procedure-response-text:server-test",
+    );
+  });
+
+  it("serves a procedure-based route using response.redirect(...)", async () => {
+    const { GET: procedureResponseRedirectGet } = await import(
+      "../app/api/procedure-response-redirect/route"
+    );
+    const response = await procedureResponseRedirectGet(
+      new NextRequest("http://127.0.0.1:3000/api/procedure-response-redirect"),
+      { params: Promise.resolve({}) },
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("http://127.0.0.1:3000/feed");
+  });
+
   it("serves a plain Next.js dynamic route handler with params and query", async () => {
     const { GET: nativeDynamicGet } = await import(
       "../app/api/next-native/[itemId]/route"

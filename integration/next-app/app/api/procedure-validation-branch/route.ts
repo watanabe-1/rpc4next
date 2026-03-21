@@ -28,14 +28,20 @@ const getProcedureValidationBranch = procedure
         ),
     },
   )
-  .handle(async ({ query }) => ({
-    status: 200,
-    body: {
+  .output(
+    z.object({
+      ok: true as const,
+      source: "procedure-validation-branch" as const,
+      page: z.number().int().positive(),
+    }),
+  )
+  .handle(async ({ query, response }) =>
+    response.json({
       ok: true as const,
       source: "procedure-validation-branch" as const,
       page: query.page,
-    },
-  }));
+    }),
+  );
 
 export const GET = nextRoute(getProcedureValidationBranch, {
   method: "GET",

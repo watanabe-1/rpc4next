@@ -148,6 +148,30 @@ test.describe("integration next-app e2e", () => {
     );
   });
 
+  test("procedure response.text helper route returns plain text", async ({
+    request,
+  }) => {
+    const response = await request.get(
+      "/api/procedure-response-text?name=playwright",
+    );
+
+    expect(response.status()).toBe(200);
+    await expect(response.text()).resolves.toBe(
+      "procedure-response-text:playwright",
+    );
+  });
+
+  test("procedure response.redirect helper route returns a redirect", async ({
+    request,
+  }) => {
+    const response = await request.get("/api/procedure-response-redirect", {
+      maxRedirects: 0,
+    });
+
+    expect(response.status()).toBe(307);
+    expect(response.headers().location).toBe("http://127.0.0.1:3000/feed");
+  });
+
   test("redirect API route returns the redirect response", async ({
     request,
   }) => {

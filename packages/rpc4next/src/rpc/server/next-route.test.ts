@@ -678,6 +678,44 @@ describe("nextRoute", () => {
     await expect(response.text()).resolves.toBe("raw-response");
   });
 
+  it("supports narrow response helpers inside procedure handlers", async () => {
+    const route = nextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .query(
+          z.object({
+            page: z.coerce.number().int().positive(),
+          }),
+        )
+        .output(
+          z.object({
+            ok: z.literal(true),
+            page: z.number().int().positive(),
+          }),
+        )
+        .handle(async ({ query, response }) =>
+          response.json({
+            ok: true,
+            page: query.page,
+          }),
+        ),
+      { method: "GET" },
+    );
+
+    const result = await route(
+      new NextRequest("http://127.0.0.1:3000/api/test?page=2"),
+      {
+        params: Promise.resolve({}),
+      },
+    );
+
+    expect(result.status).toBe(200);
+    await expect(result.json()).resolves.toEqual({
+      ok: true,
+      page: 2,
+    });
+  });
+
   it("validates procedure output bodies at runtime when enabled", async () => {
     const route = nextRoute(
       procedure

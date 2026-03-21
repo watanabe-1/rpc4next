@@ -50,10 +50,10 @@ const examples = [
     phase: "Customization",
     title: "output validation + formatter + validation branching",
     route:
-      "/api/procedure-invalid-output + /api/procedure-kit-error + /api/procedure-validation-branch",
+      "/api/procedure-invalid-output + /api/procedure-kit-error + /api/procedure-validation-branch + /api/procedure-response-text + /api/procedure-response-redirect",
     notes: [
-      "The recommended path covers runtime output validation, project-level error formatting, and validator-stage failure branching.",
-      "These features close the main practical gap that previously kept some routes on middleware-oriented validators.",
+      "The recommended path covers runtime output validation, project-level error formatting, validator-stage failure branching, and narrow response helpers inside procedure.handle(...).",
+      "response.json(...), response.text(...), and response.redirect(...) keep the procedure-first model while improving authoring ergonomics.",
     ],
     snippet: `const response = await rpcClient.api["procedure-invalid-output"].$get();
 // response.status === 500

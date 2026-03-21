@@ -11,6 +11,7 @@ import type { ValidationSchema } from "./route-types";
 import type {
   Params,
   Query,
+  ResponseHelpers,
   RouteContext,
   TypedNextResponse,
   TypedResponseInit,
@@ -47,6 +48,59 @@ const resolvedHeaders = (
   return resolvedInit as TypedResponseInit<HttpStatusCode, ContentType>;
 };
 
+export const createResponseHelpers = <
+  TJson = unknown,
+>(): ResponseHelpers<TJson> => ({
+  body: <
+    TData extends BodyInit | null,
+    TContentType extends ContentType,
+    TStatus extends HttpStatusCode = 200,
+  >(
+    data: TData,
+    init?: TStatus | TypedResponseInit<TStatus, TContentType>,
+  ) =>
+    new NextResponse<TData>(data, resolvedHeaders(init)) as TypedNextResponse<
+      TData,
+      TStatus,
+      TContentType
+    >,
+
+  json: (<TData, TStatus extends HttpStatusCode = 200>(
+    data: TData,
+    init?: TStatus | TypedResponseInit<TStatus, "application/json">,
+  ) =>
+    NextResponse.json<TData>(data, resolvedHeaders(init)) as TypedNextResponse<
+      TData,
+      TStatus,
+      "application/json"
+    >) as ResponseHelpers<TJson>["json"],
+
+  text: <TData extends string, TStatus extends HttpStatusCode = 200>(
+    data: TData,
+    init?: TStatus | TypedResponseInit<TStatus, "text/plain">,
+  ) => {
+    const resolvedInit = resolvedHeaders(init);
+
+    return new NextResponse<TData>(data, {
+      ...resolvedInit,
+      headers: { ...resolvedInit?.headers, "Content-Type": "text/plain" },
+    }) as TypedNextResponse<TData, TStatus, "text/plain">;
+  },
+
+  redirect: <TStatus extends RedirectionHttpStatusCode = 307>(
+    url: string,
+    init?: TStatus | TypedResponseInit<TStatus, "">,
+  ) => {
+    const resolvedInit = isHttpStatusCode(init) ? init : resolvedHeaders(init);
+
+    return NextResponse.redirect(url, resolvedInit) as TypedNextResponse<
+      undefined,
+      TStatus,
+      ""
+    >;
+  },
+});
+
 export const createRouteContext = <
   TParams extends Params,
   TQuery extends Query,
@@ -56,6 +110,7 @@ export const createRouteContext = <
   segmentData: { params: Promise<TParams> },
 ): RouteContext<TParams, TQuery, TValidationSchema> => {
   const validationResults = {} as Record<ValidationTarget, unknown>;
+  const responseHelpers = createResponseHelpers();
 
   return {
     req: Object.assign(req, {
@@ -68,55 +123,6 @@ export const createRouteContext = <
         validationResults[target] = value;
       },
     }),
-
-    body: <
-      TData extends BodyInit | null,
-      TContentType extends ContentType,
-      TStatus extends HttpStatusCode = 200,
-    >(
-      data: TData,
-      init?: TStatus | TypedResponseInit<TStatus, TContentType>,
-    ) =>
-      new NextResponse<TData>(data, resolvedHeaders(init)) as TypedNextResponse<
-        TData,
-        TStatus,
-        TContentType
-      >,
-
-    json: <TData, TStatus extends HttpStatusCode = 200>(
-      data: TData,
-      init?: TStatus | TypedResponseInit<TStatus, "application/json">,
-    ) =>
-      NextResponse.json<TData>(
-        data,
-        resolvedHeaders(init),
-      ) as TypedNextResponse<TData, TStatus, "application/json">,
-
-    text: <TData extends string, TStatus extends HttpStatusCode = 200>(
-      data: TData,
-      init?: TStatus | TypedResponseInit<TStatus, "text/plain">,
-    ) => {
-      const resolvedInit = resolvedHeaders(init);
-
-      return new NextResponse<TData>(data, {
-        ...resolvedInit,
-        headers: { ...resolvedInit?.headers, "Content-Type": "text/plain" },
-      }) as TypedNextResponse<TData, TStatus, "text/plain">;
-    },
-
-    redirect: <TStatus extends RedirectionHttpStatusCode = 307>(
-      url: string,
-      init?: TStatus | TypedResponseInit<TStatus, "">,
-    ) => {
-      const resolvedInit = isHttpStatusCode(init)
-        ? init
-        : resolvedHeaders(init);
-
-      return NextResponse.redirect(url, resolvedInit) as TypedNextResponse<
-        undefined,
-        TStatus,
-        ""
-      >;
-    },
+    ...responseHelpers,
   };
 };
