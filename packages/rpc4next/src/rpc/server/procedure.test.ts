@@ -173,4 +173,102 @@ describe("procedure builder type definitions", () => {
       ]
     >();
   });
+
+  it("supports immutable shared baseProcedure presets", () => {
+    const baseProcedure = procedure
+      .headers(
+        z.object({
+          "x-demo-role": z.enum(["reader", "editor"]).optional(),
+        }),
+      )
+      .meta({
+        tags: ["shared-base-procedure"],
+        auth: "optional" as const,
+      })
+      .use(({ headers }) => ({
+        ctx: {
+          viewer: {
+            role: headers["x-demo-role"] ?? "reader",
+          },
+        },
+      }));
+
+    const listUsersProcedure = baseProcedure.handle(({ ctx }) => {
+      const _ctx: {
+        viewer: {
+          role: "reader" | "editor";
+        };
+      } = ctx;
+
+      void _ctx;
+
+      return {
+        status: 200 as const,
+        body: {
+          ok: true as const,
+        },
+      };
+    });
+
+    const getUserProcedure = baseProcedure
+      .params(z.object({ userId: z.string() }))
+      .query(
+        z.object({
+          includeDrafts: z.enum(["true", "false"]).optional(),
+        }),
+      )
+      .handle(({ params, query, ctx }) => {
+        const _params: { userId: string } = params;
+        const _query: { includeDrafts?: "true" | "false" | undefined } = query;
+        const _ctx: {
+          viewer: {
+            role: "reader" | "editor";
+          };
+        } = ctx;
+
+        void _params;
+        void _query;
+        void _ctx;
+
+        return {
+          status: 200 as const,
+          body: {
+            ok: true as const,
+            userId: params.userId,
+          },
+        };
+      });
+
+    expectTypeOf(listUsersProcedure.definition).toMatchTypeOf<{
+      meta?: {
+        tags: string[];
+        auth: "optional";
+      };
+      input?: {
+        validationSchema?: {
+          output: {
+            headers: {
+              "x-demo-role"?: "reader" | "editor" | undefined;
+            };
+          };
+        };
+      };
+    }>();
+
+    expectTypeOf(getUserProcedure.definition).toMatchTypeOf<{
+      input?: {
+        validationSchema?: {
+          output: {
+            params: { userId: string };
+            query: {
+              includeDrafts?: "true" | "false" | undefined;
+            };
+            headers: {
+              "x-demo-role"?: "reader" | "editor" | undefined;
+            };
+          };
+        };
+      };
+    }>();
+  });
 });

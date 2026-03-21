@@ -40,6 +40,7 @@ Use these files as entry points, depending on what you want to understand:
 - Redirect-only handler example: `app/api/redirect-me/route.ts`
 - Route-level error handler example: `app/api/error-demo/route.ts`
 - Procedure error + middleware example: `app/api/procedure-guarded/[userId]/route.ts`
+- Shared procedure preset used by guarded routes: `app/api/_shared/base-procedure.ts`
 - Procedure phase map page: `app/procedure-examples/page.tsx`
 - Page-path typing examples: `app/photo/[id]/page.tsx` and `app/feed/page.tsx`
 - App Router folder-pattern coverage: `app/patterns/**`
@@ -107,7 +108,7 @@ This workspace is intended to make scanner and runtime regressions visible in Gi
 
 The API fixtures include `routeHandlerFactory()` examples without Zod validation, including a redirect-only handler in `app/api/redirect-me/route.ts` and a route-level error-handler example in `app/api/error-demo/route.ts`.
 
-The procedure fixtures cover the staged design in `docs/procedure-design.md`: `app/api/procedure-contract/[userId]/route.ts` shows typed params/query/output and middleware, `app/api/procedure-submit/route.ts` shows json/header/cookie input, and `app/api/procedure-guarded/[userId]/route.ts` shows explicit procedure error contracts via `rpcError(...)`. `app/procedure-examples/page.tsx` links those fixtures together as a quick walkthrough.
+The procedure fixtures cover the staged design in `docs/procedure-design.md`: `app/api/procedure-contract/[userId]/route.ts` shows typed params/query/output and middleware, `app/api/procedure-submit/route.ts` shows json/header/cookie input, and `app/api/procedure-guarded/[userId]/route.ts` shows explicit procedure error contracts via `rpcError(...)` while extending the shared preset in `app/api/_shared/base-procedure.ts`. That shared `baseProcedure` demonstrates how validation, metadata, and auth/context setup can be centralized without introducing a global router. `app/procedure-examples/page.tsx` links those fixtures together as a quick walkthrough.
 
 The fixtures also include plain Next.js routes written without `routeHandlerFactory`, including a static `NextResponse.json(...)` route, a dynamic route that reads `params` and `nextUrl.searchParams`, and a `Response.json(...)` route. The generated client can still call them as RPC, but their response types are intentionally broader than rpc4next's `TypedNextResponse` helpers.
 

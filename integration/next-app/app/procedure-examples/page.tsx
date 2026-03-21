@@ -48,6 +48,21 @@ const examples = [
   ._userId("demo-user")
   .$get({ url: { query: { includePosts: "true" } } });`,
   },
+  {
+    phase: "Phase 5",
+    title: "shared baseProcedure presets",
+    route: "/api/procedure-guarded/[userId]",
+    notes: [
+      "A shared baseProcedure centralizes headers validation, metadata, and auth/context setup.",
+      "The route file stays the source of truth and only adds params(), query(), output(), error(), and handle().",
+    ],
+    snippet: `const response = await rpcClient.api["procedure-guarded"]
+  ._userId("demo-user")
+  .$get({
+    url: { query: { includeDrafts: "true" } },
+    requestHeaders: { headers: { "x-demo-role": "editor" } },
+  });`,
+  },
 ];
 
 export default function ProcedureExamplesPage() {
@@ -70,7 +85,7 @@ export default function ProcedureExamplesPage() {
       <h1>Procedure examples</h1>
       <p>
         This page groups the integration fixtures that correspond to
-        `procedure-design.md` phases 1 through 4.
+        `procedure-design.md` phases 1 through 5.
       </p>
       <ul>
         <li>

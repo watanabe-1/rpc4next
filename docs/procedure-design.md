@@ -6,9 +6,10 @@
 - Intended audience: maintainers of `rpc4next` and Codex-based implementation work
 - Scope: `packages/rpc4next`, `packages/rpc4next-cli`, and `integration/next-app`
 - Current implementation status:
-  - Phases 1 through 4 are implemented
+  - Phases 1 through 5 are implemented
   - `procedure` and `nextRoute` are available publicly
   - procedure input contracts are executed through Standard Schema V1-compatible validators
+  - the integration fixture includes a shared `baseProcedure` preset under `integration/next-app/app/api/_shared/base-procedure.ts`
 
 ## Background
 
@@ -514,7 +515,102 @@ Current status:
 - `routeHandlerFactory()` still exists as a separate public authoring style
 - validator middleware behavior for `routeHandlerFactory()` remains unchanged
 
-## Phase 5: optional client ergonomics
+## Phase 5: shared `baseProcedure` presets
+
+Scope:
+
+- make `procedure` practical as a reusable policy layer, not only as a route-local builder
+- allow applications to define shared builder presets and extend them in route files
+
+Deliverables:
+
+- documentation and fixture coverage for extracting common builders such as `baseProcedure`
+- explicit guidance that builder chaining is immutable and safe to reuse across routes
+- examples of shared headers/cookies validation, shared metadata, shared auth context, and shared middleware
+
+Target authoring shape:
+
+```ts
+// app/api/_shared/base-procedure.ts
+export const baseProcedure = procedure
+  .headers(commonHeadersSchema)
+  .meta({ auth: "required" })
+  .use(authMiddleware);
+
+// app/api/users/[userId]/route.ts
+const getUser = baseProcedure
+  .params(paramsSchema)
+  .output(userSchema)
+  .handle(({ params, ctx }) => {
+    return {
+      status: 200,
+      body: {
+        userId: params.userId,
+        viewerId: ctx.viewer.id,
+      },
+    };
+  });
+```
+
+Why fifth:
+
+- this is the first point where `procedure` starts expressing the project's stronger value proposition
+- it supports "forced-by-default" behavior such as validation, auth, and context setup without introducing a global router
+- it can be delivered mostly as semantics, examples, and fixture proof before new API surface is added
+
+Notes:
+
+- the existing builder already supports this pattern structurally because each chain returns a new builder
+- phase 5 is about making that pattern explicit, recommended, and tested
+- the integration fixture now demonstrates this with `app/api/_shared/base-procedure.ts` extended by `app/api/procedure-guarded/[userId]/route.ts`
+
+## Phase 6: richer error contracts for shared policies
+
+Scope:
+
+- improve how shared procedures declare and enforce standardized error behavior
+- support multiple known error variants without collapsing everything into one route-local `rpcError` convention
+
+Deliverables:
+
+- decide whether `procedure.error(...)` remains singular or grows into a multi-error API such as `errors([...])`
+- preserve typed error envelopes when errors are introduced by shared middleware
+- fixture coverage for shared auth/authorization procedures that can surface common error envelopes
+
+Why sixth:
+
+- shared `baseProcedure` becomes much more valuable once common failures can also be declared contractually
+- current single-error shape is sufficient for initial routes but weak for reusable policy presets
+
+Notes:
+
+- this phase should focus on contract expression first
+- runtime normalization can continue to use `rpcError(...)` internally as long as the exported route type remains precise
+
+## Phase 7: runtime output enforcement for procedure responses
+
+Scope:
+
+- close the gap between type-level output contracts and runtime behavior
+- make "forced-by-default" response shaping possible for teams that want stricter guarantees
+
+Deliverables:
+
+- optional runtime output validation in `nextRoute()`
+- clear failure behavior for invalid handler output, likely normalized as internal server error or explicit contract error
+- docs that distinguish type-only output contracts from runtime-enforced output contracts
+
+Why seventh:
+
+- input validation is already enforced at runtime, but output validation is still primarily descriptive
+- shared procedures become more trustworthy when they can validate both ingress and egress
+
+Notes:
+
+- output validation should remain opt-in initially to avoid unexpected runtime cost
+- phase 7 should not block the simpler phase 5 shared preset pattern
+
+## Phase 8: optional client ergonomics
 
 Possible items:
 
@@ -736,11 +832,12 @@ Mitigation:
 
 ## Recommended immediate next step
 
-With phases 1 through 4 implemented, the next design work should focus on stabilization rather than new surface area.
+With phases 1 through 5 implemented, the next design work should focus on richer shared error contracts before adding broader ecosystem features.
 
 Recommended priorities:
 
-1. document Standard Schema V1 as the validator contract for `procedure`
-2. verify supported validator libraries in fixtures and type tests
-3. decide how far shared internals between `procedure` and `routeHandlerFactory()` should go
-4. defer broader client ergonomics until the procedure contract shape is stable
+1. document `baseProcedure` as the recommended way to centralize validation, auth, context setup, and shared metadata
+2. add integration fixtures that import and extend shared procedures from route files
+3. decide how shared procedures should declare multiple error envelopes
+4. verify supported validator libraries in fixtures and type tests
+5. defer broader client ergonomics until the shared procedure contract shape is stable
