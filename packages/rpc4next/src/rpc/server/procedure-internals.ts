@@ -14,6 +14,7 @@ import type {
 } from "./procedure-types";
 import type { createRouteContext } from "./route-context";
 import type { ValidationSchema } from "./route-types";
+import type { StandardSchemaV1 } from "./standard-schema";
 
 type RouteContextResponseHelpers = Pick<
   ReturnType<typeof createRouteContext>,
@@ -98,7 +99,7 @@ export const withProcedureInputContract = <
   TDefinition extends ProcedureDefinition,
   TValidationSchema extends ValidationSchema,
   TTarget extends ProcedureInputTarget,
-  TSchema,
+  TSchema extends StandardSchemaV1,
 >(
   definition: TDefinition,
   target: TTarget,
@@ -126,7 +127,7 @@ export const withProcedureInputContract = <
         }),
       } as TValidationSchema,
     },
-  } as MergeProcedureDefinition<
+  } as unknown as MergeProcedureDefinition<
     TDefinition,
     {
       input: ProcedureInputContract<TValidationSchema> & {

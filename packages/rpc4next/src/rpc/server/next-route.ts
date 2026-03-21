@@ -27,54 +27,28 @@ import {
   type WithProcedureDefinition,
 } from "./procedure-types";
 import { createRouteContext } from "./route-context";
+import {
+  isStandardSchemaV1,
+  type StandardSchemaV1,
+  type StandardSchemaV1Issue,
+} from "./standard-schema";
 import type { Params, TypedNextResponse } from "./types";
 
-const getValidationErrorMessage = (error: unknown) => {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return String(error);
+const getStandardSchemaMessage = (issues: readonly StandardSchemaV1Issue[]) => {
+  return issues[0]?.message ?? "Validation failed.";
 };
 
-const parseWithSchema = async (schema: unknown, value: unknown) => {
-  if (
-    typeof schema === "object" &&
-    schema !== null &&
-    "safeParseAsync" in schema &&
-    typeof schema.safeParseAsync === "function"
-  ) {
-    const result = await schema.safeParseAsync(value);
+const parseWithSchema = async (schema: StandardSchemaV1, value: unknown) => {
+  const result = await schema["~standard"].validate(value);
 
-    if (result.success) {
-      return result.data;
-    }
-
+  if (result.issues) {
     throw rpcError("BAD_REQUEST", {
-      message: getValidationErrorMessage(result.error),
-      details: result.error,
+      message: getStandardSchemaMessage(result.issues),
+      details: result.issues,
     });
   }
 
-  if (
-    typeof schema === "object" &&
-    schema !== null &&
-    "safeParse" in schema &&
-    typeof schema.safeParse === "function"
-  ) {
-    const result = schema.safeParse(value);
-
-    if (result.success) {
-      return result.data;
-    }
-
-    throw rpcError("BAD_REQUEST", {
-      message: getValidationErrorMessage(result.error),
-      details: result.error,
-    });
-  }
-
-  return value;
+  return result.value;
 };
 
 const getContractValue = async (
@@ -282,6 +256,14 @@ export const nextRoute = <
     const routeContext = createRouteContext(request, segmentData);
     const contracts = procedure.definition.input?.contracts ?? {};
 
+    if (
+      Object.values(contracts).some((contract) => !isStandardSchemaV1(contract))
+    ) {
+      throw new Error(
+        "Procedure input contracts must implement Standard Schema V1.",
+      );
+    }
+
     try {
       const params = contracts.params
         ? await parseWithSchema(
@@ -340,7 +322,11 @@ export const nextRoute = <
         Response | NextResponse | ProcedureResult
       >(
         [
-          ...procedure.middlewares,
+          ...(procedure.middlewares as readonly ((
+            context: typeof executionContext,
+          ) =>
+            | ProcedureMiddlewareResult
+            | Promise<ProcedureMiddlewareResult>)[]),
           (context) =>
             handler(
               context as InferProcedureHandlerContext<TProcedure>,

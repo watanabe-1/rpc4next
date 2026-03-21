@@ -27,4 +27,8 @@ export type {
 } from "./procedure";
 export { procedure } from "./procedure";
 export { routeHandlerFactory } from "./route-handler-factory";
+export type {
+  StandardSchemaV1,
+  StandardSchemaV1Issue,
+} from "./standard-schema";
 export type { TypedNextResponse } from "./types";

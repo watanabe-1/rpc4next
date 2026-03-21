@@ -17,21 +17,30 @@ import type {
   ProcedureOutputContract,
 } from "./procedure-types";
 import type { ValidationSchema } from "./route-types";
+import type { StandardSchemaV1 } from "./standard-schema";
 import type { Params, Query } from "./types";
 
-type InferSchemaInput<TSchema> = TSchema extends { _input: infer TInput }
+type InferSchemaInput<TSchema> = TSchema extends {
+  readonly "~standard": { readonly types?: { readonly input: infer TInput } };
+}
   ? TInput
-  : TSchema extends { input: infer TInput }
+  : TSchema extends { _input?: infer TInput }
     ? TInput
-    : unknown;
-
-type InferSchemaOutput<TSchema> = TSchema extends { _output: infer TOutput }
-  ? TOutput
-  : TSchema extends { _type: infer TOutput }
-    ? TOutput
-    : TSchema extends { output: infer TOutput }
-      ? TOutput
+    : TSchema extends { input: infer TInput }
+      ? TInput
       : unknown;
+
+type InferSchemaOutput<TSchema> = TSchema extends {
+  readonly "~standard": { readonly types?: { readonly output: infer TOutput } };
+}
+  ? TOutput
+  : TSchema extends { _output?: infer TOutput }
+    ? TOutput
+    : TSchema extends { _type: infer TOutput }
+      ? TOutput
+      : TSchema extends { output: infer TOutput }
+        ? TOutput
+        : unknown;
 
 type ExtractValidationSchema<TDefinition extends ProcedureDefinition> =
   TDefinition extends ProcedureDefinition<
@@ -72,7 +81,7 @@ type ExtendValidationSchema<
 type ExtendProcedureInputDefinition<
   TDefinition extends ProcedureDefinition,
   TTarget extends ProcedureInputTarget,
-  TSchema,
+  TSchema extends StandardSchemaV1,
 > = MergeProcedureDefinition<
   TDefinition,
   {
@@ -168,35 +177,35 @@ export interface ProcedureBuilder<
     TContext
   >;
 
-  params<TSchema>(
+  params<TSchema extends StandardSchemaV1>(
     schema: TSchema,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "params", TSchema>,
     TContext
   >;
 
-  query<TSchema>(
+  query<TSchema extends StandardSchemaV1>(
     schema: TSchema,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "query", TSchema>,
     TContext
   >;
 
-  json<TSchema>(
+  json<TSchema extends StandardSchemaV1>(
     schema: TSchema,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "json", TSchema>,
     TContext
   >;
 
-  headers<TSchema>(
+  headers<TSchema extends StandardSchemaV1>(
     schema: TSchema,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "headers", TSchema>,
     TContext
   >;
 
-  cookies<TSchema>(
+  cookies<TSchema extends StandardSchemaV1>(
     schema: TSchema,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "cookies", TSchema>,
@@ -258,7 +267,10 @@ const createProcedureBuilder = <
   definition: TDefinition,
   middlewares: readonly ProcedureMiddleware[] = [],
 ): ProcedureBuilder<TDefinition, TContext> => {
-  const withInputContract = <TTarget extends ProcedureInputTarget, TSchema>(
+  const withInputContract = <
+    TTarget extends ProcedureInputTarget,
+    TSchema extends StandardSchemaV1,
+  >(
     target: TTarget,
     schema: TSchema,
   ): ProcedureBuilder<
