@@ -14,7 +14,8 @@ export default function HomePage() {
       </p>
       <code>{userUrl.relativePath}</code>
       <p>
-        Procedure examples live at <code>{procedureExamplesUrl}</code>.
+        The procedure-first walkthrough lives at{" "}
+        <code>{procedureExamplesUrl}</code>.
       </p>
     </main>
   );

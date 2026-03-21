@@ -6,7 +6,7 @@
 - Intended audience: maintainers of `rpc4next` and Codex-based implementation work
 - Scope: `packages/rpc4next`, `packages/rpc4next-cli`, and `integration/next-app`
 - Current implementation status:
-  - Phases 1 through 11 are implemented
+  - Phases 1 through 12 are implemented
   - `procedure` and `nextRoute` are available publicly
   - procedure input contracts are executed through Standard Schema V1-compatible validators
   - the integration fixture includes a shared `baseProcedure` preset under `integration/next-app/app/api/_shared/base-procedure.ts`
@@ -14,6 +14,7 @@
   - `procedure.formData(...)` is available publicly and validated by `nextRoute()`
   - `createProcedureKit(...)` can provide shared project-level error formatting for procedure routes
   - procedure input contracts accept validator-stage failure branching through `procedure.<target>(schema, { onValidationError(...) { ... } })`
+  - README and integration fixture docs now lead with `procedure` / `nextRoute()` while keeping `routeHandlerFactory()` and `zValidator(...)` documented as supported compatibility paths
 
 ## Background
 
@@ -916,25 +917,25 @@ Relationship to the legacy API:
 
 ## Phase 12: documentation default shift to procedure-first authoring
 
-Scope:
+Implemented outcome:
 
-- make `procedure` the documented default for new typed route authoring
-- retain `routeHandlerFactory()` as a supported compatibility path with clearer positioning
-- reduce ambiguity for new users choosing between server APIs
+- `procedure` is now the documented default for new typed route authoring
+- `routeHandlerFactory()` remains a supported compatibility path with clearer positioning
+- new-user docs now reduce ambiguity by leading with `procedure` / `nextRoute()`
 
-Deliverables:
+Completed documentation changes:
 
-- update README and integration docs so new typed examples lead with `procedure` / `nextRoute()`
-- explain when `routeHandlerFactory()` is still appropriate and when migration is recommended
-- align fixture walkthroughs and example pages with the procedure-first recommendation
-- remove stale documentation that still frames older milestones as the current next step
+- README and integration docs now lead typed examples with `procedure` / `nextRoute()`
+- `routeHandlerFactory()` is described as a still-supported compatibility path for middleware-first routes and existing codebases
+- fixture walkthroughs and example pages now present procedure-first authoring before legacy examples
+- stale wording that framed this shift as a future milestone has been removed from the current assessment and recommendation sections
 
-Why twelfth:
+Why this change mattered:
 
 - once the main capability gap is addressed or intentionally bounded, the docs should stop presenting the legacy API as a co-equal default
 - documentation drift is now a larger adoption risk than missing runtime primitives
 
-Notes:
+Positioning notes:
 
 - this phase is about recommendation and framing, not deprecation
 - examples should still preserve at least a small compatibility surface for legacy users
@@ -1189,9 +1190,9 @@ Mitigation:
 - Should `nextRoute()` eventually reject unbound procedures entirely once the route-bound workflow is stable?
 - Should `procedure.formData(...)` validate against a normalized plain object only, or should rpc4next also expose a lower-level way to validate the raw `FormData` object when a schema library can support it?
 
-## Current assessment after phase 11
+## Current assessment after phase 12
 
-With phases 1 through 11 in place, the `procedure` / `nextRoute()` path now covers nearly all practical authoring scenarios previously handled by the legacy `routeHandlerFactory()` style.
+With phases 1 through 12 in place, the `procedure` / `nextRoute()` path now covers nearly all practical authoring scenarios previously handled by the legacy `routeHandlerFactory()` style, and the docs now reflect that as the default recommendation.
 
 What is now covered:
 
@@ -1209,15 +1210,22 @@ Remaining notable gap versus the legacy validator-middleware path:
 
 - no major functional gap remains for standard input-validation branching; remaining differences are mostly ergonomic or validator-library-specific
 
-The center of gravity for new server authoring should therefore move to `procedure` rather than expanding `routeHandlerFactory()` further.
+The center of gravity for new server authoring has therefore moved to `procedure` rather than expanding `routeHandlerFactory()` further.
+
+Current documentation stance:
+
+- new typed server examples should lead with `procedure`, generated `route-contract.ts`, and `nextRoute()`
+- `routeHandlerFactory()` / `zValidator(...)` should stay documented as supported compatibility paths, not as deprecated APIs
+- fixture walkthroughs should show procedure-first routes before compatibility examples
+- migration guidance should stay short and practical rather than prescriptive
 
 ## Recommended immediate next step
 
-With phases 1 through 11 implemented, the next design work should focus on consolidating `procedure` as the primary server authoring model and finishing the documentation and fixture migration around that shift.
+With phases 1 through 12 implemented, the next design work should focus on the incremental fixture migration and any remaining ergonomics questions around the now-recommended procedure-first path.
 
 Recommended priorities:
 
-1. phase 12: shift documentation and examples to a procedure-first default
-2. phase 13: migrate legacy integration fixtures where the new builder is clearly better
-3. decide whether route-bound procedures should become mandatory for all `procedure` routes once the generated `route-contract.ts` workflow is considered stable
-4. evaluate whether richer output contracts, such as success variants by status code, are needed before pursuing broader ecosystem features
+1. phase 13: migrate legacy integration fixtures where the new builder is clearly better
+2. decide whether route-bound procedures should become mandatory for all `procedure` routes once the generated `route-contract.ts` workflow is considered stable
+3. evaluate whether richer output contracts, such as success variants by status code, are needed before pursuing broader ecosystem features
+4. keep validating that the remaining `routeHandlerFactory()` fixtures are intentional compatibility coverage rather than accidental recommendation drift

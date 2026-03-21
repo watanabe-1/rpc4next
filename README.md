@@ -51,9 +51,10 @@ bun add rpc4next
 bun add -d rpc4next-cli
 ```
 
-`zod` is only needed if you use the server-side validation helpers such as
-`zValidator()`. If you only use the generated client types and do not validate
-request input with Zod, you can omit it.
+`zod` is only needed if you use server-side schema validation such as
+`procedure.query(...)`, `procedure.json(...)`, or `zValidator()`. If you only
+use the generated client types and do not validate request input, you can omit
+it.
 
 If you want Zod-based request validation later:
 
@@ -67,45 +68,59 @@ If you prefer to inspect a complete app before wiring this into your own project
 
 ### 1. Define a Route
 
-`rpc4next` does not require `routeHandlerFactory()`.
-It can scan and generate client types from standard Next.js App Router handlers as-is.
-The server helpers are optional and mainly give you stronger response and validation typing.
-
-If you want the stronger typed server-side experience, use `routeHandlerFactory()`:
+`rpc4next` can scan plain Next.js App Router handlers as-is, but the recommended
+typed server authoring path is `procedure` with `nextRoute()`. This keeps the
+route file as the source of truth while making input, output, metadata, and
+shared policy explicit.
 
 ```ts
 // app/api/users/[userId]/route.ts
-import { routeHandlerFactory } from "rpc4next/server";
+import { nextRoute, procedure } from "rpc4next/server";
+import { z } from "zod";
+import { routeContract } from "./route-contract";
 
-export type Query = {
-  includePosts?: "true" | "false";
-};
-
-const createRouteHandler = routeHandlerFactory();
-
-export const { GET } = createRouteHandler<{
-  params: { userId: string };
-  query: Query;
-}>().get(async (rc) => {
-  const { userId } = await rc.req.params();
-  const query = rc.req.query();
-
-  return rc.json({
-    ok: true,
-    userId,
-    includePosts: query.includePosts === "true",
-  });
+const paramsSchema = z.object({
+  userId: z.string().min(1),
 });
+
+const querySchema = z.object({
+  includePosts: z.enum(["true", "false"]).optional(),
+});
+
+const getUser = procedure
+  .forRoute(routeContract)
+  .meta({ tags: ["users"], auth: "optional" })
+  .params(paramsSchema)
+  .query(querySchema)
+  .output({
+    _output: {
+      ok: true as const,
+      userId: "" as string,
+      includePosts: false as boolean,
+    },
+  })
+  .handle(async ({ params, query }) => ({
+    status: 200,
+    body: {
+      ok: true,
+      userId: params.userId,
+      includePosts: query.includePosts === "true",
+    },
+  }));
+
+export const GET = nextRoute(getUser, { method: "GET" });
+export type Query = z.input<typeof querySchema>;
 ```
 
 Notes:
 
-- `routeHandlerFactory()` is optional, not required
-- Export `Query` from a route if you want the generated client to type `searchParams` for plain Next.js handlers too
-- `routeHandlerFactory()` gives you typed helpers such as `rc.json()`, `rc.text()`, and `rc.redirect()`
-- Validation helpers such as `zValidator()` are optional
+- `procedure` / `nextRoute()` is the default recommendation for new typed routes
+- generated sibling `route-contract.ts` files are the recommended params source for procedure routes
+- input contracts consume Standard Schema V1-compatible schemas directly
+- shared presets such as `baseProcedure`, typed error contracts, project-level `errorFormatter`, and validator-stage customization all build on this path
 
-If you also want request validation with Zod, add `zValidator()`:
+`routeHandlerFactory()` and `zValidator(...)` remain supported when you want the
+older middleware-first style or need to keep an existing route unchanged:
 
 ```ts
 import { routeHandlerFactory } from "rpc4next/server";
@@ -127,7 +142,8 @@ export const { GET } = createRouteHandler<{
 });
 ```
 
-`zValidator()` validates request input and returns `400` JSON errors by default on invalid input.
+`zValidator()` validates request input and returns `400` JSON errors by default
+on invalid input.
 
 ### 2. Generate `PathStructure`
 
@@ -245,9 +261,65 @@ photoUrl.params;
 
 ## Server Helpers
 
+### `procedure` and `nextRoute`
+
+`procedure` is the recommended typed server authoring API for new routes.
+
+It supports:
+
+- `forRoute(routeContract)` for generated route-contract binding
+- direct schema contracts for `params`, `query`, `json`, `formData`, `headers`, and `cookies`
+- `meta(...)`, `output(...)`, and typed `error(...)` contracts
+- shared presets via reusable builders such as `baseProcedure`
+- validator-stage customization with `onValidationError(...)`
+- adaptation to App Router exports through `nextRoute(procedure, { method })`
+
+Example:
+
+```ts
+import { nextRoute, procedure } from "rpc4next/server";
+import { z } from "zod";
+import { routeContract } from "./route-contract";
+
+const getUser = procedure
+  .forRoute(routeContract)
+  .params(z.object({ userId: z.string().min(1) }))
+  .query(
+    z.object({
+      includeDrafts: z.enum(["true", "false"]).optional(),
+    }),
+  )
+  .output({
+    _output: {
+      ok: true as const,
+      userId: "" as string,
+      includeDrafts: false as boolean,
+    },
+  })
+  .handle(async ({ params, query }) => ({
+    status: 200,
+    body: {
+      ok: true,
+      userId: params.userId,
+      includeDrafts: query.includeDrafts === "true",
+    },
+  }));
+
+export const GET = nextRoute(getUser, { method: "GET" });
+```
+
 ### `routeHandlerFactory`
 
-`routeHandlerFactory()` creates typed handlers for:
+`routeHandlerFactory()` remains supported as a compatibility path for
+middleware-first routes and existing codebases.
+
+It is still a good fit when:
+
+- you already have `routeHandlerFactory()` routes and do not want to rewrite them yet
+- you prefer validator middleware composition with `zValidator(...)`
+- you only need typed response helpers and a route-local error handler
+
+It creates typed handlers for:
 
 - `get`
 - `post`
@@ -273,7 +345,10 @@ export const { POST } = createRouteHandler().post(async (rc) => {
 
 ### `zValidator`
 
-`zValidator()` supports these targets:
+`zValidator()` remains the supported validation helper for the
+`routeHandlerFactory()` compatibility path.
+
+It supports these targets:
 
 - `params`
 - `query`
@@ -380,9 +455,11 @@ When `paramsFile` is enabled, the CLI can generate sibling files such as:
 ```ts
 // app/api/users/[userId]/route-contract.ts
 export type Params = { userId: string };
+export declare const routeContract: unknown;
 ```
 
-That lets route files import the param shape instead of repeating it manually.
+That lets procedure routes import a generated `routeContract` and lets other
+routes import the param shape instead of repeating it manually.
 These generated `route-contract.ts` files are optional, and your generated `src/generated/rpc.ts` is typically not something you edit by hand.
 
 Your generated `src/generated/rpc.ts` exports a `PathStructure` type that includes:
@@ -398,7 +475,7 @@ Your generated `src/generated/rpc.ts` exports a `PathStructure` type that includ
 2. Run `rpc4next` to regenerate `PathStructure`
 3. Import `PathStructure` into your client
 4. Call routes with `createRpcClient<PathStructure>(...)`
-5. Use `routeHandlerFactory` and `zValidator` where you want stronger server-side typing
+5. Prefer `procedure` and `nextRoute()` for new typed routes; keep `routeHandlerFactory()` / `zValidator(...)` for compatibility or middleware-first routes
 
 ## Repository Layout
 
