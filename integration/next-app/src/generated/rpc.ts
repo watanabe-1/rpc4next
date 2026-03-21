@@ -10,6 +10,7 @@ import type { Query as Query_328fe40401e7f48d } from "../../app/api/procedure-co
 import type { GET as GET_3919bdb64fa44631 } from "../../app/api/procedure-contract/[userId]/route";
 import type { Query as Query_a31809be53fb5dc9 } from "../../app/api/procedure-guarded/[userId]/route";
 import type { GET as GET_98a6cb8e2c497f98 } from "../../app/api/procedure-guarded/[userId]/route";
+import type { GET as GET_deded1d327aade95 } from "../../app/api/procedure-invalid-output/route";
 import type { POST as POST_ff7e41c09dae8fb9 } from "../../app/api/procedure-submit/route";
 import type { GET as GET_61a9f4b9fd49ccf5 } from "../../app/api/redirect-me/route";
 import type { GET as GET_fbb09db60ba2ae51 } from "../../app/api/request-meta/route";
@@ -32,6 +33,7 @@ export type PathStructure = RpcEndpoint & {
     "procedure-guarded": {
       "_userId": Record<QueryKey, Query_a31809be53fb5dc9> & { "$get": typeof GET_98a6cb8e2c497f98 } & RpcEndpoint & Record<ParamsKey, { "userId": string }>
     },
+    "procedure-invalid-output": { "$get": typeof GET_deded1d327aade95 } & RpcEndpoint,
     "procedure-submit": { "$post": typeof POST_ff7e41c09dae8fb9 } & RpcEndpoint,
     "redirect-me": { "$get": typeof GET_61a9f4b9fd49ccf5 } & RpcEndpoint,
     "request-meta": { "$get": typeof GET_fbb09db60ba2ae51 } & RpcEndpoint,

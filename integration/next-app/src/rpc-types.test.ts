@@ -454,6 +454,32 @@ describe("integration next-app generated RPC type coverage", () => {
     const _procedureGuardedResponseFromActual: ExpectedProcedureGuardedResponse =
       procedureGuardedResponse;
 
+    const procedureInvalidOutputResponse =
+      await client.api["procedure-invalid-output"].$get();
+    type ExpectedProcedureInvalidOutputResponse =
+      | TypedNextResponse<
+          {
+            ok: true;
+            source: "procedure-invalid-output";
+            result: string;
+          },
+          200,
+          "application/json"
+        >
+      | TypedNextResponse<
+          {
+            error: {
+              code: "INTERNAL_SERVER_ERROR";
+              message: string;
+              details?: unknown;
+            };
+          },
+          500,
+          "application/json"
+        >;
+    const _procedureInvalidOutputResponseFromActual: ExpectedProcedureInvalidOutputResponse =
+      procedureInvalidOutputResponse;
+
     type RedirectGet = (typeof client.api)["redirect-me"]["$get"];
     type RedirectResponse = Awaited<ReturnType<RedirectGet>>;
     expectTypeOf<RedirectResponse>().toEqualTypeOf<

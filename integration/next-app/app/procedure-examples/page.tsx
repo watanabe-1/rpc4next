@@ -84,19 +84,14 @@ const examples = [
   {
     phase: "Phase 7",
     title: "runtime output enforcement",
-    route: "/api/procedure-guarded/[userId]",
+    route: "/api/procedure-invalid-output",
     notes: [
-      "The guarded route opts into runtime output validation with `nextRoute(procedure, { validateOutput: true })`.",
-      "Its output schema is a real Standard Schema validator, while procedure-contract remains the type-only comparison point.",
+      "This fixture opts into runtime output validation with `nextRoute(procedure, { validateOutput: true })`.",
+      "Its output schema is a real Standard Schema validator, and the handler deliberately returns an invalid successful body so the response normalizes to `INTERNAL_SERVER_ERROR`.",
     ],
-    snippet: `const response = await rpcClient.api["procedure-guarded"]
-  ._userId("demo-user")
-  .$get({
-    url: { query: { includeDrafts: "true" } },
-    requestHeaders: {
-      headers: { "x-demo-user": "demo-user", "x-demo-role": "editor" },
-    },
-  });`,
+    snippet: `const response = await rpcClient.api["procedure-invalid-output"].$get();
+// response.status === 500
+// response.error.code === "INTERNAL_SERVER_ERROR"`,
   },
 ];
 
@@ -114,6 +109,7 @@ export default function ProcedureExamplesPage() {
     .$url({
       query: { includePosts: "true" },
     });
+  const invalidOutputUrl = rpcClient.api["procedure-invalid-output"].$url();
 
   return (
     <main>
@@ -131,6 +127,9 @@ export default function ProcedureExamplesPage() {
         </li>
         <li>
           contract URL: <code>{contractUrl.relativePath}</code>
+        </li>
+        <li>
+          invalid output URL: <code>{invalidOutputUrl.relativePath}</code>
         </li>
       </ul>
       {examples.map((example) => (
