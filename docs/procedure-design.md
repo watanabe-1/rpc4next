@@ -5,6 +5,10 @@
 - Draft
 - Intended audience: maintainers of `rpc4next` and Codex-based implementation work
 - Scope: `packages/rpc4next`, `packages/rpc4next-cli`, and `integration/next-app`
+- Current implementation status:
+  - Phases 1 through 4 are implemented
+  - `procedure` and `nextRoute` are available publicly
+  - procedure input contracts are executed through Standard Schema V1-compatible validators
 
 ## Background
 
@@ -114,6 +118,38 @@ export const GET = nextRoute(getUser);
 
 This keeps route files and HTTP methods explicit while moving contract assembly into a builder.
 
+### Validator direction
+
+`procedure.params()`, `.query()`, `.json()`, `.headers()`, and `.cookies()` should accept schema objects directly rather than requiring rpc4next-specific validator wrappers.
+
+The runtime contract for those schemas should follow Standard Schema V1. In practice this means:
+
+- application code can pass supported validator schemas directly
+- `rpc4next` should read validation input/output types from the schema where possible
+- `nextRoute()` should execute validation through the schema's Standard Schema interface instead of validator-specific duck typing
+
+This keeps the authoring style simple:
+
+```ts
+const getUser = procedure
+  .params(z.object({ userId: z.string().min(1) }))
+  .query(
+    z.object({
+      includePosts: z.enum(["true", "false"]).optional(),
+    }),
+  )
+  .handle(async ({ params, query }) => {
+    return {
+      body: {
+        userId: params.userId,
+        includePosts: query.includePosts === "true",
+      },
+    };
+  });
+```
+
+And it avoids coupling the public procedure API to a specific validator library or to rpc4next-owned adapter values.
+
 ## Sources of inspiration
 
 ### tRPC
@@ -173,6 +209,8 @@ Initial target capabilities:
 - `.output(schema)`
 - `.use(middleware)`
 - `.handle(handler)`
+
+Input contract methods should accept Standard Schema V1-compatible schema values directly.
 
 ### `nextRoute(procedure)`
 
@@ -319,6 +357,18 @@ Generated client types should continue to work for:
 - plain Next route handlers
 - new `procedure`-based routes
 
+## Validator compatibility strategy
+
+The `procedure` API should not introduce an rpc4next-specific validator abstraction as a required public concept.
+
+Instead:
+
+- `routeHandlerFactory()` may continue to use middleware-oriented validators such as `zValidator(...)`
+- `procedure` should accept schema values directly
+- runtime validation for `procedure` should depend on Standard Schema V1 compatibility
+
+This is intentionally close to the direction used by Hono's Standard Schema integration: validator libraries remain external, while the framework consumes a shared schema contract.
+
 ## Alternatives considered
 
 ### Alternative A: Expand `routeHandlerFactory()` only
@@ -436,6 +486,7 @@ Deliverables:
 - builder API
 - Next adapter
 - tests for params, query, json, headers, cookies, metadata, and error flow
+- procedure input contract execution based on Standard Schema V1-compatible schemas
 
 Why third:
 
@@ -456,6 +507,12 @@ Deliverables:
 Why fourth:
 
 - do it only after `procedure` semantics stabilize
+
+Current status:
+
+- phase 4 internals are partially shared
+- `routeHandlerFactory()` still exists as a separate public authoring style
+- validator middleware behavior for `routeHandlerFactory()` remains unchanged
 
 ## Phase 5: optional client ergonomics
 
@@ -542,6 +599,7 @@ Expected work:
 - builder implementation
 - `handle()` typing
 - initial middleware typing, likely limited in phase 1 of the builder
+- direct schema input contracts for params/query/json/headers/cookies
 
 Validation:
 
@@ -558,6 +616,7 @@ Expected work:
 - response normalization
 - redirect support
 - raw `Response` escape hatch
+- Standard Schema V1 validation execution for procedure input contracts
 
 Validation:
 
@@ -658,6 +717,16 @@ Mitigation:
 - document phase boundaries clearly
 - keep runtime output validation opt-in
 
+### Schema compatibility gaps
+
+Not every validator library exposes exactly the same type metadata or issue shape even when it supports Standard Schema.
+
+Mitigation:
+
+- keep `procedure` focused on Standard Schema V1 as the public contract
+- preserve explicit `output(...)` contracts so success-body inference does not depend only on validator metadata
+- add fixture coverage for representative supported validators over time
+
 ## Open questions
 
 - Should `procedure` support multiple output variants by status code in the first version, or only a single success body?
@@ -667,15 +736,11 @@ Mitigation:
 
 ## Recommended immediate next step
 
-Begin with Phase 1, not Phase 3.
+With phases 1 through 4 implemented, the next design work should focus on stabilization rather than new surface area.
 
-The best first implementation is:
+Recommended priorities:
 
-1. define internal procedure contract types
-2. add error envelope support
-3. add metadata support
-4. add output contracts
-
-Only after those pieces work should the public `procedure` builder be exposed.
-
-This sequence keeps the architecture moving in the intended direction without forcing a large public API jump before the core contract model is proven.
+1. document Standard Schema V1 as the validator contract for `procedure`
+2. verify supported validator libraries in fixtures and type tests
+3. decide how far shared internals between `procedure` and `routeHandlerFactory()` should go
+4. defer broader client ergonomics until the procedure contract shape is stable

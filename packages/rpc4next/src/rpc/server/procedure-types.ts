@@ -2,6 +2,7 @@ import type { HttpMethod } from "rpc4next-shared";
 import type { RpcErrorCode, RpcErrorEnvelope } from "./error";
 import type { RpcMeta } from "./meta";
 import type { ValidationSchema } from "./route-types";
+import type { StandardSchemaV1 } from "./standard-schema";
 
 export type ProcedureInputTarget =
   | "params"
@@ -11,7 +12,7 @@ export type ProcedureInputTarget =
   | "cookies";
 
 export type ProcedureInputContracts = Partial<
-  Record<ProcedureInputTarget, unknown>
+  Record<ProcedureInputTarget, StandardSchemaV1>
 >;
 
 export interface ProcedureInputContract<

@@ -8,6 +8,7 @@ import {
   procedureDefinitionSymbol,
 } from "./procedure-types";
 import { routeHandlerFactory } from "./route-handler-factory";
+import type { StandardSchemaV1 } from "./standard-schema";
 
 describe("procedure contract internals", () => {
   it("attaches an internal procedure definition to route handlers", async () => {
@@ -53,7 +54,10 @@ describe("procedure contract internals", () => {
 
     expectTypeOf<ExpectedInput>().toEqualTypeOf<{
       contracts?: Partial<
-        Record<"params" | "query" | "json" | "headers" | "cookies", unknown>
+        Record<
+          "params" | "query" | "json" | "headers" | "cookies",
+          StandardSchemaV1
+        >
       >;
       validationSchema?: {
         input: { query: { page: string } };

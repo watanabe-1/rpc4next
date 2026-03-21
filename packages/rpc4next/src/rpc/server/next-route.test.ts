@@ -5,6 +5,7 @@ import { rpcError } from "./error";
 import { nextRoute } from "./next-route";
 import { procedure } from "./procedure";
 import { getProcedureDefinition } from "./procedure-types";
+import type { StandardSchemaV1 } from "./standard-schema";
 import type { TypedNextResponse } from "./types";
 
 describe("nextRoute", () => {
@@ -117,6 +118,55 @@ describe("nextRoute", () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
       tag: ["a", "b"],
+    });
+  });
+
+  it("supports injected procedure validators", async () => {
+    const pageSchema: StandardSchemaV1<
+      { page?: string | string[] },
+      { page: number }
+    > = {
+      "~standard": {
+        version: 1,
+        vendor: "rpc4next-test",
+        validate: (value) => {
+          const input =
+            typeof value === "object" && value !== null
+              ? (value as { page?: string | string[] })
+              : {};
+          const page = "page" in input ? input.page : "";
+          const first = Array.isArray(page) ? page[0] : page;
+          const parsed = Number(first ?? "1");
+
+          if (!Number.isInteger(parsed) || parsed < 1) {
+            return {
+              issues: [{ message: "page must be a positive integer" }],
+            };
+          }
+
+          return {
+            value: { page: parsed },
+          };
+        },
+      },
+    };
+
+    const route = nextRoute(
+      procedure.query(pageSchema).handle(async ({ query }) => ({
+        body: query,
+      })),
+    );
+
+    const response = await route(
+      new NextRequest("http://127.0.0.1:3000/api/procedure?page=2"),
+      {
+        params: Promise.resolve({}),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      page: 2,
     });
   });
 

@@ -1,6 +1,7 @@
 import { describe, expectTypeOf, it } from "vitest";
 import { z } from "zod";
 import { procedure } from "./procedure";
+import type { StandardSchemaV1 } from "./standard-schema";
 
 describe("procedure builder type definitions", () => {
   it("threads input, middleware context, and output contracts", () => {
@@ -80,6 +81,59 @@ describe("procedure builder type definitions", () => {
         };
       };
     }>();
+  });
+
+  it("supports custom procedure validators without zod coupling", () => {
+    const parsePage: StandardSchemaV1<
+      { page?: string | string[] },
+      { page: number }
+    > = {
+      "~standard": {
+        version: 1,
+        vendor: "rpc4next-test",
+        validate: (value) => {
+          const input =
+            typeof value === "object" && value !== null
+              ? (value as { page?: string | string[] })
+              : {};
+          const page = "page" in input ? input.page : "";
+          const first = Array.isArray(page) ? page[0] : page;
+          const parsed = Number(first ?? "1");
+
+          if (!Number.isInteger(parsed) || parsed < 1) {
+            return {
+              issues: [{ message: "page must be a positive integer" }],
+            };
+          }
+
+          return {
+            value: { page: parsed },
+          };
+        },
+      },
+    };
+
+    const customValidatorProcedure = procedure
+      .query(parsePage)
+      .handle(({ query }) => {
+        const _query: { page: number } = query;
+
+        void _query;
+
+        return {
+          status: 200 as const,
+        };
+      });
+
+    expectTypeOf(customValidatorProcedure.handler).parameters.toMatchTypeOf<
+      [
+        {
+          query: {
+            page: number;
+          };
+        },
+      ]
+    >();
   });
 
   it("widens middleware context across multiple use calls", () => {
