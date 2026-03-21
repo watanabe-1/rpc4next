@@ -119,6 +119,27 @@ describe("integration next-app server route handlers", () => {
     });
   });
 
+  it("runs validator-stage customization in the integration fixture", async () => {
+    const { GET: procedureValidationBranchGet } = await import(
+      "../app/api/procedure-validation-branch/route"
+    );
+    const response = await procedureValidationBranchGet(
+      new NextRequest(
+        "http://127.0.0.1:3000/api/procedure-validation-branch?page=0",
+      ),
+      { params: Promise.resolve({}) },
+    );
+
+    expect(response.status).toBe(422);
+    await expect(response.json()).resolves.toEqual({
+      ok: false,
+      source: "procedure-validation-branch",
+      target: "query",
+      issueCount: 1,
+      receivedPage: "0",
+    });
+  });
+
   it("serves a plain Next.js dynamic route handler with params and query", async () => {
     const { GET: nativeDynamicGet } = await import(
       "../app/api/next-native/[itemId]/route"

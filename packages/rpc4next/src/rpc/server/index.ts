@@ -38,7 +38,12 @@ export type {
   ProcedureErrorRegistryEntry,
 } from "./procedure-kit";
 export { createProcedureKit } from "./procedure-kit";
-export type { ProcedureRouteContract } from "./procedure-types";
+export type {
+  ProcedureInputOptions,
+  ProcedureRouteContract,
+  ProcedureValidationErrorContext,
+  ProcedureValidationErrorHandlerResult,
+} from "./procedure-types";
 export { routeHandlerFactory } from "./route-handler-factory";
 export type {
   StandardSchemaV1,

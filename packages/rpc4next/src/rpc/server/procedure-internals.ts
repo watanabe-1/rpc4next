@@ -10,6 +10,7 @@ import type {
   ProcedureDefinition,
   ProcedureErrorContract,
   ProcedureInputContract,
+  ProcedureInputOptions,
   ProcedureInputTarget,
   ProcedureOutputContract,
   ProcedureRouteBinding,
@@ -152,10 +153,12 @@ export const withProcedureInputContract = <
   TValidationSchema extends ValidationSchema,
   TTarget extends ProcedureInputTarget,
   TSchema extends StandardSchemaV1,
+  TValue = unknown,
 >(
   definition: TDefinition,
   target: TTarget,
   schema: TSchema,
+  options?: ProcedureInputOptions<TTarget, TValue>,
 ): MergeProcedureDefinition<
   TDefinition,
   {
@@ -171,6 +174,10 @@ export const withProcedureInputContract = <
       contracts: {
         ...(definition.input?.contracts ?? {}),
         [target]: schema,
+      },
+      options: {
+        ...(definition.input?.options ?? {}),
+        ...(options === undefined ? {} : { [target]: options }),
       },
       validationSchema: {
         ...(definition.input?.validationSchema ?? {

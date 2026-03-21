@@ -1,0 +1,9 @@
+import type { ProcedureRouteContract } from "rpc4next/server";
+
+export type Params = {};
+export type RouteContract = ProcedureRouteContract<"/api/procedure-validation-branch", Params>;
+
+export const routeContract = {
+  pathname: "/api/procedure-validation-branch",
+  params: {} as Params,
+} as RouteContract;
