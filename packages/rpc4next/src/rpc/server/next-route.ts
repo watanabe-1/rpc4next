@@ -151,6 +151,17 @@ type InferProcedureValidationErrorResponse<
       : ProcedureErrorResponse<"BAD_REQUEST">
     : never;
 
+type InferProcedureOutputValidationErrorResponse<
+  TProcedure extends ProcedureTypeCarrier,
+  TValidateOutput extends boolean,
+> = TValidateOutput extends true
+  ? InferProcedureDefinition<TProcedure> extends {
+      output: ProcedureDefinition["output"];
+    }
+    ? ProcedureErrorResponse<"INTERNAL_SERVER_ERROR">
+    : never
+  : never;
+
 type InferProcedureHandlerResult<TProcedure extends ProcedureTypeCarrier> =
   TProcedure extends {
     handler: (...args: never[]) => infer TResult;
@@ -204,27 +215,39 @@ type NormalizeProcedureHandlerResult<TResult> = TResult extends
         ? TypedNextResponse<undefined, ResolveStatus<TStatus, 200>, ContentType>
         : TypedNextResponse<unknown, HttpStatusCode, ContentType>;
 
-type NextRouteResponse<TProcedure extends ProcedureTypeCarrier> =
+type NextRouteResponse<
+  TProcedure extends ProcedureTypeCarrier,
+  TValidateOutput extends boolean = false,
+> =
   IsNever<InferProcedureHandlerResult<TProcedure>> extends true
     ?
         | TypedNextResponse<unknown, HttpStatusCode, ContentType>
         | InferProcedureValidationErrorResponse<TProcedure>
+        | InferProcedureOutputValidationErrorResponse<
+            TProcedure,
+            TValidateOutput
+          >
         | InferProcedureErrorResponse<TProcedure>
     :
         | NormalizeProcedureHandlerResult<
             InferProcedureHandlerResult<TProcedure>
           >
         | InferProcedureValidationErrorResponse<TProcedure>
+        | InferProcedureOutputValidationErrorResponse<
+            TProcedure,
+            TValidateOutput
+          >
         | InferProcedureErrorResponse<TProcedure>;
 
 export type NextRouteHandler<
   TProcedure extends ProcedureTypeCarrier = ProcedureTypeCarrier,
   TMethod extends HttpMethod | undefined = undefined,
+  TValidateOutput extends boolean = false,
 > = WithProcedureDefinition<
   (
     request: NextRequest,
     segmentData: { params: Promise<Params> },
-  ) => Promise<NextRouteResponse<TProcedure>>,
+  ) => Promise<NextRouteResponse<TProcedure, TValidateOutput>>,
   TMethod extends HttpMethod
     ? MergeProcedureDefinition<
         InferProcedureDefinition<TProcedure>,
@@ -235,28 +258,78 @@ export type NextRouteHandler<
 
 export interface NextRouteOptions<TMethod extends HttpMethod = HttpMethod> {
   method?: TMethod;
+  validateOutput?: boolean;
 }
+
+const parseOutputWithSchema = async (
+  schema: StandardSchemaV1,
+  value: unknown,
+) => {
+  const result = await schema["~standard"].validate(value);
+
+  if (result.issues) {
+    throw rpcError("INTERNAL_SERVER_ERROR", {
+      message: "Procedure output validation failed.",
+      details: result.issues,
+    });
+  }
+
+  return result.value;
+};
+
+const isSuccessfulStatus = (status: HttpStatusCode | undefined) => {
+  return status === undefined || (status >= 200 && status < 300);
+};
+
+const shouldValidateProcedureOutput = (
+  result: Response | NextResponse | ProcedureResult | undefined,
+): result is ProcedureResult => {
+  if (!result || result instanceof Response || !isProcedureResult(result)) {
+    return false;
+  }
+
+  if (result.redirect || result.body === undefined) {
+    return false;
+  }
+
+  return isSuccessfulStatus(result.status);
+};
 
 export const nextRoute = <
   TProcedure extends ProcedureTypeCarrier,
   TMethod extends HttpMethod | undefined = undefined,
+  TValidateOutput extends boolean = false,
 >(
   procedure: TProcedure,
   options: NextRouteOptions<Exclude<TMethod, undefined>> &
-    NextRouteMethodConstraint<TProcedure, TMethod> = {} as NextRouteOptions<
-    Exclude<TMethod, undefined>
-  > &
-    NextRouteMethodConstraint<TProcedure, TMethod>,
-): NextRouteHandler<TProcedure, TMethod> => {
+    NextRouteMethodConstraint<TProcedure, TMethod> & {
+      validateOutput?: TValidateOutput;
+    } = {} as NextRouteOptions<Exclude<TMethod, undefined>> &
+    NextRouteMethodConstraint<TProcedure, TMethod> & {
+      validateOutput?: TValidateOutput;
+    },
+): NextRouteHandler<TProcedure, TMethod, TValidateOutput> => {
   const handler = procedure.handler as (
     context: InferProcedureHandlerContext<TProcedure>,
   ) =>
     | InferProcedureHandlerResult<TProcedure>
     | Promise<InferProcedureHandlerResult<TProcedure>>;
+  const outputSchema = procedure.definition.output?.schema;
+
+  if (
+    options.validateOutput &&
+    outputSchema !== undefined &&
+    !isStandardSchemaV1(outputSchema)
+  ) {
+    throw new Error(
+      "Procedure output contracts must implement Standard Schema V1 when validateOutput is enabled.",
+    );
+  }
+
   const routeHandler = async (
     request: NextRequest,
     segmentData: { params: Promise<Params> },
-  ): Promise<NextRouteResponse<TProcedure>> => {
+  ): Promise<NextRouteResponse<TProcedure, TValidateOutput>> => {
     const routeContext = createRouteContext(request, segmentData);
     const contracts = procedure.definition.input?.contracts ?? {};
 
@@ -353,28 +426,55 @@ export const nextRoute = <
         },
       );
 
+      const normalizedResult =
+        options.validateOutput &&
+        outputSchema !== undefined &&
+        shouldValidateProcedureOutput(
+          result as Response | NextResponse | ProcedureResult,
+        )
+          ? {
+              ...(result as ProcedureResult),
+              body: await parseOutputWithSchema(
+                outputSchema as StandardSchemaV1,
+                (result as ProcedureResult).body,
+              ),
+            }
+          : (result as Response | NextResponse | ProcedureResult);
+
       return normalizeProcedureResult(
         routeContext,
-        result as Response | NextResponse | ProcedureResult,
-      ) as NextRouteResponse<TProcedure>;
+        normalizedResult,
+      ) as NextRouteResponse<TProcedure, TValidateOutput>;
     } catch (error) {
       if (error instanceof Response) {
-        return error as NextRouteResponse<TProcedure>;
+        return error as NextRouteResponse<TProcedure, TValidateOutput>;
       }
 
       const rpcErrorResponse = normalizeRpcErrorResponse(error, routeContext);
       if (rpcErrorResponse) {
-        return rpcErrorResponse as NextRouteResponse<TProcedure>;
+        return rpcErrorResponse as NextRouteResponse<
+          TProcedure,
+          TValidateOutput
+        >;
       }
 
       throw error;
     }
   };
 
-  return attachProcedureDefinition(
-    routeHandler,
-    options.method
+  return attachProcedureDefinition(routeHandler, {
+    ...(options.method
       ? withProcedureMethod(procedure.definition, options.method)
-      : procedure.definition,
-  ) as NextRouteHandler<TProcedure, TMethod>;
+      : procedure.definition),
+    ...(options.validateOutput &&
+    procedure.definition.output !== undefined &&
+    outputSchema !== undefined
+      ? {
+          output: {
+            ...procedure.definition.output,
+            runtime: true,
+          },
+        }
+      : {}),
+  }) as NextRouteHandler<TProcedure, TMethod, TValidateOutput>;
 };

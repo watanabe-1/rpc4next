@@ -247,6 +247,15 @@ type InferProcedureValidationErrorResponse<T> =
       : ProcedureErrorResponse<"BAD_REQUEST">
     : never;
 
+type InferProcedureOutputValidationErrorResponse<T> =
+  ExtractAttachedProcedureDefinition<T> extends {
+    output: {
+      runtime: true;
+    };
+  }
+    ? ProcedureErrorResponse<"INTERNAL_SERVER_ERROR">
+    : never;
+
 type ReplaceSuccessResponseBody<TResponse, TOutput> =
   TResponse extends TypedNextResponse<
     unknown,
@@ -279,6 +288,7 @@ type InferTypedNextResponseType<T> = T extends (
       ?
           | Awaited<ReturnType<T>>
           | InferProcedureValidationErrorResponse<T>
+          | InferProcedureOutputValidationErrorResponse<T>
           | InferProcedureErrorResponse<T>
       :
           | TypedNextResponse<
@@ -287,10 +297,12 @@ type InferTypedNextResponseType<T> = T extends (
               ContentType
             >
           | InferProcedureValidationErrorResponse<T>
+          | InferProcedureOutputValidationErrorResponse<T>
           | InferProcedureErrorResponse<T>
     :
         | InferTypedNextResponseTypeFromOutput<T, InferProcedureOutput<T>>
         | InferProcedureValidationErrorResponse<T>
+        | InferProcedureOutputValidationErrorResponse<T>
         | InferProcedureErrorResponse<T>
   : TypedNextResponse<InferNextResponseType<T>, HttpStatusCode, ContentType>;
 

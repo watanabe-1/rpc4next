@@ -291,6 +291,119 @@ describe("nextRoute", () => {
     await expect(response.text()).resolves.toBe("raw-response");
   });
 
+  it("validates procedure output bodies at runtime when enabled", async () => {
+    const route = nextRoute(
+      procedure
+        .output(
+          z.object({
+            ok: z.literal(true),
+            count: z.number().int().nonnegative(),
+          }),
+        )
+        .handle(async () => ({
+          status: 200,
+          body: {
+            ok: true,
+            count: 1,
+          },
+        })),
+      { method: "GET", validateOutput: true },
+    );
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      count: 1,
+    });
+  });
+
+  it("normalizes invalid runtime output as INTERNAL_SERVER_ERROR", async () => {
+    const route = nextRoute(
+      procedure
+        .output(
+          z.object({
+            ok: z.literal(true),
+            count: z.number().int().nonnegative(),
+          }),
+        )
+        .handle(async () => ({
+          status: 200,
+          body: {
+            ok: true,
+            count: -1,
+          },
+        })),
+      { method: "GET", validateOutput: true },
+    );
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Procedure output validation failed.",
+        details: expect.any(Array),
+      },
+    });
+  });
+
+  it("skips runtime output validation for raw Response escape hatches", async () => {
+    const route = nextRoute(
+      procedure
+        .output(
+          z.object({
+            ok: z.literal(true),
+          }),
+        )
+        .handle(async () => {
+          return new Response(JSON.stringify({ ok: false }), {
+            status: 202,
+            headers: {
+              "content-type": "application/json",
+            },
+          });
+        }),
+      { method: "GET", validateOutput: true },
+    );
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(202);
+    await expect(response.json()).resolves.toEqual({
+      ok: false,
+    });
+  });
+
+  it("requires Standard Schema output contracts when runtime validation is enabled", () => {
+    expect(() =>
+      nextRoute(
+        procedure
+          .output({
+            _output: {
+              ok: true as const,
+            },
+          })
+          .handle(async () => ({
+            body: {
+              ok: true,
+            },
+          })),
+        { method: "GET", validateOutput: true },
+      ),
+    ).toThrow(
+      "Procedure output contracts must implement Standard Schema V1 when validateOutput is enabled.",
+    );
+  });
+
   it("supports redirects from normalized procedure results", async () => {
     const route = nextRoute(
       procedure.handle(async () => ({
@@ -545,6 +658,50 @@ describe("nextRoute", () => {
             };
           },
           400,
+          "application/json"
+        >;
+    const _fromActual: ExpectedResponse = {} as ActualResponse;
+    const _fromExpected: ActualResponse = {} as ExpectedResponse;
+
+    void _fromActual;
+    void _fromExpected;
+    expect(true).toBe(true);
+  });
+
+  it("includes implicit INTERNAL_SERVER_ERROR responses for runtime-enforced output routes", () => {
+    const route = nextRoute(
+      procedure
+        .output(
+          z.object({
+            ok: z.literal(true),
+          }),
+        )
+        .handle(async () => ({
+          body: {
+            ok: true,
+          },
+        })),
+      { method: "GET", validateOutput: true },
+    );
+
+    type ActualResponse = Awaited<ReturnType<typeof route>>;
+    type ExpectedResponse =
+      | TypedNextResponse<
+          {
+            ok: true;
+          },
+          200,
+          "application/json"
+        >
+      | TypedNextResponse<
+          {
+            error: {
+              code: "INTERNAL_SERVER_ERROR";
+              message: string;
+              details?: unknown;
+            };
+          },
+          500,
           "application/json"
         >;
     const _fromActual: ExpectedResponse = {} as ActualResponse;
