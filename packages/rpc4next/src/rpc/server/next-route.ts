@@ -84,16 +84,18 @@ const getContractValue = async (
   );
 };
 
-type ProcedureTypeCarrier<
-  TDefinition extends ProcedureDefinition = ProcedureDefinition,
-> = {
-  definition: TDefinition;
+type ProcedureTypeCarrier = {
+  definition: ProcedureDefinition;
   middlewares: readonly ProcedureMiddleware[];
   handler: (...args: never[]) => unknown;
 };
 
 type InferProcedureDefinition<TProcedure extends ProcedureTypeCarrier> =
-  TProcedure["definition"];
+  TProcedure extends {
+    definition: infer TDefinition extends ProcedureDefinition;
+  }
+    ? TDefinition
+    : ProcedureDefinition;
 
 type ProcedureHasJsonContract<TProcedure extends ProcedureTypeCarrier> =
   InferProcedureDefinition<TProcedure> extends {
@@ -126,14 +128,16 @@ type ProcedureErrorResponse<
     >
   : never;
 
+type InferProcedureErrorContractResponse<TError> =
+  TError extends ProcedureErrorContract<infer TCode, infer TDetails>
+    ? ProcedureErrorResponse<TCode, TDetails>
+    : never;
+
 type InferProcedureErrorResponse<TProcedure extends ProcedureTypeCarrier> =
   "error" extends keyof InferProcedureDefinition<TProcedure>
-    ? InferProcedureDefinition<TProcedure>["error"] extends ProcedureErrorContract<
-        infer TCode,
-        infer TDetails
+    ? InferProcedureErrorContractResponse<
+        InferProcedureDefinition<TProcedure>["error"]
       >
-      ? ProcedureErrorResponse<TCode, TDetails>
-      : never
     : never;
 
 type InferProcedureValidationErrorResponse<

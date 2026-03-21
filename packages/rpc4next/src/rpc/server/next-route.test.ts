@@ -449,6 +449,67 @@ describe("nextRoute", () => {
     expect(true).toBe(true);
   });
 
+  it("preserves shared procedure error contracts in extended route types", () => {
+    const guardedBaseProcedure = procedure
+      .error<"UNAUTHORIZED", { reason: "missing_demo_user" }>("UNAUTHORIZED")
+      .error<"FORBIDDEN", { reason: "suspended_account" }>("FORBIDDEN");
+
+    const route = nextRoute(
+      guardedBaseProcedure
+        .error<"FORBIDDEN", { reason: "editor_only" }>("FORBIDDEN")
+        .handle(async () => ({
+          status: 204 as const,
+        })),
+    );
+
+    type ActualResponse = Awaited<ReturnType<typeof route>>;
+    type ExpectedResponse =
+      | TypedNextResponse<
+          undefined,
+          204,
+          import("../lib/content-type-types").ContentType
+        >
+      | TypedNextResponse<
+          {
+            error: {
+              code: "UNAUTHORIZED";
+              message: string;
+              details?: { reason: "missing_demo_user" };
+            };
+          },
+          401,
+          "application/json"
+        >
+      | TypedNextResponse<
+          {
+            error: {
+              code: "FORBIDDEN";
+              message: string;
+              details?: { reason: "suspended_account" };
+            };
+          },
+          403,
+          "application/json"
+        >
+      | TypedNextResponse<
+          {
+            error: {
+              code: "FORBIDDEN";
+              message: string;
+              details?: { reason: "editor_only" };
+            };
+          },
+          403,
+          "application/json"
+        >;
+    const _fromActual: ExpectedResponse = {} as ActualResponse;
+    const _fromExpected: ActualResponse = {} as ExpectedResponse;
+
+    void _fromActual;
+    void _fromExpected;
+    expect(true).toBe(true);
+  });
+
   it("includes implicit BAD_REQUEST responses for validated procedure routes", () => {
     const route = nextRoute(
       procedure

@@ -16,6 +16,7 @@ import {
   withProcedureOutput,
 } from "./procedure-internals";
 import type {
+  AppendProcedureErrorDefinition,
   MergeProcedureDefinition,
   ProcedureDefinition,
   ProcedureErrorContract,
@@ -181,18 +182,18 @@ export const routeHandlerFactory =
           ),
         error: <TCode extends RpcErrorCode, TDetails = unknown>(code: TCode) =>
           createBuilder<
-            MergeProcedureDefinition<
+            AppendProcedureErrorDefinition<
               TProcedureDefinition,
-              { error: ProcedureErrorContract<TCode, TDetails> }
+              ProcedureErrorContract<TCode, TDetails>
             >
           >(
             withProcedureError<TProcedureDefinition, TCode, TDetails>(
               definition as TProcedureDefinition,
               code,
             ) as Partial<
-              MergeProcedureDefinition<
+              AppendProcedureErrorDefinition<
                 TProcedureDefinition,
-                { error: ProcedureErrorContract<TCode, TDetails> }
+                ProcedureErrorContract<TCode, TDetails>
               >
             >,
           ),

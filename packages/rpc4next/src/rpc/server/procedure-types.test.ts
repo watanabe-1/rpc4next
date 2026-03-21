@@ -8,6 +8,7 @@ import {
   procedureDefinitionSymbol,
 } from "./procedure-types";
 import { routeHandlerFactory } from "./route-handler-factory";
+import type { ValidationSchema } from "./route-types";
 import type { StandardSchemaV1 } from "./standard-schema";
 
 describe("procedure contract internals", () => {
@@ -46,10 +47,12 @@ describe("procedure contract internals", () => {
       },
       { ok: true },
       { tags: string[] },
-      "BAD_REQUEST",
-      {
-        issue: string;
-      }
+      ProcedureErrorContract<
+        "BAD_REQUEST",
+        {
+          issue: string;
+        }
+      >
     >;
 
     expectTypeOf<ExpectedInput>().toEqualTypeOf<{
@@ -75,10 +78,29 @@ describe("procedure contract internals", () => {
           };
         };
       };
+      variants?: readonly ProcedureErrorContract[];
     }>();
     expectTypeOf<ExpectedDefinition>().toMatchTypeOf<{
       method?: "GET";
       meta?: { tags: string[] };
+    }>();
+  });
+
+  it("supports unioned error contracts for shared procedure presets", () => {
+    type SharedErrors =
+      | ProcedureErrorContract<"UNAUTHORIZED", { reason: "missing_demo_user" }>
+      | ProcedureErrorContract<"FORBIDDEN", { reason: "suspended_account" }>;
+
+    type Definition = ProcedureDefinition<
+      "GET",
+      ValidationSchema,
+      { ok: true },
+      { auth: "required" },
+      SharedErrors
+    >;
+
+    expectTypeOf<Definition>().toMatchTypeOf<{
+      error?: SharedErrors;
     }>();
   });
 });

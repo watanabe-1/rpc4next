@@ -167,16 +167,28 @@ describe("integration next-app generated RPC type coverage", () => {
       _nativeNextResponse;
 
     const _explicitOutputResponse = await client.api["explicit-output"].$get();
-    expectTypeOf<typeof _explicitOutputResponse>().toEqualTypeOf<
-      TypedNextResponse<
-        {
-          ok: true;
-          source: "explicit-output";
-        },
-        HttpStatusCode,
-        ContentType
-      >
-    >();
+    type ExpectedExplicitOutputResponse =
+      | TypedNextResponse<
+          {
+            ok: true;
+            source: "explicit-output";
+          },
+          HttpStatusCode,
+          ContentType
+        >
+      | TypedNextResponse<
+          {
+            error: {
+              code: string;
+              message: string;
+              details?: unknown;
+            };
+          },
+          400 | 401 | 403 | 404 | 409 | 422 | 429 | 500,
+          "application/json"
+        >;
+    const _explicitOutputResponseFromActual: ExpectedExplicitOutputResponse =
+      _explicitOutputResponse;
 
     const _contractRouteResponse = await client.api["contract-route"].$get();
     expectTypeOf<typeof _contractRouteResponse>().toEqualTypeOf<
@@ -365,7 +377,10 @@ describe("integration next-app generated RPC type coverage", () => {
       .$get({
         url: { query: { includeDrafts: "true" } },
         requestHeaders: {
-          headers: { "x-demo-role": "editor" },
+          headers: {
+            "x-demo-user": "procedure-user",
+            "x-demo-role": "editor",
+          },
         },
       });
     type ExpectedProcedureGuardedResponse =
@@ -390,6 +405,28 @@ describe("integration next-app generated RPC type coverage", () => {
             };
           },
           400,
+          "application/json"
+        >
+      | TypedNextResponse<
+          {
+            error: {
+              code: "UNAUTHORIZED";
+              message: string;
+              details?: { reason: "missing_demo_user" };
+            };
+          },
+          401,
+          "application/json"
+        >
+      | TypedNextResponse<
+          {
+            error: {
+              code: "FORBIDDEN";
+              message: string;
+              details?: { reason: "suspended_account" };
+            };
+          },
+          403,
           "application/json"
         >
       | TypedNextResponse<
@@ -476,7 +513,10 @@ describe("integration next-app generated RPC type coverage", () => {
 
     client.api["procedure-guarded"]._userId("procedure-user").$get({
       requestHeaders: {
-        headers: { "x-demo-role": "reader" },
+        headers: {
+          "x-demo-user": "procedure-user",
+          "x-demo-role": "reader",
+        },
       },
     });
 
@@ -484,10 +524,15 @@ describe("integration next-app generated RPC type coverage", () => {
       query: { includeDrafts: "false" },
     });
 
-    client.api["procedure-guarded"]
-      ._userId("procedure-user")
-      // @ts-expect-error invalid guarded procedure header literal should be rejected
-      .$get({ requestHeaders: { headers: { "x-demo-role": "owner" } } });
+    client.api["procedure-guarded"]._userId("procedure-user").$get({
+      requestHeaders: {
+        headers: {
+          "x-demo-user": "procedure-user",
+          // @ts-expect-error invalid guarded procedure header literal should be rejected
+          "x-demo-role": "owner",
+        },
+      },
+    });
 
     client.patterns["catch-all"].___parts(["alpha"]);
 

@@ -33,6 +33,7 @@ export interface ProcedureErrorContract<
 > {
   code?: TCode;
   envelope?: RpcErrorEnvelope<TCode, TDetails>;
+  variants?: readonly ProcedureErrorContract[];
 }
 
 export interface ProcedureDefinition<
@@ -40,20 +41,44 @@ export interface ProcedureDefinition<
   TValidationSchema extends ValidationSchema = ValidationSchema,
   TRouteResponse = unknown,
   TMeta extends RpcMeta = RpcMeta,
-  TErrorCode extends RpcErrorCode = RpcErrorCode,
-  TErrorDetails = unknown,
+  TError extends ProcedureErrorContract = ProcedureErrorContract,
 > {
   method?: THttpMethod;
   input?: ProcedureInputContract<TValidationSchema>;
   output?: ProcedureOutputContract<TRouteResponse>;
-  error?: ProcedureErrorContract<TErrorCode, TErrorDetails>;
+  error?: TError;
   meta?: TMeta;
 }
+
+export type EmptyProcedureDefinition = ProcedureDefinition<
+  HttpMethod,
+  ValidationSchema,
+  unknown,
+  RpcMeta,
+  never
+>;
 
 export type MergeProcedureDefinition<
   TBase extends ProcedureDefinition,
   TExtra extends Partial<ProcedureDefinition>,
 > = Omit<TBase, keyof TExtra> & TExtra;
+
+type ExtractProcedureErrorDefinition<TDefinition extends ProcedureDefinition> =
+  TDefinition extends {
+    error?: infer TError;
+  }
+    ? Exclude<TError, undefined>
+    : never;
+
+export type AppendProcedureErrorDefinition<
+  TDefinition extends ProcedureDefinition,
+  TError extends ProcedureErrorContract,
+> = MergeProcedureDefinition<
+  TDefinition,
+  {
+    error: ExtractProcedureErrorDefinition<TDefinition> | TError;
+  }
+>;
 
 export const procedureDefinitionSymbol = Symbol.for(
   "rpc4next.procedure.definition",
