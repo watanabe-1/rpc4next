@@ -374,6 +374,25 @@ describe("integration next-app server route handlers", () => {
     });
   });
 
+  it("normalizes invalid procedure output as an INTERNAL_SERVER_ERROR envelope", async () => {
+    const { GET: procedureInvalidOutputGet } = await import(
+      "../app/api/procedure-invalid-output/route"
+    );
+    const response = await procedureInvalidOutputGet(
+      new NextRequest("http://127.0.0.1:3000/api/procedure-invalid-output"),
+      { params: Promise.resolve({}) },
+    );
+
+    expect(response.status).toBe(500);
+    expect(response.headers.get("content-type")).toContain("application/json");
+    await expect(response.json()).resolves.toMatchObject({
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Procedure output validation failed.",
+      },
+    });
+  });
+
   it("returns a validation error when required request metadata is missing", async () => {
     vi.spyOn(validatorUtils, "getHeadersObject").mockResolvedValueOnce({});
     vi.spyOn(validatorUtils, "getCookiesObject").mockResolvedValueOnce({});
