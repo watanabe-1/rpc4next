@@ -8,6 +8,7 @@ export type ProcedureInputTarget =
   | "params"
   | "query"
   | "json"
+  | "formData"
   | "headers"
   | "cookies";
 

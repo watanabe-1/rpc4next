@@ -47,6 +47,9 @@ export const validator = <
           if (target === "json") {
             return rc.req.json();
           }
+          if (target === "formData") {
+            return Object.fromEntries(await rc.req.formData());
+          }
           if (target === "headers") {
             return await getHeadersObject();
           }

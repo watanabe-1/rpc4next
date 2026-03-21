@@ -213,11 +213,17 @@ export type ValidatedData = {
   [__validatedBrand]: true;
 };
 
-type ValidationTargetKey = "params" | "query" | "json" | "headers" | "cookies";
+type ValidationTargetKey =
+  | "params"
+  | "query"
+  | "json"
+  | "formData"
+  | "headers"
+  | "cookies";
 
 export type ValidationTarget<THttpMethod extends HttpMethod = HttpMethod> =
   THttpMethod extends "GET" | "HEAD"
-    ? Exclude<ValidationTargetKey, "json">
+    ? Exclude<ValidationTargetKey, "json" | "formData">
     : ValidationTargetKey;
 
 type ValidationFor<

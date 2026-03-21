@@ -266,6 +266,37 @@ describe("integration next-app server route handlers", () => {
     });
   });
 
+  it("serves a procedure-based POST route with multipart form-data", async () => {
+    const { POST: procedureFormDataPost } = await import(
+      "../app/api/procedure-form-data/route"
+    );
+    const formData = new FormData();
+    formData.set("displayName", "demo-user");
+    formData.set(
+      "avatar",
+      new File(["avatar-bytes"], "avatar.png", { type: "image/png" }),
+    );
+    formData.append("tags", "alpha");
+    formData.append("tags", "beta");
+
+    const response = await procedureFormDataPost(
+      new NextRequest("http://127.0.0.1:3000/api/procedure-form-data", {
+        method: "POST",
+        body: formData,
+      }),
+      { params: Promise.resolve({}) },
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      displayName: "demo-user",
+      filename: "avatar.png",
+      tags: ["alpha", "beta"],
+      source: "procedure-form-data",
+    });
+  });
+
   it("serves a guarded procedure route when the required role is present", async () => {
     const { GET: procedureGuardedGet } = await import(
       "../app/api/procedure-guarded/[userId]/route"

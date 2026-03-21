@@ -260,6 +260,143 @@ describe("nextRoute", () => {
     expect(true).toBe(true);
   });
 
+  it("normalizes multipart form-data into validator-friendly input", async () => {
+    const route = nextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .formData(
+          z.object({
+            displayName: z.string().min(1),
+            avatar: z.instanceof(File),
+            tags: z.array(z.string()).optional(),
+          }),
+        )
+        .handle(async ({ formData }) => ({
+          body: {
+            displayName: formData.displayName,
+            filename: formData.avatar.name,
+            tags: formData.tags ?? [],
+          },
+        })),
+      { method: "POST" },
+    );
+
+    const payload = new FormData();
+    payload.set("displayName", "demo-user");
+    payload.set(
+      "avatar",
+      new File(["avatar"], "avatar.png", { type: "image/png" }),
+    );
+    payload.append("tags", "alpha");
+    payload.append("tags", "beta");
+
+    const response = await route(
+      new NextRequest("http://127.0.0.1:3000/api/procedure", {
+        method: "POST",
+        body: payload,
+      }),
+      {
+        params: Promise.resolve({}),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      displayName: "demo-user",
+      filename: "avatar.png",
+      tags: ["alpha", "beta"],
+    });
+  });
+
+  it("keeps single form-data values scalar after normalization", async () => {
+    const route = nextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .formData(
+          z.object({
+            displayName: z.string(),
+            avatar: z.instanceof(File),
+          }),
+        )
+        .handle(async ({ formData }) => ({
+          body: {
+            displayName: formData.displayName,
+            avatarName: formData.avatar.name,
+          },
+        })),
+      { method: "POST" },
+    );
+
+    const payload = new FormData();
+    payload.set("displayName", "scalar-user");
+    payload.set(
+      "avatar",
+      new File(["avatar"], "scalar.png", { type: "image/png" }),
+    );
+
+    const response = await route(
+      new NextRequest("http://127.0.0.1:3000/api/procedure", {
+        method: "POST",
+        body: payload,
+      }),
+      {
+        params: Promise.resolve({}),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      displayName: "scalar-user",
+      avatarName: "scalar.png",
+    });
+  });
+
+  it("rejects GET procedure definitions with formData contracts at compile time", () => {
+    const invalidProcedure = procedure
+      .forRoute(staticRouteContract)
+      .formData(
+        z.object({
+          displayName: z.string(),
+        }),
+      )
+      .handle(async ({ formData }) => ({
+        body: formData,
+      }));
+
+    // @ts-expect-error GET procedures must not declare FormData input contracts
+    nextRoute(invalidProcedure, { method: "GET" });
+
+    expect(true).toBe(true);
+  });
+
+  it("rejects formData contracts on GET and HEAD requests", async () => {
+    const route = nextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .formData(
+          z.object({
+            displayName: z.string(),
+          }),
+        )
+        .handle(async ({ formData }) => ({
+          body: formData,
+        })),
+    );
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: "BAD_REQUEST",
+        message:
+          "FormData input contracts are not supported for GET or HEAD requests.",
+      },
+    });
+  });
+
   it("serializes malformed JSON bodies as BAD_REQUEST errors", async () => {
     const route = nextRoute(
       procedure

@@ -95,6 +95,87 @@ describe("procedure builder type definitions", () => {
     }>();
   });
 
+  it("threads formData contracts into the handler context", () => {
+    const uploadProcedure = procedure
+      .forRoute(guardedUserRouteContract)
+      .params(z.object({ userId: z.string() }))
+      .formData(
+        z.object({
+          displayName: z.string(),
+          avatar: z.instanceof(File),
+          tags: z.array(z.string()).optional(),
+        }),
+      )
+      .headers(z.object({ "x-procedure-test": z.string() }))
+      .cookies(z.object({ session: z.string() }))
+      .output({
+        _output: {
+          ok: true as const,
+          displayName: "" as string,
+          source: "procedure" as const,
+        },
+      })
+      .use(async ({ headers }) => ({
+        ctx: {
+          requestId: headers["x-procedure-test"],
+        },
+      }))
+      .handle(async ({ params, formData, headers, cookies, ctx }) => {
+        const _params: { userId: string } = params;
+        const _formData: {
+          displayName: string;
+          avatar: File;
+          tags?: string[] | undefined;
+        } = formData;
+        const _headers: { "x-procedure-test": string } = headers;
+        const _cookies: { session: string } = cookies;
+        const _ctx: { requestId: string } = ctx;
+
+        void _params;
+        void _formData;
+        void _headers;
+        void _cookies;
+        void _ctx;
+
+        return {
+          status: 200 as const,
+          body: {
+            ok: true as const,
+            displayName: formData.displayName,
+            source: "procedure" as const,
+          },
+        };
+      });
+
+    expectTypeOf(uploadProcedure.definition).toMatchTypeOf<{
+      route?: {
+        pathname: "/api/procedure-guarded/[userId]";
+        params: { userId: string };
+      };
+      input?: {
+        validationSchema?: {
+          output: {
+            params: { userId: string };
+            formData: {
+              displayName: string;
+              avatar: File;
+              tags?: string[] | undefined;
+            };
+            headers: { "x-procedure-test": string };
+            cookies: { session: string };
+          };
+        };
+      };
+      output?: {
+        response?: {
+          ok: true;
+          displayName: string;
+          source: "procedure";
+        };
+      };
+    }>();
+  });
+
   it("supports custom procedure validators without zod coupling", () => {
     const parsePage: StandardSchemaV1<
       { page?: string | string[] },
@@ -146,6 +227,24 @@ describe("procedure builder type definitions", () => {
         },
       ]
     >();
+  });
+
+  it("rejects formData after json at compile time", () => {
+    procedure
+      .json(z.object({ title: z.string() }))
+      // @ts-expect-error procedure body contracts are mutually exclusive
+      .formData(z.object({ title: z.string() }));
+
+    expect(true).toBe(true);
+  });
+
+  it("rejects json after formData at compile time", () => {
+    procedure
+      .formData(z.object({ title: z.string() }))
+      // @ts-expect-error procedure body contracts are mutually exclusive
+      .json(z.object({ title: z.string() }));
+
+    expect(true).toBe(true);
   });
 
   it("widens middleware context across multiple use calls", () => {
