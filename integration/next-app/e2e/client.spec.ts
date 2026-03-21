@@ -64,4 +64,39 @@ test.describe("integration next-app rpc4next browser client e2e", () => {
       "includePosts",
     );
   });
+
+  test("generated client handles guarded procedure success and typed forbidden envelopes", async ({
+    page,
+  }) => {
+    await page.goto("/e2e-client");
+
+    await page.getByRole("button", { name: "call guarded procedure" }).click();
+    await expect(page.getByTestId("procedure-guarded-result")).toHaveText(
+      JSON.stringify({
+        ok: true,
+        status: 200,
+        body: {
+          ok: true,
+          userId: "browser-user",
+          includeDrafts: true,
+          role: "editor",
+          source: "procedure-guarded",
+          requestId: "guarded:editor",
+        },
+      }),
+    );
+
+    await page
+      .getByRole("button", { name: "call forbidden procedure" })
+      .click();
+    await expect(page.getByTestId("procedure-forbidden-result")).toContainText(
+      '"status":403',
+    );
+    await expect(page.getByTestId("procedure-forbidden-result")).toContainText(
+      '"code":"FORBIDDEN"',
+    );
+    await expect(page.getByTestId("procedure-forbidden-result")).toContainText(
+      "editor_only",
+    );
+  });
 });

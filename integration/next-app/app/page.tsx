@@ -4,6 +4,7 @@ export default function HomePage() {
   const userUrl = rpcClient.api.users
     ._userId("demo-user")
     .$url({ query: { includePosts: "true" } });
+  const procedureExamplesUrl = "/procedure-examples";
 
   return (
     <main>
@@ -12,6 +13,9 @@ export default function HomePage() {
         This app verifies the rpc4next CLI output against a live Next.js app.
       </p>
       <code>{userUrl.relativePath}</code>
+      <p>
+        Procedure examples live at <code>{procedureExamplesUrl}</code>.
+      </p>
     </main>
   );
 }
