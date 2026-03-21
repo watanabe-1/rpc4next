@@ -149,6 +149,38 @@ type ExtendProcedureInputDefinition<
   }
 >;
 
+type HasProcedureInputContractTarget<
+  TDefinition extends ProcedureDefinition,
+  TTarget extends ProcedureInputTarget,
+> = TDefinition extends {
+  input: ProcedureInputContract<infer TValidationSchema>;
+}
+  ? TTarget extends keyof TValidationSchema["input"]
+    ? true
+    : false
+  : false;
+
+type BodyContractConflictError<
+  TUsed extends "json" | "formData",
+  TNext extends "json" | "formData",
+> = {
+  __error__: "Procedure body contracts are mutually exclusive; use either .json(schema) or .formData(schema), not both.";
+  __existingBodyContract__: TUsed;
+  __nextBodyContract__: TNext;
+};
+
+type BodyContractSchemaArg<
+  TDefinition extends ProcedureDefinition,
+  TTarget extends "json" | "formData",
+  TSchema extends StandardSchemaV1,
+> = TTarget extends "json"
+  ? HasProcedureInputContractTarget<TDefinition, "formData"> extends true
+    ? TSchema & BodyContractConflictError<"formData", "json">
+    : TSchema
+  : HasProcedureInputContractTarget<TDefinition, "json"> extends true
+    ? TSchema & BodyContractConflictError<"json", "formData">
+    : TSchema;
+
 type InvalidBoundRouteParamsSchema<TExpected, TActual> = {
   __error__: "Procedure params schema output must cover the generated route params contract.";
   __expectedParams__: TExpected;
@@ -205,6 +237,7 @@ export type ProcedureHandlerContext<
   params: ProcedureValueFor<TValidationSchema, "params", TBoundParams>;
   query: ProcedureValueFor<TValidationSchema, "query", Query>;
   json: ProcedureValueFor<TValidationSchema, "json", undefined>;
+  formData: ProcedureValueFor<TValidationSchema, "formData", undefined>;
   headers: ProcedureValueFor<TValidationSchema, "headers", undefined>;
   cookies: ProcedureValueFor<TValidationSchema, "cookies", undefined>;
   ctx: TContext;
@@ -307,9 +340,16 @@ export interface ProcedureBuilder<
   >;
 
   json<TSchema extends StandardSchemaV1>(
-    schema: TSchema,
+    schema: BodyContractSchemaArg<TDefinition, "json", TSchema>,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "json", TSchema>,
+    TContext
+  >;
+
+  formData<TSchema extends StandardSchemaV1>(
+    schema: BodyContractSchemaArg<TDefinition, "formData", TSchema>,
+  ): ProcedureBuilder<
+    ExtendProcedureInputDefinition<TDefinition, "formData", TSchema>,
     TContext
   >;
 
@@ -447,6 +487,24 @@ const createProcedureBuilder = <
     return withInputContract("params", schema as TSchema);
   };
 
+  const withJson = <TSchema extends StandardSchemaV1>(
+    schema: BodyContractSchemaArg<TDefinition, "json", TSchema>,
+  ): ProcedureBuilder<
+    ExtendProcedureInputDefinition<TDefinition, "json", TSchema>,
+    TContext
+  > => {
+    return withInputContract("json", schema as TSchema);
+  };
+
+  const withFormData = <TSchema extends StandardSchemaV1>(
+    schema: BodyContractSchemaArg<TDefinition, "formData", TSchema>,
+  ): ProcedureBuilder<
+    ExtendProcedureInputDefinition<TDefinition, "formData", TSchema>,
+    TContext
+  > => {
+    return withInputContract("formData", schema as TSchema);
+  };
+
   const withOutput = <TSchema, TOutput = InferSchemaOutput<TSchema>>(
     schema: TSchema,
   ): ProcedureBuilder<
@@ -496,7 +554,8 @@ const createProcedureBuilder = <
     forRoute: withRoute,
     params: withParams,
     query: (schema) => withInputContract("query", schema),
-    json: (schema) => withInputContract("json", schema),
+    json: withJson,
+    formData: withFormData,
     headers: (schema) => withInputContract("headers", schema),
     cookies: (schema) => withInputContract("cookies", schema),
     output: withOutput,

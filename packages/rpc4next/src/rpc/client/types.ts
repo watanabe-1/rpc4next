@@ -116,8 +116,13 @@ type UrlArgsObj<T, TQuery, TUrlOptions = UrlOptions<T, TQuery>> =
     : { url: TUrlOptions };
 
 export type JsonBodyOptions<TJson = unknown> = { json: TJson };
-type BodyArgsObj<TJson> =
-  IsNever<TJson> extends true ? unknown : { body: JsonBodyOptions<TJson> };
+export type FormDataBodyOptions = { formData: FormData };
+type BodyArgsObj<TJson, TFormData> =
+  IsNever<TJson> extends true
+    ? IsNever<TFormData> extends true
+      ? unknown
+      : { body: FormDataBodyOptions }
+    : { body: JsonBodyOptions<TJson> };
 
 export type RequestHeadersOptions<THeaders = unknown, TCookies = unknown> = {
   headers: THeaders;
@@ -136,11 +141,19 @@ type HeadersArgsObj<THeaders = unknown, TCookies = unknown> =
       : { requestHeaders: RequestHeadersArgs<THeaders, TCookies> }
     : { requestHeaders: RequestHeadersArgs<THeaders, TCookies> };
 
-type MethodInitExclusions<TJson, TCookies> =
-  | (IsNever<TJson> extends true ? never : "Content-Type")
+type MethodInitExclusions<TJson, TFormData, TCookies> =
+  | (IsNever<TJson> extends true
+      ? IsNever<TFormData> extends true
+        ? never
+        : "Content-Type"
+      : "Content-Type")
   | (IsNever<TCookies> extends true ? never : "Cookie");
-type MethodOptionExclusions<TJson, THeaders> =
-  | (IsNever<TJson> extends true ? never : "body")
+type MethodOptionExclusions<TJson, TFormData, THeaders> =
+  | (IsNever<TJson> extends true
+      ? IsNever<TFormData> extends true
+        ? never
+        : "body"
+      : "body")
   | (IsNever<THeaders> extends true ? never : "headers" | "headersInit");
 
 type HttpMethodsArgs<
@@ -151,18 +164,21 @@ type HttpMethodsArgs<
   TJson = TMethod extends "$get" | "$head"
     ? never
     : ValidationInputFor<"json", TValidationSchema>,
+  TFormData = TMethod extends "$get" | "$head"
+    ? never
+    : ValidationInputFor<"formData", TValidationSchema>,
   THeaders = ValidationInputFor<"headers", TValidationSchema>,
   TCookies = ValidationInputFor<"cookies", TValidationSchema>,
   TBaseArgs = UrlArgsObj<T, TQuery> &
-    BodyArgsObj<TJson> &
+    BodyArgsObj<TJson, TFormData> &
     HeadersArgsObj<THeaders, TCookies>,
 > = [
   ...(AllOptional<TBaseArgs> extends true
     ? [methodParam?: TBaseArgs]
     : [methodParam: TBaseArgs]),
   option?: RpcClientOptions<
-    MethodInitExclusions<TJson, TCookies>,
-    MethodOptionExclusions<TJson, THeaders>
+    MethodInitExclusions<TJson, TFormData, TCookies>,
+    MethodOptionExclusions<TJson, TFormData, THeaders>
   >,
 ];
 

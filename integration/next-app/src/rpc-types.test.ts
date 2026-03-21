@@ -138,6 +138,22 @@ describe("integration next-app generated RPC type coverage", () => {
       {} as ProcedureSubmitArg;
     const _procedureSubmitArgFromExpected: ProcedureSubmitArg =
       {} as ExpectedProcedureSubmitArg;
+
+    type ProcedureFormDataPost =
+      (typeof client.api)["procedure-form-data"]["$post"];
+    type ProcedureFormDataArg = Parameters<ProcedureFormDataPost>[0];
+    type ExpectedProcedureFormDataArg = {
+      url?: {
+        hash?: string;
+      };
+      body: {
+        formData: FormData;
+      };
+    };
+    const _procedureFormDataArgFromActual: ExpectedProcedureFormDataArg =
+      {} as ProcedureFormDataArg;
+    const _procedureFormDataArgFromExpected: ProcedureFormDataArg =
+      {} as ExpectedProcedureFormDataArg;
   });
 
   it("infers the generated response types for integration routes", async () => {
@@ -480,6 +496,37 @@ describe("integration next-app generated RPC type coverage", () => {
     const _procedureInvalidOutputResponseFromActual: ExpectedProcedureInvalidOutputResponse =
       procedureInvalidOutputResponse;
 
+    const procedureFormDataResponse = await client.api[
+      "procedure-form-data"
+    ].$post({
+      body: { formData: new FormData() },
+    });
+    type ExpectedProcedureFormDataResponse =
+      | TypedNextResponse<
+          {
+            ok: true;
+            displayName: string;
+            filename: string;
+            tags: string[];
+            source: "procedure-form-data";
+          },
+          200,
+          "application/json"
+        >
+      | TypedNextResponse<
+          {
+            error: {
+              code: "BAD_REQUEST";
+              message: string;
+              details?: unknown;
+            };
+          },
+          400,
+          "application/json"
+        >;
+    const _procedureFormDataResponseFromActual: ExpectedProcedureFormDataResponse =
+      procedureFormDataResponse;
+
     type RedirectGet = (typeof client.api)["redirect-me"]["$get"];
     type RedirectResponse = Awaited<ReturnType<RedirectGet>>;
     expectTypeOf<RedirectResponse>().toEqualTypeOf<
@@ -542,6 +589,15 @@ describe("integration next-app generated RPC type coverage", () => {
       ._userId("procedure-user")
       // @ts-expect-error GET procedure routes must not accept request bodies
       .$get({ body: { json: { title: "invalid" } } });
+
+    client.api["procedure-form-data"].$post({
+      body: { formData: new FormData() },
+    });
+
+    client.api["procedure-form-data"].$post({
+      // @ts-expect-error procedure-form-data expects multipart formData, not json
+      body: { json: { displayName: "invalid" } },
+    });
 
     client.api["procedure-contract"]
       ._userId("procedure-user")

@@ -51,6 +51,26 @@ const parseWithSchema = async (schema: StandardSchemaV1, value: unknown) => {
   return result.value;
 };
 
+const formDataToObject = (formData: FormData) => {
+  const normalized: Record<string, FormDataEntryValue | FormDataEntryValue[]> =
+    {};
+
+  for (const [key, value] of formData.entries()) {
+    const existing = normalized[key];
+
+    if (existing === undefined) {
+      normalized[key] = value;
+      continue;
+    }
+
+    normalized[key] = Array.isArray(existing)
+      ? [...existing, value]
+      : [existing, value];
+  }
+
+  return normalized;
+};
+
 const getContractValue = async (
   request: NextRequest,
   segmentData: { params: Promise<Params> },
@@ -70,6 +90,17 @@ const getContractValue = async (
     } catch (error) {
       throw rpcError("BAD_REQUEST", {
         message: "Invalid JSON body.",
+        cause: error,
+      });
+    }
+  }
+
+  if (target === "formData") {
+    try {
+      return formDataToObject(await request.formData());
+    } catch (error) {
+      throw rpcError("BAD_REQUEST", {
+        message: "Invalid form-data body.",
         cause: error,
       });
     }
@@ -115,6 +146,15 @@ type ProcedureHasJsonContract<TProcedure extends ProcedureTypeCarrier> =
       : false
     : false;
 
+type ProcedureHasFormDataContract<TProcedure extends ProcedureTypeCarrier> =
+  InferProcedureDefinition<TProcedure> extends {
+    input: ProcedureInputContract<infer TValidationSchema>;
+  }
+    ? "formData" extends keyof TValidationSchema["input"]
+      ? true
+      : false
+    : false;
+
 type NextRouteMethodConstraint<
   TProcedure extends ProcedureTypeCarrier,
   TMethod extends HttpMethod | undefined,
@@ -128,7 +168,11 @@ type NextRouteMethodConstraint<
         ? {
             __error__: "JSON input contracts are not supported for GET or HEAD procedures.";
           }
-        : unknown
+        : ProcedureHasFormDataContract<TProcedure> extends true
+          ? {
+              __error__: "FormData input contracts are not supported for GET or HEAD procedures.";
+            }
+          : unknown
       : unknown;
 
 type ProcedureErrorResponse<
@@ -347,6 +391,12 @@ export const nextRoute = <
     const routeContext = createRouteContext(request, segmentData);
     const contracts = procedure.definition.input?.contracts ?? {};
 
+    if (contracts.json && contracts.formData) {
+      throw new Error(
+        "Procedure body contracts are mutually exclusive; use either .json(schema) or .formData(schema), not both.",
+      );
+    }
+
     if (
       Object.values(contracts).some((contract) => !isStandardSchemaV1(contract))
     ) {
@@ -384,6 +434,22 @@ export const nextRoute = <
                 await getContractValue(request, segmentData, "json"),
               )
             : undefined;
+      const formData =
+        request.method === "GET" || request.method === "HEAD"
+          ? contracts.formData
+            ? (() => {
+                throw rpcError("BAD_REQUEST", {
+                  message:
+                    "FormData input contracts are not supported for GET or HEAD requests.",
+                });
+              })()
+            : undefined
+          : contracts.formData
+            ? await parseWithSchema(
+                contracts.formData,
+                await getContractValue(request, segmentData, "formData"),
+              )
+            : undefined;
       const headers = contracts.headers
         ? await parseWithSchema(
             contracts.headers,
@@ -402,6 +468,7 @@ export const nextRoute = <
         params,
         query,
         json,
+        formData,
         headers,
         cookies,
         ctx: {} as Record<string, unknown>,

@@ -6,7 +6,7 @@
 - Intended audience: maintainers of `rpc4next` and Codex-based implementation work
 - Scope: `packages/rpc4next`, `packages/rpc4next-cli`, and `integration/next-app`
 - Current implementation status:
-  - Phases 1 through 7 are implemented
+  - Phases 1 through 8 are implemented
   - `procedure` and `nextRoute` are available publicly
   - procedure input contracts are executed through Standard Schema V1-compatible validators
   - the integration fixture includes a shared `baseProcedure` preset under `integration/next-app/app/api/_shared/base-procedure.ts`
@@ -698,7 +698,70 @@ Notes:
 - initial type enforcement should focus on "params schema is required" and "schema output covers generated params"; strict exactness for extra keys can remain a follow-up if validator interoperability makes it worthwhile
 - the same pattern may later be extended to generated query or body contracts, but phase 8 should focus on route params first
 
-## Phase 9: optional client ergonomics
+## Phase 9: multipart/form-data procedure contracts
+
+Scope:
+
+- add first-class request contract support for `multipart/form-data` and other `FormData`-backed submissions
+- make validated form fields available to `procedure.handle(...)` without requiring manual `request.formData()` parsing in every route
+- preserve the current `procedure` mental model where input contracts are declared before execution and validated by `nextRoute()`
+
+Deliverables:
+
+- a new `procedure.formData(schema)` input contract method
+- a `formData` property on the procedure handler context alongside `params`, `query`, `json`, `headers`, and `cookies`
+- runtime extraction in `nextRoute()` via `request.formData()`
+- normalization from `FormData` into a validator-friendly plain object shape before Standard Schema validation
+- type and runtime constraints that reject ambiguous body contract combinations such as `.json(...)` together with `.formData(...)`
+- fixture coverage for scalar form fields, repeated keys, and uploaded `File` values
+
+Target authoring shape:
+
+```ts
+const uploadAvatar = procedure
+  .forRoute(routeContract)
+  .formData(
+    z.object({
+      displayName: z.string().min(1),
+      avatar: z.instanceof(File),
+      tags: z.array(z.string()).optional(),
+    }),
+  )
+  .output(uploadAvatarResponseSchema)
+  .handle(async ({ formData, ctx }) => {
+    return {
+      status: 200,
+      body: {
+        ok: true,
+        displayName: formData.displayName,
+        filename: formData.avatar.name,
+        tags: formData.tags ?? [],
+        uploaderId: ctx.viewer.id,
+      },
+    };
+  });
+
+export const POST = nextRoute(uploadAvatar, {
+  method: "POST",
+  validateOutput: true,
+});
+```
+
+Why ninth:
+
+- multipart form submission is a common App Router workflow for file uploads and browser-native forms, and it currently falls outside the first-class `procedure` contract surface
+- forcing routes to call `request.formData()` manually weakens the value proposition of `procedure` as the single place where validated input is declared
+- adding `formData` keeps the API symmetric with existing validated inputs while preserving the file-route-first design
+
+Notes:
+
+- `procedure.formData(schema)` should be mutually exclusive with `.json(schema)` because both consume the request body
+- `GET` and `HEAD` procedures should reject `formData` contracts for the same reason they reject JSON body contracts
+- the normalization step should preserve `File` instances and collapse repeated field names into arrays so validator schemas can describe uploads and multi-select form fields naturally
+- the initial phase should focus on server-side authoring and validation; generator and client ergonomics for multipart requests can remain a follow-up
+- validator expectations should stay Standard Schema V1-compatible at the public boundary even if the internal `FormData` normalization logic is rpc4next-specific
+
+## Phase 10: optional client ergonomics
 
 Possible items:
 
@@ -920,15 +983,16 @@ Mitigation:
 - Should plain Next route handlers gain an optional companion export for metadata, or should that remain out of scope?
 - Should `forRoute(routeContract)` become mandatory for every `procedure` route eventually, or only for routes that want generated params enforcement?
 - Should `nextRoute()` eventually reject unbound procedures entirely once the route-bound workflow is stable?
+- Should `procedure.formData(...)` validate against a normalized plain object only, or should rpc4next also expose a lower-level way to validate the raw `FormData` object when a schema library can support it?
 
 ## Recommended immediate next step
 
-With phases 1 through 7 implemented, the next design work should focus on binding CLI-generated route contracts into server-side `procedure` authoring before adding broader ecosystem features.
+With phases 1 through 8 implemented, the next design work should focus on making multipart/form-data a first-class part of `procedure` authoring before adding broader ecosystem features.
 
 Recommended priorities:
 
-1. extend generated `app/**/route-contract.ts` files with a branded `routeContract` export that can act as the server binding source
-2. add `forRoute(routeContract)` or an equivalent route-binding API to `procedure` and shared `baseProcedure` presets
-3. enforce at the type level that params-bearing bound routes must call `.params(schema)` before `.handle()`
-4. enforce at the type level that `.params(schema)` covers the generated params contract for the bound route
-5. add integration fixtures and type tests that prove route files must import generated route contracts and that unbound or under-validated params schemas fail as intended
+1. add `procedure.formData(schema)` and thread `formData` through the typed handler context
+2. implement `request.formData()` extraction plus `FormData` normalization in `nextRoute()`
+3. reject invalid body contract combinations such as `.json(...)` with `.formData(...)`
+4. add type and runtime constraints that reject `formData` contracts for `GET` and `HEAD`
+5. add integration fixtures and tests for scalar fields, repeated keys, and `File` uploads
