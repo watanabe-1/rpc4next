@@ -5,6 +5,7 @@ import type { HttpStatusCode } from "../lib/http-status-code-types";
 import { searchParamsToObject } from "../lib/search-params";
 import type { RpcErrorCode, RpcErrorEnvelope, RpcErrorStatus } from "./error";
 import { rpcError } from "./error";
+import type { ProcedureErrorFormatter } from "./error-formatter";
 import type {
   ProcedureMiddleware,
   ProcedureMiddlewareResult,
@@ -317,6 +318,7 @@ export type NextRouteHandler<
 export interface NextRouteOptions<TMethod extends HttpMethod = HttpMethod> {
   method?: TMethod;
   validateOutput?: boolean;
+  errorFormatter?: ProcedureErrorFormatter;
 }
 
 const parseOutputWithSchema = async (
@@ -532,7 +534,17 @@ export const nextRoute = <
       }
 
       const rpcErrorResponse = normalizeRpcErrorResponse(error, routeContext);
-      if (rpcErrorResponse) {
+      const formattedResponse = options.errorFormatter
+        ? await options.errorFormatter(error, routeContext)
+        : rpcErrorResponse;
+      if (formattedResponse) {
+        return formattedResponse as NextRouteResponse<
+          TProcedure,
+          TValidateOutput
+        >;
+      }
+
+      if (options.errorFormatter && rpcErrorResponse) {
         return rpcErrorResponse as NextRouteResponse<
           TProcedure,
           TValidateOutput
