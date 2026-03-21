@@ -25,6 +25,7 @@ export interface ProcedureInputContract<
 export interface ProcedureOutputContract<TRouteResponse = unknown> {
   schema?: unknown;
   response?: TRouteResponse;
+  runtime?: boolean;
 }
 
 export interface ProcedureErrorContract<

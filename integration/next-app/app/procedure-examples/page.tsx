@@ -81,6 +81,23 @@ const examples = [
     requestHeaders: { headers: { "x-demo-user": "demo-user" } },
   });`,
   },
+  {
+    phase: "Phase 7",
+    title: "runtime output enforcement",
+    route: "/api/procedure-guarded/[userId]",
+    notes: [
+      "The guarded route opts into runtime output validation with `nextRoute(procedure, { validateOutput: true })`.",
+      "Its output schema is a real Standard Schema validator, while procedure-contract remains the type-only comparison point.",
+    ],
+    snippet: `const response = await rpcClient.api["procedure-guarded"]
+  ._userId("demo-user")
+  .$get({
+    url: { query: { includeDrafts: "true" } },
+    requestHeaders: {
+      headers: { "x-demo-user": "demo-user", "x-demo-role": "editor" },
+    },
+  });`,
+  },
 ];
 
 export default function ProcedureExamplesPage() {
@@ -103,7 +120,7 @@ export default function ProcedureExamplesPage() {
       <h1>Procedure examples</h1>
       <p>
         This page groups the integration fixtures that correspond to
-        `procedure-design.md` phases 1 through 6.
+        `procedure-design.md` phases 1 through 7.
       </p>
       <ul>
         <li>

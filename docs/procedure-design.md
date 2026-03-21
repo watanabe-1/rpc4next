@@ -615,6 +615,10 @@ Notes:
 
 - output validation should remain opt-in initially to avoid unexpected runtime cost
 - phase 7 should not block the simpler phase 5 shared preset pattern
+- recommended initial API: `nextRoute(procedure, { method: "GET", validateOutput: true })`
+- when enabled, runtime enforcement should apply to successful `ProcedureResult.body` payloads produced by the procedure pipeline
+- raw `Response` / `NextResponse`, redirects, and empty-body results should remain escape hatches and skip output validation
+- invalid runtime output should normalize through `rpcError("INTERNAL_SERVER_ERROR", ...)` so failure behavior stays explicit and machine-readable
 
 ## Phase 8: optional client ergonomics
 

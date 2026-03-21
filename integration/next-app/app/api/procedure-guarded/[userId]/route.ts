@@ -10,19 +10,19 @@ const querySchema = z.object({
   includeDrafts: z.enum(["true", "false"]).optional(),
 });
 
+const outputSchema = z.object({
+  ok: z.literal(true),
+  userId: z.string().min(1),
+  includeDrafts: z.boolean(),
+  role: z.enum(["reader", "editor"]),
+  source: z.literal("procedure-guarded"),
+  requestId: z.string().min(1),
+});
+
 const getGuardedProcedureUser = guardedBaseProcedure
   .params(paramsSchema)
   .query(querySchema)
-  .output({
-    _output: {
-      ok: true as const,
-      userId: "" as string,
-      includeDrafts: false as boolean,
-      role: "reader" as "reader" | "editor",
-      source: "procedure-guarded" as const,
-      requestId: "" as string,
-    },
-  })
+  .output(outputSchema)
   .error<"FORBIDDEN", { reason: "editor_only" }>("FORBIDDEN")
   .handle(async ({ params, query, ctx }) => {
     const role = ctx.viewer.role;
@@ -48,6 +48,9 @@ const getGuardedProcedureUser = guardedBaseProcedure
     };
   });
 
-export const GET = nextRoute(getGuardedProcedureUser, { method: "GET" });
+export const GET = nextRoute(getGuardedProcedureUser, {
+  method: "GET",
+  validateOutput: true,
+});
 
 export type Query = z.input<typeof querySchema>;

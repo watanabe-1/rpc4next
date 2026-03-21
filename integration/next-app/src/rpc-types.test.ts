@@ -410,6 +410,17 @@ describe("integration next-app generated RPC type coverage", () => {
       | TypedNextResponse<
           {
             error: {
+              code: "INTERNAL_SERVER_ERROR";
+              message: string;
+              details?: unknown;
+            };
+          },
+          500,
+          "application/json"
+        >
+      | TypedNextResponse<
+          {
+            error: {
               code: "UNAUTHORIZED";
               message: string;
               details?: { reason: "missing_demo_user" };
