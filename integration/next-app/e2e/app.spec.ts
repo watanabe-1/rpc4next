@@ -56,6 +56,9 @@ test.describe("integration next-app e2e", () => {
     await expect(
       page.getByText("Phase 4: shared internals with routeHandlerFactory()"),
     ).toBeVisible();
+    await expect(
+      page.getByText("Phase 5: shared baseProcedure presets"),
+    ).toBeVisible();
   });
 
   test("guarded procedure route returns success and typed forbidden errors", async ({

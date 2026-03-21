@@ -336,6 +336,84 @@ describe("nextRoute", () => {
     expect(handler).not.toHaveBeenCalled();
   });
 
+  it("reuses shared baseProcedure presets without mutating earlier routes", async () => {
+    const baseProcedure = procedure
+      .headers(
+        z.object({
+          "x-demo-role": z.enum(["reader", "editor"]).optional(),
+        }),
+      )
+      .use(({ headers }) => ({
+        ctx: {
+          viewer: {
+            role: headers["x-demo-role"] ?? "reader",
+          },
+        },
+      }));
+
+    const baseRoute = nextRoute(
+      baseProcedure.handle(async ({ ctx }) => ({
+        body: {
+          ok: true,
+          role: ctx.viewer.role,
+          source: "base",
+        },
+      })),
+      { method: "GET" },
+    );
+
+    const extendedRoute = nextRoute(
+      baseProcedure
+        .query(
+          z.object({
+            includeDrafts: z.enum(["true", "false"]).optional(),
+          }),
+        )
+        .handle(async ({ query, ctx }) => ({
+          body: {
+            ok: true,
+            role: ctx.viewer.role,
+            includeDrafts: query.includeDrafts === "true",
+            source: "extended",
+          },
+        })),
+      { method: "GET" },
+    );
+
+    const baseResponse = await baseRoute(
+      new NextRequest("http://127.0.0.1:3000/api/base", {
+        headers: {
+          "x-demo-role": "editor",
+        },
+      }),
+      { params: Promise.resolve({}) },
+    );
+
+    expect(baseResponse.status).toBe(200);
+    await expect(baseResponse.json()).resolves.toEqual({
+      ok: true,
+      role: "editor",
+      source: "base",
+    });
+
+    const extendedResponse = await extendedRoute(
+      new NextRequest("http://127.0.0.1:3000/api/extended?includeDrafts=true", {
+        headers: {
+          "x-demo-role": "editor",
+        },
+      }),
+      { params: Promise.resolve({}) },
+    );
+
+    expect(extendedResponse.status).toBe(200);
+    await expect(extendedResponse.json()).resolves.toEqual({
+      ok: true,
+      role: "editor",
+      includeDrafts: true,
+      source: "extended",
+    });
+  });
+
   it("preserves explicit procedure error contracts in the route type", () => {
     const route = nextRoute(
       procedure
