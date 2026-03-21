@@ -37,18 +37,49 @@ export interface ProcedureErrorContract<
   variants?: readonly ProcedureErrorContract[];
 }
 
+export declare const procedureRouteContractBrand: unique symbol;
+
+export type ProcedureRouteParams = Record<
+  string,
+  string | string[] | undefined
+>;
+
+export type ProcedureRouteContract<
+  TPathname extends string = string,
+  TParams extends ProcedureRouteParams = ProcedureRouteParams,
+> = {
+  readonly pathname: TPathname;
+  readonly params: TParams;
+  readonly [procedureRouteContractBrand]: {
+    readonly pathname: TPathname;
+    readonly params: TParams;
+  };
+};
+
+export interface ProcedureRouteBinding<
+  TPathname extends string = string,
+  TParams extends ProcedureRouteParams = ProcedureRouteParams,
+> {
+  pathname: TPathname;
+  params: TParams;
+}
+
 export interface ProcedureDefinition<
   THttpMethod extends HttpMethod = HttpMethod,
   TValidationSchema extends ValidationSchema = ValidationSchema,
   TRouteResponse = unknown,
   TMeta extends RpcMeta = RpcMeta,
   TError extends ProcedureErrorContract = ProcedureErrorContract,
+  TRoute extends ProcedureRouteBinding | undefined =
+    | ProcedureRouteBinding
+    | undefined,
 > {
   method?: THttpMethod;
   input?: ProcedureInputContract<TValidationSchema>;
   output?: ProcedureOutputContract<TRouteResponse>;
   error?: TError;
   meta?: TMeta;
+  route?: TRoute;
 }
 
 export type EmptyProcedureDefinition = ProcedureDefinition<
@@ -56,7 +87,8 @@ export type EmptyProcedureDefinition = ProcedureDefinition<
   ValidationSchema,
   unknown,
   RpcMeta,
-  never
+  never,
+  undefined
 >;
 
 export type MergeProcedureDefinition<

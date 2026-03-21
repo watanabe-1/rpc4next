@@ -28,14 +28,26 @@ export const generatePathStructure = (outputPath: string, baseDir: string) => {
     keyTypes.join(" ,"),
     RPC4NEXT_CLIENT_IMPORT_PATH,
   );
-  const dirParamsTypes = paramsTypes.map(({ paramsType, dirPath }) => {
-    const params = `export type Params = ${paramsType}${STATEMENT_TERMINATOR}`;
+  const dirParamsTypes = paramsTypes.map(
+    ({ paramsType, dirPath, pathname }) => {
+      const params = [
+        'import type { ProcedureRouteContract } from "rpc4next/server";',
+        "",
+        `export type Params = ${paramsType}${STATEMENT_TERMINATOR}`,
+        `export type RouteContract = ProcedureRouteContract<"${pathname}", Params>${STATEMENT_TERMINATOR}`,
+        "",
+        "export const routeContract = {",
+        `  pathname: "${pathname}",`,
+        "  params: {} as Params,",
+        "} as RouteContract;",
+      ].join(NEWLINE);
 
-    return {
-      paramsType: params,
-      dirPath,
-    };
-  });
+      return {
+        paramsType: params,
+        dirPath,
+      };
+    },
+  );
 
   return {
     pathStructure: `${keyTypesImportStr}${NEWLINE}${importsStr}${NEWLINE}${NEWLINE}${pathStructureType}`,

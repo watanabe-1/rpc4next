@@ -1,0 +1,9 @@
+import type { ProcedureRouteContract } from "rpc4next/server";
+
+export type Params = { "userId": string };
+export type RouteContract = ProcedureRouteContract<"/api/procedure-contract/[userId]", Params>;
+
+export const routeContract = {
+  pathname: "/api/procedure-contract/[userId]",
+  params: {} as Params,
+} as RouteContract;

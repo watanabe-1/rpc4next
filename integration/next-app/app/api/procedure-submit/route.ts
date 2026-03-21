@@ -1,7 +1,9 @@
 import { nextRoute, procedure } from "rpc4next/server";
 import { z } from "zod";
+import { routeContract } from "./route-contract";
 
 const submitProcedure = procedure
+  .forRoute(routeContract)
   .headers(
     z.object({
       "x-procedure-test": z.string().min(1),

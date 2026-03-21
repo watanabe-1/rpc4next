@@ -1,10 +1,21 @@
-import { describe, expectTypeOf, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import { z } from "zod";
 import { procedure } from "./procedure";
-import type { ProcedureErrorContract } from "./procedure-types";
+import type {
+  ProcedureErrorContract,
+  ProcedureRouteContract,
+} from "./procedure-types";
 import type { StandardSchemaV1 } from "./standard-schema";
 
 describe("procedure builder type definitions", () => {
+  const guardedUserRouteContract = {
+    pathname: "/api/procedure-guarded/[userId]",
+    params: {} as { userId: string },
+  } as ProcedureRouteContract<
+    "/api/procedure-guarded/[userId]",
+    { userId: string }
+  >;
+
   it("threads input, middleware context, and output contracts", () => {
     const userProcedure = procedure
       .meta({ tags: ["procedure"], auth: "optional" as const })
@@ -271,6 +282,78 @@ describe("procedure builder type definitions", () => {
         };
       };
     }>();
+  });
+
+  it("supports route-bound shared baseProcedure presets", () => {
+    const guardedBaseProcedure = procedure
+      .forRoute(guardedUserRouteContract)
+      .headers(
+        z.object({
+          "x-demo-role": z.enum(["reader", "editor"]).optional(),
+        }),
+      )
+      .use(({ params, headers }) => ({
+        ctx: {
+          requestId: params.userId,
+          viewer: {
+            role: headers["x-demo-role"] ?? "reader",
+          },
+        },
+      }));
+
+    const guardedProcedure = guardedBaseProcedure
+      .params(z.object({ userId: z.string().min(1) }))
+      .handle(({ params, ctx }) => {
+        const _params: { userId: string } = params;
+        const _ctx: {
+          requestId: string;
+          viewer: {
+            role: "reader" | "editor";
+          };
+        } = ctx;
+
+        void _params;
+        void _ctx;
+
+        return {
+          status: 200 as const,
+        };
+      });
+
+    expectTypeOf(guardedProcedure.definition).toMatchTypeOf<{
+      route?: {
+        pathname: "/api/procedure-guarded/[userId]";
+        params: { userId: string };
+      };
+      input?: {
+        validationSchema?: {
+          output: {
+            params: { userId: string };
+          };
+        };
+      };
+    }>();
+  });
+
+  it("requires params before handling bound routes with generated params", () => {
+    // @ts-expect-error bound routes with params must declare params(schema) before handle()
+    procedure.forRoute(guardedUserRouteContract).handle(({ params }) => ({
+      status: 200 as const,
+      body: {
+        userId: params.userId,
+      },
+    }));
+
+    expect(true).toBe(true);
+  });
+
+  it("rejects params schemas that do not cover generated route params", () => {
+    procedure
+      .forRoute(guardedUserRouteContract)
+      // @ts-expect-error bound route params schema output must cover the generated params contract
+      .params(z.object({ userId: z.string().optional() }));
+
+    expect(true).toBe(true);
   });
 
   it("accumulates shared and route-local procedure error contracts", () => {

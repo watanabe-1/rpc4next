@@ -10,7 +10,7 @@ It is inspired by Hono RPC and Pathpida:
 - `route.ts` files become typed RPC endpoints
 - `page.tsx` files become typed URL/path entries
 - dynamic segments and exported route `Query` types are reflected in generated client types
-- optional generated `params.ts` files can give route files a stable sibling `Params` type
+- optional generated `route-contract.ts` files can give route files a stable sibling route contract
 
 If you want to see a full working example, start with the real integration fixture in [integration/next-app/README.md](./integration/next-app/README.md). It shows how route scanning, generated types, the client, and a real Next.js app fit together in this repository.
 
@@ -149,7 +149,7 @@ You can also configure the CLI with `rpc4next.config.json`:
 {
   "baseDir": "app",
   "outputPath": "src/generated/rpc.ts",
-  "paramsFile": "params.ts"
+  "paramsFile": "route-contract.ts"
 }
 ```
 
@@ -173,13 +173,13 @@ Positional arguments:
 Useful options:
 
 - `-w`, `--watch`: regenerate on file changes
-- `-p`, `--params-file [filename]`: generate sibling params files such as `app/users/[userId]/params.ts`
+- `-p`, `--params-file [filename]`: generate sibling route contract files such as `app/users/[userId]/route-contract.ts`
 
 Examples:
 
 ```bash
 npx rpc4next --watch
-npx rpc4next app src/generated/rpc.ts --params-file params.ts
+npx rpc4next app src/generated/rpc.ts --params-file route-contract.ts
 ```
 
 ### 3. Create a Client
@@ -378,12 +378,12 @@ See [integration/next-app/README.md](./integration/next-app/README.md) for the r
 When `paramsFile` is enabled, the CLI can generate sibling files such as:
 
 ```ts
-// app/api/users/[userId]/params.ts
+// app/api/users/[userId]/route-contract.ts
 export type Params = { userId: string };
 ```
 
 That lets route files import the param shape instead of repeating it manually.
-These generated `params.ts` files are optional, and your generated `src/generated/rpc.ts` is typically not something you edit by hand.
+These generated `route-contract.ts` files are optional, and your generated `src/generated/rpc.ts` is typically not something you edit by hand.
 
 Your generated `src/generated/rpc.ts` exports a `PathStructure` type that includes:
 

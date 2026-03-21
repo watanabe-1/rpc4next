@@ -1,4 +1,4 @@
-import type { Params } from "./params";
+import type { Params } from "./route-contract";
 
 type PhotoPageProps = {
   params: Promise<Params>;

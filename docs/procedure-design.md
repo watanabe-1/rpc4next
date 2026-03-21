@@ -6,10 +6,11 @@
 - Intended audience: maintainers of `rpc4next` and Codex-based implementation work
 - Scope: `packages/rpc4next`, `packages/rpc4next-cli`, and `integration/next-app`
 - Current implementation status:
-  - Phases 1 through 5 are implemented
+  - Phases 1 through 7 are implemented
   - `procedure` and `nextRoute` are available publicly
   - procedure input contracts are executed through Standard Schema V1-compatible validators
   - the integration fixture includes a shared `baseProcedure` preset under `integration/next-app/app/api/_shared/base-procedure.ts`
+  - shared guarded procedures can declare multiple error variants and opt into runtime output validation
 
 ## Background
 
@@ -620,7 +621,84 @@ Notes:
 - raw `Response` / `NextResponse`, redirects, and empty-body results should remain escape hatches and skip output validation
 - invalid runtime output should normalize through `rpcError("INTERNAL_SERVER_ERROR", ...)` so failure behavior stays explicit and machine-readable
 
-## Phase 8: optional client ergonomics
+## Phase 8: CLI-generated server route contracts and bound procedures
+
+Scope:
+
+- make CLI-generated route shape available to server-side `procedure` authoring without depending on client-oriented generated types
+- force route files to bind a generated route contract before completing a `procedure`
+- require `params` validation whenever the bound route contract says params exist
+- reject `params` schemas whose type-level output fails to cover the generated route params contract
+
+Deliverables:
+
+- generated server-side companion contract output for route files, preferably via each route directory's generated `route-contract.ts`
+- a branded route contract value such as `routeContract` that route files import from generated output rather than reconstructing structurally
+- a binding API on `procedure` or shared presets, such as `baseProcedure.forRoute(routeContract)`, that carries generated route expectations into the builder
+- type constraints that prevent calling `.handle()` for params-bearing routes unless `.params(schema)` has been provided
+- type constraints on `.params(schema)` that reject schemas whose output does not cover the generated params type
+- fixture coverage proving route files must import generated contracts and that shared `baseProcedure` presets compose correctly with route-local binding
+
+Target authoring shape:
+
+```ts
+// app/api/procedure-guarded/[userId]/route-contract.ts
+declare const routeContractBrand: unique symbol;
+
+export type Params = { userId: string };
+
+export type RouteContract = {
+  pathname: "/api/procedure-guarded/[userId]";
+  params: Params;
+  [routeContractBrand]: true;
+};
+
+export declare const routeContract: RouteContract;
+
+// app/api/procedure-guarded/[userId]/route.ts
+import { routeContract } from "./params";
+
+const getGuardedProcedureUser = guardedBaseProcedure
+  .forRoute(routeContract)
+  .params(paramsSchema)
+  .query(querySchema)
+  .output(outputSchema)
+  .handle(async ({ params, query, ctx }) => {
+    return {
+      status: 200,
+      body: {
+        ok: true,
+        userId: params.userId,
+        includeDrafts: query.includeDrafts === "true",
+        role: ctx.viewer.role,
+        source: "procedure-guarded",
+        requestId: ctx.requestId,
+      },
+    };
+  });
+
+export const GET = nextRoute(getGuardedProcedureUser, {
+  method: "GET",
+  validateOutput: true,
+});
+```
+
+Why eighth:
+
+- route files already know they are extending a shared preset, so the most ergonomic time to attach generated route constraints is before `.params(...)` and `.handle(...)`
+- pushing route binding into `nextRoute()` would surface errors too late in the authoring flow
+- requiring a generated branded value is stronger than requiring a generic type argument because it avoids easy structural re-creation by hand
+- this phase strengthens the "file-route-first" identity by making server procedures consume CLI knowledge derived from the route file system itself
+
+Notes:
+
+- `generated/rpc.ts` should remain client-oriented and should not become the server binding source because route files importing it would create awkward dependency cycles
+- the preferred source of server route contracts is the generated `app/**/route-contract.ts` companion file, extended to include a branded `routeContract` export in addition to the existing `Params` type
+- `forRoute(routeContract)` should produce a route-bound builder; `nextRoute()` may optionally be narrowed later to only accept route-bound procedures
+- initial type enforcement should focus on "params schema is required" and "schema output covers generated params"; strict exactness for extra keys can remain a follow-up if validator interoperability makes it worthwhile
+- the same pattern may later be extended to generated query or body contracts, but phase 8 should focus on route params first
+
+## Phase 9: optional client ergonomics
 
 Possible items:
 
@@ -780,6 +858,7 @@ Potential fixture updates:
 
 ```txt
 integration/next-app/app/api/**/route.ts
+integration/next-app/app/**/route-contract.ts
 integration/next-app/src/generated/rpc.ts
 integration/next-app/src/*.test.ts
 ```
@@ -839,15 +918,17 @@ Mitigation:
 - Should metadata be purely type-level at first, or also available at runtime for docs and tooling?
 - Should middleware in `procedure.use()` be allowed to widen context immediately, or should phase 1 keep middleware scope narrow?
 - Should plain Next route handlers gain an optional companion export for metadata, or should that remain out of scope?
+- Should `forRoute(routeContract)` become mandatory for every `procedure` route eventually, or only for routes that want generated params enforcement?
+- Should `nextRoute()` eventually reject unbound procedures entirely once the route-bound workflow is stable?
 
 ## Recommended immediate next step
 
-With phases 1 through 5 implemented, the next design work should focus on richer shared error contracts before adding broader ecosystem features.
+With phases 1 through 7 implemented, the next design work should focus on binding CLI-generated route contracts into server-side `procedure` authoring before adding broader ecosystem features.
 
 Recommended priorities:
 
-1. document `baseProcedure` as the recommended way to centralize validation, auth, context setup, and shared metadata
-2. add integration fixtures that import and extend shared procedures from route files
-3. decide how shared procedures should declare multiple error envelopes
-4. verify supported validator libraries in fixtures and type tests
-5. defer broader client ergonomics until the shared procedure contract shape is stable
+1. extend generated `app/**/route-contract.ts` files with a branded `routeContract` export that can act as the server binding source
+2. add `forRoute(routeContract)` or an equivalent route-binding API to `procedure` and shared `baseProcedure` presets
+3. enforce at the type level that params-bearing bound routes must call `.params(schema)` before `.handle()`
+4. enforce at the type level that `.params(schema)` covers the generated params contract for the bound route
+5. add integration fixtures and type tests that prove route files must import generated route contracts and that unbound or under-validated params schemas fail as intended

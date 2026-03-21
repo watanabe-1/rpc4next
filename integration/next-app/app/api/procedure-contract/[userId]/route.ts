@@ -1,5 +1,6 @@
 import { nextRoute, procedure } from "rpc4next/server";
 import { z } from "zod";
+import { routeContract } from "./route-contract";
 
 const paramsSchema = z.object({
   userId: z.string().min(1),
@@ -10,6 +11,7 @@ const querySchema = z.object({
 });
 
 const getProcedureUser = procedure
+  .forRoute(routeContract)
   .meta({
     tags: ["procedure-contract"],
     auth: "optional",

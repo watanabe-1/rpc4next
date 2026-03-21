@@ -1,6 +1,7 @@
 import { nextRoute, rpcError } from "rpc4next/server";
 import { z } from "zod";
 import { guardedBaseProcedure } from "../../_shared/base-procedure";
+import { routeContract } from "./route-contract";
 
 const paramsSchema = z.object({
   userId: z.string().min(1),
@@ -20,6 +21,7 @@ const outputSchema = z.object({
 });
 
 const getGuardedProcedureUser = guardedBaseProcedure
+  .forRoute(routeContract)
   .params(paramsSchema)
   .query(querySchema)
   .output(outputSchema)

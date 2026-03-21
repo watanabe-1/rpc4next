@@ -26,6 +26,7 @@ type ImportObj = {
 type ParamsType = {
   paramsType: string;
   dirPath: string;
+  pathname: string;
 };
 
 type RouteType = {
@@ -51,6 +52,7 @@ type ScanResult = {
 
 type ScanContext = {
   output: string;
+  rootDir: string;
   previousIndent: string;
   currentIndent: string;
   params: ParentParam[];
@@ -224,11 +226,8 @@ const appendParamsType = (
   accumulator: ScanAccumulator,
   params: ParentParam[],
   fullPath: string,
+  pathname: string,
 ) => {
-  if (params.length === 0) {
-    return;
-  }
-
   const fields = params.map(({ paramName, routeType }) => {
     const paramType = routeType.isCatchAll
       ? "string[]"
@@ -238,20 +237,54 @@ const appendParamsType = (
 
     return { name: paramName, type: paramType };
   });
-  const paramsTypeStr = createObjectType(fields);
+  const paramsTypeStr = createObjectType(fields) || "{}";
+
+  const dirPath = path.dirname(fullPath);
+  const existingParamsType = accumulator.paramsTypes.find(
+    (paramsType) => paramsType.dirPath === dirPath,
+  );
+
+  if (existingParamsType) {
+    return;
+  }
 
   accumulator.paramsTypes.push({
     paramsType: paramsTypeStr,
-    dirPath: path.dirname(fullPath),
+    dirPath,
+    pathname,
   });
-  accumulator.typeFragments.push(
-    createRecodeType(TYPE_KEY_PARAMS, paramsTypeStr),
+
+  if (fields.length > 0) {
+    accumulator.typeFragments.push(
+      createRecodeType(TYPE_KEY_PARAMS, paramsTypeStr),
+    );
+  }
+};
+
+const toRoutePathname = (baseDir: string, fullPath: string): string => {
+  const relativeDir = toPosixPath(
+    path.relative(baseDir, path.dirname(fullPath)),
   );
+  const pathnameSegments = relativeDir
+    .split("/")
+    .filter(Boolean)
+    .map((segment) => {
+      const meta = getDirectoryMeta(segment);
+
+      if (meta.isGroup || meta.isParallel || meta.isPrivate) {
+        return null;
+      }
+
+      return meta.segmentName;
+    })
+    .filter((segment): segment is string => segment !== null);
+
+  return pathnameSegments.length > 0 ? `/${pathnameSegments.join("/")}` : "/";
 };
 
 const appendEndpointFile = (
   accumulator: ScanAccumulator,
-  context: Pick<ScanContext, "output" | "params">,
+  context: Pick<ScanContext, "output" | "params" | "rootDir">,
   fullPath: string,
 ) => {
   const { query: queryDef, routes } = scanEndpointFile(
@@ -272,7 +305,12 @@ const appendEndpointFile = (
   });
 
   accumulator.typeFragments.push(TYPE_RPC_ENDPOINT);
-  appendParamsType(accumulator, context.params, fullPath);
+  appendParamsType(
+    accumulator,
+    context.params,
+    fullPath,
+    toRoutePathname(context.rootDir, fullPath),
+  );
 };
 
 const mergeFlattenedChildPathStructure = (
@@ -366,6 +404,7 @@ const appendChildDirectory = (
     fullPath,
     childIndent,
     nextParams,
+    context.rootDir,
   );
 
   accumulator.paramsTypes.push(...childResult.paramsTypes);
@@ -407,12 +446,14 @@ export const scanAppDir = (
   input: string,
   indent = "",
   parentParams: ParentParam[] = [],
+  rootDir = input,
 ): ScanResult => {
   const cachedScanResult = scanAppDirCache.get(input);
   if (cachedScanResult !== undefined) return cachedScanResult;
 
   const context: ScanContext = {
     output,
+    rootDir,
     previousIndent: indent,
     currentIndent: indent + INDENT,
     params: [...parentParams],

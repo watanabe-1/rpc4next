@@ -26,6 +26,7 @@ export type {
   ProcedureResult,
 } from "./procedure";
 export { procedure } from "./procedure";
+export type { ProcedureRouteContract } from "./procedure-types";
 export { routeHandlerFactory } from "./route-handler-factory";
 export type {
   StandardSchemaV1,

@@ -12,6 +12,8 @@ import type {
   ProcedureInputContract,
   ProcedureInputTarget,
   ProcedureOutputContract,
+  ProcedureRouteBinding,
+  ProcedureRouteContract,
 } from "./procedure-types";
 import type { createRouteContext } from "./route-context";
 import type { ValidationSchema } from "./route-types";
@@ -46,6 +48,38 @@ export const withProcedureMeta = <
     ...definition,
     meta,
   } as MergeProcedureDefinition<TDefinition, { meta: TMeta }>;
+};
+
+export const withProcedureRouteBinding = <
+  TDefinition extends ProcedureDefinition,
+  TRouteContract extends ProcedureRouteContract,
+>(
+  definition: TDefinition,
+  routeContract: TRouteContract,
+): MergeProcedureDefinition<
+  TDefinition,
+  {
+    route: ProcedureRouteBinding<
+      TRouteContract["pathname"],
+      TRouteContract["params"]
+    >;
+  }
+> => {
+  return {
+    ...definition,
+    route: {
+      pathname: routeContract.pathname,
+      params: routeContract.params,
+    },
+  } as MergeProcedureDefinition<
+    TDefinition,
+    {
+      route: ProcedureRouteBinding<
+        TRouteContract["pathname"],
+        TRouteContract["params"]
+      >;
+    }
+  >;
 };
 
 export const withProcedureOutput = <

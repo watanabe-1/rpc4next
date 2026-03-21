@@ -3,14 +3,14 @@
 This package is the real Next.js integration fixture for `rpc4next`. Use it to verify the full app-router flow in one place:
 
 1. `rpc4next-cli` scans `app/**`
-2. generated types are written to `src/generated/rpc.ts` and `app/**/params.ts`
-3. route files import `Params` from their sibling `params.ts`
+2. generated types are written to `src/generated/rpc.ts` and `app/**/route-contract.ts`
+3. procedure route files import `routeContract` from their sibling `route-contract.ts`
 4. `rpc4next/client` consumes the generated types
 5. Next.js compiles and serves the resulting app
 
 This workspace resolves `rpc4next` imports to the monorepo source via `tsconfig.json` paths, so scanner and runtime changes are testable before rebuilding package `dist/`.
 It still depends on built workspace artifacts for packages such as `rpc4next-shared`, so a fresh clone needs one root build before starting the app or using the built CLI entrypoint.
-Generated files are committed here so CLI output diffs stay reviewable in Git, including `src/generated/rpc.ts` and `app/**/params.ts`.
+Generated files are committed here so CLI output diffs stay reviewable in Git, including `src/generated/rpc.ts` and `app/**/route-contract.ts`.
 The local `rpc4next.config.json` keeps generator commands short by pinning `baseDir`, `outputPath`, and `paramsFile`.
 
 ## Quick start
@@ -34,7 +34,7 @@ Use these files as entry points, depending on what you want to understand:
 - Basic typed route handler: `app/api/users/[userId]/route.ts`
 - Typed client setup: `src/lib/rpc-client.ts`
 - Generated output shape: `src/generated/rpc.ts`
-- Generated sibling params types: `app/api/users/[userId]/params.ts`
+- Generated sibling route contract: `app/api/users/[userId]/route-contract.ts`
 - Plain Next.js handler with `NextResponse.json(...)`: `app/api/next-native/[itemId]/route.ts`
 - Plain Next.js handler with `Response.json(...)`: `app/api/next-native-response/route.ts`
 - Redirect-only handler example: `app/api/redirect-me/route.ts`
@@ -105,7 +105,7 @@ Use the root commands mainly for:
 
 If a change touches route scanning, generated client shape, params generation, or integration fixture routes under `app/**`, run `bun run generate:rpc` from `integration/next-app` and review the committed generated diffs.
 
-This workspace is intended to make scanner and runtime regressions visible in Git. Avoid hand-editing `src/generated/rpc.ts` or `app/**/params.ts` unless the task is specifically about generator output.
+This workspace is intended to make scanner and runtime regressions visible in Git. Avoid hand-editing `src/generated/rpc.ts` or `app/**/route-contract.ts` unless the task is specifically about generator output.
 
 The API fixtures include `routeHandlerFactory()` examples without Zod validation, including a redirect-only handler in `app/api/redirect-me/route.ts` and a route-level error-handler example in `app/api/error-demo/route.ts`.
 
@@ -113,7 +113,7 @@ The procedure fixtures cover the staged design in `docs/procedure-design.md`: `a
 
 The fixtures also include plain Next.js routes written without `routeHandlerFactory`, including a static `NextResponse.json(...)` route, a dynamic route that reads `params` and `nextUrl.searchParams`, and a `Response.json(...)` route. The generated client can still call them as RPC, but their response types are intentionally broader than rpc4next's `TypedNextResponse` helpers.
 
-`bun run generate:rpc:watch` keeps `src/generated/rpc.ts` and `app/**/params.ts` in sync while route files under `app/**` change.
+`bun run generate:rpc:watch` keeps `src/generated/rpc.ts` and `app/**/route-contract.ts` in sync while route files under `app/**` change.
 
 Parallel route slot names are excluded from `PathStructure`, but their descendant pages are flattened onto public URL paths such as `/patterns/parallel/views` and `/patterns/parallel/members`.
 
