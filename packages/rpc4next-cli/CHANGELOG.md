@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.6.0...rpc4next-cli-v0.7.0) (2026-03-22)
+
+
+### Features
+
+* generate route contracts and require bound procedure ([#397](https://github.com/watanabe-1/rpc4next/issues/397)) ([6d1eb87](https://github.com/watanabe-1/rpc4next/commit/6d1eb8792311af7a583506444a2c83ff3b76b0d8))
+
 ## [0.6.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.5.0...rpc4next-cli-v0.6.0) (2026-03-15)
 
 
