@@ -187,6 +187,37 @@ describe("nextRoute zod integration", () => {
     expect(handler).not.toHaveBeenCalled();
   });
 
+  it("allows validation hooks to use the same text helper surface as handlers", async () => {
+    const route = nextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .query(
+          z.object({
+            page: z.coerce.number().int().positive(),
+          }),
+          {
+            onValidationError: ({ response, target }) =>
+              response.text(`validator:${target}`, { status: 422 }),
+          },
+        )
+        .handle(async ({ query }) => ({
+          body: query,
+        })),
+      { method: "GET" },
+    );
+
+    const response = await route(
+      new NextRequest("http://127.0.0.1:3000/api/test?page=0"),
+      {
+        params: Promise.resolve({}),
+      },
+    );
+
+    expect(response.status).toBe(422);
+    expect(response.headers.get("content-type")).toContain("text/plain");
+    await expect(response.text()).resolves.toBe("validator:query");
+  });
+
   it("keeps the default BAD_REQUEST normalization when no custom branch is configured", async () => {
     const route = nextRoute(
       procedure
