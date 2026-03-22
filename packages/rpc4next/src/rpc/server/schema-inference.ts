@@ -13,9 +13,11 @@ export type InferSchemaInput<TSchema> = [StandardSchemaTypes<TSchema>] extends [
     ? TInput
     : TSchema extends { _zod: { input: infer TInput } }
       ? TInput
-      : TSchema extends { input: infer TInput }
+      : TSchema extends { inferIn: infer TInput }
         ? TInput
-        : unknown
+        : TSchema extends { input: infer TInput }
+          ? TInput
+          : unknown
   : StandardSchemaTypes<TSchema> extends { readonly input: infer TInput }
     ? TInput
     : unknown;
@@ -27,11 +29,13 @@ export type InferSchemaOutput<TSchema> = [
     ? TOutput
     : TSchema extends { _zod: { output: infer TOutput } }
       ? TOutput
-      : TSchema extends { _type: infer TOutput }
+      : TSchema extends { inferOut: infer TOutput }
         ? TOutput
-        : TSchema extends { output: infer TOutput }
+        : TSchema extends { _type: infer TOutput }
           ? TOutput
-          : unknown
+          : TSchema extends { output: infer TOutput }
+            ? TOutput
+            : unknown
   : StandardSchemaTypes<TSchema> extends { readonly output: infer TOutput }
     ? TOutput
     : unknown;

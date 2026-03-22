@@ -43,7 +43,7 @@ export const isStandardSchemaV1 = (
   value: unknown,
 ): value is StandardSchemaV1 => {
   return (
-    typeof value === "object" &&
+    (typeof value === "object" || typeof value === "function") &&
     value !== null &&
     "~standard" in value &&
     typeof value["~standard"] === "object" &&
