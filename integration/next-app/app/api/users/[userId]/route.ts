@@ -1,28 +1,36 @@
-import { routeHandlerFactory } from "rpc4next/server";
-import { zValidator } from "rpc4next/server/validators/zod";
+import { nextRoute, procedure } from "rpc4next/server";
 import { z } from "zod";
-import type { Params } from "./route-contract";
+import { routeContract } from "./route-contract";
 
 export type Query = {
   includePosts?: "true" | "false";
 };
 
-const createRouteHandler = routeHandlerFactory();
-
 const querySchema = z.object({
   includePosts: z.enum(["true", "false"]).optional(),
 });
 
-export const { GET } = createRouteHandler<{
-  params: Params;
-  query: z.infer<typeof querySchema>;
-}>().get(zValidator("query", querySchema), async (rc) => {
-  const { userId } = await rc.req.params();
-  const query = rc.req.valid("query");
-
-  return rc.json({
-    ok: true,
-    userId,
-    includePosts: query.includePosts === "true",
-  });
+const paramsSchema = z.object({
+  userId: z.string().min(1),
 });
+
+const getUser = procedure
+  .forRoute(routeContract)
+  .params(paramsSchema)
+  .query(querySchema)
+  .output({
+    _output: {
+      ok: true as const,
+      userId: "" as string,
+      includePosts: false as boolean,
+    },
+  })
+  .handle(async ({ params, query }) => ({
+    body: {
+      ok: true,
+      userId: params.userId,
+      includePosts: query.includePosts === "true",
+    },
+  }));
+
+export const GET = nextRoute(getUser, { method: "GET" });

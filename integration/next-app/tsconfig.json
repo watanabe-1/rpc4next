@@ -19,9 +19,6 @@
       "rpc4next": ["../../packages/rpc4next/src/index.ts"],
       "rpc4next/client": ["../../packages/rpc4next/src/rpc/client/index.ts"],
       "rpc4next/server": ["../../packages/rpc4next/src/rpc/server/index.ts"],
-      "rpc4next/server/validators/zod": [
-        "../../packages/rpc4next/src/rpc/server/validators/zod/index.ts"
-      ],
       "rpc4next-shared": ["../../packages/rpc4next-shared/dist/index.js"],
       "rpc4next-shared/*": ["../../packages/rpc4next-shared/dist/*"]
     },

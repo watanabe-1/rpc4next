@@ -1,7 +1,10 @@
-import { routeHandlerFactory } from "rpc4next/server";
+import { nextRoute, procedure } from "rpc4next/server";
+import { routeContract } from "./route-contract";
 
-const createRouteHandler = routeHandlerFactory();
+const redirectProcedure = procedure
+  .forRoute(routeContract)
+  .handle(async ({ response }) =>
+    response.redirect("http://127.0.0.1:3000/feed"),
+  );
 
-export const { GET } = createRouteHandler().get(async (rc) => {
-  return rc.redirect("http://127.0.0.1:3000/feed", 307);
-});
+export const GET = nextRoute(redirectProcedure, { method: "GET" });

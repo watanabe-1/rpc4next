@@ -1,28 +1,44 @@
 import { NextRequest } from "next/server";
 import { describe, expect, expectTypeOf, it } from "vitest";
+import { nextRoute } from "./next-route";
+import { procedure } from "./procedure";
 import {
   getProcedureDefinition,
   type ProcedureDefinition,
   type ProcedureErrorContract,
   type ProcedureInputContract,
+  type ProcedureRouteContract,
   procedureDefinitionSymbol,
 } from "./procedure-types";
-import { routeHandlerFactory } from "./route-handler-factory";
 import type { ValidationSchema } from "./route-types";
 import type { StandardSchemaV1 } from "./standard-schema";
 
 describe("procedure contract internals", () => {
   it("attaches an internal procedure definition to route handlers", async () => {
-    const createRouteHandler = routeHandlerFactory()();
-    const handler = createRouteHandler.get(async (rc) => rc.text("ok"));
+    const routeContract = {
+      pathname: "/api/test",
+      params: {} as Record<never, never>,
+    } as ProcedureRouteContract<"/api/test", Record<never, never>>;
+    const handler = nextRoute(
+      procedure
+        .forRoute(routeContract)
+        .handle(async ({ response }) => response.text("ok")),
+      { method: "GET" },
+    );
 
-    const definition = getProcedureDefinition(handler.GET);
-    expect(definition).toEqual({ method: "GET" });
-    expect(Object.keys(handler.GET)).not.toContain(
+    const definition = getProcedureDefinition(handler);
+    expect(definition).toEqual({
+      method: "GET",
+      route: {
+        pathname: "/api/test",
+        params: {},
+      },
+    });
+    expect(Object.keys(handler)).not.toContain(
       String(procedureDefinitionSymbol),
     );
 
-    const response = await handler.GET(new NextRequest("http://localhost"), {
+    const response = await handler(new NextRequest("http://localhost"), {
       params: Promise.resolve({}),
     });
     expect(await response.text()).toBe("ok");

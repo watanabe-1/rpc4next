@@ -52,9 +52,8 @@ bun add -d rpc4next-cli
 ```
 
 `zod` is only needed if you use server-side schema validation such as
-`procedure.query(...)`, `procedure.json(...)`, or `zValidator()`. If you only
-use the generated client types and do not validate request input, you can omit
-it.
+`procedure.query(...)` or `procedure.json(...)`. If you only use the generated
+client types and do not validate request input, you can omit it.
 
 If you want Zod-based request validation later:
 
@@ -119,31 +118,9 @@ Notes:
 - input contracts consume Standard Schema V1-compatible schemas directly
 - shared presets such as `baseProcedure`, typed error contracts, project-level `errorFormatter`, and validator-stage customization all build on this path
 
-`routeHandlerFactory()` and `zValidator(...)` remain supported when you want the
-older middleware-first style or need to keep an existing route unchanged:
-
-```ts
-import { routeHandlerFactory } from "rpc4next/server";
-import { zValidator } from "rpc4next/server/validators/zod";
-import { z } from "zod";
-
-const createRouteHandler = routeHandlerFactory();
-
-const querySchema = z.object({
-  includePosts: z.enum(["true", "false"]).optional(),
-});
-
-export const { GET } = createRouteHandler<{
-  params: { userId: string };
-  query: z.infer<typeof querySchema>;
-}>().get(zValidator("query", querySchema), async (rc) => {
-  const query = rc.req.valid("query");
-  return rc.json({ ok: true, includePosts: query.includePosts === "true" });
-});
-```
-
-`zValidator()` validates request input and returns `400` JSON errors by default
-on invalid input.
+`procedure` input contracts validate request input and return typed `400` JSON
+errors by default when validation fails. If you need custom branching at the
+validation stage, use `onValidationError(...)` on the relevant input contract.
 
 ### 2. Generate `PathStructure`
 
@@ -308,89 +285,33 @@ const getUser = procedure
 export const GET = nextRoute(getUser, { method: "GET" });
 ```
 
-### `routeHandlerFactory`
+### Error Formatting
 
-`routeHandlerFactory()` remains supported as a compatibility path for
-middleware-first routes and existing codebases.
-
-It is still a good fit when:
-
-- you already have `routeHandlerFactory()` routes and do not want to rewrite them yet
-- you prefer validator middleware composition with `zValidator(...)`
-- you only need typed response helpers and a route-local error handler
-
-It creates typed handlers for:
-
-- `get`
-- `post`
-- `put`
-- `delete`
-- `patch`
-- `head`
-- `options`
-
-It also supports a shared error handler:
+`nextRoute()` can reshape thrown errors with an `errorFormatter`, and
+`createProcedureKit(...)` can share that policy across routes.
 
 ```ts
-import { routeHandlerFactory } from "rpc4next/server";
+import { nextRoute, procedure } from "rpc4next/server";
+import { routeContract } from "./route-contract";
 
-const createRouteHandler = routeHandlerFactory((error, rc) => {
-  return rc.text("error", 400);
+const failingProcedure = procedure.forRoute(routeContract).handle(async () => {
+  throw new Error("expected failure");
 });
 
-export const { POST } = createRouteHandler().post(async (rc) => {
-  return rc.json({ ok: true }, 201);
-});
-```
+export const GET = nextRoute(failingProcedure, {
+  method: "GET",
+  errorFormatter: (error, response) => {
+    const message =
+      error instanceof Error ? error.message : "unknown integration error";
 
-### `zValidator`
-
-`zValidator()` remains the supported validation helper for the
-`routeHandlerFactory()` compatibility path.
-
-It supports these targets:
-
-- `params`
-- `query`
-- `json`
-- `headers`
-- `cookies`
-
-Example:
-
-```ts
-import { routeHandlerFactory } from "rpc4next/server";
-import { zValidator } from "rpc4next/server/validators/zod";
-import { z } from "zod";
-
-const createRouteHandler = routeHandlerFactory();
-
-const jsonSchema = z.object({
-  title: z.string().min(1),
-});
-
-export const { POST } = createRouteHandler().post(
-  zValidator("json", jsonSchema),
-  async (rc) => {
-    const body = rc.req.valid("json");
-    return rc.json({ title: body.title }, 201);
+    return response.text(`handled:${message}`, { status: 500 });
   },
-);
-```
-
-If you provide a custom hook, you must return a response yourself when validation fails:
-
-```ts
-zValidator("json", jsonSchema, (result, rc) => {
-  if (!result.success) {
-    return rc.json({ error: result.error.issues }, 422);
-  }
 });
 ```
 
 ## Plain Next.js Route Handlers Also Work
 
-You can keep using native App Router handlers without adopting `routeHandlerFactory()`.
+You can keep using native App Router handlers without adopting `procedure`.
 This is useful when you want to stay close to stock Next.js APIs and only use `rpc4next` for route scanning and client generation.
 
 Example with `NextResponse.json(...)`:
@@ -475,7 +396,7 @@ Your generated `src/generated/rpc.ts` exports a `PathStructure` type that includ
 2. Run `rpc4next` to regenerate `PathStructure`
 3. Import `PathStructure` into your client
 4. Call routes with `createRpcClient<PathStructure>(...)`
-5. Prefer `procedure` and `nextRoute()` for new typed routes; keep `routeHandlerFactory()` / `zValidator(...)` for compatibility or middleware-first routes
+5. Prefer `procedure` and `nextRoute()` for typed routes; keep plain Next.js handlers when you intentionally want broader response typing
 
 ## Repository Layout
 

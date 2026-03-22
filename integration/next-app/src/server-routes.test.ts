@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import * as validatorUtils from "../../../packages/rpc4next/src/rpc/server/validators/validator-utils";
 import { POST } from "../app/api/posts/route";
 import { GET } from "../app/api/users/[userId]/route";
 
@@ -80,7 +79,7 @@ describe("integration next-app server route handlers", () => {
     });
   });
 
-  it("serves a routeHandlerFactory route with explicit contract metadata/output", async () => {
+  it("serves a procedure route with explicit contract metadata/output", async () => {
     const { GET: contractRouteGet } = await import(
       "../app/api/contract-route/route"
     );
@@ -220,8 +219,8 @@ describe("integration next-app server route handlers", () => {
     const payload = await response.json();
     const errorPayload = expectValidationErrorPayload(payload);
     expect(errorPayload.error.code).toBe("BAD_REQUEST");
-    expect(errorPayload.error.message).toContain('"path": [');
-    expect(errorPayload.error.message).toContain('"includePosts"');
+    expect(errorPayload.error.message).toContain("true");
+    expect(errorPayload.error.message).toContain("false");
   });
 
   it("serves the posts route through the real POST handler", async () => {
@@ -264,23 +263,20 @@ describe("integration next-app server route handlers", () => {
     const payload = await response.json();
     const errorPayload = expectValidationErrorPayload(payload);
     expect(errorPayload.error.code).toBe("BAD_REQUEST");
-    expect(errorPayload.error.message).toContain('"path": [');
-    expect(errorPayload.error.message).toContain('"title"');
+    expect(errorPayload.error.message).toContain(">=1");
   });
 
   it("reads validated headers and cookies through the real GET handler chain", async () => {
-    vi.spyOn(validatorUtils, "getHeadersObject").mockResolvedValueOnce({
-      "x-integration-test": "header-ok",
-    });
-    vi.spyOn(validatorUtils, "getCookiesObject").mockResolvedValueOnce({
-      session: "cookie-ok",
-    });
-
     const { GET: requestMetaGet } = await import(
       "../app/api/request-meta/route"
     );
     const response = await requestMetaGet(
-      new NextRequest("http://127.0.0.1:3000/api/request-meta"),
+      new NextRequest("http://127.0.0.1:3000/api/request-meta", {
+        headers: {
+          "x-integration-test": "header-ok",
+          cookie: "session=cookie-ok",
+        },
+      }),
       { params: Promise.resolve({}) },
     );
 
@@ -501,9 +497,6 @@ describe("integration next-app server route handlers", () => {
   });
 
   it("returns a validation error when required request metadata is missing", async () => {
-    vi.spyOn(validatorUtils, "getHeadersObject").mockResolvedValueOnce({});
-    vi.spyOn(validatorUtils, "getCookiesObject").mockResolvedValueOnce({});
-
     const { GET: requestMetaGet } = await import(
       "../app/api/request-meta/route"
     );

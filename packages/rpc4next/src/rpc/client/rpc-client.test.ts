@@ -13,41 +13,74 @@ import {
 import {
   type ContentType,
   type HttpStatusCode,
-  routeHandlerFactory,
+  nextRoute,
+  type ProcedureRouteContract,
+  procedure,
   type TypedNextResponse,
 } from "../server";
 import { createRpcClient } from "./rpc-client";
 import type { ParamsKey, QueryKey, RpcEndpoint } from "./types";
 
-const createRouteHandler = routeHandlerFactory();
+const staticRouteContract = {
+  pathname: "/api/hoge",
+  params: {} as Record<never, never>,
+} as ProcedureRouteContract<"/api/hoge", Record<never, never>>;
 
-const { POST: _post_0 } = createRouteHandler().post(async (rc) =>
-  rc.text("post"),
+const _post_0 = nextRoute(
+  procedure
+    .forRoute(staticRouteContract)
+    .handle(async ({ response }) => response.text("post")),
+  { method: "POST" },
 );
 
-const { GET: _get_0 } = createRouteHandler().get(async (rc) =>
-  rc.json({ method: "get" }),
+const _get_0 = nextRoute(
+  procedure
+    .forRoute(staticRouteContract)
+    .handle(async ({ response }) => response.json({ method: "get" })),
+  { method: "GET" },
 );
 
-const { DELETE: _delete_0 } = createRouteHandler().delete(async (rc) =>
-  rc.text("delete"),
+const _delete_0 = nextRoute(
+  procedure
+    .forRoute(staticRouteContract)
+    .handle(async ({ response }) => response.text("delete")),
+  { method: "DELETE" },
 );
 
-const { HEAD: _head_0 } = createRouteHandler().head(async (rc) =>
-  rc.text("head"),
+const _head_0 = nextRoute(
+  procedure
+    .forRoute(staticRouteContract)
+    .handle(async ({ response }) => response.text("head")),
+  { method: "HEAD" },
 );
 
-const { PATCH: _patch_0 } = createRouteHandler().patch(async (rc) =>
-  rc.text("patch"),
+const _patch_0 = nextRoute(
+  procedure
+    .forRoute(staticRouteContract)
+    .handle(async ({ response }) => response.text("patch")),
+  { method: "PATCH" },
 );
 
-const { PUT: _put_0 } = createRouteHandler().put(async (rc) => rc.text("put"));
+const _put_0 = nextRoute(
+  procedure
+    .forRoute(staticRouteContract)
+    .handle(async ({ response }) => response.text("put")),
+  { method: "PUT" },
+);
 
-const { DELETE: _delete_1 } = createRouteHandler().delete(async (rc) => {
-  const headers = Object.fromEntries(rc.req.headers.entries());
-
-  return rc.json(headers);
-});
+const _delete_1 = nextRoute(
+  procedure
+    .forRoute(staticRouteContract)
+    .handle(
+      async ({
+        request,
+        response,
+      }): Promise<
+        TypedNextResponse<Record<string, string>, 200, "application/json">
+      > => response.json(Object.fromEntries(request.headers.entries())),
+    ),
+  { method: "DELETE" },
+);
 
 type PathStructure = RpcEndpoint & {
   fuga: RpcEndpoint & {
@@ -528,14 +561,35 @@ describe("createRpcClient", () => {
     });
   });
 
-  const { POST: _post_1 } = createRouteHandler().post(
-    async (rc) => rc.json("json"),
-    async (rc) => rc.text("text"),
+  const _post_1 = nextRoute(
+    procedure.forRoute(staticRouteContract).handle(async ({ response }) => {
+      return Math.random() > 0.5
+        ? response.json("json")
+        : response.text("text");
+    }),
+    { method: "POST" },
   );
 
-  const { POST: _get_1 } = createRouteHandler().post(
-    async (rc) => rc.text("error", { status: 400 }),
-    async (rc) => rc.json({ ok: true }, { status: 200 }),
+  const _get_1 = nextRoute(
+    procedure.forRoute(staticRouteContract).handle(
+      async ({
+        response,
+      }): Promise<
+        | TypedNextResponse<"error", 400, "text/plain">
+        | TypedNextResponse<
+            {
+              ok: boolean;
+            },
+            200,
+            "application/json"
+          >
+      > => {
+        return Math.random() > 0.5
+          ? response.text("error", { status: 400 })
+          : response.json({ ok: true }, { status: 200 });
+      },
+    ),
+    { method: "GET" },
   );
 
   async function _get_2(_: NextRequest) {

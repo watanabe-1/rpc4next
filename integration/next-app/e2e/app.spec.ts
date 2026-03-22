@@ -61,7 +61,7 @@ test.describe("integration next-app e2e", () => {
     ).toBeVisible();
     await expect(
       page.getByText(
-        "Compatibility path: routeHandlerFactory() remains supported",
+        "Everyday routes: params, json, headers, cookies, redirects",
       ),
     ).toBeVisible();
   });
