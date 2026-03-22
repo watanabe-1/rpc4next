@@ -593,6 +593,39 @@ describe("nextRoute zod integration", () => {
     });
   });
 
+  it("validates response helper payloads when runtime output validation is enabled", async () => {
+    const route = nextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .output(
+          z.object({
+            ok: z.literal(true),
+            count: z.number().int().nonnegative(),
+          }),
+        )
+        .handle(async ({ response }) =>
+          response.json({
+            ok: true,
+            count: -1,
+          }),
+        ),
+      { method: "GET", validateOutput: true },
+    );
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Procedure output validation failed.",
+        details: expect.any(Array),
+      },
+    });
+  });
+
   it("skips runtime output validation for raw Response escape hatches", async () => {
     const route = nextRoute(
       procedure

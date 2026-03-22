@@ -28,7 +28,11 @@ import {
   type ProcedureValidationErrorHandlerResult,
   type WithProcedureDefinition,
 } from "./procedure-types";
-import { createResponseHelpers, createRouteContext } from "./route-context";
+import {
+  createResponseHelpers,
+  createRouteContext,
+  getResponseHelperMetadata,
+} from "./route-context";
 import {
   isStandardSchemaV1,
   type StandardSchemaV1,
@@ -342,6 +346,12 @@ const isSuccessfulStatus = (status: HttpStatusCode | undefined) => {
   return status === undefined || (status >= 200 && status < 300);
 };
 
+const getHttpStatusCode = (status: number): HttpStatusCode | undefined => {
+  return Number.isInteger(status) && status >= 100 && status <= 599
+    ? (status as HttpStatusCode)
+    : undefined;
+};
+
 const shouldValidateProcedureOutput = (
   result: Response | NextResponse | ProcedureResult | undefined,
 ): result is ProcedureResult => {
@@ -354,6 +364,28 @@ const shouldValidateProcedureOutput = (
   }
 
   return isSuccessfulStatus(result.status);
+};
+
+const getProcedureOutputValidationValue = (
+  result: Response | NextResponse | ProcedureResult | undefined,
+) => {
+  if (shouldValidateProcedureOutput(result)) {
+    return result.body;
+  }
+
+  if (!(result instanceof Response)) {
+    return undefined;
+  }
+
+  const helperMetadata = getResponseHelperMetadata(result);
+
+  if (!helperMetadata || helperMetadata.kind === "redirect") {
+    return undefined;
+  }
+
+  return isSuccessfulStatus(getHttpStatusCode(result.status))
+    ? helperMetadata.payload
+    : undefined;
 };
 
 const validateProcedureInputs = async (
@@ -610,20 +642,24 @@ export const nextRoute = <
         },
       );
 
-      const normalizedResult =
-        options.validateOutput &&
-        outputSchema !== undefined &&
-        shouldValidateProcedureOutput(
-          result as Response | NextResponse | ProcedureResult,
-        )
-          ? {
-              ...(result as ProcedureResult),
-              body: await parseOutputWithSchema(
-                outputSchema as StandardSchemaV1,
-                (result as ProcedureResult).body,
-              ),
-            }
-          : (result as Response | NextResponse | ProcedureResult);
+      const outputValidationValue =
+        options.validateOutput && outputSchema !== undefined
+          ? getProcedureOutputValidationValue(
+              result as Response | NextResponse | ProcedureResult,
+            )
+          : undefined;
+
+      if (outputValidationValue !== undefined) {
+        await parseOutputWithSchema(
+          outputSchema as StandardSchemaV1,
+          outputValidationValue,
+        );
+      }
+
+      const normalizedResult = result as
+        | Response
+        | NextResponse
+        | ProcedureResult;
 
       return normalizeProcedureResult(
         routeContext,
