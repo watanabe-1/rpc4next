@@ -442,6 +442,111 @@ describe("nextRoute", () => {
     expect(true).toBe(true);
   });
 
+  it("reflects helper-based custom validation json responses in the route type", () => {
+    const route = nextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .query(pageSchema, {
+          onValidationError: ({ response, target }) =>
+            response.json(
+              {
+                ok: false as const,
+                target,
+              },
+              { status: 422 },
+            ),
+        })
+        .handle(async ({ query }) => ({
+          body: {
+            ok: true as const,
+            page: query.page,
+          },
+        })),
+    );
+
+    type ActualResponse = Awaited<ReturnType<typeof route>>;
+    type ExpectedResponse =
+      | TypedNextResponse<
+          {
+            ok: true;
+            page: number;
+          },
+          200,
+          "application/json"
+        >
+      | TypedNextResponse<
+          {
+            error: {
+              code: "BAD_REQUEST";
+              message: string;
+              details?: unknown;
+            };
+          },
+          400,
+          "application/json"
+        >
+      | TypedNextResponse<
+          {
+            ok: false;
+            target: "query";
+          },
+          422,
+          "application/json"
+        >;
+    const _fromActual: ExpectedResponse = {} as ActualResponse;
+    const _fromExpected: ActualResponse = {} as ExpectedResponse;
+
+    void _fromActual;
+    void _fromExpected;
+    expect(true).toBe(true);
+  });
+
+  it("reflects helper-based custom validation text responses in the route type", () => {
+    const route = nextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .query(pageSchema, {
+          onValidationError: ({ response, target }) =>
+            response.text(`validator:${target}`, { status: 422 }),
+        })
+        .handle(async ({ query }) => ({
+          body: {
+            ok: true as const,
+            page: query.page,
+          },
+        })),
+    );
+
+    type ActualResponse = Awaited<ReturnType<typeof route>>;
+    type ExpectedResponse =
+      | TypedNextResponse<
+          {
+            ok: true;
+            page: number;
+          },
+          200,
+          "application/json"
+        >
+      | TypedNextResponse<
+          {
+            error: {
+              code: "BAD_REQUEST";
+              message: string;
+              details?: unknown;
+            };
+          },
+          400,
+          "application/json"
+        >
+      | TypedNextResponse<"validator:query", 422, "text/plain">;
+    const _fromActual: ExpectedResponse = {} as ActualResponse;
+    const _fromExpected: ActualResponse = {} as ExpectedResponse;
+
+    void _fromActual;
+    void _fromExpected;
+    expect(true).toBe(true);
+  });
+
   it("includes implicit INTERNAL_SERVER_ERROR responses for runtime-enforced output routes", () => {
     const route = nextRoute(
       procedure

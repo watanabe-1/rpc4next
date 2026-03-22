@@ -21,6 +21,8 @@ import type {
   ProcedureOutputContract,
   ProcedureRouteBinding,
   ProcedureRouteContract,
+  ProcedureValidationErrorHandlerResult,
+  ProcedureValidationErrorResponseMap,
 } from "./procedure-types";
 import type { ValidationSchema } from "./route-types";
 import type { InferSchemaInput, InferSchemaOutput } from "./schema-inference";
@@ -113,6 +115,8 @@ type ExtendProcedureInputDefinition<
   TDefinition extends ProcedureDefinition,
   TTarget extends ProcedureInputTarget,
   TSchema extends StandardSchemaV1,
+  TOnValidationErrorResult extends
+    ProcedureValidationErrorHandlerResult = never,
 > = MergeProcedureDefinition<
   TDefinition,
   {
@@ -121,13 +125,38 @@ type ExtendProcedureInputDefinition<
         ExtractValidationSchema<TDefinition>,
         TTarget,
         TSchema
-      >
+      >,
+      ExtractProcedureValidationErrorResponses<TDefinition> &
+        Record<
+          TTarget,
+          InferProcedureValidationErrorRouteResponse<TOnValidationErrorResult>
+        >
     > & {
       contracts: NonNullable<TDefinition["input"]>["contracts"] &
         Record<TTarget, TSchema>;
     };
   }
 >;
+
+type ExtractProcedureValidationErrorResponses<
+  TDefinition extends ProcedureDefinition,
+> = TDefinition extends {
+  input: ProcedureInputContract<
+    ValidationSchema,
+    infer TValidationErrorResponses
+  >;
+}
+  ? TValidationErrorResponses
+  : Record<never, never>;
+
+type InferProcedureValidationErrorRouteResponse<TOnValidationErrorResult> =
+  Exclude<
+    Extract<
+      Awaited<TOnValidationErrorResult>,
+      ProcedureValidationErrorResponseMap[ProcedureInputTarget]
+    >,
+    undefined
+  >;
 
 type HasProcedureInputContractTarget<
   TDefinition extends ProcedureDefinition,
@@ -356,51 +385,129 @@ export interface ProcedureBuilder<
     TContext
   >;
 
-  params<TSchema extends StandardSchemaV1>(
+  params<
+    TSchema extends StandardSchemaV1,
+    TOnValidationErrorResult extends
+      ProcedureValidationErrorHandlerResult = never,
+  >(
     schema: BoundRouteParamsSchemaArg<TDefinition, TSchema>,
-    options?: ProcedureInputOptions<"params", InferSchemaInput<TSchema>>,
+    options?: ProcedureInputOptions<
+      "params",
+      InferSchemaInput<TSchema>,
+      TOnValidationErrorResult
+    >,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<TDefinition, "params", TSchema>,
+    ExtendProcedureInputDefinition<
+      TDefinition,
+      "params",
+      TSchema,
+      TOnValidationErrorResult
+    >,
     TContext
   >;
 
-  query<TSchema extends StandardSchemaV1>(
+  query<
+    TSchema extends StandardSchemaV1,
+    TOnValidationErrorResult extends
+      ProcedureValidationErrorHandlerResult = never,
+  >(
     schema: TSchema,
-    options?: ProcedureInputOptions<"query", InferSchemaInput<TSchema>>,
+    options?: ProcedureInputOptions<
+      "query",
+      InferSchemaInput<TSchema>,
+      TOnValidationErrorResult
+    >,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<TDefinition, "query", TSchema>,
+    ExtendProcedureInputDefinition<
+      TDefinition,
+      "query",
+      TSchema,
+      TOnValidationErrorResult
+    >,
     TContext
   >;
 
-  json<TSchema extends StandardSchemaV1>(
+  json<
+    TSchema extends StandardSchemaV1,
+    TOnValidationErrorResult extends
+      ProcedureValidationErrorHandlerResult = never,
+  >(
     schema: BodyContractSchemaArg<TDefinition, "json", TSchema>,
-    options?: ProcedureInputOptions<"json", InferSchemaInput<TSchema>>,
+    options?: ProcedureInputOptions<
+      "json",
+      InferSchemaInput<TSchema>,
+      TOnValidationErrorResult
+    >,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<TDefinition, "json", TSchema>,
+    ExtendProcedureInputDefinition<
+      TDefinition,
+      "json",
+      TSchema,
+      TOnValidationErrorResult
+    >,
     TContext
   >;
 
-  formData<TSchema extends StandardSchemaV1>(
+  formData<
+    TSchema extends StandardSchemaV1,
+    TOnValidationErrorResult extends
+      ProcedureValidationErrorHandlerResult = never,
+  >(
     schema: BodyContractSchemaArg<TDefinition, "formData", TSchema>,
-    options?: ProcedureInputOptions<"formData", InferSchemaInput<TSchema>>,
+    options?: ProcedureInputOptions<
+      "formData",
+      InferSchemaInput<TSchema>,
+      TOnValidationErrorResult
+    >,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<TDefinition, "formData", TSchema>,
+    ExtendProcedureInputDefinition<
+      TDefinition,
+      "formData",
+      TSchema,
+      TOnValidationErrorResult
+    >,
     TContext
   >;
 
-  headers<TSchema extends StandardSchemaV1>(
+  headers<
+    TSchema extends StandardSchemaV1,
+    TOnValidationErrorResult extends
+      ProcedureValidationErrorHandlerResult = never,
+  >(
     schema: TSchema,
-    options?: ProcedureInputOptions<"headers", InferSchemaInput<TSchema>>,
+    options?: ProcedureInputOptions<
+      "headers",
+      InferSchemaInput<TSchema>,
+      TOnValidationErrorResult
+    >,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<TDefinition, "headers", TSchema>,
+    ExtendProcedureInputDefinition<
+      TDefinition,
+      "headers",
+      TSchema,
+      TOnValidationErrorResult
+    >,
     TContext
   >;
 
-  cookies<TSchema extends StandardSchemaV1>(
+  cookies<
+    TSchema extends StandardSchemaV1,
+    TOnValidationErrorResult extends
+      ProcedureValidationErrorHandlerResult = never,
+  >(
     schema: TSchema,
-    options?: ProcedureInputOptions<"cookies", InferSchemaInput<TSchema>>,
+    options?: ProcedureInputOptions<
+      "cookies",
+      InferSchemaInput<TSchema>,
+      TOnValidationErrorResult
+    >,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<TDefinition, "cookies", TSchema>,
+    ExtendProcedureInputDefinition<
+      TDefinition,
+      "cookies",
+      TSchema,
+      TOnValidationErrorResult
+    >,
     TContext
   >;
 
@@ -462,12 +569,23 @@ const createProcedureBuilder = <
   const withInputContract = <
     TTarget extends ProcedureInputTarget,
     TSchema extends StandardSchemaV1,
+    TOnValidationErrorResult extends
+      ProcedureValidationErrorHandlerResult = never,
   >(
     target: TTarget,
     schema: TSchema,
-    options?: ProcedureInputOptions<TTarget, InferSchemaInput<TSchema>>,
+    options?: ProcedureInputOptions<
+      TTarget,
+      InferSchemaInput<TSchema>,
+      TOnValidationErrorResult
+    >,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<TDefinition, TTarget, TSchema>,
+    ExtendProcedureInputDefinition<
+      TDefinition,
+      TTarget,
+      TSchema,
+      TOnValidationErrorResult
+    >,
     TContext
   > => {
     return createProcedureBuilder(
@@ -479,7 +597,8 @@ const createProcedureBuilder = <
       ) as unknown as ExtendProcedureInputDefinition<
         TDefinition,
         TTarget,
-        TSchema
+        TSchema,
+        TOnValidationErrorResult
       >,
       middlewares,
     );
@@ -517,31 +636,70 @@ const createProcedureBuilder = <
     );
   };
 
-  const withParams = <TSchema extends StandardSchemaV1>(
+  const withParams = <
+    TSchema extends StandardSchemaV1,
+    TOnValidationErrorResult extends
+      ProcedureValidationErrorHandlerResult = never,
+  >(
     schema: BoundRouteParamsSchemaArg<TDefinition, TSchema>,
-    options?: ProcedureInputOptions<"params", InferSchemaInput<TSchema>>,
+    options?: ProcedureInputOptions<
+      "params",
+      InferSchemaInput<TSchema>,
+      TOnValidationErrorResult
+    >,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<TDefinition, "params", TSchema>,
+    ExtendProcedureInputDefinition<
+      TDefinition,
+      "params",
+      TSchema,
+      TOnValidationErrorResult
+    >,
     TContext
   > => {
     return withInputContract("params", schema as TSchema, options);
   };
 
-  const withJson = <TSchema extends StandardSchemaV1>(
+  const withJson = <
+    TSchema extends StandardSchemaV1,
+    TOnValidationErrorResult extends
+      ProcedureValidationErrorHandlerResult = never,
+  >(
     schema: BodyContractSchemaArg<TDefinition, "json", TSchema>,
-    options?: ProcedureInputOptions<"json", InferSchemaInput<TSchema>>,
+    options?: ProcedureInputOptions<
+      "json",
+      InferSchemaInput<TSchema>,
+      TOnValidationErrorResult
+    >,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<TDefinition, "json", TSchema>,
+    ExtendProcedureInputDefinition<
+      TDefinition,
+      "json",
+      TSchema,
+      TOnValidationErrorResult
+    >,
     TContext
   > => {
     return withInputContract("json", schema as TSchema, options);
   };
 
-  const withFormData = <TSchema extends StandardSchemaV1>(
+  const withFormData = <
+    TSchema extends StandardSchemaV1,
+    TOnValidationErrorResult extends
+      ProcedureValidationErrorHandlerResult = never,
+  >(
     schema: BodyContractSchemaArg<TDefinition, "formData", TSchema>,
-    options?: ProcedureInputOptions<"formData", InferSchemaInput<TSchema>>,
+    options?: ProcedureInputOptions<
+      "formData",
+      InferSchemaInput<TSchema>,
+      TOnValidationErrorResult
+    >,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<TDefinition, "formData", TSchema>,
+    ExtendProcedureInputDefinition<
+      TDefinition,
+      "formData",
+      TSchema,
+      TOnValidationErrorResult
+    >,
     TContext
   > => {
     return withInputContract("formData", schema as TSchema, options);

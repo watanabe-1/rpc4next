@@ -20,6 +20,7 @@ import type {
   ProcedureErrorContract,
   ProcedureInputContract,
   ProcedureOutputContract,
+  ProcedureValidationErrorResponseMap,
   procedureDefinitionSymbol,
   WithProcedureDefinition,
 } from "../server/procedure-types";
@@ -254,14 +255,63 @@ type InferProcedureErrorResponse<T> =
       >
     : never;
 
+type ResolveStatus<
+  TStatus,
+  TDefault extends HttpStatusCode,
+> = TStatus extends HttpStatusCode ? TStatus : TDefault;
+
 type InferProcedureValidationErrorResponse<T> =
   ExtractAttachedProcedureDefinition<T> extends {
-    input: ProcedureInputContract<infer TValidationSchema>;
+    input: ProcedureInputContract<
+      infer TValidationSchema,
+      infer TValidationErrorResponses
+    >;
   }
     ? keyof TValidationSchema["input"] extends never
       ? never
-      : ProcedureErrorResponse<"BAD_REQUEST">
+      :
+          | ProcedureErrorResponse<"BAD_REQUEST">
+          | InferProcedureCustomValidationErrorResponse<TValidationErrorResponses>
     : never;
+
+type InferProcedureCustomValidationErrorResponse<TValidationErrorResponses> =
+  TValidationErrorResponses extends ProcedureValidationErrorResponseMap
+    ? NormalizeProcedureValidationErrorResponse<
+        Exclude<
+          TValidationErrorResponses[keyof TValidationErrorResponses],
+          undefined
+        >
+      >
+    : never;
+
+type NormalizeProcedureValidationErrorResponse<TResult> =
+  TResult extends TypedNextResponse
+    ? TResult
+    : TResult extends {
+          redirect: string;
+          status?: infer TStatus;
+        }
+      ? TypedNextResponse<undefined, ResolveStatus<TStatus, 307>, "">
+      : TResult extends {
+            body: infer TBody;
+            status?: infer TStatus;
+          }
+        ? TBody extends string
+          ? TypedNextResponse<TBody, ResolveStatus<TStatus, 200>, "text/plain">
+          : TypedNextResponse<
+              TBody,
+              ResolveStatus<TStatus, 200>,
+              "application/json"
+            >
+        : TResult extends {
+              status?: infer TStatus;
+            }
+          ? TypedNextResponse<
+              undefined,
+              ResolveStatus<TStatus, 200>,
+              ContentType
+            >
+          : never;
 
 type InferProcedureOutputValidationErrorResponse<T> =
   ExtractAttachedProcedureDefinition<T> extends {
