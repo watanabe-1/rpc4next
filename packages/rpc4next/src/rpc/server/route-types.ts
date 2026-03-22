@@ -18,6 +18,7 @@ import type {
   ProcedureErrorContract,
   WithProcedureDefinition,
 } from "./procedure-types";
+import type { OutputSchema } from "./schema-inference";
 import type { Params, Query, RouteContext, TypedNextResponse } from "./types";
 
 export type RouteResponse =
@@ -256,7 +257,7 @@ export interface RouteDefinitionBuilder<
   >;
 
   output<TOutput>(
-    schema: { _output: TOutput } | { _type: TOutput } | { output: TOutput },
+    schema: OutputSchema<TOutput>,
   ): RouteDefinitionBuilder<
     TBindings,
     TOnErrorResponse,

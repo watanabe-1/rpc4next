@@ -32,6 +32,7 @@ import type {
   RouteDefinitionBuilder,
   ValidationSchema,
 } from "./route-types";
+import type { OutputSchema } from "./schema-inference";
 import type { Params, Query } from "./types";
 
 const composeHandlersWithError = <
@@ -150,12 +151,7 @@ export const routeHandlerFactory =
               MergeProcedureDefinition<TProcedureDefinition, { meta: TMeta }>
             >,
           ),
-        output: <TOutput>(
-          schema:
-            | { _output: TOutput }
-            | { _type: TOutput }
-            | { output: TOutput },
-        ) =>
+        output: <TOutput>(schema: OutputSchema<TOutput>) =>
           createBuilder<
             MergeProcedureDefinition<
               TProcedureDefinition,
