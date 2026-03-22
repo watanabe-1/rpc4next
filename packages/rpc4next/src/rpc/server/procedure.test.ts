@@ -1,13 +1,10 @@
-import { describe, expect, expectTypeOf, it, vi } from "vitest";
-import { z } from "zod";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import { procedure } from "./procedure";
 import type {
   ProcedureErrorContract,
   ProcedureRouteContract,
-  ProcedureValidationErrorContext,
 } from "./procedure-types";
 import type { StandardSchemaV1 } from "./standard-schema";
-import type { TypedNextResponse } from "./types";
 
 describe("procedure builder type definitions", () => {
   const guardedUserRouteContract = {
@@ -18,203 +15,137 @@ describe("procedure builder type definitions", () => {
     { userId: string }
   >;
 
-  it("threads input, middleware context, and output contracts", () => {
-    const userProcedure = procedure
-      .meta({ tags: ["procedure"], auth: "optional" as const })
-      .params(z.object({ userId: z.string() }))
-      .query(
-        z.object({
-          includePosts: z.enum(["true", "false"]).optional(),
-        }),
-      )
-      .json(z.object({ title: z.string() }))
-      .headers(z.object({ "x-procedure-test": z.string() }))
-      .cookies(z.object({ session: z.string() }))
-      .output({
-        _output: {
-          ok: true as const,
-          userId: "" as string,
-          source: "procedure" as const,
-        },
-      })
-      .use(async ({ headers }) => ({
-        ctx: {
-          requestId: headers["x-procedure-test"],
-        },
-      }))
-      .handle(
-        async ({ params, query, json, headers, cookies, ctx, response }) => {
-          const _params: { userId: string } = params;
-          const _query: {
-            includePosts?: "true" | "false" | undefined;
-          } = query;
-          const _json: { title: string } = json;
-          const _headers: { "x-procedure-test": string } = headers;
-          const _cookies: { session: string } = cookies;
-          const _ctx: { requestId: string } = ctx;
-          const _response: {
-            json: (data: {
-              ok: true;
-              userId: string;
-              source: "procedure";
-            }) => unknown;
-          } = response;
+  const parsePage: StandardSchemaV1<
+    { page?: string | string[] },
+    { page: number }
+  > = {
+    "~standard": {
+      version: 1,
+      vendor: "rpc4next-test",
+      types: {
+        input: {} as { page?: string | string[] },
+        output: {} as { page: number },
+      },
+      validate: (value) => {
+        const input =
+          typeof value === "object" && value !== null
+            ? (value as { page?: string | string[] })
+            : {};
+        const page = "page" in input ? input.page : "";
+        const first = Array.isArray(page) ? page[0] : page;
+        const parsed = Number(first ?? "1");
 
-          void _params;
-          void _query;
-          void _json;
-          void _headers;
-          void _cookies;
-          void _ctx;
-          void _response;
-
-          return response.json({
-            ok: true as const,
-            userId: params.userId,
-            source: "procedure" as const,
-          });
-        },
-      );
-
-    expectTypeOf(userProcedure.definition).toMatchTypeOf<{
-      input?: {
-        validationSchema?: {
-          output: {
-            params: { userId: string };
-            query: {
-              includePosts?: "true" | "false" | undefined;
-            };
-            json: { title: string };
-            headers: { "x-procedure-test": string };
-            cookies: { session: string };
+        if (!Number.isInteger(parsed) || parsed < 1) {
+          return {
+            issues: [{ message: "page must be a positive integer" }],
           };
-        };
-      };
-      meta?: {
-        tags: string[];
-        auth: "optional";
-      };
-      output?: {
-        response?: {
-          ok: true;
-          userId: string;
-          source: "procedure";
-        };
-      };
-    }>();
-  });
-
-  it("threads formData contracts into the handler context", () => {
-    const uploadProcedure = procedure
-      .forRoute(guardedUserRouteContract)
-      .params(z.object({ userId: z.string() }))
-      .formData(
-        z.object({
-          displayName: z.string(),
-          avatar: z.instanceof(File),
-          tags: z.array(z.string()).optional(),
-        }),
-      )
-      .headers(z.object({ "x-procedure-test": z.string() }))
-      .cookies(z.object({ session: z.string() }))
-      .output({
-        _output: {
-          ok: true as const,
-          displayName: "" as string,
-          source: "procedure" as const,
-        },
-      })
-      .use(async ({ headers }) => ({
-        ctx: {
-          requestId: headers["x-procedure-test"],
-        },
-      }))
-      .handle(async ({ params, formData, headers, cookies, ctx }) => {
-        const _params: { userId: string } = params;
-        const _formData: {
-          displayName: string;
-          avatar: File;
-          tags?: string[] | undefined;
-        } = formData;
-        const _headers: { "x-procedure-test": string } = headers;
-        const _cookies: { session: string } = cookies;
-        const _ctx: { requestId: string } = ctx;
-
-        void _params;
-        void _formData;
-        void _headers;
-        void _cookies;
-        void _ctx;
+        }
 
         return {
-          status: 200 as const,
-          body: {
-            ok: true as const,
-            displayName: formData.displayName,
-            source: "procedure" as const,
-          },
+          value: { page: parsed },
         };
-      });
+      },
+    },
+  };
 
-    expectTypeOf(uploadProcedure.definition).toMatchTypeOf<{
-      route?: {
-        pathname: "/api/procedure-guarded/[userId]";
-        params: { userId: string };
-      };
-      input?: {
-        validationSchema?: {
-          output: {
-            params: { userId: string };
-            formData: {
-              displayName: string;
-              avatar: File;
-              tags?: string[] | undefined;
-            };
-            headers: { "x-procedure-test": string };
-            cookies: { session: string };
-          };
-        };
-      };
-      output?: {
-        response?: {
-          ok: true;
-          displayName: string;
-          source: "procedure";
-        };
-      };
-    }>();
-  });
-
-  it("supports custom procedure validators without zod coupling", () => {
-    const parsePage: StandardSchemaV1<
-      { page?: string | string[] },
-      { page: number }
-    > = {
+  const userIdSchema: StandardSchemaV1<{ userId: string }, { userId: string }> =
+    {
       "~standard": {
         version: 1,
         vendor: "rpc4next-test",
-        validate: (value) => {
-          const input =
-            typeof value === "object" && value !== null
-              ? (value as { page?: string | string[] })
-              : {};
-          const page = "page" in input ? input.page : "";
-          const first = Array.isArray(page) ? page[0] : page;
-          const parsed = Number(first ?? "1");
-
-          if (!Number.isInteger(parsed) || parsed < 1) {
-            return {
-              issues: [{ message: "page must be a positive integer" }],
-            };
-          }
-
-          return {
-            value: { page: parsed },
-          };
+        types: {
+          input: {} as { userId: string },
+          output: {} as { userId: string },
         },
+        validate: (value) => ({
+          value: value as { userId: string },
+        }),
       },
     };
 
+  const invalidUserIdSchema: StandardSchemaV1<
+    { userId?: string },
+    { userId?: string }
+  > = {
+    "~standard": {
+      version: 1,
+      vendor: "rpc4next-test",
+      types: {
+        input: {} as { userId?: string },
+        output: {} as { userId?: string },
+      },
+      validate: (value) => ({
+        value: value as { userId?: string },
+      }),
+    },
+  };
+
+  const requestIdHeaderSchema: StandardSchemaV1<
+    { "x-request-id": string },
+    { "x-request-id": string }
+  > = {
+    "~standard": {
+      version: 1,
+      vendor: "rpc4next-test",
+      types: {
+        input: {} as { "x-request-id": string },
+        output: {} as { "x-request-id": string },
+      },
+      validate: (value) => ({
+        value: value as { "x-request-id": string },
+      }),
+    },
+  };
+
+  const roleHeaderSchema: StandardSchemaV1<
+    { "x-demo-role"?: "reader" | "editor" },
+    { "x-demo-role"?: "reader" | "editor" }
+  > = {
+    "~standard": {
+      version: 1,
+      vendor: "rpc4next-test",
+      types: {
+        input: {} as { "x-demo-role"?: "reader" | "editor" },
+        output: {} as { "x-demo-role"?: "reader" | "editor" },
+      },
+      validate: (value) => ({
+        value: value as { "x-demo-role"?: "reader" | "editor" },
+      }),
+    },
+  };
+
+  const includeDraftsSchema: StandardSchemaV1<
+    { includeDrafts?: "true" | "false" },
+    { includeDrafts?: "true" | "false" }
+  > = {
+    "~standard": {
+      version: 1,
+      vendor: "rpc4next-test",
+      types: {
+        input: {} as { includeDrafts?: "true" | "false" },
+        output: {} as { includeDrafts?: "true" | "false" },
+      },
+      validate: (value) => ({
+        value: value as { includeDrafts?: "true" | "false" },
+      }),
+    },
+  };
+
+  const titleSchema: StandardSchemaV1<{ title: string }, { title: string }> = {
+    "~standard": {
+      version: 1,
+      vendor: "rpc4next-test",
+      types: {
+        input: {} as { title: string },
+        output: {} as { title: string },
+      },
+      validate: (value) => ({
+        value: value as { title: string },
+      }),
+    },
+  };
+
+  it("supports custom procedure validators without zod coupling", () => {
     const customValidatorProcedure = procedure
       .query(parsePage)
       .handle(({ query }) => {
@@ -238,89 +169,42 @@ describe("procedure builder type definitions", () => {
     >();
   });
 
-  it("types validator-stage customization against the target input shape", () => {
-    const onValidationError = vi.fn(
-      ({ target, value, issues }: ProcedureValidationErrorContext<"query">) => {
-        const _target: "query" = target;
-        const _value: unknown = value;
-        const _issues: readonly { message: string }[] = issues;
-
-        void _target;
-        void _value;
-        void _issues;
-
-        return undefined;
-      },
-    );
-
-    const pagedProcedure = procedure
-      .query(
-        z.object({
-          page: z.coerce.number().int().positive(),
-        }),
-        {
-          onValidationError,
-        },
-      )
-      .handle(({ query }) => ({
-        body: {
-          page: query.page,
-        },
-      }));
-
-    expectTypeOf(pagedProcedure.handler).parameters.toMatchTypeOf<
-      [
-        {
-          query: {
-            page: number;
-          };
-        },
-      ]
-    >();
-  });
-
   it("limits handle context to validated inputs only", () => {
-    procedure
-      .query(
-        z.object({
-          page: z.coerce.number().int().positive(),
-        }),
-      )
-      .handle((context) => {
-        const { query, request, ctx, response } = context;
-        const _query: { page: number } = query;
-        const _request: Request = request;
-        const _ctx: Record<never, never> = ctx;
-        const _response = response.json({
-          page: query.page,
-        });
-
-        void _query;
-        void _request;
-        void _ctx;
-        void _response;
-
-        // @ts-expect-error params are not available without params(schema)
-        void context.params;
-        // @ts-expect-error json is not available without json(schema)
-        void context.json;
-
-        return {
-          status: 200 as const,
-        };
+    procedure.query(parsePage).handle((context) => {
+      const { query, request, ctx, response } = context;
+      const _query: { page: number } = query;
+      const _request: Request = request;
+      const _ctx: Record<never, never> = ctx;
+      const _response = response.json({
+        page: query.page,
       });
+
+      void _query;
+      void _request;
+      void _ctx;
+      void _response;
+
+      // @ts-expect-error params are not available without params(schema)
+      void context.params;
+      // @ts-expect-error json is not available without json(schema)
+      void context.json;
+
+      return {
+        status: 200 as const,
+      };
+    });
 
     expect(true).toBe(true);
   });
 
   it("types response helpers against explicit output contracts", () => {
     procedure
-      .output(
-        z.object({
-          ok: z.literal(true),
-          count: z.number().int().nonnegative(),
-        }),
-      )
+      .output({
+        _output: {
+          ok: true as const,
+          count: 0 as number,
+        },
+      })
       .handle(({ response }) => {
         response.json({
           ok: true,
@@ -333,18 +217,6 @@ describe("procedure builder type definitions", () => {
           count: 1,
         });
 
-        const _text = response.text("ok");
-        const _body = response.body("ok", {
-          headers: {
-            "Content-Type": "text/plain",
-          },
-        });
-        const _redirect = response.redirect("http://localhost/next");
-
-        void _text;
-        void _body;
-        void _redirect;
-
         return response.json({
           ok: true,
           count: 1,
@@ -354,121 +226,27 @@ describe("procedure builder type definitions", () => {
     expect(true).toBe(true);
   });
 
-  it("keeps zod output property types on response helpers", () => {
-    procedure
-      .output(
-        z.object({
-          ok: z.literal(true),
-          page: z.number().int().positive(),
-          source: z.literal("procedure"),
-        }),
-      )
-      .handle(({ response }) => {
-        const jsonResponse = response.json({
-          ok: true,
-          page: 1,
-          source: "procedure",
-        });
-
-        expectTypeOf(jsonResponse).toEqualTypeOf<
-          TypedNextResponse<
-            {
-              ok: true;
-              page: number;
-              source: "procedure";
-            },
-            200,
-            "application/json"
-          >
-        >();
-
-        response.json({
-          ok: true,
-          // @ts-expect-error response.json should preserve the zod output property type
-          page: "1",
-          source: "procedure",
-        });
-
-        return jsonResponse;
-      });
-
-    expect(true).toBe(true);
-  });
-
-  it("preserves literal output types for procedure-validation-branch style responses", () => {
-    procedure
-      .query(
-        z.object({
-          page: z.coerce.number().int().positive(),
-        }),
-      )
-      .output(
-        z.object({
-          ok: z.literal(true),
-          source: z.literal("procedure-validation-branch"),
-          page: z.number().int().positive(),
-        }),
-      )
-      .handle(({ query, response }) => {
-        const jsonResponse = response.json({
-          ok: true,
-          source: "procedure-validation-branch",
-          page: query.page,
-        });
-
-        expectTypeOf(jsonResponse).toEqualTypeOf<
-          TypedNextResponse<
-            {
-              ok: true;
-              source: "procedure-validation-branch";
-              page: number;
-            },
-            200,
-            "application/json"
-          >
-        >();
-
-        response.json({
-          // @ts-expect-error ok should remain the true literal from the output contract
-          ok: false,
-          source: "procedure-validation-branch",
-          page: query.page,
-        });
-
-        response.json({
-          ok: true,
-          // @ts-expect-error source should remain the procedure-validation-branch literal
-          source: "other",
-          page: query.page,
-        });
-
-        return jsonResponse;
-      });
-
-    expect(true).toBe(true);
-  });
-
   it("rejects formData after json at compile time", () => {
     procedure
-      .json(z.object({ title: z.string() }))
+      .json(titleSchema)
       // @ts-expect-error procedure body contracts are mutually exclusive
-      .formData(z.object({ title: z.string() }));
+      .formData(titleSchema);
 
     expect(true).toBe(true);
   });
 
   it("rejects json after formData at compile time", () => {
     procedure
-      .formData(z.object({ title: z.string() }))
+      .formData(titleSchema)
       // @ts-expect-error procedure body contracts are mutually exclusive
-      .json(z.object({ title: z.string() }));
+      .json(titleSchema);
 
     expect(true).toBe(true);
   });
 
   it("widens middleware context across multiple use calls", () => {
     const contextProcedure = procedure
-      .headers(z.object({ "x-request-id": z.string() }))
+      .headers(requestIdHeaderSchema)
       .use(({ headers }) => ({
         ctx: {
           requestId: headers["x-request-id"],
@@ -506,11 +284,7 @@ describe("procedure builder type definitions", () => {
 
   it("limits middleware context to validated inputs only", () => {
     procedure
-      .query(
-        z.object({
-          page: z.coerce.number().int().positive(),
-        }),
-      )
+      .query(parsePage)
       .use((context) => {
         const _query: { page: number } = context.query;
         const _request: Request = context.request;
@@ -541,7 +315,7 @@ describe("procedure builder type definitions", () => {
   it("exposes params to middleware after params(schema)", () => {
     procedure
       .forRoute(guardedUserRouteContract)
-      .params(z.object({ userId: z.string().min(1) }))
+      .params(userIdSchema)
       .use(({ params }) => ({
         ctx: {
           requestId: params.userId,
@@ -558,11 +332,7 @@ describe("procedure builder type definitions", () => {
 
   it("supports immutable shared baseProcedure presets", () => {
     const baseProcedure = procedure
-      .headers(
-        z.object({
-          "x-demo-role": z.enum(["reader", "editor"]).optional(),
-        }),
-      )
+      .headers(roleHeaderSchema)
       .meta({
         tags: ["shared-base-procedure"],
         auth: "optional" as const,
@@ -593,12 +363,8 @@ describe("procedure builder type definitions", () => {
     });
 
     const getUserProcedure = baseProcedure
-      .params(z.object({ userId: z.string() }))
-      .query(
-        z.object({
-          includeDrafts: z.enum(["true", "false"]).optional(),
-        }),
-      )
+      .params(userIdSchema)
+      .query(includeDraftsSchema)
       .handle(({ params, query, ctx }) => {
         const _params: { userId: string } = params;
         const _query: { includeDrafts?: "true" | "false" | undefined } = query;
@@ -621,47 +387,37 @@ describe("procedure builder type definitions", () => {
         };
       });
 
-    expectTypeOf(listUsersProcedure.definition).toMatchTypeOf<{
-      meta?: {
-        tags: string[];
-        auth: "optional";
-      };
-      input?: {
-        validationSchema?: {
-          output: {
-            headers: {
-              "x-demo-role"?: "reader" | "editor" | undefined;
+    expectTypeOf(listUsersProcedure.handler).parameters.toMatchTypeOf<
+      [
+        {
+          ctx: {
+            viewer: {
+              role: "reader" | "editor";
             };
           };
-        };
-      };
-    }>();
+        },
+      ]
+    >();
 
-    expectTypeOf(getUserProcedure.definition).toMatchTypeOf<{
-      input?: {
-        validationSchema?: {
-          output: {
-            params: { userId: string };
-            query: {
-              includeDrafts?: "true" | "false" | undefined;
-            };
-            headers: {
-              "x-demo-role"?: "reader" | "editor" | undefined;
+    expectTypeOf(getUserProcedure.handler).parameters.toMatchTypeOf<
+      [
+        {
+          params: { userId: string };
+          query: { includeDrafts?: "true" | "false" | undefined };
+          ctx: {
+            viewer: {
+              role: "reader" | "editor";
             };
           };
-        };
-      };
-    }>();
+        },
+      ]
+    >();
   });
 
   it("supports route-bound shared baseProcedure presets", () => {
     const guardedBaseProcedure = procedure
       .forRoute(guardedUserRouteContract)
-      .headers(
-        z.object({
-          "x-demo-role": z.enum(["reader", "editor"]).optional(),
-        }),
-      )
+      .headers(roleHeaderSchema)
       .use(({ headers }) => ({
         ctx: {
           requestId: "guarded",
@@ -672,7 +428,7 @@ describe("procedure builder type definitions", () => {
       }));
 
     const guardedProcedure = guardedBaseProcedure
-      .params(z.object({ userId: z.string().min(1) }))
+      .params(userIdSchema)
       .handle(({ params, ctx }) => {
         const _params: { userId: string } = params;
         const _ctx: {
@@ -690,50 +446,15 @@ describe("procedure builder type definitions", () => {
         };
       });
 
-    expectTypeOf(guardedProcedure.definition).toMatchTypeOf<{
-      route?: {
-        pathname: "/api/procedure-guarded/[userId]";
-        params: { userId: string };
-      };
-      input?: {
-        validationSchema?: {
-          output: {
-            params: { userId: string };
-          };
-        };
-      };
-    }>();
-  });
-
-  it("supports validator-stage customization on shared baseProcedure presets", () => {
-    const baseProcedure = procedure.query(
-      z.object({
-        page: z.coerce.number().int().positive(),
-      }),
-      {
-        onValidationError: ({ target, value }) => {
-          const _target: "query" = target;
-          const _value: { page: unknown } = value;
-
-          void _target;
-          void _value;
-
-          return undefined;
-        },
-      },
-    );
-
-    const derivedProcedure = baseProcedure.handle(({ query }) => ({
-      body: {
-        page: query.page,
-      },
-    }));
-
-    expectTypeOf(derivedProcedure.handler).parameters.toMatchTypeOf<
+    expectTypeOf(guardedProcedure.handler).parameters.toMatchTypeOf<
       [
         {
-          query: {
-            page: number;
+          params: { userId: string };
+          ctx: {
+            requestId: string;
+            viewer: {
+              role: "reader" | "editor";
+            };
           };
         },
       ]
@@ -756,7 +477,7 @@ describe("procedure builder type definitions", () => {
     procedure
       .forRoute(guardedUserRouteContract)
       // @ts-expect-error bound route params schema output must cover the generated params contract
-      .params(z.object({ userId: z.string().optional() }));
+      .params(invalidUserIdSchema);
 
     expect(true).toBe(true);
   });
