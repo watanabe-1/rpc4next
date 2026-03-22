@@ -1,4 +1,9 @@
-import { rpcError } from "./error";
+import {
+  rpcError as baseRpcError,
+  getDefaultRpcErrorStatus,
+  type RpcErrorCode,
+  type RpcErrorInit,
+} from "./error";
 import {
   defaultRpcErrorFormatter,
   type ProcedureErrorFormatter,
@@ -22,6 +27,22 @@ export interface CreateProcedureKitOptions {
 
 export const createProcedureKit = (options: CreateProcedureKitOptions = {}) => {
   const kitErrorFormatter = options.errorFormatter ?? defaultRpcErrorFormatter;
+  const kitRpcError = (<TCode extends RpcErrorCode, TDetails = unknown>(
+    code: TCode,
+    init?: RpcErrorInit<TCode, TDetails>,
+  ) => {
+    const registryStatus = options.errorRegistry?.[code]?.status;
+
+    return baseRpcError(code, {
+      ...init,
+      status: (init?.status ??
+        registryStatus ??
+        getDefaultRpcErrorStatus(code)) as RpcErrorInit<
+        TCode,
+        TDetails
+      >["status"],
+    });
+  }) as typeof baseRpcError;
   const nextRoute = ((procedureDefinition, routeOptions) =>
     baseNextRoute(
       procedureDefinition as never,
@@ -33,7 +54,7 @@ export const createProcedureKit = (options: CreateProcedureKitOptions = {}) => {
 
   return {
     procedure,
-    rpcError,
+    rpcError: kitRpcError,
     defaultRpcErrorFormatter,
     errorRegistry: options.errorRegistry,
     nextRoute,

@@ -73,6 +73,12 @@ export interface RpcErrorInit<
   code?: TCode;
 }
 
+export const getDefaultRpcErrorStatus = <TCode extends RpcErrorCode>(
+  code: TCode,
+): RpcErrorStatus<TCode> => {
+  return DEFAULT_RPC_ERROR_STATUS[code] as RpcErrorStatus<TCode>;
+};
+
 export class RpcError<
   TCode extends RpcErrorCode = RpcErrorCode,
   TDetails = unknown,
@@ -90,7 +96,7 @@ export class RpcError<
     this.code = init.code ?? code;
     this.details = init.details;
     this.status = (init.status ??
-      DEFAULT_RPC_ERROR_STATUS[code]) as RpcErrorStatus<TCode>;
+      getDefaultRpcErrorStatus(code)) as RpcErrorStatus<TCode>;
   }
 
   toJSON(): RpcErrorEnvelope<TCode, TDetails> {
