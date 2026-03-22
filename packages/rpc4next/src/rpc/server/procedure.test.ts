@@ -7,6 +7,7 @@ import type {
   ProcedureValidationErrorContext,
 } from "./procedure-types";
 import type { StandardSchemaV1 } from "./standard-schema";
+import type { TypedNextResponse } from "./types";
 
 describe("procedure builder type definitions", () => {
   const guardedUserRouteContract = {
@@ -348,6 +349,100 @@ describe("procedure builder type definitions", () => {
           ok: true,
           count: 1,
         });
+      });
+
+    expect(true).toBe(true);
+  });
+
+  it("keeps zod output property types on response helpers", () => {
+    procedure
+      .output(
+        z.object({
+          ok: z.literal(true),
+          page: z.number().int().positive(),
+          source: z.literal("procedure"),
+        }),
+      )
+      .handle(({ response }) => {
+        const jsonResponse = response.json({
+          ok: true,
+          page: 1,
+          source: "procedure",
+        });
+
+        expectTypeOf(jsonResponse).toEqualTypeOf<
+          TypedNextResponse<
+            {
+              ok: true;
+              page: number;
+              source: "procedure";
+            },
+            200,
+            "application/json"
+          >
+        >();
+
+        response.json({
+          ok: true,
+          // @ts-expect-error response.json should preserve the zod output property type
+          page: "1",
+          source: "procedure",
+        });
+
+        return jsonResponse;
+      });
+
+    expect(true).toBe(true);
+  });
+
+  it("preserves literal output types for procedure-validation-branch style responses", () => {
+    procedure
+      .query(
+        z.object({
+          page: z.coerce.number().int().positive(),
+        }),
+      )
+      .output(
+        z.object({
+          ok: z.literal(true),
+          source: z.literal("procedure-validation-branch"),
+          page: z.number().int().positive(),
+        }),
+      )
+      .handle(({ query, response }) => {
+        const jsonResponse = response.json({
+          ok: true,
+          source: "procedure-validation-branch",
+          page: query.page,
+        });
+
+        expectTypeOf(jsonResponse).toEqualTypeOf<
+          TypedNextResponse<
+            {
+              ok: true;
+              source: "procedure-validation-branch";
+              page: number;
+            },
+            200,
+            "application/json"
+          >
+        >();
+
+        response.json({
+          // @ts-expect-error ok should remain the true literal from the output contract
+          ok: false,
+          source: "procedure-validation-branch",
+          page: query.page,
+        });
+
+        response.json({
+          ok: true,
+          // @ts-expect-error source should remain the procedure-validation-branch literal
+          source: "other",
+          page: query.page,
+        });
+
+        return jsonResponse;
       });
 
     expect(true).toBe(true);
