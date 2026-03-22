@@ -60,12 +60,13 @@ const examples = [
 // response.error.code === "INTERNAL_SERVER_ERROR"`,
   },
   {
-    phase: "Compatibility path",
-    title: "routeHandlerFactory() remains supported",
-    route: "/api/users/[userId] + /api/posts + /api/request-meta",
+    phase: "Everyday routes",
+    title: "params, json, headers, cookies, redirects",
+    route:
+      "/api/users/[userId] + /api/posts + /api/request-meta + /api/redirect-me + /api/error-demo",
     notes: [
-      "The integration fixture still keeps middleware-first routes for compatibility coverage and migration reference.",
-      "Use this path when preserving existing routeHandlerFactory() / zValidator(...) code is more practical than rewriting the route.",
+      "The former legacy fixture routes now use the same procedure builder, so the common route shapes all live on one authoring model.",
+      "Route-level formatter and redirect behavior are covered without dropping back to a separate middleware-first API.",
     ],
     snippet: `await rpcClient.api.users
   ._userId("demo-user")
@@ -93,9 +94,8 @@ export default function ProcedureExamplesPage() {
     <main>
       <h1>Procedure examples</h1>
       <p>
-        This page groups the integration fixtures around the recommended
-        `procedure` / `nextRoute()` authoring path and its supported
-        compatibility surface.
+        This page groups the integration fixtures around the `procedure` /
+        `nextRoute()` authoring path.
       </p>
       <ul>
         <li>

@@ -1,8 +1,6 @@
-import { routeHandlerFactory } from "rpc4next/server";
-import { zValidator } from "rpc4next/server/validators/zod";
+import { nextRoute, procedure } from "rpc4next/server";
 import { z } from "zod";
-
-const createRouteHandler = routeHandlerFactory();
+import { routeContract } from "./route-contract";
 
 const headersSchema = z.object({
   "x-integration-test": z.string().min(1),
@@ -12,16 +10,21 @@ const cookiesSchema = z.object({
   session: z.string().min(1),
 });
 
-export const { GET } = createRouteHandler().get(
-  zValidator("headers", headersSchema),
-  zValidator("cookies", cookiesSchema),
-  async (rc) => {
-    const headers = rc.req.valid("headers");
-    const cookies = rc.req.valid("cookies");
-
-    return rc.json({
+const getRequestMeta = procedure
+  .forRoute(routeContract)
+  .headers(headersSchema)
+  .cookies(cookiesSchema)
+  .output({
+    _output: {
+      header: "" as string,
+      session: "" as string,
+    },
+  })
+  .handle(async ({ headers, cookies }) => ({
+    body: {
       header: headers["x-integration-test"],
       session: cookies.session,
-    });
-  },
-);
+    },
+  }));
+
+export const GET = nextRoute(getRequestMeta, { method: "GET" });

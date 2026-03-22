@@ -43,13 +43,13 @@ Use these files as entry points, depending on what you want to understand:
 - Typed client setup: `src/lib/rpc-client.ts`
 - Generated output shape: `src/generated/rpc.ts`
 - Generated sibling route contract: `app/api/procedure-contract/[userId]/route-contract.ts`
-- Compatibility `routeHandlerFactory()` route with Zod validation: `app/api/users/[userId]/route.ts`
-- Compatibility `routeHandlerFactory()` JSON route: `app/api/posts/route.ts`
-- Compatibility `routeHandlerFactory()` request metadata route: `app/api/request-meta/route.ts`
+- Procedure params/query route: `app/api/users/[userId]/route.ts`
+- Procedure JSON route: `app/api/posts/route.ts`
+- Procedure headers/cookies route: `app/api/request-meta/route.ts`
 - Plain Next.js handler with `NextResponse.json(...)`: `app/api/next-native/[itemId]/route.ts`
 - Plain Next.js handler with `Response.json(...)`: `app/api/next-native-response/route.ts`
-- Compatibility redirect-only handler: `app/api/redirect-me/route.ts`
-- Compatibility route-level error handler: `app/api/error-demo/route.ts`
+- Procedure redirect helper route: `app/api/redirect-me/route.ts`
+- Procedure error formatter route: `app/api/error-demo/route.ts`
 - Page-path typing examples: `app/photo/[id]/page.tsx` and `app/feed/page.tsx`
 - App Router folder-pattern coverage: `app/patterns/**`
 
@@ -116,11 +116,9 @@ This workspace is intended to make scanner and runtime regressions visible in Gi
 
 The main walkthrough in this fixture is now procedure-first. `app/api/procedure-contract/[userId]/route.ts` is the baseline typed route: it binds the generated `routeContract`, declares params/query/output in one builder, and exports `GET` through `nextRoute(...)`. `app/api/procedure-submit/route.ts` extends that path to json/header/cookie input, `app/api/procedure-form-data/route.ts` covers multipart-style input, and `app/api/procedure-guarded/[userId]/route.ts` shows the recommended shared-policy path by extending `app/api/_shared/base-procedure.ts` with route-local params/query/output/error contracts.
 
-The procedure fixtures also cover the later design phases that made the procedure path complete enough to recommend by default. `app/api/procedure-invalid-output/route.ts` demonstrates opt-in runtime output enforcement with a Standard Schema output contract. `app/api/procedure-kit-error/route.ts` shows project-level error formatting through `createProcedureKit(...)`. `app/api/procedure-validation-branch/route.ts` shows validator-stage customization through `procedure.query(schema, { onValidationError(...) { ... } })`, which is the main procedure-side replacement for `zValidator(target, schema, hook)`. `app/procedure-examples/page.tsx` presents those routes as the recommended typed authoring path rather than a speculative phase map.
+The procedure fixtures also cover the later design phases that made the procedure path complete enough to recommend by default. `app/api/procedure-invalid-output/route.ts` demonstrates opt-in runtime output enforcement with a Standard Schema output contract. `app/api/procedure-kit-error/route.ts` shows project-level error formatting through `createProcedureKit(...)`. `app/api/procedure-validation-branch/route.ts` shows validator-stage customization through `procedure.query(schema, { onValidationError(...) { ... } })`. `app/api/error-demo/route.ts` and `app/api/redirect-me/route.ts` show that route-level formatter and redirect ergonomics now live on the same procedure-first path.
 
-`routeHandlerFactory()` remains intentionally visible in this workspace as a supported compatibility path. `app/api/users/[userId]/route.ts`, `app/api/posts/route.ts`, and `app/api/request-meta/route.ts` keep the middleware-first + `zValidator(...)` style covered. `app/api/redirect-me/route.ts` and `app/api/error-demo/route.ts` remain as small compatibility fixtures for redirect and route-level error-handler behavior. They are still supported, but they are no longer the first route style new users should copy.
-
-The fixtures also include plain Next.js routes written without `routeHandlerFactory`, including a static `NextResponse.json(...)` route, a dynamic route that reads `params` and `nextUrl.searchParams`, and a `Response.json(...)` route. The generated client can still call them as RPC, but their response types are intentionally broader than rpc4next's `TypedNextResponse` helpers.
+The fixtures also include plain Next.js routes written without `procedure`, including a static `NextResponse.json(...)` route, a dynamic route that reads `params` and `nextUrl.searchParams`, and a `Response.json(...)` route. The generated client can still call them as RPC, but their response types are intentionally broader than rpc4next's `TypedNextResponse` helpers.
 
 `bun run generate:rpc:watch` keeps `src/generated/rpc.ts` and `app/**/route-contract.ts` in sync while route files under `app/**` change.
 
