@@ -23,38 +23,9 @@ import type {
   ProcedureRouteContract,
 } from "./procedure-types";
 import type { ValidationSchema } from "./route-types";
+import type { InferSchemaInput, InferSchemaOutput } from "./schema-inference";
 import type { StandardSchemaV1 } from "./standard-schema";
 import type { Params, Query, ResponseHelpers } from "./types";
-
-type InferSchemaInput<TSchema> = TSchema extends { _input?: infer TInput }
-  ? TInput
-  : TSchema extends { _zod: { input: infer TInput } }
-    ? TInput
-    : TSchema extends { input: infer TInput }
-      ? TInput
-      : TSchema extends {
-            readonly "~standard": { readonly types?: infer TTypes };
-          }
-        ? NonNullable<TTypes> extends { readonly input: infer TInput }
-          ? TInput
-          : unknown
-        : unknown;
-
-type InferSchemaOutput<TSchema> = TSchema extends { _output?: infer TOutput }
-  ? TOutput
-  : TSchema extends { _zod: { output: infer TOutput } }
-    ? TOutput
-    : TSchema extends { _type: infer TOutput }
-      ? TOutput
-      : TSchema extends { output: infer TOutput }
-        ? TOutput
-        : TSchema extends {
-              readonly "~standard": { readonly types?: infer TTypes };
-            }
-          ? NonNullable<TTypes> extends { readonly output: infer TOutput }
-            ? TOutput
-            : unknown
-          : unknown;
 
 type ExtractValidationSchema<TDefinition extends ProcedureDefinition> =
   TDefinition extends ProcedureDefinition<

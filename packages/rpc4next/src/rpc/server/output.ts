@@ -8,14 +8,7 @@ import {
   attachProcedureDefinition,
   getProcedureDefinition,
 } from "./procedure-types";
-
-type InferSchemaOutput<TSchema> = TSchema extends { _output: infer TOutput }
-  ? TOutput
-  : TSchema extends { _type: infer TOutput }
-    ? TOutput
-    : TSchema extends { output: infer TOutput }
-      ? TOutput
-      : unknown;
+import type { InferSchemaOutput } from "./schema-inference";
 
 declare const __outputContract: unique symbol;
 
