@@ -527,6 +527,46 @@ describe("integration next-app generated RPC type coverage", () => {
     const _procedureFormDataResponseFromActual: ExpectedProcedureFormDataResponse =
       procedureFormDataResponse;
 
+    const procedureValidationBranchResponse = await client.api[
+      "procedure-validation-branch"
+    ].$get({
+      url: { query: { page: "1" } },
+    });
+    type ExpectedProcedureValidationBranchResponse =
+      | TypedNextResponse<
+          {
+            ok: true;
+            source: "procedure-validation-branch";
+            page: number;
+          },
+          200,
+          "application/json"
+        >
+      | TypedNextResponse<
+          {
+            error: {
+              code: "BAD_REQUEST";
+              message: string;
+              details?: unknown;
+            };
+          },
+          400,
+          "application/json"
+        >
+      | TypedNextResponse<
+          {
+            ok: false;
+            source: "procedure-validation-branch";
+            target: "query";
+            issueCount: number;
+            receivedPage?: string;
+          },
+          422,
+          "application/json"
+        >;
+    const _procedureValidationBranchResponseFromActual: ExpectedProcedureValidationBranchResponse =
+      procedureValidationBranchResponse;
+
     type RedirectGet = (typeof client.api)["redirect-me"]["$get"];
     type RedirectResponse = Awaited<ReturnType<RedirectGet>>;
     expectTypeOf<RedirectResponse>().toEqualTypeOf<

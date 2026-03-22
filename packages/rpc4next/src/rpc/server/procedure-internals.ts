@@ -18,6 +18,7 @@ import type {
   ProcedureOutputContract,
   ProcedureRouteBinding,
   ProcedureRouteContract,
+  ProcedureValidationErrorResponseMap,
 } from "./procedure-types";
 import type { ValidationSchema } from "./route-types";
 import type { StandardSchemaV1 } from "./standard-schema";
@@ -151,6 +152,7 @@ export const withProcedureError = <
 export const withProcedureInputContract = <
   TDefinition extends ProcedureDefinition,
   TValidationSchema extends ValidationSchema,
+  TValidationErrorResponses extends ProcedureValidationErrorResponseMap,
   TTarget extends ProcedureInputTarget,
   TSchema extends StandardSchemaV1,
   TValue = unknown,
@@ -162,7 +164,10 @@ export const withProcedureInputContract = <
 ): MergeProcedureDefinition<
   TDefinition,
   {
-    input: ProcedureInputContract<TValidationSchema> & {
+    input: ProcedureInputContract<
+      TValidationSchema,
+      TValidationErrorResponses
+    > & {
       contracts: NonNullable<TDefinition["input"]>["contracts"] &
         Record<TTarget, TSchema>;
     };
@@ -179,6 +184,9 @@ export const withProcedureInputContract = <
         ...(definition.input?.options ?? {}),
         ...(options === undefined ? {} : { [target]: options }),
       },
+      validationErrorResponses: {
+        ...(definition.input?.validationErrorResponses ?? {}),
+      } as TValidationErrorResponses,
       validationSchema: {
         ...(definition.input?.validationSchema ?? {
           input: {},
@@ -189,7 +197,10 @@ export const withProcedureInputContract = <
   } as unknown as MergeProcedureDefinition<
     TDefinition,
     {
-      input: ProcedureInputContract<TValidationSchema> & {
+      input: ProcedureInputContract<
+        TValidationSchema,
+        TValidationErrorResponses
+      > & {
         contracts: NonNullable<TDefinition["input"]>["contracts"] &
           Record<TTarget, TSchema>;
       };

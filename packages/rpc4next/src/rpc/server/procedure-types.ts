@@ -9,6 +9,7 @@ import type {
   StandardSchemaV1,
   StandardSchemaV1Issue,
 } from "./standard-schema";
+import type { TypedNextResponse } from "./types";
 
 export type ProcedureInputTarget =
   | "params"
@@ -39,15 +40,25 @@ export type ProcedureValidationErrorHandlerResult =
   | NextResponse
   | ProcedureResult;
 
+export type ProcedureValidationErrorRouteResponse =
+  | TypedNextResponse
+  | ProcedureResult;
+
+export type ProcedureValidationErrorResponseMap = Partial<
+  Record<ProcedureInputTarget, ProcedureValidationErrorRouteResponse>
+>;
+
+type EmptyProcedureValidationErrorResponseMap = Record<never, never>;
+
 export interface ProcedureInputOptions<
   TTarget extends ProcedureInputTarget = ProcedureInputTarget,
   TValue = unknown,
+  TOnValidationErrorResult extends
+    ProcedureValidationErrorHandlerResult = ProcedureValidationErrorHandlerResult,
 > {
   onValidationError?: (
     context: ProcedureValidationErrorContext<TTarget, TValue>,
-  ) =>
-    | ProcedureValidationErrorHandlerResult
-    | Promise<ProcedureValidationErrorHandlerResult>;
+  ) => TOnValidationErrorResult | Promise<TOnValidationErrorResult>;
 }
 
 export type ProcedureInputOptionMap = Partial<
@@ -56,9 +67,12 @@ export type ProcedureInputOptionMap = Partial<
 
 export interface ProcedureInputContract<
   TValidationSchema extends ValidationSchema = ValidationSchema,
+  TValidationErrorResponses extends
+    ProcedureValidationErrorResponseMap = EmptyProcedureValidationErrorResponseMap,
 > {
   contracts?: ProcedureInputContracts;
   options?: ProcedureInputOptionMap;
+  validationErrorResponses?: TValidationErrorResponses;
   validationSchema?: TValidationSchema;
 }
 

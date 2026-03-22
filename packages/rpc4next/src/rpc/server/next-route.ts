@@ -26,6 +26,7 @@ import {
   type ProcedureErrorContract,
   type ProcedureInputContract,
   type ProcedureValidationErrorHandlerResult,
+  type ProcedureValidationErrorResponseMap,
   type WithProcedureDefinition,
 } from "./procedure-types";
 import {
@@ -201,11 +202,26 @@ type InferProcedureValidationErrorResponse<
   TProcedure extends ProcedureTypeCarrier,
 > =
   InferProcedureDefinition<TProcedure> extends {
-    input: ProcedureInputContract<infer TValidationSchema>;
+    input: ProcedureInputContract<
+      infer TValidationSchema,
+      infer TValidationErrorResponses
+    >;
   }
     ? keyof TValidationSchema["input"] extends never
       ? never
-      : ProcedureErrorResponse<"BAD_REQUEST">
+      :
+          | ProcedureErrorResponse<"BAD_REQUEST">
+          | InferProcedureCustomValidationErrorResponse<TValidationErrorResponses>
+    : never;
+
+type InferProcedureCustomValidationErrorResponse<TValidationErrorResponses> =
+  TValidationErrorResponses extends ProcedureValidationErrorResponseMap
+    ? NormalizeProcedureHandlerResult<
+        Exclude<
+          TValidationErrorResponses[keyof TValidationErrorResponses],
+          undefined
+        >
+      >
     : never;
 
 type InferProcedureOutputValidationErrorResponse<
