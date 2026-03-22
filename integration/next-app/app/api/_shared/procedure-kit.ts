@@ -6,12 +6,12 @@ import {
 } from "rpc4next/server";
 
 export const procedureKit = createProcedureKit({
-  errorFormatter: (error, rc) => {
+  errorFormatter: (error, response) => {
     if (!isRpcError(error)) {
       return undefined;
     }
 
-    return rc.json(
+    return response.json(
       {
         success: false,
         error: {

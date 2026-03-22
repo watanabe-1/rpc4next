@@ -9,8 +9,8 @@ const getProcedureValidationBranch = procedure
       page: z.coerce.number().int().positive(),
     }),
     {
-      onValidationError: ({ target, value, issues, routeContext }) =>
-        routeContext.json(
+      onValidationError: ({ target, value, issues, response }) =>
+        response.json(
           {
             ok: false as const,
             source: "procedure-validation-branch" as const,

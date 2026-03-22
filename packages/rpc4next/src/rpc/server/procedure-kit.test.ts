@@ -14,12 +14,12 @@ describe("createProcedureKit", () => {
 
   it("applies the project-level errorFormatter to nextRoute", async () => {
     const procedureKit = createProcedureKit({
-      errorFormatter: (error, rc) => {
+      errorFormatter: (error, response) => {
         if (!(error instanceof Error)) {
           return undefined;
         }
 
-        return rc.json(
+        return response.json(
           {
             success: false,
             error: {

@@ -193,8 +193,8 @@ describe("nextRoute arktype integration", () => {
     const baseProcedure = procedure
       .forRoute(staticRouteContract)
       .query(pageSchema, {
-        onValidationError: ({ routeContext, target }) =>
-          routeContext.json(
+        onValidationError: ({ response, target }) =>
+          response.json(
             {
               source: "arktype-base",
               target,
