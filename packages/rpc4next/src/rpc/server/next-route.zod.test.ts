@@ -559,6 +559,40 @@ describe("nextRoute zod integration", () => {
     });
   });
 
+  it("replaces ProcedureResult bodies with parsed output values", async () => {
+    const route = nextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .output(
+          z.object({
+            ok: z.literal(true),
+            count: z.coerce
+              .number()
+              .int()
+              .transform((value) => value + 1),
+          }),
+        )
+        .handle(async () => ({
+          status: 200,
+          body: {
+            ok: true,
+            count: "1" as unknown as number,
+          },
+        })),
+      { method: "GET", validateOutput: true },
+    );
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      count: 2,
+    });
+  });
+
   it("normalizes invalid runtime output as INTERNAL_SERVER_ERROR", async () => {
     const route = nextRoute(
       procedure
@@ -626,6 +660,36 @@ describe("nextRoute zod integration", () => {
     });
   });
 
+  it("replaces response.json payloads with parsed output values", async () => {
+    const route = nextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .output(
+          z.object({
+            ok: z.literal(true),
+            slug: z.string().transform((value) => value.toUpperCase()),
+          }),
+        )
+        .handle(async ({ response }) =>
+          response.json({
+            ok: true,
+            slug: "draft-post",
+          }),
+        ),
+      { method: "GET", validateOutput: true },
+    );
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      slug: "DRAFT-POST",
+    });
+  });
+
   it("skips runtime output validation for raw Response escape hatches", async () => {
     const route = nextRoute(
       procedure
@@ -633,15 +697,19 @@ describe("nextRoute zod integration", () => {
         .output(
           z.object({
             ok: z.literal(true),
+            slug: z.string().transform((value) => value.toUpperCase()),
           }),
         )
         .handle(async () => {
-          return new Response(JSON.stringify({ ok: false }), {
-            status: 202,
-            headers: {
-              "content-type": "application/json",
+          return new Response(
+            JSON.stringify({ ok: true, slug: "raw-response" }),
+            {
+              status: 202,
+              headers: {
+                "content-type": "application/json",
+              },
             },
-          });
+          );
         }),
       { method: "GET", validateOutput: true },
     );
@@ -652,7 +720,8 @@ describe("nextRoute zod integration", () => {
 
     expect(response.status).toBe(202);
     await expect(response.json()).resolves.toEqual({
-      ok: false,
+      ok: true,
+      slug: "raw-response",
     });
   });
 

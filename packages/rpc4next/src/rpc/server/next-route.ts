@@ -404,6 +404,66 @@ const getProcedureOutputValidationValue = (
     : undefined;
 };
 
+const isBodyInitLike = (value: unknown): value is BodyInit | null => {
+  return (
+    value === null ||
+    typeof value === "string" ||
+    value instanceof Blob ||
+    value instanceof FormData ||
+    value instanceof URLSearchParams ||
+    value instanceof ReadableStream ||
+    value instanceof ArrayBuffer ||
+    ArrayBuffer.isView(value)
+  );
+};
+
+const applyParsedProcedureOutput = (
+  routeContext: ReturnType<typeof createRouteContext>,
+  result: Response | NextResponse | ProcedureResult | undefined,
+  parsedValue: unknown,
+) => {
+  if (shouldValidateProcedureOutput(result)) {
+    return {
+      ...result,
+      body: parsedValue,
+    } satisfies ProcedureResult;
+  }
+
+  if (!(result instanceof Response)) {
+    return result;
+  }
+
+  const helperMetadata = getResponseHelperMetadata(result);
+  const status = getHttpStatusCode(result.status);
+
+  if (
+    !helperMetadata ||
+    helperMetadata.kind === "redirect" ||
+    !isSuccessfulStatus(status)
+  ) {
+    return result;
+  }
+
+  const init = {
+    headersInit: result.headers,
+    status,
+  };
+
+  if (helperMetadata.kind === "json") {
+    return routeContext.json(parsedValue, init);
+  }
+
+  if (helperMetadata.kind === "text") {
+    return typeof parsedValue === "string"
+      ? routeContext.text(parsedValue, init)
+      : result;
+  }
+
+  return isBodyInitLike(parsedValue)
+    ? routeContext.body(parsedValue, init)
+    : result;
+};
+
 const validateProcedureInputs = async (
   request: NextRequest,
   segmentData: { params: Promise<Params> },
@@ -665,17 +725,24 @@ export const nextRoute = <
             )
           : undefined;
 
-      if (outputValidationValue !== undefined) {
-        await parseOutputWithSchema(
-          outputSchema as StandardSchemaV1,
-          outputValidationValue,
-        );
-      }
-
-      const normalizedResult = result as
+      let normalizedResult = result as
         | Response
         | NextResponse
         | ProcedureResult;
+
+      if (outputValidationValue !== undefined) {
+        const parsedOutput = await parseOutputWithSchema(
+          outputSchema as StandardSchemaV1,
+          outputValidationValue,
+        );
+
+        normalizedResult =
+          applyParsedProcedureOutput(
+            routeContext,
+            normalizedResult,
+            parsedOutput,
+          ) ?? normalizedResult;
+      }
 
       return normalizeProcedureResult(
         routeContext,
