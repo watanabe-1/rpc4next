@@ -592,6 +592,59 @@ describe("createRpcClient", () => {
     { method: "GET" },
   );
 
+  const _get_3 = nextRoute(
+    procedure
+      .forRoute(staticRouteContract)
+      .query(
+        {
+          "~standard": {
+            version: 1,
+            vendor: "rpc4next-test",
+            validate: (value) => {
+              const input =
+                typeof value === "object" && value !== null
+                  ? (value as { page?: string | string[] })
+                  : {};
+              const page = "page" in input ? input.page : "";
+              const first = Array.isArray(page) ? page[0] : page;
+
+              return first === "ok"
+                ? { value: { page: first } }
+                : { issues: [{ message: "page must equal ok" }] };
+            },
+            types: {
+              input: {} as { page?: string | string[] },
+              output: {} as { page: string },
+            },
+          },
+        },
+        {
+          onValidationError: ({ target }) =>
+            NextResponse.json(
+              {
+                ok: false as const,
+                source: "validation" as const,
+                target,
+              },
+              { status: 422 },
+            ),
+        },
+      )
+      .output({
+        _output: {
+          ok: true as const,
+          page: "" as string,
+        },
+      })
+      .handle(async ({ query, response }) =>
+        response.json({
+          ok: true as const,
+          page: query.page,
+        }),
+      ),
+    { method: "GET" },
+  );
+
   async function _get_2(_: NextRequest) {
     return NextResponse.json({ default: "true" });
   }
@@ -613,6 +666,7 @@ describe("createRpcClient", () => {
             Record<ParamsKey, { foo: string }>;
           _bar: { $get: typeof _get_2 } & RpcEndpoint &
             Record<ParamsKey, { bar: string }>;
+          validation: { $get: typeof _get_3 } & RpcEndpoint;
         };
     };
   };
@@ -712,6 +766,51 @@ describe("createRpcClient", () => {
       >;
       const _defaultResponseFromActual: ExpectedDefaultResponse =
         _defaultResponse as ExpectedDefaultResponse;
+
+      const validationResponse = await client.api.hoge.validation.$get({
+        url: {
+          query: {
+            page: "bad",
+          },
+        },
+      });
+
+      type ExpectedValidationResponse =
+        | TypedNextResponse<
+            {
+              ok: true;
+              page: string;
+            },
+            200,
+            "application/json"
+          >
+        | TypedNextResponse<
+            {
+              error: {
+                code: "BAD_REQUEST";
+                message: string;
+                details?: unknown;
+              };
+            },
+            400,
+            "application/json"
+          >
+        | TypedNextResponse<
+            {
+              ok: false;
+              source: "validation";
+              target: "query";
+            },
+            HttpStatusCode,
+            ContentType
+          >;
+      const _validationResponseFromActual: ExpectedValidationResponse =
+        validationResponse;
+      const _validationResponseFromExpected: typeof validationResponse =
+        {} as ExpectedValidationResponse;
+
+      void _validationResponseFromActual;
+      void _validationResponseFromExpected;
     });
   });
 });

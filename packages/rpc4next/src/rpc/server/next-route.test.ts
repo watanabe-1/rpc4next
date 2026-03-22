@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { rpcError } from "./error";
 import { nextRoute } from "./next-route";
@@ -544,6 +544,126 @@ describe("nextRoute", () => {
 
     void _fromActual;
     void _fromExpected;
+    expect(true).toBe(true);
+  });
+
+  it("preserves raw validation error responses in runtime and route types", async () => {
+    const rawResponseRoute = nextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .query(pageSchema, {
+          onValidationError: () =>
+            new Response("validator:raw", {
+              status: 422,
+              headers: {
+                "content-type": "text/plain",
+              },
+            }),
+        })
+        .handle(async ({ query }) => ({
+          body: {
+            ok: true as const,
+            page: query.page,
+          },
+        })),
+    );
+
+    const response = await rawResponseRoute(
+      new NextRequest("http://127.0.0.1:3000/api/test?page=0"),
+      {
+        params: Promise.resolve({}),
+      },
+    );
+
+    expect(response.status).toBe(422);
+    await expect(response.text()).resolves.toBe("validator:raw");
+
+    type RawResponseRouteResponse = Awaited<
+      ReturnType<typeof rawResponseRoute>
+    >;
+    type ExpectedRawResponseRouteResponse =
+      | TypedNextResponse<
+          {
+            ok: true;
+            page: number;
+          },
+          200,
+          "application/json"
+        >
+      | TypedNextResponse<
+          {
+            error: {
+              code: "BAD_REQUEST";
+              message: string;
+              details?: unknown;
+            };
+          },
+          400,
+          "application/json"
+        >
+      | Response;
+    const _rawResponseFromActual: ExpectedRawResponseRouteResponse =
+      {} as RawResponseRouteResponse;
+    const _rawResponseFromExpected: RawResponseRouteResponse =
+      {} as ExpectedRawResponseRouteResponse;
+
+    const rawNextResponseRoute = nextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .query(pageSchema, {
+          onValidationError: ({ target }) =>
+            NextResponse.json(
+              {
+                ok: false as const,
+                target,
+              },
+              { status: 422 },
+            ),
+        })
+        .handle(async ({ query }) => ({
+          body: {
+            ok: true as const,
+            page: query.page,
+          },
+        })),
+    );
+
+    type RawNextResponseRouteResponse = Awaited<
+      ReturnType<typeof rawNextResponseRoute>
+    >;
+    type ExpectedRawNextResponseRouteResponse =
+      | TypedNextResponse<
+          {
+            ok: true;
+            page: number;
+          },
+          200,
+          "application/json"
+        >
+      | TypedNextResponse<
+          {
+            error: {
+              code: "BAD_REQUEST";
+              message: string;
+              details?: unknown;
+            };
+          },
+          400,
+          "application/json"
+        >
+      | NextResponse<{
+          ok: false;
+          target: "query";
+        }>;
+    const _rawNextResponseFromActual: ExpectedRawNextResponseRouteResponse =
+      {} as RawNextResponseRouteResponse;
+    const _rawNextResponseFromExpected: RawNextResponseRouteResponse =
+      {} as ExpectedRawNextResponseRouteResponse;
+
+    void _rawResponseFromActual;
+    void _rawResponseFromExpected;
+    void _rawNextResponseFromActual;
+    void _rawNextResponseFromExpected;
     expect(true).toBe(true);
   });
 

@@ -287,31 +287,39 @@ type InferProcedureCustomValidationErrorResponse<TValidationErrorResponses> =
 type NormalizeProcedureValidationErrorResponse<TResult> =
   TResult extends TypedNextResponse
     ? TResult
-    : TResult extends {
-          redirect: string;
-          status?: infer TStatus;
-        }
-      ? TypedNextResponse<undefined, ResolveStatus<TStatus, 307>, "">
-      : TResult extends {
-            body: infer TBody;
-            status?: infer TStatus;
-          }
-        ? TBody extends string
-          ? TypedNextResponse<TBody, ResolveStatus<TStatus, 200>, "text/plain">
-          : TypedNextResponse<
-              TBody,
-              ResolveStatus<TStatus, 200>,
-              "application/json"
-            >
+    : TResult extends NextResponse<infer TData>
+      ? TypedNextResponse<TData, HttpStatusCode, ContentType>
+      : TResult extends Response
+        ? TypedNextResponse<unknown, HttpStatusCode, ContentType>
         : TResult extends {
+              redirect: string;
               status?: infer TStatus;
             }
-          ? TypedNextResponse<
-              undefined,
-              ResolveStatus<TStatus, 200>,
-              ContentType
-            >
-          : never;
+          ? TypedNextResponse<undefined, ResolveStatus<TStatus, 307>, "">
+          : TResult extends {
+                body: infer TBody;
+                status?: infer TStatus;
+              }
+            ? TBody extends string
+              ? TypedNextResponse<
+                  TBody,
+                  ResolveStatus<TStatus, 200>,
+                  "text/plain"
+                >
+              : TypedNextResponse<
+                  TBody,
+                  ResolveStatus<TStatus, 200>,
+                  "application/json"
+                >
+            : TResult extends {
+                  status?: infer TStatus;
+                }
+              ? TypedNextResponse<
+                  undefined,
+                  ResolveStatus<TStatus, 200>,
+                  ContentType
+                >
+              : never;
 
 type InferProcedureOutputValidationErrorResponse<T> =
   ExtractAttachedProcedureDefinition<T> extends {

@@ -9,7 +9,6 @@ import type {
   StandardSchemaV1,
   StandardSchemaV1Issue,
 } from "./standard-schema";
-import type { TypedNextResponse } from "./types";
 
 export type ProcedureInputTarget =
   | "params"
@@ -40,9 +39,10 @@ export type ProcedureValidationErrorHandlerResult =
   | NextResponse
   | ProcedureResult;
 
-export type ProcedureValidationErrorRouteResponse =
-  | TypedNextResponse
-  | ProcedureResult;
+export type ProcedureValidationErrorRouteResponse = Exclude<
+  ProcedureValidationErrorHandlerResult,
+  undefined
+>;
 
 export type ProcedureValidationErrorResponseMap = Partial<
   Record<ProcedureInputTarget, ProcedureValidationErrorRouteResponse>

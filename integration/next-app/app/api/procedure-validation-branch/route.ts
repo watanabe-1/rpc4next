@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { nextRoute, procedure } from "rpc4next/server";
 import { z } from "zod";
 import { routeContract } from "./route-contract";
@@ -9,8 +10,8 @@ const getProcedureValidationBranch = procedure
       page: z.coerce.number().int().positive(),
     }),
     {
-      onValidationError: ({ target, value, issues, response }) =>
-        response.json(
+      onValidationError: ({ target, value, issues }) =>
+        NextResponse.json(
           {
             ok: false as const,
             source: "procedure-validation-branch" as const,
