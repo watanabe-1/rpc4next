@@ -1,24 +1,26 @@
-import { routeHandlerFactory } from "rpc4next/server";
-import { zValidator } from "rpc4next/server/validators/zod";
+import { nextRoute, procedure } from "rpc4next/server";
 import { z } from "zod";
-
-const createRouteHandler = routeHandlerFactory();
+import { routeContract } from "./route-contract";
 
 const bodySchema = z.object({
   title: z.string().min(1),
 });
 
-export const { POST } = createRouteHandler().post(
-  zValidator("json", bodySchema),
-  async (rc) => {
-    const body = rc.req.valid("json");
+const postRoute = procedure
+  .forRoute(routeContract)
+  .json(bodySchema)
+  .output({
+    _output: {
+      ok: true as const,
+      title: "" as string,
+    },
+  })
+  .handle(async ({ json }) => ({
+    status: 201,
+    body: {
+      ok: true,
+      title: json.title,
+    },
+  }));
 
-    return rc.json(
-      {
-        ok: true,
-        title: body.title,
-      },
-      201,
-    );
-  },
-);
+export const POST = nextRoute(postRoute, { method: "POST" });

@@ -1,20 +1,26 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { z } from "zod";
-import { routeHandlerFactory } from "../server";
-import { zValidator } from "../server/validators/zod";
+import { nextRoute, type ProcedureRouteContract, procedure } from "../server";
 import { createRpcHelper } from "./rpc-helper";
 import type { ParamsKey, QueryKey, RpcEndpoint } from "./types";
 
-const createRouteHandler = routeHandlerFactory();
+const queryRouteContract = {
+  pathname: "/api/query",
+  params: {} as Record<never, never>,
+} as ProcedureRouteContract<"/api/query", Record<never, never>>;
 
 const schema = z.object({
   name: z.string(),
   hoge: z.string(),
 });
 
-const { POST: _post_query } = createRouteHandler<{
-  query: z.input<typeof schema>;
-}>().post(zValidator("query", schema), (rc) => rc.text("text"));
+const _post_query = nextRoute(
+  procedure
+    .forRoute(queryRouteContract)
+    .query(schema)
+    .handle(async ({ response }) => response.text("text")),
+  { method: "POST" },
+);
 
 type PathStructure = RpcEndpoint & {
   fuga: RpcEndpoint & {

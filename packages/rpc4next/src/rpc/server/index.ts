@@ -45,7 +45,6 @@ export type {
   ProcedureValidationErrorContext,
   ProcedureValidationErrorHandlerResult,
 } from "./procedure-types";
-export { routeHandlerFactory } from "./route-handler-factory";
 export type {
   StandardSchemaV1,
   StandardSchemaV1Issue,

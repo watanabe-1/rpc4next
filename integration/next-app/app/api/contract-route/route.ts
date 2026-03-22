@@ -1,8 +1,8 @@
-import { routeHandlerFactory, type TypedNextResponse } from "rpc4next/server";
+import { nextRoute, procedure, type TypedNextResponse } from "rpc4next/server";
+import { routeContract } from "./route-contract";
 
-const createRouteHandler = routeHandlerFactory();
-
-export const { GET } = createRouteHandler()
+const contractRoute = procedure
+  .forRoute(routeContract)
   .meta({
     tags: ["contract-route"],
     auth: "optional",
@@ -13,10 +13,10 @@ export const { GET } = createRouteHandler()
       source: "contract-route" as const,
     },
   })
-  .get(
-    async (
-      rc,
-    ): Promise<
+  .handle(
+    async ({
+      response,
+    }): Promise<
       TypedNextResponse<
         {
           ok: boolean;
@@ -26,8 +26,10 @@ export const { GET } = createRouteHandler()
         "application/json"
       >
     > =>
-      rc.json({
+      response.json({
         ok: true,
         source: "contract-route",
       }),
   );
+
+export const GET = nextRoute(contractRoute, { method: "GET" });

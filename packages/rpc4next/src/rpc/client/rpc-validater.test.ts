@@ -11,8 +11,7 @@ import {
 } from "vitest";
 import { z } from "zod";
 import { searchParamsToObject } from "../lib/search-params";
-import { routeHandlerFactory } from "../server";
-import { zValidator } from "../server/validators/zod/zod-validator";
+import { nextRoute, type ProcedureRouteContract, procedure } from "../server";
 import { createRpcClient } from "./rpc-client";
 import type { RpcClientOptions, RpcEndpoint } from "./types";
 
@@ -26,41 +25,67 @@ const optionalSchema = z.object({
   hoge: z.string().optional(),
 });
 
-const createRouteHandler = routeHandlerFactory();
+const staticRouteContract = {
+  pathname: "/api/none",
+  params: {} as Record<never, never>,
+} as ProcedureRouteContract<"/api/none", Record<never, never>>;
 
-const { GET: _get_1 } = createRouteHandler().get((rc) => rc.text("text"));
-
-const { POST: _post_1 } = createRouteHandler().post(
-  zValidator("json", schema),
-  (rc) => rc.text("text"),
+const _get_1 = nextRoute(
+  procedure
+    .forRoute(staticRouteContract)
+    .handle(async ({ response }) => response.text("text")),
+  { method: "GET" },
 );
 
-const { POST: _post_2 } = createRouteHandler().post(
-  zValidator("headers", schema),
-  (rc) => rc.text("text"),
+const _post_1 = nextRoute(
+  procedure
+    .forRoute(staticRouteContract)
+    .json(schema)
+    .handle(async ({ response }) => response.text("text")),
+  { method: "POST" },
 );
 
-const { POST: _post_3 } = createRouteHandler().post(
-  zValidator("cookies", schema),
-  (rc) => rc.text("text"),
+const _post_2 = nextRoute(
+  procedure
+    .forRoute(staticRouteContract)
+    .headers(schema)
+    .handle(async ({ response }) => response.text("text")),
+  { method: "POST" },
 );
 
-const { POST: _post_4 } = createRouteHandler<{
-  query: z.input<typeof schema>;
-}>().post(zValidator("query", schema), (rc) => rc.text("text"));
+const _post_3 = nextRoute(
+  procedure
+    .forRoute(staticRouteContract)
+    .cookies(schema)
+    .handle(async ({ response }) => response.text("text")),
+  { method: "POST" },
+);
 
-const { POST: _post_5 } = createRouteHandler<{
-  query: z.input<typeof optionalSchema>;
-}>().post(zValidator("query", optionalSchema), (rc) => rc.text("text"));
+const _post_4 = nextRoute(
+  procedure
+    .forRoute(staticRouteContract)
+    .query(schema)
+    .handle(async ({ response }) => response.text("text")),
+  { method: "POST" },
+);
 
-const { POST: _post_all } = createRouteHandler<{
-  query: z.input<typeof schema>;
-}>().post(
-  zValidator("json", schema),
-  zValidator("headers", schema),
-  zValidator("cookies", schema),
-  zValidator("query", schema),
-  (rc) => rc.text("text"),
+const _post_5 = nextRoute(
+  procedure
+    .forRoute(staticRouteContract)
+    .query(optionalSchema)
+    .handle(async ({ response }) => response.text("text")),
+  { method: "POST" },
+);
+
+const _post_all = nextRoute(
+  procedure
+    .forRoute(staticRouteContract)
+    .json(schema)
+    .headers(schema)
+    .cookies(schema)
+    .query(schema)
+    .handle(async ({ response }) => response.text("text")),
+  { method: "POST" },
 );
 
 const server = setupServer();

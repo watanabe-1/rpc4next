@@ -55,16 +55,6 @@
         "default": "./dist/rpc/server/index.js"
       }
     },
-    "./server/validators/zod": {
-      "import": {
-        "types": "./dist/rpc/server/validators/zod/index.d.ts",
-        "default": "./dist/rpc/server/validators/zod/index.js"
-      },
-      "default": {
-        "types": "./dist/rpc/server/validators/zod/index.d.ts",
-        "default": "./dist/rpc/server/validators/zod/index.js"
-      }
-    },
     "./lib/constants": {
       "import": {
         "types": "./dist/rpc/lib/constants.d.ts",
