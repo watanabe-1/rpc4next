@@ -1,7 +1,10 @@
 import type { NextResponse } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
 import type { RpcErrorCode } from "./error";
-import { defaultRpcErrorFormatter } from "./error-formatter";
+import {
+  defaultRpcErrorFormatter,
+  type ProcedureErrorFormatterResponse,
+} from "./error-formatter";
 import type { RpcMeta } from "./meta";
 import type { ProcedureResult } from "./procedure";
 import type {
@@ -244,7 +247,7 @@ export const normalizeProcedureResult = (
 
 export const normalizeRpcErrorResponse = (
   error: unknown,
-  routeContext: Pick<RouteContextResponseHelpers, "json">,
+  routeContext: ProcedureErrorFormatterResponse,
 ) => {
   return defaultRpcErrorFormatter(error, routeContext);
 };

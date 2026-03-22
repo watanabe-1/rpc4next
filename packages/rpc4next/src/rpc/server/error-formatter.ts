@@ -2,8 +2,10 @@ import type { NextResponse } from "next/server";
 import { createRpcErrorEnvelope, isRpcError } from "./error";
 import type { ResponseHelpers } from "./types";
 
-export type ProcedureErrorFormatterResponse = Pick<ResponseHelpers, "json"> &
-  Partial<Pick<ResponseHelpers, "body" | "redirect" | "text">>;
+export type ProcedureErrorFormatterResponse = Pick<
+  ResponseHelpers,
+  "body" | "json" | "redirect" | "text"
+>;
 
 export type ProcedureErrorFormatter = (
   error: unknown,

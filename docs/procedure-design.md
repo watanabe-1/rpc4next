@@ -1,4 +1,10 @@
-# Procedure Design for rpc4next
+で含めたプロンプトを書きます。
+
+Phase 10 を実装してください。対象は `docs/procedure-design.md` に追加済みの `Phase 10: configurable project-level error strategy` です。
+
+目的:
+- `rpc4next` 標準の error envelope は default として維持する
+- ただし project ごとに error ha# Procedure Design for rpc4next
 
 ## Status
 
@@ -14,7 +20,7 @@
   - `procedure.formData(...)` is available publicly and validated by `nextRoute()`
   - `createProcedureKit(...)` can provide shared project-level error formatting for procedure routes
   - procedure input contracts accept validator-stage failure branching through `procedure.<target>(schema, { onValidationError(...) { ... } })`
-  - narrow `response.*(...)` helpers are available inside `procedure.handle(...)`
+  - narrow `response.*(...)` helpers are available inside `procedure.handle(...)`, `onValidationError(...)`, and `errorFormatter`
   - README and integration fixture docs now present `procedure` / `nextRoute()` as the typed server authoring path
 
 ## Background
@@ -518,8 +524,8 @@ Why fourth:
 Current status:
 
 - phase 4 internals are partially shared
-- `routeHandlerFactory()` still exists as a separate public authoring style
-- validator middleware behavior for `routeHandlerFactory()` remains unchanged
+- the public server authoring surface is now procedure-first
+- legacy `routeHandlerFactory()` / `zValidator(...)` compatibility notes in this draft describe the migration intent that preceded the current public API cleanup
 
 ## Phase 5: shared `baseProcedure` presets
 
@@ -914,21 +920,20 @@ Relationship to the legacy API:
 
 - `zValidator(target, schema, hook)` maps most directly to `procedure.<target>(schema, { onValidationError(...) { ... } })`
 - the legacy hook received validator-library-specific parse results; the new hook receives Standard Schema issues plus the raw extracted input value
-- `routeHandlerFactory()` and `zValidator(...)` remain supported as compatibility paths for middleware-first routes
+- in the current public API, that migration path has been superseded by the procedure-first surface rather than remaining as a co-equal supported authoring path
 
 ## Phase 12: documentation default shift to procedure-first authoring
 
 Implemented outcome:
 
 - `procedure` is now the documented default for new typed route authoring
-- `routeHandlerFactory()` remains a supported compatibility path with clearer positioning
+- the legacy middleware-first API is no longer presented as a public default or compatibility surface in the current server exports
 - new-user docs now reduce ambiguity by leading with `procedure` / `nextRoute()`
 
 Completed documentation changes:
 
 - README and integration docs now lead typed examples with `procedure` / `nextRoute()`
-- `routeHandlerFactory()` is described as a still-supported compatibility path for middleware-first routes and existing codebases
-- fixture walkthroughs and example pages now present procedure-first authoring before legacy examples
+- fixture walkthroughs and example pages now present a single procedure-first story instead of a dual-surface migration map
 - stale wording that framed this shift as a future milestone has been removed from the current assessment and recommendation sections
 
 Why this change mattered:
@@ -952,9 +957,9 @@ Scope:
 Deliverables:
 
 - convert representative validator-based fixtures such as simple query/json routes to `procedure`
-- preserve at least one intentional legacy fixture for `routeHandlerFactory()` compatibility coverage
+- complete the representative fixture migration so the integration app reflects the procedure-first recommendation end to end
 - update tests and generated outputs as needed after fixture migration
-- document which remaining legacy fixtures are intentionally kept and why
+- document any intentionally retained legacy notes separately from the current public API story if they still matter historically
 
 Why thirteenth:
 
@@ -1282,3 +1287,104 @@ Recommended priorities:
 1. decide whether route-bound procedures should become mandatory for all `procedure` routes once the generated `route-contract.ts` workflow is considered stable
 2. evaluate whether richer output contracts, such as success variants by status code, are needed before pursuing broader ecosystem features
 3. keep validating that procedure response helpers, formatter hooks, and output validation remain coherent as one authoring surface
+ndling / serialization 方針を差し替えられるようにする
+- 標準利用者は今までどおり zero-config で使えること
+- `procedure.error(...)` は route contract の宣言として維持し、runtime の HTTP レスポンス整形は formatter 層に寄せること
+
+前提:
+- リポジトリは `rpc4next` monorepo
+- ルールは repo root の `AGENTS.md` に従うこと
+- generated file は hand-edit しないこと
+- 変更後は必ず root で `bun run test` `bun run lint` `bun run typecheck` を実行すること
+- 変更が integration fixture に影響するなら必要に応じて `bun run integration:next-app:generate` も実行すること
+
+設計意図:
+- Next.js 標準ではなく `rpc4next` の独自 abstraction として、標準 error strategy を提供する
+- ただし「どういう error envelope を採用するか」は project ごとに違うため、利用者が opt-in / override できる構造にする
+- route ごとに ad hoc な `Response` を書かなくても、project-level に統一した error strategy を持てるようにする
+
+実装要件:
+1. `nextRoute(...)` に overridable な error formatting hook を追加する
+- 例: `errorFormatter`
+- formatter は thrown error と route context を受け取り、Response を返せるようにする
+- formatter が `undefined` を返した場合は既存 default path にフォールバックする構造でもよい
+- zero-config の既存利用者は挙動変更なしにすること
+
+2. built-in default formatter を明示的な関数として切り出す
+- 現在 `RpcError` を `{ error: { code, message, details } }` に正規化している標準ロジックを、再利用可能な default formatter として整理する
+- デフォルトではそれが使われること
+- 既存の `rpcError(...)` の利用体験と response shape は維持すること
+
+3. project-level preset / factory API を追加する
+- 名前は `createProcedureKit(...)` を第一候補とする
+- ここから `procedure`, `nextRoute`, `rpcError` などを取り出せる構成を検討する
+- 最小実装でよいが、「project 全体で共通の errorFormatter を配る」ユースケースを実現すること
+- 既存 public API は壊さないこと
+
+4. `procedure.error(...)` の意味は contract declaration として維持する
+- route type / generated client inference が壊れないこと
+- runtime formatter 導入によって explicit error contract の型が消えないこと
+- 既存の shared base procedure と route-local error contract の合成も壊さないこと
+
+5. project-defined error convention のための拡張余地を作る
+- 今回の実装では full custom error code extensibility まで必須ではない
+- ただし将来 `errorRegistry` のような project-level 拡張を載せやすい設計にすること
+- もし無理なく入れられるなら最小限の `errorRegistry` も入れてよい
+- ただし型複雑化で既存 API を壊さないことを優先する
+
+推奨 API イメージ:
+```ts
+const procedureKit = createProcedureKit({
+  errorFormatter: defaultRpcErrorFormatter,
+});
+
+const procedure = procedureKit.procedure;
+const nextRoute = procedureKit.nextRoute;
+const rpcError = procedureKit.rpcError;
+project custom formatter のイメージ:
+
+const procedureKit = createProcedureKit({
+  errorFormatter: (error, rc) => {
+    if (error instanceof Error) {
+      return rc.json(
+        {
+          success: false,
+          error: {
+            message: error.message,
+          },
+        },
+        { status: 500 },
+      );
+    }
+  },
+});
+最低限ほしい成果物:
+
+server runtime 実装
+public export 整理
+単体テスト追加
+integration fixture 追加または既存 fixture 拡張
+docs/procedure-design.md の Phase 10 と整合する簡単なドキュメント更新が必要なら実施
+テスト観点:
+
+default formatter では既存 rpcError(...) の JSON envelope が維持される
+custom formatter を nextRoute(...) に直接渡したとき、その formatter が優先される
+project-level kit の formatter が nextRoute(...) に反映される
+formatter が処理しない error は default handling または既存挙動にフォールバックする
+explicit procedure error contracts の型が維持される
+shared base procedure の error contracts と route-local error contracts の合成が維持される
+既存 routeHandlerFactory(...) の onError 挙動は壊さない
+実装方針:
+
+まず関連実装を読み、既存 error normalization と nextRoute の catch path を把握する
+その後、型と runtime の責務分離を明確にした最小変更で実装する
+不必要な API 拡張や broad refactor は避ける
+変更は最小・局所的に保つこと
+最後に:
+
+変更内容の要約
+どの API を追加したか
+どの挙動が default / override 可能か
+実行した検証結果
+残っている制約や未実装の拡張余地
+を簡潔に報告してください
