@@ -447,6 +447,7 @@ const applyParsedProcedureOutput = (
   const init = {
     headersInit: result.headers,
     status,
+    statusText: result.statusText,
   };
 
   if (helperMetadata.kind === "json") {

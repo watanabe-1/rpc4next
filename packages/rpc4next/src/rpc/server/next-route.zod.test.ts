@@ -690,6 +690,91 @@ describe("nextRoute zod integration", () => {
     });
   });
 
+  it("preserves statusText when helper responses are rebuilt after output parsing", async () => {
+    const jsonRoute = nextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .output(
+          z.object({
+            ok: z.literal(true),
+            slug: z.string().transform((value) => value.toUpperCase()),
+          }),
+        )
+        .handle(async ({ response }) =>
+          response.json(
+            {
+              ok: true,
+              slug: "draft-post",
+            },
+            { status: 201, statusText: "Created via helper" },
+          ),
+        ),
+      { method: "GET", validateOutput: true },
+    );
+
+    const jsonResponse = await jsonRoute(
+      new NextRequest("http://127.0.0.1:3000/api/json"),
+      {
+        params: Promise.resolve({}),
+      },
+    );
+
+    expect(jsonResponse.status).toBe(201);
+    expect(jsonResponse.statusText).toBe("Created via helper");
+    await expect(jsonResponse.json()).resolves.toEqual({
+      ok: true,
+      slug: "DRAFT-POST",
+    });
+
+    const textRoute = nextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .output(z.string().transform((value) => value.toUpperCase()))
+        .handle(async ({ response }) =>
+          response.text("draft-post", {
+            status: 202,
+            statusText: "Accepted via helper",
+          }),
+        ),
+      { method: "GET", validateOutput: true },
+    );
+
+    const textResponse = await textRoute(
+      new NextRequest("http://127.0.0.1:3000/api/text"),
+      {
+        params: Promise.resolve({}),
+      },
+    );
+
+    expect(textResponse.status).toBe(202);
+    expect(textResponse.statusText).toBe("Accepted via helper");
+    await expect(textResponse.text()).resolves.toBe("DRAFT-POST");
+
+    const bodyRoute = nextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .output(z.string().transform((value) => value.toUpperCase()))
+        .handle(async ({ response }) =>
+          response.body("draft-post", {
+            status: 203,
+            statusText: "Non-Authoritative via helper",
+          }),
+        ),
+      { method: "GET", validateOutput: true },
+    );
+
+    const bodyResponse = await bodyRoute(
+      new NextRequest("http://127.0.0.1:3000/api/body"),
+      {
+        params: Promise.resolve({}),
+      },
+    );
+
+    expect(bodyResponse.status).toBe(203);
+    expect(bodyResponse.statusText).toBe("Non-Authoritative via helper");
+    await expect(bodyResponse.text()).resolves.toBe("DRAFT-POST");
+  });
+
   it("skips runtime output validation for raw Response escape hatches", async () => {
     const route = nextRoute(
       procedure
