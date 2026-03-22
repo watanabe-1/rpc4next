@@ -85,4 +85,47 @@ describe("createProcedureKit", () => {
     void _fromExpected;
     expect(true).toBe(true);
   });
+
+  it("uses the kit errorRegistry to resolve rpcError status before formatting", async () => {
+    const procedureKit = createProcedureKit({
+      errorRegistry: {
+        FORBIDDEN: { status: 451 },
+      },
+      errorFormatter: (error, response) => {
+        if (!(error instanceof Error)) {
+          return undefined;
+        }
+
+        return response.json(
+          {
+            success: false,
+            message: error.message,
+          },
+          {
+            status:
+              "status" in error && typeof error.status === "number"
+                ? error.status
+                : 500,
+          },
+        );
+      },
+    });
+    const route = procedureKit.nextRoute(
+      procedureKit.procedure.forRoute(staticRouteContract).handle(async () => {
+        throw procedureKit.rpcError("FORBIDDEN", {
+          message: "project registry override",
+        });
+      }),
+    );
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(451);
+    await expect(response.json()).resolves.toEqual({
+      success: false,
+      message: "project registry override",
+    });
+  });
 });

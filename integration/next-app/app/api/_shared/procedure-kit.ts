@@ -1,9 +1,4 @@
-import {
-  createProcedureKit,
-  isRpcError,
-  procedure,
-  rpcError,
-} from "rpc4next/server";
+import { createProcedureKit, isRpcError, procedure } from "rpc4next/server";
 
 export const procedureKit = createProcedureKit({
   errorFormatter: (error, response) => {
@@ -28,4 +23,6 @@ export const procedureKit = createProcedureKit({
   },
 });
 
-export { procedure, rpcError };
+export const rpcError = procedureKit.rpcError;
+
+export { procedure };
