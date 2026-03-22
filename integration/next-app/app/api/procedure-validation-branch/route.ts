@@ -30,8 +30,8 @@ const getProcedureValidationBranch = procedure
   )
   .output(
     z.object({
-      ok: true as const,
-      source: "procedure-validation-branch" as const,
+      ok: z.literal(true),
+      source: z.literal("procedure-validation-branch"),
       page: z.number().int().positive(),
     }),
   )
