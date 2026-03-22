@@ -1,7 +1,7 @@
 import type { NextRequest, NextResponse } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
 import type { RpcErrorCode, RpcErrorEnvelope } from "./error";
-import type { ProcedureErrorFormatterRouteContext } from "./error-formatter";
+import type { ProcedureErrorFormatterResponse } from "./error-formatter";
 import type { RpcMeta } from "./meta";
 import type { ProcedureResult } from "./procedure";
 import type { ValidationSchema } from "./route-types";
@@ -30,7 +30,7 @@ export interface ProcedureValidationErrorContext<
   value: TValue;
   issues: readonly StandardSchemaV1Issue[];
   request: NextRequest;
-  routeContext: ProcedureErrorFormatterRouteContext;
+  response: ProcedureErrorFormatterResponse;
 }
 
 export type ProcedureValidationErrorHandlerResult =

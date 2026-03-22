@@ -23,8 +23,8 @@ describe("procedure builder valibot integration", () => {
             page: v.string(),
           }),
           {
-            onValidationError: ({ routeContext, target, issues }) =>
-              routeContext.json(
+            onValidationError: ({ response, target, issues }) =>
+              response.json(
                 {
                   vendor: "valibot",
                   target,

@@ -2,15 +2,12 @@ import type { NextResponse } from "next/server";
 import { createRpcErrorEnvelope, isRpcError } from "./error";
 import type { ResponseHelpers } from "./types";
 
-export type ProcedureErrorFormatterRouteContext = Pick<
-  ResponseHelpers,
-  "json"
-> &
+export type ProcedureErrorFormatterResponse = Pick<ResponseHelpers, "json"> &
   Partial<Pick<ResponseHelpers, "body" | "redirect" | "text">>;
 
 export type ProcedureErrorFormatter = (
   error: unknown,
-  routeContext: ProcedureErrorFormatterRouteContext,
+  response: ProcedureErrorFormatterResponse,
 ) =>
   | Response
   | NextResponse
@@ -19,13 +16,13 @@ export type ProcedureErrorFormatter = (
 
 export const defaultRpcErrorFormatter: ProcedureErrorFormatter = (
   error,
-  routeContext,
+  response,
 ) => {
   if (!isRpcError(error)) {
     return undefined;
   }
 
-  return routeContext.json(createRpcErrorEnvelope(error), {
+  return response.json(createRpcErrorEnvelope(error), {
     status: error.status,
   });
 };

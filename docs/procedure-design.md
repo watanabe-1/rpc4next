@@ -805,10 +805,10 @@ const procedureKit = createProcedureKit({
     AUTH_EXPIRED: { status: 401 },
     PLAN_LIMIT_EXCEEDED: { status: 403 },
   },
-  errorFormatter: (error, rc) => {
+  errorFormatter: (error, response) => {
     if (!isProjectError(error)) return;
 
-    return rc.json(
+    return response.json(
       {
         success: false,
         error: {
@@ -876,9 +876,9 @@ const getUsers = procedure
         target,
         value,
         issues,
-        routeContext,
+        response,
       }) => {
-        return routeContext.json(
+        return response.json(
           {
             source: "validator",
             target,

@@ -144,8 +144,8 @@ describe("nextRoute zod integration", () => {
             page: z.coerce.number().int().positive(),
           }),
           {
-            onValidationError: ({ issues, routeContext, target, value }) =>
-              routeContext.json(
+            onValidationError: ({ issues, response, target, value }) =>
+              response.json(
                 {
                   source: "validator",
                   target,
@@ -677,8 +677,8 @@ describe("nextRoute zod integration", () => {
         page: z.coerce.number().int().positive(),
       }),
       {
-        onValidationError: ({ routeContext, target }) =>
-          routeContext.json(
+        onValidationError: ({ response, target }) =>
+          response.json(
             {
               source: "shared-base",
               target,

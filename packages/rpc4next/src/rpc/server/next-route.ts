@@ -359,7 +359,7 @@ const shouldValidateProcedureOutput = (
 const validateProcedureInputs = async (
   request: NextRequest,
   segmentData: { params: Promise<Params> },
-  routeContext: ReturnType<typeof createRouteContext>,
+  response: ReturnType<typeof createRouteContext>,
   procedureDefinition: ProcedureDefinition,
 ) => {
   const contracts = procedureDefinition.input?.contracts ?? {};
@@ -406,7 +406,7 @@ const validateProcedureInputs = async (
       value: rawValue,
       issues: result.issues,
       request,
-      routeContext,
+      response,
     });
 
     if (isValidationTerminalResult(hookResult)) {

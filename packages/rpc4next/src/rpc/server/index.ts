@@ -14,7 +14,7 @@ export {
 } from "./error";
 export type {
   ProcedureErrorFormatter,
-  ProcedureErrorFormatterRouteContext,
+  ProcedureErrorFormatterResponse,
 } from "./error-formatter";
 export { defaultRpcErrorFormatter } from "./error-formatter";
 export type { InferRouteMeta, RpcMeta, RpcMetaBase } from "./meta";

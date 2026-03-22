@@ -203,8 +203,8 @@ describe("Standard Schema compatibility", () => {
       procedure
         .forRoute(staticRouteContract)
         .query(positivePageQuerySchema, {
-          onValidationError: ({ routeContext, target, issues, value }) =>
-            routeContext.json(
+          onValidationError: ({ response, target, issues, value }) =>
+            response.json(
               {
                 source: "validator",
                 target,

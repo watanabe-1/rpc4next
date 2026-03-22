@@ -155,8 +155,8 @@ describe("nextRoute valibot integration", () => {
         page: v.string(),
       }),
       {
-        onValidationError: ({ routeContext, target }) =>
-          routeContext.json(
+        onValidationError: ({ response, target }) =>
+          response.json(
             {
               source: "valibot-base",
               target,
