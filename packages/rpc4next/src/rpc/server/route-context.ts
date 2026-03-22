@@ -19,6 +19,48 @@ import type {
   ValidationTarget,
 } from "./types";
 
+type ResponseHelperKind = "body" | "json" | "text" | "redirect";
+
+type ResponseHelperMetadata = {
+  kind: ResponseHelperKind;
+  payload?: unknown;
+};
+
+export const responseHelperMetadataSymbol = Symbol.for(
+  "rpc4next.response.helper.metadata",
+);
+
+const attachResponseHelperMetadata = <
+  TResponse extends TypedNextResponse,
+  TPayload = unknown,
+>(
+  response: TResponse,
+  metadata: ResponseHelperMetadata & { payload?: TPayload },
+) => {
+  Object.defineProperty(response, responseHelperMetadataSymbol, {
+    configurable: true,
+    enumerable: false,
+    value: metadata,
+    writable: true,
+  });
+
+  return response;
+};
+
+export const getResponseHelperMetadata = (
+  value: unknown,
+): ResponseHelperMetadata | undefined => {
+  if (!(value instanceof Response)) {
+    return undefined;
+  }
+
+  return (
+    value as Response & {
+      [responseHelperMetadataSymbol]?: ResponseHelperMetadata;
+    }
+  )[responseHelperMetadataSymbol];
+};
+
 const isHttpStatusCode = (value: unknown): value is HttpStatusCode => {
   return typeof value === "number" && !Number.isNaN(value);
 };
@@ -59,21 +101,32 @@ export const createResponseHelpers = <
     data: TData,
     init?: TStatus | TypedResponseInit<TStatus, TContentType>,
   ) =>
-    new NextResponse<TData>(data, resolvedHeaders(init)) as TypedNextResponse<
-      TData,
-      TStatus,
-      TContentType
-    >,
+    attachResponseHelperMetadata(
+      new NextResponse<TData>(data, resolvedHeaders(init)) as TypedNextResponse<
+        TData,
+        TStatus,
+        TContentType
+      >,
+      {
+        kind: "body",
+        payload: data,
+      },
+    ),
 
   json: (<TData, TStatus extends HttpStatusCode = 200>(
     data: TData,
     init?: TStatus | TypedResponseInit<TStatus, "application/json">,
   ) =>
-    NextResponse.json<TData>(data, resolvedHeaders(init)) as TypedNextResponse<
-      TData,
-      TStatus,
-      "application/json"
-    >) as ResponseHelpers<TJson>["json"],
+    attachResponseHelperMetadata(
+      NextResponse.json<TData>(
+        data,
+        resolvedHeaders(init),
+      ) as TypedNextResponse<TData, TStatus, "application/json">,
+      {
+        kind: "json",
+        payload: data,
+      },
+    )) as ResponseHelpers<TJson>["json"],
 
   text: <TData extends string, TStatus extends HttpStatusCode = 200>(
     data: TData,
@@ -81,10 +134,16 @@ export const createResponseHelpers = <
   ) => {
     const resolvedInit = resolvedHeaders(init);
 
-    return new NextResponse<TData>(data, {
-      ...resolvedInit,
-      headers: { ...resolvedInit?.headers, "Content-Type": "text/plain" },
-    }) as TypedNextResponse<TData, TStatus, "text/plain">;
+    return attachResponseHelperMetadata(
+      new NextResponse<TData>(data, {
+        ...resolvedInit,
+        headers: { ...resolvedInit?.headers, "Content-Type": "text/plain" },
+      }) as TypedNextResponse<TData, TStatus, "text/plain">,
+      {
+        kind: "text",
+        payload: data,
+      },
+    );
   },
 
   redirect: <TStatus extends RedirectionHttpStatusCode = 307>(
@@ -93,11 +152,16 @@ export const createResponseHelpers = <
   ) => {
     const resolvedInit = isHttpStatusCode(init) ? init : resolvedHeaders(init);
 
-    return NextResponse.redirect(url, resolvedInit) as TypedNextResponse<
-      undefined,
-      TStatus,
-      ""
-    >;
+    return attachResponseHelperMetadata(
+      NextResponse.redirect(url, resolvedInit) as TypedNextResponse<
+        undefined,
+        TStatus,
+        ""
+      >,
+      {
+        kind: "redirect",
+      },
+    );
   },
 });
 
