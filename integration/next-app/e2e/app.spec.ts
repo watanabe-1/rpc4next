@@ -48,21 +48,33 @@ test.describe("integration next-app e2e", () => {
       page.getByRole("heading", { name: "Procedure examples" }),
     ).toBeVisible();
     await expect(
-      page.getByText("/api/procedure-guarded/demo-user", { exact: true }),
+      page.getByText("This page calls the live integration routes through"),
     ).toBeVisible();
     await expect(
-      page.getByText("Recommended start: route-bound procedure + nextRoute"),
+      page.getByRole("heading", { name: "Narrow procedure GET" }),
     ).toBeVisible();
     await expect(
-      page.getByText("Shared policy: baseProcedure + typed error contracts"),
+      page.getByRole("heading", {
+        name: "POST with typed body, headers, and cookies",
+      }),
     ).toBeVisible();
     await expect(
-      page.getByText("Extended input: json, headers, cookies, and formData"),
+      page.getByRole("heading", {
+        name: "Shared baseProcedure adds richer error unions",
+      }),
     ).toBeVisible();
     await expect(
-      page.getByText(
-        "Everyday routes: params, json, headers, cookies, redirects",
-      ),
+      page.getByRole("heading", {
+        name: "Custom validation branch via raw NextResponse.json(...)",
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        name: "Plain Response.json route stays broad",
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByText('"source": "procedure-validation-branch"'),
     ).toBeVisible();
   });
 

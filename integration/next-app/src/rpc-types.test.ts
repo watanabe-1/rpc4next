@@ -561,8 +561,8 @@ describe("integration next-app generated RPC type coverage", () => {
             issueCount: number;
             receivedPage?: string;
           },
-          422,
-          "application/json"
+          HttpStatusCode,
+          ContentType
         >;
     const _procedureValidationBranchResponseFromActual: ExpectedProcedureValidationBranchResponse =
       procedureValidationBranchResponse;
