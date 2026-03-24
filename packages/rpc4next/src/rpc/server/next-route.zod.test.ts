@@ -775,6 +775,50 @@ describe("nextRoute zod integration", () => {
     await expect(bodyResponse.text()).resolves.toBe("DRAFT-POST");
   });
 
+  it("replaces response.body payloads with parsed output values", async () => {
+    const route = nextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .output(z.string().transform((value) => value.toUpperCase()))
+        .handle(async ({ response }) => response.body("draft-post")),
+      { method: "GET", validateOutput: true },
+    );
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.text()).resolves.toBe("DRAFT-POST");
+  });
+
+  it("fails response.body output validation when parsed values cannot be reflected", async () => {
+    const route = nextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .output(
+          z.string().transform((value) => ({
+            slug: value.toUpperCase(),
+          })),
+        )
+        .handle(async ({ response }) => response.body("draft-post")),
+      { method: "GET", validateOutput: true },
+    );
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          "Procedure output validation produced a value that cannot be reflected by response.body(...).",
+      },
+    });
+  });
+
   it("skips runtime output validation for raw Response escape hatches", async () => {
     const route = nextRoute(
       procedure
