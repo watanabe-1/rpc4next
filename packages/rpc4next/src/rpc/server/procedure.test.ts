@@ -1,5 +1,5 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { procedure } from "./procedure";
+import { defineProcedureMiddleware, procedure } from "./procedure";
 import type {
   ProcedureErrorContract,
   ProcedureRouteContract,
@@ -483,9 +483,11 @@ describe("procedure builder type definitions", () => {
   });
 
   it("accumulates shared and route-local procedure error contracts", () => {
-    const guardedBaseProcedure = procedure
+    const guardedMiddleware = defineProcedureMiddleware(() => undefined)
       .error<"UNAUTHORIZED", { reason: "missing_demo_user" }>("UNAUTHORIZED")
       .error<"FORBIDDEN", { reason: "suspended_account" }>("FORBIDDEN");
+
+    const guardedBaseProcedure = procedure.use(guardedMiddleware);
 
     const guardedProcedure = guardedBaseProcedure
       .error<"FORBIDDEN", { reason: "editor_only" }>("FORBIDDEN")
@@ -500,6 +502,33 @@ describe("procedure builder type definitions", () => {
 
     expectTypeOf(guardedProcedure.definition.error).toMatchTypeOf<
       ExpectedErrors | undefined
+    >();
+  });
+
+  it("preserves declared middleware error metadata across immutable reuse", () => {
+    const guardedMiddleware = defineProcedureMiddleware(() => undefined).error<
+      "UNAUTHORIZED",
+      { reason: "missing_demo_user" }
+    >("UNAUTHORIZED");
+
+    const baseProcedure = procedure.use(guardedMiddleware);
+    const publicProcedure = baseProcedure.handle(() => ({
+      status: 204 as const,
+    }));
+    const editorProcedure = baseProcedure
+      .error<"FORBIDDEN", { reason: "editor_only" }>("FORBIDDEN")
+      .handle(() => ({
+        status: 204 as const,
+      }));
+
+    expectTypeOf(publicProcedure.definition.error).toMatchTypeOf<
+      | ProcedureErrorContract<"UNAUTHORIZED", { reason: "missing_demo_user" }>
+      | undefined
+    >();
+    expectTypeOf(editorProcedure.definition.error).toMatchTypeOf<
+      | ProcedureErrorContract<"UNAUTHORIZED", { reason: "missing_demo_user" }>
+      | ProcedureErrorContract<"FORBIDDEN", { reason: "editor_only" }>
+      | undefined
     >();
   });
 });

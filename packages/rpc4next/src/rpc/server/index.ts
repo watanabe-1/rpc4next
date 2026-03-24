@@ -23,6 +23,7 @@ export { nextRoute } from "./next-route";
 export type { OutputContract } from "./output";
 export { output, withOutput } from "./output";
 export type {
+  DeclaredProcedureMiddleware,
   Procedure,
   ProcedureBuilder,
   ProcedureHandler,
@@ -32,7 +33,7 @@ export type {
   ProcedureResponseHelpers,
   ProcedureResult,
 } from "./procedure";
-export { procedure } from "./procedure";
+export { defineProcedureMiddleware, procedure } from "./procedure";
 export type {
   CreateProcedureKitOptions,
   ProcedureErrorRegistry,
