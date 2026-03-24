@@ -417,6 +417,12 @@ const isBodyInitLike = (value: unknown): value is BodyInit | null => {
   );
 };
 
+const getParsedOutputReflectionError = (helper: "body" | "text") => {
+  return rpcError("INTERNAL_SERVER_ERROR", {
+    message: `Procedure output validation produced a value that cannot be reflected by response.${helper}(...).`,
+  });
+};
+
 const applyParsedProcedureOutput = (
   routeContext: ReturnType<typeof createRouteContext>,
   result: Response | NextResponse | ProcedureResult | undefined,
@@ -455,14 +461,18 @@ const applyParsedProcedureOutput = (
   }
 
   if (helperMetadata.kind === "text") {
-    return typeof parsedValue === "string"
-      ? routeContext.text(parsedValue, init)
-      : result;
+    if (typeof parsedValue !== "string") {
+      throw getParsedOutputReflectionError("text");
+    }
+
+    return routeContext.text(parsedValue, init);
   }
 
-  return isBodyInitLike(parsedValue)
-    ? routeContext.body(parsedValue, init)
-    : result;
+  if (!isBodyInitLike(parsedValue)) {
+    throw getParsedOutputReflectionError("body");
+  }
+
+  return routeContext.body(parsedValue, init);
 };
 
 const validateProcedureInputs = async (
