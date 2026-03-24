@@ -843,6 +843,42 @@ Notes:
 - `procedure.error(...)` should continue to describe the route contract first; runtime HTTP shaping should be delegated to a formatter layer
 - initial customization can focus on formatting hooks and project presets before introducing full user-defined error-code extensibility at the type level
 - if project-defined codes are added later, they should be documented as an extension layer on top of the default rpc4next codes rather than a replacement for the default ergonomics
+- `procedure.error(...)` should be documented as a declaration of known client-visible errors, not as a promise that every thrown exception has been exhaustively enumerated
+- unexpected exceptions should still fall back through the formatter path, typically as `INTERNAL_SERVER_ERROR`
+
+### Relationship to tRPC-style error handling
+
+The nearest tRPC comparison point is not per-procedure error inference. It is the combination of:
+
+- a shared error formatter that defines the client-visible envelope
+- middleware and procedures that may throw known framework error values at runtime
+- a fallback path for unexpected exceptions
+
+`rpc4next` should follow that broad runtime model, but keep a stronger route-level contract surface than tRPC exposes by default.
+
+That means:
+
+- `errorFormatter` remains the primary place to define project-level response serialization
+- `procedure.error(...)` remains the primary place to declare known route-level errors that should appear in generated client types
+- the absence of a declared error should not block runtime handling; it only means the error is not part of the explicit client contract
+
+### Minimum inference from shared toolchains
+
+Full static inference of every thrown error from arbitrary procedure implementations is not a realistic TypeScript goal. Thrown exceptions are not represented in function return types, and route logic may delegate through middleware, helper functions, libraries, or external systems that are opaque to the type system.
+
+However, `rpc4next` can support a narrower and much more practical form of inference:
+
+- shared middleware, validation helpers, and other reusable procedure toolchain functions may attach declared error metadata
+- `procedure.use(...)` and similar composition points may merge that metadata into the procedure's known error contract
+- route-local `procedure.error(...)` remains available to add route-specific known errors on top of shared declarations
+
+This should be framed as declared-error propagation rather than implementation-body exception analysis.
+
+In other words:
+
+- `rpc4next` should not try to infer all thrown exceptions from arbitrary handler code
+- `rpc4next` may infer a minimum known error set from reusable typed building blocks that explicitly declare their own error contracts
+- formatter fallback remains necessary for undeclared or unexpected failures
 
 ## Phase 11: validator-stage customization for procedure input
 

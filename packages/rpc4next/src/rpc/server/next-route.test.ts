@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { rpcError } from "./error";
 import { nextRoute } from "./next-route";
-import { procedure } from "./procedure";
+import { defineProcedureMiddleware, procedure } from "./procedure";
 import {
   getProcedureDefinition,
   type ProcedureRouteContract,
@@ -339,10 +339,13 @@ describe("nextRoute", () => {
   });
 
   it("preserves shared procedure error contracts in extended route types", () => {
-    const guardedBaseProcedure = procedure
-      .forRoute(staticRouteContract)
+    const guardedMiddleware = defineProcedureMiddleware(() => undefined)
       .error<"UNAUTHORIZED", { reason: "missing_demo_user" }>("UNAUTHORIZED")
       .error<"FORBIDDEN", { reason: "suspended_account" }>("FORBIDDEN");
+
+    const guardedBaseProcedure = procedure
+      .forRoute(staticRouteContract)
+      .use(guardedMiddleware);
 
     const route = nextRoute(
       guardedBaseProcedure
@@ -398,6 +401,41 @@ describe("nextRoute", () => {
     void _fromActual;
     void _fromExpected;
     expect(true).toBe(true);
+  });
+
+  it("preserves middleware-thrown RpcError responses while using declared middleware error contracts", async () => {
+    const guardedMiddleware = defineProcedureMiddleware(() => {
+      throw rpcError("UNAUTHORIZED", {
+        message: "middleware-denied",
+        details: {
+          reason: "missing_demo_user" as const,
+        },
+      });
+    }).error<"UNAUTHORIZED", { reason: "missing_demo_user" }>("UNAUTHORIZED");
+
+    const route = nextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .use(guardedMiddleware)
+        .handle(async () => ({
+          status: 204 as const,
+        })),
+    );
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: "UNAUTHORIZED",
+        message: "middleware-denied",
+        details: {
+          reason: "missing_demo_user",
+        },
+      },
+    });
   });
 
   it("includes implicit BAD_REQUEST responses for validated procedure routes", () => {

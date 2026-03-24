@@ -10,6 +10,7 @@ import type { ProcedureResult } from "./procedure";
 import type {
   AppendProcedureErrorDefinition,
   MergeProcedureDefinition,
+  MergeProcedureDefinitionWithDeclaredDefinition,
   ProcedureDefinition,
   ProcedureErrorContract,
   ProcedureInputContract,
@@ -205,6 +206,41 @@ export const withProcedureInputContract = <
           Record<TTarget, TSchema>;
       };
     }
+  >;
+};
+
+export const withDeclaredProcedureDefinition = <
+  TBase extends ProcedureDefinition,
+  TDeclared extends Partial<ProcedureDefinition>,
+>(
+  definition: TBase,
+  declaredDefinition: TDeclared,
+): MergeProcedureDefinitionWithDeclaredDefinition<TBase, TDeclared> => {
+  const declaredError = declaredDefinition.error as
+    | ProcedureErrorContract
+    | undefined;
+  const existingError = definition.error as ProcedureErrorContract | undefined;
+  const variants = [
+    ...(existingError?.variants ??
+      (existingError?.code ? [{ code: existingError.code }] : [])),
+    ...(declaredError?.variants ??
+      (declaredError?.code ? [{ code: declaredError.code }] : [])),
+  ];
+
+  return {
+    ...definition,
+    ...declaredDefinition,
+    ...(declaredError
+      ? {
+          error: {
+            ...declaredError,
+            variants,
+          },
+        }
+      : {}),
+  } as unknown as MergeProcedureDefinitionWithDeclaredDefinition<
+    TBase,
+    TDeclared
   >;
 };
 

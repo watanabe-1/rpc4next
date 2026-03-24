@@ -3,26 +3,31 @@ import type { HttpStatusCode } from "../lib/http-status-code-types";
 import type { RpcErrorCode } from "./error";
 import type { RpcMeta } from "./meta";
 import {
+  withDeclaredProcedureDefinition,
   withProcedureError,
   withProcedureInputContract,
   withProcedureMeta,
   withProcedureOutput,
   withProcedureRouteBinding,
 } from "./procedure-internals";
-import type {
-  AppendProcedureErrorDefinition,
-  EmptyProcedureDefinition,
-  MergeProcedureDefinition,
-  ProcedureDefinition,
-  ProcedureErrorContract,
-  ProcedureInputContract,
-  ProcedureInputOptions,
-  ProcedureInputTarget,
-  ProcedureOutputContract,
-  ProcedureRouteBinding,
-  ProcedureRouteContract,
-  ProcedureValidationErrorHandlerResult,
-  ProcedureValidationErrorResponseMap,
+import {
+  type AppendProcedureErrorDefinition,
+  attachProcedureDefinition,
+  type EmptyProcedureDefinition,
+  getProcedureDefinition,
+  type MergeProcedureDefinition,
+  type MergeProcedureDefinitionWithDeclaredDefinition,
+  type ProcedureDefinition,
+  type ProcedureErrorContract,
+  type ProcedureInputContract,
+  type ProcedureInputOptions,
+  type ProcedureInputTarget,
+  type ProcedureOutputContract,
+  type ProcedureRouteBinding,
+  type ProcedureRouteContract,
+  type ProcedureValidationErrorHandlerResult,
+  type ProcedureValidationErrorResponseMap,
+  type WithProcedureDefinition,
 } from "./procedure-types";
 import type { ValidationSchema } from "./route-types";
 import type { InferSchemaInput, InferSchemaOutput } from "./schema-inference";
@@ -57,6 +62,34 @@ type ExtractProcedureRouteBinding<TDefinition extends ProcedureDefinition> =
   >
     ? TRoute
     : undefined;
+
+type ExtractDeclaredProcedureDefinition<TValue> =
+  TValue extends WithProcedureDefinition<
+    unknown,
+    infer TDeclared extends Partial<ProcedureDefinition>
+  >
+    ? TDeclared
+    : Record<never, never>;
+
+type ExtractProcedureMiddlewareContextExtension<TMiddleware> =
+  TMiddleware extends ProcedureMiddleware<
+    infer _TValidationSchema,
+    infer _TBoundParams,
+    infer _TContext,
+    infer TContextExtension
+  >
+    ? TContextExtension
+    : Record<never, never>;
+
+type MergeProcedureDefinitionWithMiddleware<
+  TDefinition extends ProcedureDefinition,
+  TMiddleware,
+> =
+  ExtractDeclaredProcedureDefinition<TMiddleware> extends infer TDeclared
+    ? TDeclared extends Partial<ProcedureDefinition>
+      ? MergeProcedureDefinitionWithDeclaredDefinition<TDefinition, TDeclared>
+      : TDefinition
+    : TDefinition;
 
 type ExtractBoundRouteParams<TDefinition extends ProcedureDefinition> =
   ExtractProcedureRouteBinding<TDefinition> extends ProcedureRouteBinding<
@@ -318,6 +351,63 @@ export type ProcedureMiddleware<
   | Promise<ProcedureMiddlewareResult<TContextExtension>>
   | ProcedureMiddlewareResult<TContextExtension>;
 
+type AppendDeclaredProcedureErrorDefinition<
+  TDefinition extends Partial<ProcedureDefinition>,
+  TCode extends RpcErrorCode,
+  TDetails = unknown,
+> = Omit<TDefinition, "error"> & {
+  error:
+    | ("error" extends keyof TDefinition
+        ? Exclude<TDefinition["error"], undefined>
+        : never)
+    | ProcedureErrorContract<TCode, TDetails>;
+};
+
+export type DeclaredProcedureMiddleware<
+  TMiddleware extends (...args: never[]) => unknown = ProcedureMiddleware,
+  TDefinition extends Partial<ProcedureDefinition> = Record<never, never>,
+> = WithProcedureDefinition<TMiddleware, TDefinition> & {
+  error<TCode extends RpcErrorCode, TDetails = unknown>(
+    code: TCode,
+  ): DeclaredProcedureMiddleware<
+    TMiddleware,
+    AppendDeclaredProcedureErrorDefinition<TDefinition, TCode, TDetails>
+  >;
+};
+
+const appendDeclaredProcedureError = <
+  TDefinition extends Partial<ProcedureDefinition>,
+  TCode extends RpcErrorCode,
+  TDetails = unknown,
+>(
+  definition: TDefinition,
+  code: TCode,
+): AppendDeclaredProcedureErrorDefinition<TDefinition, TCode, TDetails> => {
+  const existingError = definition.error as ProcedureErrorContract | undefined;
+  const variants =
+    existingError?.variants ??
+    (existingError?.code
+      ? [
+          {
+            code: existingError.code,
+          },
+        ]
+      : []);
+
+  return {
+    ...definition,
+    error: {
+      code,
+      variants: [
+        ...variants,
+        {
+          code,
+        },
+      ],
+    },
+  } as AppendDeclaredProcedureErrorDefinition<TDefinition, TCode, TDetails>;
+};
+
 export type ProcedureHandlerResult<TOutput = unknown> =
   | Response
   | NextResponse
@@ -533,14 +623,19 @@ export interface ProcedureBuilder<
     TContext
   >;
 
-  use<TContextExtension extends object>(
-    middleware: ProcedureMiddleware<
+  use<
+    TMiddleware extends ProcedureMiddleware<
       ExtractValidationSchema<TDefinition>,
       InferProcedureParams<TDefinition>,
       TContext,
-      TContextExtension
+      object
     >,
-  ): ProcedureBuilder<TDefinition, TContext & TContextExtension>;
+  >(
+    middleware: TMiddleware,
+  ): ProcedureBuilder<
+    MergeProcedureDefinitionWithMiddleware<TDefinition, TMiddleware>,
+    TContext & ExtractProcedureMiddlewareContextExtension<TMiddleware>
+  >;
 
   handle<
     THandler extends ProcedureHandler<
@@ -558,6 +653,35 @@ export interface ProcedureBuilder<
     THandler
   >;
 }
+
+const createDeclaredProcedureMiddleware = <
+  TMiddleware extends (...args: never[]) => unknown,
+  TDefinition extends Partial<ProcedureDefinition>,
+>(
+  middleware: TMiddleware,
+  definition: TDefinition,
+): DeclaredProcedureMiddleware<TMiddleware, TDefinition> => {
+  const declaredMiddleware = attachProcedureDefinition(
+    ((context) => middleware(context)) as TMiddleware,
+    definition,
+  ) as DeclaredProcedureMiddleware<TMiddleware, TDefinition>;
+
+  Object.defineProperty(declaredMiddleware, "error", {
+    configurable: true,
+    enumerable: false,
+    value: <TCode extends RpcErrorCode, TDetails = unknown>(code: TCode) =>
+      createDeclaredProcedureMiddleware(
+        middleware,
+        appendDeclaredProcedureError<TDefinition, TCode, TDetails>(
+          definition,
+          code,
+        ),
+      ),
+    writable: true,
+  });
+
+  return declaredMiddleware;
+};
 
 const createProcedureBuilder = <
   TDefinition extends ProcedureDefinition,
@@ -735,18 +859,31 @@ const createProcedureBuilder = <
     );
   };
 
-  const withMiddleware = <TContextExtension extends object>(
-    middleware: ProcedureMiddleware<
+  const withMiddleware = <
+    TMiddleware extends ProcedureMiddleware<
       ExtractValidationSchema<TDefinition>,
       InferProcedureParams<TDefinition>,
       TContext,
-      TContextExtension
+      object
     >,
-  ): ProcedureBuilder<TDefinition, TContext & TContextExtension> => {
-    return createProcedureBuilder(definition, [
+  >(
+    middleware: TMiddleware,
+  ): ProcedureBuilder<
+    MergeProcedureDefinitionWithMiddleware<TDefinition, TMiddleware>,
+    TContext & ExtractProcedureMiddlewareContextExtension<TMiddleware>
+  > => {
+    const middlewareDefinition = getProcedureDefinition(middleware);
+    const nextDefinition = middlewareDefinition
+      ? withDeclaredProcedureDefinition(definition, middlewareDefinition)
+      : definition;
+
+    return createProcedureBuilder(nextDefinition, [
       ...middlewares,
       middleware as unknown as ProcedureMiddleware,
-    ]) as ProcedureBuilder<TDefinition, TContext & TContextExtension>;
+    ]) as ProcedureBuilder<
+      MergeProcedureDefinitionWithMiddleware<TDefinition, TMiddleware>,
+      TContext & ExtractProcedureMiddlewareContextExtension<TMiddleware>
+    >;
   };
 
   return {
@@ -779,3 +916,10 @@ export const procedure = createProcedureBuilder<
   EmptyProcedureDefinition,
   Record<never, never>
 >({});
+
+export const defineProcedureMiddleware = <
+  TMiddleware extends (...args: never[]) => unknown,
+>(
+  middleware: TMiddleware,
+): DeclaredProcedureMiddleware<TMiddleware> =>
+  createDeclaredProcedureMiddleware(middleware, {});

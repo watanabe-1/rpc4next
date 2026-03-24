@@ -1,4 +1,12 @@
-import { procedure, rpcError } from "rpc4next/server";
+import type {
+  ProcedureMiddleware,
+  ProcedureMiddlewareContext,
+} from "rpc4next/server";
+import {
+  defineProcedureMiddleware,
+  procedure,
+  rpcError,
+} from "rpc4next/server";
 import { z } from "zod";
 
 export const guardedProcedureHeadersSchema = z.object({
@@ -6,18 +14,37 @@ export const guardedProcedureHeadersSchema = z.object({
   "x-demo-role": z.enum(["reader", "editor", "suspended"]).optional(),
 });
 
-export const guardedBaseProcedure = procedure
-  .headers(guardedProcedureHeadersSchema)
-  .error<"UNAUTHORIZED", { reason: "missing_demo_user" }>("UNAUTHORIZED")
-  .error<"FORBIDDEN", { reason: "suspended_account" }>("FORBIDDEN")
-  .meta({
-    summary:
-      "Shared guardedProcedure preset with auth/policy error contracts for the integration fixture",
-    tags: ["procedure-examples", "shared-base-procedure", "shared-errors"],
-    auth: "required",
-    idempotent: true,
-  })
-  .use(async ({ headers }) => {
+const guardedProcedureMiddleware = defineProcedureMiddleware<
+  ProcedureMiddleware<
+    {
+      input: {
+        headers: z.input<typeof guardedProcedureHeadersSchema>;
+      };
+      output: {
+        headers: z.output<typeof guardedProcedureHeadersSchema>;
+      };
+    },
+    Record<string, string | string[] | undefined>,
+    Record<never, never>,
+    {
+      viewer: {
+        id: string;
+        role: "reader" | "editor";
+      };
+      requestId: string;
+    }
+  >
+>(
+  async ({
+    headers,
+  }: ProcedureMiddlewareContext<{
+    input: {
+      headers: z.input<typeof guardedProcedureHeadersSchema>;
+    };
+    output: {
+      headers: z.output<typeof guardedProcedureHeadersSchema>;
+    };
+  }>) => {
     const viewerId = headers["x-demo-user"];
 
     if (!viewerId) {
@@ -45,4 +72,18 @@ export const guardedBaseProcedure = procedure
         requestId: `guarded:${viewerId}`,
       },
     };
-  });
+  },
+)
+  .error<"UNAUTHORIZED", { reason: "missing_demo_user" }>("UNAUTHORIZED")
+  .error<"FORBIDDEN", { reason: "suspended_account" }>("FORBIDDEN");
+
+export const guardedBaseProcedure = procedure
+  .headers(guardedProcedureHeadersSchema)
+  .meta({
+    summary:
+      "Shared guardedProcedure preset with auth/policy error contracts for the integration fixture",
+    tags: ["procedure-examples", "shared-base-procedure", "shared-errors"],
+    auth: "required",
+    idempotent: true,
+  })
+  .use(guardedProcedureMiddleware);

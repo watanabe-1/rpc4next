@@ -150,12 +150,34 @@ export type MergeProcedureDefinition<
   TExtra extends Partial<ProcedureDefinition>,
 > = Omit<TBase, keyof TExtra> & TExtra;
 
-type ExtractProcedureErrorDefinition<TDefinition extends ProcedureDefinition> =
-  TDefinition extends {
-    error?: infer TError;
-  }
-    ? Exclude<TError, undefined>
-    : never;
+export type ExtractProcedureErrorDefinition<
+  TDefinition extends ProcedureDefinition,
+> = TDefinition extends {
+  error?: infer TError;
+}
+  ? Exclude<TError, undefined>
+  : never;
+
+type ExtractDeclaredProcedureErrorDefinition<
+  TDefinition extends Partial<ProcedureDefinition>,
+> = "error" extends keyof TDefinition
+  ? Exclude<TDefinition["error"], undefined>
+  : never;
+
+export type MergeProcedureDefinitionWithDeclaredDefinition<
+  TBase extends ProcedureDefinition,
+  TDeclared extends Partial<ProcedureDefinition>,
+> = MergeProcedureDefinition<
+  TBase,
+  Omit<TDeclared, "error"> &
+    ([ExtractDeclaredProcedureErrorDefinition<TDeclared>] extends [never]
+      ? Record<never, never>
+      : {
+          error:
+            | ExtractProcedureErrorDefinition<TBase>
+            | ExtractDeclaredProcedureErrorDefinition<TDeclared>;
+        })
+>;
 
 export type AppendProcedureErrorDefinition<
   TDefinition extends ProcedureDefinition,
@@ -173,14 +195,14 @@ export const procedureDefinitionSymbol = Symbol.for(
 
 export type WithProcedureDefinition<
   TValue,
-  TDefinition extends ProcedureDefinition = ProcedureDefinition,
+  TDefinition extends Partial<ProcedureDefinition> = ProcedureDefinition,
 > = TValue & {
   [procedureDefinitionSymbol]?: TDefinition;
 };
 
 export const attachProcedureDefinition = <
   TValue extends object,
-  TDefinition extends ProcedureDefinition,
+  TDefinition extends Partial<ProcedureDefinition>,
 >(
   value: TValue,
   definition: TDefinition,
@@ -196,7 +218,7 @@ export const attachProcedureDefinition = <
 };
 
 export const getProcedureDefinition = <
-  TDefinition extends ProcedureDefinition = ProcedureDefinition,
+  TDefinition extends Partial<ProcedureDefinition> = ProcedureDefinition,
 >(
   value: unknown,
 ): TDefinition | undefined => {
