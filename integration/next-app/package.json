@@ -18,8 +18,7 @@
   "dependencies": {
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "rpc4next": "workspace:*",
-    "zod": "^4.3.6"
+    "rpc4next": "workspace:*"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.1",
