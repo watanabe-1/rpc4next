@@ -171,33 +171,33 @@
       "algorithm": "sha256"
     },
     {
-      "id": "http/nodejs.org/dist/v25.8.1/node-v25.8.1-darwin-arm64.tar.gz",
-      "checksum": "C667629236E3213616F0917B84EB52706E213C0E8A2312402335FFF6FC7463C4",
+      "id": "http/nodejs.org/dist/v25.8.2/node-v25.8.2-darwin-arm64.tar.gz",
+      "checksum": "FB8DABFDA3232EF90D992E6439824FC3237356C04D182F3FA883BEBEEF31E871",
       "algorithm": "sha256"
     },
     {
-      "id": "http/nodejs.org/dist/v25.8.1/node-v25.8.1-darwin-x64.tar.gz",
-      "checksum": "1E5EBF69955E01216F5C60B9C989D1BDDA8E5022E2F60C75E1BAF309C5BFF50E",
+      "id": "http/nodejs.org/dist/v25.8.2/node-v25.8.2-darwin-x64.tar.gz",
+      "checksum": "530FFB419789F843215375A65B8FCF4CF010735E99276F512A241A31BA8E5E13",
       "algorithm": "sha256"
     },
     {
-      "id": "http/nodejs.org/dist/v25.8.1/node-v25.8.1-linux-arm64.tar.gz",
-      "checksum": "D990EC3C21CE8BDB6F76ED4E1C875D6E3E4B75A02D018E85DF0662C0BAD83B53",
+      "id": "http/nodejs.org/dist/v25.8.2/node-v25.8.2-linux-arm64.tar.gz",
+      "checksum": "2F823ECD4F9331D6492FEDBE50C5A610BE3084521F3A5AF146875E00A52F2E63",
       "algorithm": "sha256"
     },
     {
-      "id": "http/nodejs.org/dist/v25.8.1/node-v25.8.1-linux-x64.tar.gz",
-      "checksum": "6FE3B8FA448579F728F7A0E5BBB3AB6A352D2C6307E13AE37A86106A3E4C9AAF",
+      "id": "http/nodejs.org/dist/v25.8.2/node-v25.8.2-linux-x64.tar.gz",
+      "checksum": "E06C7069012D40914C57B31157C69D4CE83EA1FE9D63BBB7D26E0509A4535D21",
       "algorithm": "sha256"
     },
     {
-      "id": "http/nodejs.org/dist/v25.8.1/node-v25.8.1-win-x64.zip",
-      "checksum": "09A5A0DBB2F4CEFA800880012810E2DFAAC0016A62E75F064C4AB7F3606B2D78",
+      "id": "http/nodejs.org/dist/v25.8.2/node-v25.8.2-win-x64.zip",
+      "checksum": "51815D5B0256B947D27D614DE04060FCFDBDB830D2C86E63E6F33DBF7964CCA7",
       "algorithm": "sha256"
     },
     {
-      "id": "registries/github_content/github.com/aquaproj/aqua-registry/v4.486.0/registry.yaml",
-      "checksum": "63B62E674B5BB399FEE5226F40638AB93CEA74254EEB535152AB27ACB2A33BE3C92013D5B7C32617DAD9B51A3E090F973810EC38D7A12D0ADAC4063E87DC6F52",
+      "id": "registries/github_content/github.com/aquaproj/aqua-registry/v4.489.0/registry.yaml",
+      "checksum": "6F3C79A1A7D9EBCE0BCBC26A17069C6EFDAEC0F1249B5C2A508CFF8BA5ABE1F52F1F3A2EACDCB452C3C98005159E4DD27E0BC31E32E64B20715C56532D35A958",
       "algorithm": "sha512"
     }
   ]
