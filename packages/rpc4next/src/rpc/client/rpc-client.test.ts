@@ -809,6 +809,7 @@ describe("createRpcClient", () => {
       const _validationResponseFromExpected: typeof validationResponse =
         {} as ExpectedValidationResponse;
 
+      void _defaultResponseFromActual;
       void _validationResponseFromActual;
       void _validationResponseFromExpected;
     });

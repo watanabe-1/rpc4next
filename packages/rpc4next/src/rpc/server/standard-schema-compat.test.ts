@@ -187,7 +187,7 @@ describe("Standard Schema compatibility", () => {
         };
       });
 
-    expectTypeOf(pageProcedure.handler).parameters.toMatchTypeOf<
+    expectTypeOf(pageProcedure.handler).parameters.toExtend<
       [
         {
           query: {
