@@ -1,4 +1,4 @@
-import { describe, expect, expectTypeOf, it, vi } from "vitest";
+import { describe, expectTypeOf, it, vi } from "vitest";
 import { z } from "zod";
 import { procedure } from "./procedure";
 import type {
@@ -74,7 +74,7 @@ describe("procedure builder zod integration", () => {
         },
       );
 
-    expectTypeOf(userProcedure.definition).toMatchTypeOf<{
+    expectTypeOf(userProcedure.definition).toExtend<{
       input?: {
         validationSchema?: {
           output: {
@@ -154,7 +154,7 @@ describe("procedure builder zod integration", () => {
         };
       });
 
-    expectTypeOf(uploadProcedure.definition).toMatchTypeOf<{
+    expectTypeOf(uploadProcedure.definition).toExtend<{
       route?: {
         pathname: "/api/procedure-guarded/[userId]";
         params: { userId: string };
@@ -213,7 +213,7 @@ describe("procedure builder zod integration", () => {
         },
       }));
 
-    expectTypeOf(pagedProcedure.handler).parameters.toMatchTypeOf<
+    expectTypeOf(pagedProcedure.handler).parameters.toExtend<
       [
         {
           query: {
@@ -261,8 +261,6 @@ describe("procedure builder zod integration", () => {
 
         return jsonResponse;
       });
-
-    expect(true).toBe(true);
   });
 
   it("preserves literal output types for procedure-validation-branch style responses", () => {
@@ -314,8 +312,6 @@ describe("procedure builder zod integration", () => {
 
         return jsonResponse;
       });
-
-    expect(true).toBe(true);
   });
 
   it("supports validator-stage customization on shared baseProcedure presets", () => {
@@ -342,7 +338,7 @@ describe("procedure builder zod integration", () => {
       },
     }));
 
-    expectTypeOf(derivedProcedure.handler).parameters.toMatchTypeOf<
+    expectTypeOf(derivedProcedure.handler).parameters.toExtend<
       [
         {
           query: {

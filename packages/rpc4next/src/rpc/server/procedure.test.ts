@@ -158,7 +158,7 @@ describe("procedure builder type definitions", () => {
         };
       });
 
-    expectTypeOf(customValidatorProcedure.handler).parameters.toMatchTypeOf<
+    expectTypeOf(customValidatorProcedure.handler).parameters.toExtend<
       [
         {
           query: {
@@ -270,7 +270,7 @@ describe("procedure builder type definitions", () => {
         };
       });
 
-    expectTypeOf(contextProcedure.handler).parameters.toMatchTypeOf<
+    expectTypeOf(contextProcedure.handler).parameters.toExtend<
       [
         {
           ctx: {
@@ -387,7 +387,7 @@ describe("procedure builder type definitions", () => {
         };
       });
 
-    expectTypeOf(listUsersProcedure.handler).parameters.toMatchTypeOf<
+    expectTypeOf(listUsersProcedure.handler).parameters.toExtend<
       [
         {
           ctx: {
@@ -399,7 +399,7 @@ describe("procedure builder type definitions", () => {
       ]
     >();
 
-    expectTypeOf(getUserProcedure.handler).parameters.toMatchTypeOf<
+    expectTypeOf(getUserProcedure.handler).parameters.toExtend<
       [
         {
           params: { userId: string };
@@ -446,7 +446,7 @@ describe("procedure builder type definitions", () => {
         };
       });
 
-    expectTypeOf(guardedProcedure.handler).parameters.toMatchTypeOf<
+    expectTypeOf(guardedProcedure.handler).parameters.toExtend<
       [
         {
           params: { userId: string };
@@ -500,7 +500,7 @@ describe("procedure builder type definitions", () => {
       | ProcedureErrorContract<"FORBIDDEN", { reason: "suspended_account" }>
       | ProcedureErrorContract<"FORBIDDEN", { reason: "editor_only" }>;
 
-    expectTypeOf(guardedProcedure.definition.error).toMatchTypeOf<
+    expectTypeOf(guardedProcedure.definition.error).toExtend<
       ExpectedErrors | undefined
     >();
   });
@@ -521,11 +521,11 @@ describe("procedure builder type definitions", () => {
         status: 204 as const,
       }));
 
-    expectTypeOf(publicProcedure.definition.error).toMatchTypeOf<
+    expectTypeOf(publicProcedure.definition.error).toExtend<
       | ProcedureErrorContract<"UNAUTHORIZED", { reason: "missing_demo_user" }>
       | undefined
     >();
-    expectTypeOf(editorProcedure.definition.error).toMatchTypeOf<
+    expectTypeOf(editorProcedure.definition.error).toExtend<
       | ProcedureErrorContract<"UNAUTHORIZED", { reason: "missing_demo_user" }>
       | ProcedureErrorContract<"FORBIDDEN", { reason: "editor_only" }>
       | undefined
