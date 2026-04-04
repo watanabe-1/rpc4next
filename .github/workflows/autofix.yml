@@ -30,6 +30,9 @@ jobs:
           bun-version: aqua
           bun-cache: "true"
 
+      - name: Fix aqua-checksums.json
+        run: aqua upc -prune
+
       - name: Install dependencies
         shell: bash
         env:
@@ -44,9 +47,6 @@ jobs:
       - name: Run check:fix
         shell: bash
         run: bun run check:fix
-
-      - name: Fix aqua-checksums.json
-        run: aqua upc -prune
 
       - name: Run autofix.ci
         uses: autofix-ci/action@7a166d7532b277f34e16238930461bf77f9d7ed8 # v1.3.3
