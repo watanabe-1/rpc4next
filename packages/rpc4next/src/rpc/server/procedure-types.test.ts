@@ -71,7 +71,7 @@ describe("procedure contract internals", () => {
       >
     >;
 
-    expectTypeOf<ExpectedInput>().toMatchTypeOf<{
+    expectTypeOf<ExpectedInput>().toExtend<{
       contracts?: Partial<
         Record<
           "params" | "query" | "json" | "formData" | "headers" | "cookies",
@@ -96,7 +96,7 @@ describe("procedure contract internals", () => {
       };
       variants?: readonly ProcedureErrorContract[];
     }>();
-    expectTypeOf<ExpectedDefinition>().toMatchTypeOf<{
+    expectTypeOf<ExpectedDefinition>().toExtend<{
       method?: "GET";
       meta?: { tags: string[] };
     }>();
@@ -115,7 +115,7 @@ describe("procedure contract internals", () => {
       SharedErrors
     >;
 
-    expectTypeOf<Definition>().toMatchTypeOf<{
+    expectTypeOf<Definition>().toExtend<{
       error?: SharedErrors;
     }>();
   });

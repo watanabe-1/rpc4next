@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 import { rpcError } from "./error";
 import { nextRoute } from "./next-route";
 import { defineProcedureMiddleware, procedure } from "./procedure";
@@ -330,12 +330,7 @@ describe("nextRoute", () => {
           403,
           "application/json"
         >;
-    const _fromActual: ExpectedResponse = {} as ActualResponse;
-    const _fromExpected: ActualResponse = {} as ExpectedResponse;
-
-    void _fromActual;
-    void _fromExpected;
-    expect(true).toBe(true);
+    expectTypeOf<ActualResponse>().toEqualTypeOf<ExpectedResponse>();
   });
 
   it("preserves shared procedure error contracts in extended route types", () => {
@@ -395,12 +390,7 @@ describe("nextRoute", () => {
           403,
           "application/json"
         >;
-    const _fromActual: ExpectedResponse = {} as ActualResponse;
-    const _fromExpected: ActualResponse = {} as ExpectedResponse;
-
-    void _fromActual;
-    void _fromExpected;
-    expect(true).toBe(true);
+    expectTypeOf<ActualResponse>().toEqualTypeOf<ExpectedResponse>();
   });
 
   it("preserves middleware-thrown RpcError responses while using declared middleware error contracts", async () => {
@@ -472,12 +462,7 @@ describe("nextRoute", () => {
           400,
           "application/json"
         >;
-    const _fromActual: ExpectedResponse = {} as ActualResponse;
-    const _fromExpected: ActualResponse = {} as ExpectedResponse;
-
-    void _fromActual;
-    void _fromExpected;
-    expect(true).toBe(true);
+    expectTypeOf<ActualResponse>().toEqualTypeOf<ExpectedResponse>();
   });
 
   it("reflects helper-based custom validation json responses in the route type", () => {
@@ -531,12 +516,7 @@ describe("nextRoute", () => {
           422,
           "application/json"
         >;
-    const _fromActual: ExpectedResponse = {} as ActualResponse;
-    const _fromExpected: ActualResponse = {} as ExpectedResponse;
-
-    void _fromActual;
-    void _fromExpected;
-    expect(true).toBe(true);
+    expectTypeOf<ActualResponse>().toEqualTypeOf<ExpectedResponse>();
   });
 
   it("reflects helper-based custom validation text responses in the route type", () => {
@@ -577,12 +557,7 @@ describe("nextRoute", () => {
           "application/json"
         >
       | TypedNextResponse<"validator:query", 422, "text/plain">;
-    const _fromActual: ExpectedResponse = {} as ActualResponse;
-    const _fromExpected: ActualResponse = {} as ExpectedResponse;
-
-    void _fromActual;
-    void _fromExpected;
-    expect(true).toBe(true);
+    expectTypeOf<ActualResponse>().toEqualTypeOf<ExpectedResponse>();
   });
 
   it("preserves raw validation error responses in runtime and route types", async () => {
@@ -640,10 +615,7 @@ describe("nextRoute", () => {
           "application/json"
         >
       | Response;
-    const _rawResponseFromActual: ExpectedRawResponseRouteResponse =
-      {} as RawResponseRouteResponse;
-    const _rawResponseFromExpected: RawResponseRouteResponse =
-      {} as ExpectedRawResponseRouteResponse;
+    expectTypeOf<RawResponseRouteResponse>().toEqualTypeOf<ExpectedRawResponseRouteResponse>();
 
     const rawNextResponseRoute = nextRoute(
       procedure
@@ -693,16 +665,7 @@ describe("nextRoute", () => {
           ok: false;
           target: "query";
         }>;
-    const _rawNextResponseFromActual: ExpectedRawNextResponseRouteResponse =
-      {} as RawNextResponseRouteResponse;
-    const _rawNextResponseFromExpected: RawNextResponseRouteResponse =
-      {} as ExpectedRawNextResponseRouteResponse;
-
-    void _rawResponseFromActual;
-    void _rawResponseFromExpected;
-    void _rawNextResponseFromActual;
-    void _rawNextResponseFromExpected;
-    expect(true).toBe(true);
+    expectTypeOf<RawNextResponseRouteResponse>().toEqualTypeOf<ExpectedRawNextResponseRouteResponse>();
   });
 
   it("includes implicit INTERNAL_SERVER_ERROR responses for runtime-enforced output routes", () => {
@@ -748,11 +711,6 @@ describe("nextRoute", () => {
           500,
           "application/json"
         >;
-    const _fromActual: ExpectedResponse = {} as ActualResponse;
-    const _fromExpected: ActualResponse = {} as ExpectedResponse;
-
-    void _fromActual;
-    void _fromExpected;
-    expect(true).toBe(true);
+    expectTypeOf<ActualResponse>().toEqualTypeOf<ExpectedResponse>();
   });
 });

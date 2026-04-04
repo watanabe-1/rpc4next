@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import { createProcedureKit } from "./procedure-kit";
 import type { ProcedureRouteContract } from "./procedure-types";
 import type { TypedNextResponse } from "./types";
@@ -78,12 +78,7 @@ describe("createProcedureKit", () => {
           403,
           "application/json"
         >;
-    const _fromActual: ExpectedResponse = {} as ActualResponse;
-    const _fromExpected: ActualResponse = {} as ExpectedResponse;
-
-    void _fromActual;
-    void _fromExpected;
-    expect(true).toBe(true);
+    expectTypeOf<ActualResponse>().toEqualTypeOf<ExpectedResponse>();
   });
 
   it("uses the kit errorRegistry to resolve rpcError status before formatting", async () => {

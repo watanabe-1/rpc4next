@@ -19,7 +19,7 @@ describe("procedure builder arktype integration", () => {
       };
     });
 
-    expectTypeOf(arktypeProcedure.handler).parameters.toMatchTypeOf<
+    expectTypeOf(arktypeProcedure.handler).parameters.toExtend<
       [
         {
           query: {

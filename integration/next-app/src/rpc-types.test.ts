@@ -4,7 +4,7 @@ import type {
   HttpStatusCode,
   TypedNextResponse,
 } from "rpc4next/server";
-import { describe, expect, expectTypeOf, it } from "vitest";
+import { describe, expectTypeOf, it } from "vitest";
 import type { Query as ProcedureContractQuery } from "../app/api/procedure-contract/[userId]/route";
 import type { Query as ProcedureGuardedQuery } from "../app/api/procedure-guarded/[userId]/route";
 import type { Query as UsersQuery } from "../app/api/users/[userId]/route";
@@ -154,6 +154,15 @@ describe("integration next-app generated RPC type coverage", () => {
       {} as ProcedureFormDataArg;
     const _procedureFormDataArgFromExpected: ProcedureFormDataArg =
       {} as ExpectedProcedureFormDataArg;
+
+    void _postsArgFromActual;
+    void _postsArgFromExpected;
+    void _requestMetaArgFromActual;
+    void _requestMetaArgFromExpected;
+    void _procedureSubmitArgFromActual;
+    void _procedureSubmitArgFromExpected;
+    void _procedureFormDataArgFromActual;
+    void _procedureFormDataArgFromExpected;
   });
 
   it("infers the generated response types for integration routes", async () => {
@@ -179,8 +188,9 @@ describe("integration next-app generated RPC type coverage", () => {
           400 | 401 | 403 | 404 | 409 | 422 | 429 | 500,
           "application/json"
         >;
-    const _nativeNextResponseFromActual: ExpectedNativeNextResponse =
-      _nativeNextResponse;
+    expectTypeOf<
+      typeof _nativeNextResponse
+    >().toExtend<ExpectedNativeNextResponse>();
 
     const _explicitOutputResponse = await client.api["explicit-output"].$get();
     type ExpectedExplicitOutputResponse =
@@ -203,8 +213,9 @@ describe("integration next-app generated RPC type coverage", () => {
           400 | 401 | 403 | 404 | 409 | 422 | 429 | 500,
           "application/json"
         >;
-    const _explicitOutputResponseFromActual: ExpectedExplicitOutputResponse =
-      _explicitOutputResponse;
+    expectTypeOf<
+      typeof _explicitOutputResponse
+    >().toExtend<ExpectedExplicitOutputResponse>();
 
     const _contractRouteResponse = await client.api["contract-route"].$get();
     expectTypeOf<typeof _contractRouteResponse>().toEqualTypeOf<
@@ -246,8 +257,9 @@ describe("integration next-app generated RPC type coverage", () => {
           400,
           "application/json"
         >;
-    const _procedureContractResponseFromActual: ExpectedProcedureContractResponse =
-      _procedureContractResponse;
+    expectTypeOf<
+      typeof _procedureContractResponse
+    >().toExtend<ExpectedProcedureContractResponse>();
 
     const _nativeDynamicResponse = await client.api["next-native"]
       ._itemId("native-item")
@@ -274,8 +286,9 @@ describe("integration next-app generated RPC type coverage", () => {
           400 | 401 | 403 | 404 | 409 | 422 | 429 | 500,
           "application/json"
         >;
-    const _nativeDynamicResponseFromActual: ExpectedNativeDynamicResponse =
-      _nativeDynamicResponse;
+    expectTypeOf<
+      typeof _nativeDynamicResponse
+    >().toExtend<ExpectedNativeDynamicResponse>();
 
     const nativeResponseJson = await client.api["next-native-response"].$get();
     const _nativeResponseJson: TypedNextResponse<
@@ -289,7 +302,7 @@ describe("integration next-app generated RPC type coverage", () => {
     });
     type UsersResponse = typeof usersResponse;
     type UsersSuccessResponse = Extract<UsersResponse, { ok: true }>;
-    expectTypeOf<typeof usersResponse>().toMatchTypeOf<
+    expectTypeOf<typeof usersResponse>().toExtend<
       | TypedNextResponse<
           {
             ok: boolean;
@@ -311,7 +324,7 @@ describe("integration next-app generated RPC type coverage", () => {
     });
     type PostsResponse = typeof postsResponse;
     type PostsSuccessResponse = Extract<PostsResponse, { ok: true }>;
-    expectTypeOf<typeof postsResponse>().toMatchTypeOf<
+    expectTypeOf<typeof postsResponse>().toExtend<
       | TypedNextResponse<
           {
             ok: boolean;
@@ -338,7 +351,7 @@ describe("integration next-app generated RPC type coverage", () => {
       RequestMetaResponse,
       { ok: true }
     >;
-    expectTypeOf<typeof requestMetaResponse>().toMatchTypeOf<
+    expectTypeOf<typeof requestMetaResponse>().toExtend<
       | TypedNextResponse<
           {
             header: string;
@@ -385,8 +398,9 @@ describe("integration next-app generated RPC type coverage", () => {
           400,
           "application/json"
         >;
-    const _procedureSubmitResponseFromActual: ExpectedProcedureSubmitResponse =
-      procedureSubmitResponse;
+    expectTypeOf<
+      typeof procedureSubmitResponse
+    >().toExtend<ExpectedProcedureSubmitResponse>();
 
     const procedureGuardedResponse = await client.api["procedure-guarded"]
       ._userId("procedure-user")
@@ -467,8 +481,9 @@ describe("integration next-app generated RPC type coverage", () => {
           403,
           "application/json"
         >;
-    const _procedureGuardedResponseFromActual: ExpectedProcedureGuardedResponse =
-      procedureGuardedResponse;
+    expectTypeOf<
+      typeof procedureGuardedResponse
+    >().toExtend<ExpectedProcedureGuardedResponse>();
 
     const procedureInvalidOutputResponse =
       await client.api["procedure-invalid-output"].$get();
@@ -493,8 +508,9 @@ describe("integration next-app generated RPC type coverage", () => {
           500,
           "application/json"
         >;
-    const _procedureInvalidOutputResponseFromActual: ExpectedProcedureInvalidOutputResponse =
-      procedureInvalidOutputResponse;
+    expectTypeOf<
+      typeof procedureInvalidOutputResponse
+    >().toExtend<ExpectedProcedureInvalidOutputResponse>();
 
     const procedureFormDataResponse = await client.api[
       "procedure-form-data"
@@ -524,8 +540,9 @@ describe("integration next-app generated RPC type coverage", () => {
           400,
           "application/json"
         >;
-    const _procedureFormDataResponseFromActual: ExpectedProcedureFormDataResponse =
-      procedureFormDataResponse;
+    expectTypeOf<
+      typeof procedureFormDataResponse
+    >().toExtend<ExpectedProcedureFormDataResponse>();
 
     const procedureValidationBranchResponse = await client.api[
       "procedure-validation-branch"
@@ -564,8 +581,9 @@ describe("integration next-app generated RPC type coverage", () => {
           HttpStatusCode,
           ContentType
         >;
-    const _procedureValidationBranchResponseFromActual: ExpectedProcedureValidationBranchResponse =
-      procedureValidationBranchResponse;
+    expectTypeOf<
+      typeof procedureValidationBranchResponse
+    >().toExtend<ExpectedProcedureValidationBranchResponse>();
 
     type RedirectGet = (typeof client.api)["redirect-me"]["$get"];
     type RedirectResponse = Awaited<ReturnType<RedirectGet>>;
@@ -671,7 +689,5 @@ describe("integration next-app generated RPC type coverage", () => {
 
     // @ts-expect-error catch-all segments must be non-empty
     client.patterns["catch-all"].___parts([]);
-
-    expect(true).toBe(true);
   });
 });
