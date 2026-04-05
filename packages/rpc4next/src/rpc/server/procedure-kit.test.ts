@@ -254,4 +254,43 @@ describe("createProcedureKit", () => {
       message: "kit override formatter",
     });
   });
+
+  it("lets route-level onError override createProcedureKit.nextRoute(...) defaults", async () => {
+    const procedureKit = createProcedureKit({
+      onError: (error, { response }) =>
+        response.json(
+          {
+            source: "kit-default",
+            message: error instanceof Error ? error.message : "unknown error",
+          },
+          { status: 418 },
+        ),
+    });
+    const route = procedureKit.nextRoute(
+      procedureKit.procedure.forRoute(staticRouteContract).handle(async () => {
+        throw new Error("kit nextRoute override formatter");
+      }),
+      {
+        method: "GET",
+        onError: (error, { response }) =>
+          response.json(
+            {
+              source: "kit-nextRoute-level",
+              message: error instanceof Error ? error.message : "unknown error",
+            },
+            { status: 420 },
+          ),
+      },
+    );
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(420);
+    await expect(response.json()).resolves.toEqual({
+      source: "kit-nextRoute-level",
+      message: "kit nextRoute override formatter",
+    });
+  });
 });
