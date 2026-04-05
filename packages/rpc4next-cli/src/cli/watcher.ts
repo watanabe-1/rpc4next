@@ -43,6 +43,8 @@ export const setupWatcher = (
     ignoreInitial: true,
     // If we exclude everything except files using ignored, the watch mode will terminate, so we added "only files" to the exclusion condition.
     ignored: (path, stats) => !!stats?.isFile() && !isTargetFiles(path),
+    // Polling avoids Windows directory-handle locks that can block renames in watch mode.
+    usePolling: process.platform === "win32",
   });
 
   watcher.on("ready", () => {

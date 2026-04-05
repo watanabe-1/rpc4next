@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   clearScanAppDirCacheAbove,
   clearVisitedDirsCacheAbove,
+  createScanAppDirCacheKey,
   scanAppDirCache,
   visitedDirsCache,
 } from "./cache.js";
@@ -93,19 +94,69 @@ describe("clearScanAppDirCacheAbove", () => {
       paramsTypes: [],
     };
     scanAppDirCache.clear();
-    scanAppDirCache.set("/project", blunkObj);
-    scanAppDirCache.set("/project/src", blunkObj);
-    scanAppDirCache.set("/project/src/app", blunkObj);
-    scanAppDirCache.set("/project/other", blunkObj);
+    scanAppDirCache.set(
+      createScanAppDirCacheKey({
+        output: "/output",
+        input: "/project",
+        indent: "",
+        rootDir: "/project",
+        parentParams: [],
+      }),
+      blunkObj,
+    );
+    scanAppDirCache.set(
+      createScanAppDirCacheKey({
+        output: "/output",
+        input: "/project/src",
+        indent: "",
+        rootDir: "/project",
+        parentParams: [],
+      }),
+      blunkObj,
+    );
+    scanAppDirCache.set(
+      createScanAppDirCacheKey({
+        output: "/output",
+        input: "/project/src/app",
+        indent: "  ",
+        rootDir: "/project",
+        parentParams: [{ paramName: "id", routeType: { isDynamic: true } }],
+      }),
+      blunkObj,
+    );
+    scanAppDirCache.set(
+      createScanAppDirCacheKey({
+        output: "/output",
+        input: "/project/other",
+        indent: "",
+        rootDir: "/project/other",
+        parentParams: [],
+      }),
+      blunkObj,
+    );
   });
 
   it("removes target directory and its ancestors from scanAppDirCache", () => {
     clearScanAppDirCacheAbove("/project/src/app");
 
-    expect(scanAppDirCache.has("/project")).toBe(false);
-    expect(scanAppDirCache.has("/project/src")).toBe(false);
-    expect(scanAppDirCache.has("/project/src/app")).toBe(false);
-    expect(scanAppDirCache.has("/project/other")).toBe(true);
+    expect(
+      [...scanAppDirCache.keys()].some((key) => key.includes("/project\u0000")),
+    ).toBe(false);
+    expect(
+      [...scanAppDirCache.keys()].some((key) =>
+        key.includes("/project/src\u0000"),
+      ),
+    ).toBe(false);
+    expect(
+      [...scanAppDirCache.keys()].some((key) =>
+        key.includes("/project/src/app\u0000"),
+      ),
+    ).toBe(false);
+    expect(
+      [...scanAppDirCache.keys()].some((key) =>
+        key.includes("/project/other\u0000"),
+      ),
+    ).toBe(true);
   });
 
   it("does nothing if no matching ancestor exists", () => {
