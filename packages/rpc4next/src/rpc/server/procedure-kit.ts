@@ -30,31 +30,33 @@ export const createProcedureKit = <TOnError extends ProcedureOnError>(options: {
     TProcedure,
     TMethod extends HttpMethod | undefined = undefined,
     TValidateOutput extends boolean = false,
+    TRouteOnError extends ProcedureOnError = TOnError,
   >(
     procedureDefinition: TProcedure,
     routeOptions?: Omit<
-      NextRouteOptions<Exclude<TMethod, undefined>, TOnError>,
+      NextRouteOptions<Exclude<TMethod, undefined>, TRouteOnError>,
       "onError"
     > & {
+      onError?: TRouteOnError;
       validateOutput?: TValidateOutput;
     },
   ): NextRouteHandler<
     TProcedure & Parameters<typeof baseNextRoute>[0],
     TMethod,
     TValidateOutput,
-    TOnError
+    TRouteOnError
   > =>
     baseNextRoute(
       procedureDefinition as never,
       {
         ...routeOptions,
-        onError: options.onError,
+        onError: routeOptions?.onError ?? options.onError,
       } as never,
     ) as NextRouteHandler<
       TProcedure & Parameters<typeof baseNextRoute>[0],
       TMethod,
       TValidateOutput,
-      TOnError
+      TRouteOnError
     >;
 
   return {
