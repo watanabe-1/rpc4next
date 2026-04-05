@@ -1,9 +1,9 @@
-import { nextRoute, procedure } from "rpc4next/server";
+import { procedure } from "rpc4next/server";
 import { z } from "zod";
 import { onError } from "../_shared/on-error";
 import { routeContract } from "./route-contract";
 
-const uploadAvatar = procedure
+export const POST = procedure
   .forRoute(routeContract)
   .formData(
     z.object({
@@ -30,6 +30,5 @@ const uploadAvatar = procedure
       tags: formData.tags ?? [],
       source: "procedure-form-data",
     },
-  }));
-
-export const POST = nextRoute(uploadAvatar, { method: "POST", onError });
+  }))
+  .nextRoute({ method: "POST", onError });

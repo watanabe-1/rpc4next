@@ -72,6 +72,39 @@ describe("nextRoute", () => {
     },
   };
 
+  const outputSchema: StandardSchemaV1<
+    { ok: boolean; slug: string },
+    { ok: true; slug: string }
+  > = {
+    "~standard": {
+      version: 1,
+      vendor: "rpc4next-test",
+      types: {
+        input: {} as { ok: boolean; slug: string },
+        output: {} as { ok: true; slug: string },
+      },
+      validate: (value) => {
+        const input =
+          typeof value === "object" && value !== null
+            ? (value as { ok?: boolean; slug?: string })
+            : {};
+
+        if (input.ok !== true || typeof input.slug !== "string") {
+          return {
+            issues: [{ message: "ok must be true and slug must be a string" }],
+          };
+        }
+
+        return {
+          value: {
+            ok: true as const,
+            slug: input.slug,
+          },
+        };
+      },
+    },
+  };
+
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -426,6 +459,97 @@ describe("nextRoute", () => {
 
     type ActualResponse = Awaited<ReturnType<typeof route>>;
     expectTypeOf<ActualResponse>().toExtend<Response>();
+  });
+
+  it("supports procedure.handle(...).nextRoute(...) as thin sugar", async () => {
+    const onError = vi.fn(defaultProcedureOnError);
+    const route = procedure
+      .forRoute(staticRouteContract)
+      .query(pageSchema)
+      .handle(async ({ query }) => ({
+        body: {
+          page: query.page,
+        },
+      }))
+      .nextRoute({
+        method: "GET",
+        onError,
+      });
+
+    const response = await route(
+      new NextRequest("http://127.0.0.1:3000/api/test?page=2"),
+      {
+        params: Promise.resolve({}),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      page: 2,
+    });
+    expect(onError).not.toHaveBeenCalled();
+  });
+
+  it("keeps standalone nextRoute(...) available alongside procedure.nextRoute(...)", async () => {
+    const standaloneProcedure = procedure
+      .forRoute(staticRouteContract)
+      .handle(async ({ response }) => response.text("standalone"));
+    const sugarProcedure = procedure
+      .forRoute(staticRouteContract)
+      .handle(async ({ response }) => response.text("sugar"));
+
+    const standaloneRoute = nextRoute(standaloneProcedure, {
+      method: "GET",
+    });
+    const sugarRoute = sugarProcedure.nextRoute({
+      method: "GET",
+      onError: defaultProcedureOnError,
+    });
+
+    await expect(
+      standaloneRoute(new NextRequest("http://127.0.0.1:3000/api/test"), {
+        params: Promise.resolve({}),
+      }).then((response) => response.text()),
+    ).resolves.toBe("standalone");
+
+    await expect(
+      sugarRoute(new NextRequest("http://127.0.0.1:3000/api/test"), {
+        params: Promise.resolve({}),
+      }).then((response) => response.text()),
+    ).resolves.toBe("sugar");
+  });
+
+  it("applies validateOutput through procedure.nextRoute(...)", async () => {
+    const route = procedure
+      .forRoute(staticRouteContract)
+      .output<typeof outputSchema, unknown>(outputSchema)
+      .handle(async () => ({
+        body: {
+          ok: false,
+          slug: "draft",
+        },
+      }))
+      .nextRoute({
+        method: "GET",
+        validateOutput: true,
+        onError: defaultProcedureOnError,
+      });
+
+    const response = await route(
+      new NextRequest("http://127.0.0.1:3000/api/test"),
+      {
+        params: Promise.resolve({}),
+      },
+    );
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Procedure output validation failed.",
+        details: [{ message: "ok must be true and slug must be a string" }],
+      },
+    });
   });
 
   it("preserves raw validation error responses in runtime and route types", async () => {

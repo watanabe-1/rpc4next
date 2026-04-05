@@ -68,13 +68,14 @@ If you prefer to inspect a complete app before wiring this into your own project
 ### 1. Define a Route
 
 `rpc4next` can scan plain Next.js App Router handlers as-is, but the recommended
-typed server authoring path is `procedure` with `nextRoute()`. This keeps the
+typed server authoring path is `procedure` with terminal `.nextRoute(...)`
+sugar. This keeps the
 route file as the source of truth while making input, output, metadata, and
 shared policy explicit.
 
 ```ts
 // app/api/users/[userId]/route.ts
-import { nextRoute, procedure } from "rpc4next/server";
+import { procedure } from "rpc4next/server";
 import { z } from "zod";
 import { routeContract } from "./route-contract";
 
@@ -86,7 +87,7 @@ const querySchema = z.object({
   includePosts: z.enum(["true", "false"]).optional(),
 });
 
-const getUser = procedure
+export const GET = procedure
   .forRoute(routeContract)
   .meta({ tags: ["users"], auth: "optional" })
   .params(paramsSchema)
@@ -105,18 +106,17 @@ const getUser = procedure
       userId: params.userId,
       includePosts: query.includePosts === "true",
     },
-  }));
-
-export const GET = nextRoute(getUser, { method: "GET" });
+  }))
+  .nextRoute({ method: "GET", onError });
 export type Query = z.input<typeof querySchema>;
 ```
 
 Notes:
 
-- `procedure` / `nextRoute()` is the default recommendation for new typed routes
+- `procedure.handle(...).nextRoute(...)` is the default recommendation for new typed routes
 - generated sibling `route-contract.ts` files are the recommended params source for procedure routes
 - input contracts consume Standard Schema V1-compatible schemas directly
-- route handlers must provide `onError`, either directly on `nextRoute(...)` or through `createProcedureKit({ onError })`
+- route handlers must provide `onError`, either directly on `.nextRoute(...)` / `nextRoute(...)` or through `createProcedureKit({ onError })`
 - shared presets such as `baseProcedure`, project-level `onError`, and validator-stage customization all build on this path
 
 `procedure` input contracts validate request input and return typed `400` JSON
@@ -250,16 +250,17 @@ It supports:
 - `meta(...)` and `output(...)`
 - shared presets via reusable builders such as `baseProcedure`
 - validator-stage customization with `onValidationError(...)`
-- adaptation to App Router exports through `nextRoute(procedure, { method, onError })`
+- adaptation to App Router exports through terminal `procedure.handle(...).nextRoute({ method, onError })`
+- standalone `nextRoute(procedure, { method, onError })` for shared base procedures or reused procedure values
 
 Example:
 
 ```ts
-import { nextRoute, procedure } from "rpc4next/server";
+import { procedure } from "rpc4next/server";
 import { z } from "zod";
 import { routeContract } from "./route-contract";
 
-const getUser = procedure
+export const GET = procedure
   .forRoute(routeContract)
   .params(z.object({ userId: z.string().min(1) }))
   .query(
@@ -281,9 +282,8 @@ const getUser = procedure
       userId: params.userId,
       includeDrafts: query.includeDrafts === "true",
     },
-  }));
-
-export const GET = nextRoute(getUser, { method: "GET", onError });
+  }))
+  .nextRoute({ method: "GET", onError });
 ```
 
 ### Error Handling

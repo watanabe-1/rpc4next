@@ -94,4 +94,24 @@ describe("createProcedureKit", () => {
       message: "project onError override",
     });
   });
+
+  it("lets procedureKit.procedure.handle(...).nextRoute(...) compose naturally", async () => {
+    const procedureKit = createProcedureKit({
+      onError: defaultProcedureOnError,
+    });
+    const route = procedureKit.procedure
+      .forRoute(staticRouteContract)
+      .handle(async ({ response }) => response.text("kit-sugar"))
+      .nextRoute({
+        method: "GET",
+        onError: defaultProcedureOnError,
+      });
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.text()).resolves.toBe("kit-sugar");
+  });
 });

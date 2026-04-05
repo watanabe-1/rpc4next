@@ -1,9 +1,9 @@
-import { nextRoute, procedure } from "rpc4next/server";
+import { procedure } from "rpc4next/server";
 import { z } from "zod";
 import { onError } from "../_shared/on-error";
 import { routeContract } from "./route-contract";
 
-const submitProcedure = procedure
+export const POST = procedure
   .forRoute(routeContract)
   .headers(
     z.object({
@@ -38,6 +38,5 @@ const submitProcedure = procedure
       session: cookies.session,
       source: "procedure-submit",
     },
-  }));
-
-export const POST = nextRoute(submitProcedure, { method: "POST", onError });
+  }))
+  .nextRoute({ method: "POST", onError });

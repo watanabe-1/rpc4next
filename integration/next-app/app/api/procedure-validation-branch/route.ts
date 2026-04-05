@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { nextRoute, procedure } from "rpc4next/server";
+import { procedure } from "rpc4next/server";
 import { z } from "zod";
 import { onError } from "../_shared/on-error";
 import { routeContract } from "./route-contract";
 
-const getProcedureValidationBranch = procedure
+export const GET = procedure
   .forRoute(routeContract)
   .query(
     z.object({
@@ -43,9 +43,8 @@ const getProcedureValidationBranch = procedure
       source: "procedure-validation-branch" as const,
       page: query.page,
     }),
-  );
-
-export const GET = nextRoute(getProcedureValidationBranch, {
-  method: "GET",
-  onError,
-});
+  )
+  .nextRoute({
+    method: "GET",
+    onError,
+  });

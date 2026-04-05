@@ -1,6 +1,13 @@
 import type { NextRequest, NextResponse } from "next/server";
+import type { HttpMethod } from "rpc4next-shared";
 import type { HttpStatusCode } from "../lib/http-status-code-types";
 import type { RpcMeta } from "./meta";
+import {
+  nextRoute as adaptProcedureToNextRoute,
+  type NextRouteHandler,
+  type NextRouteProcedureOptions,
+} from "./next-route";
+import type { ProcedureOnError } from "./on-error";
 import {
   withProcedureInputContract,
   withProcedureMeta,
@@ -374,6 +381,23 @@ export interface Procedure<
   readonly definition: TDefinition;
   readonly middlewares: readonly ProcedureMiddleware[];
   readonly handler: THandler;
+  nextRoute<
+    TMethod extends HttpMethod | undefined = undefined,
+    TValidateOutput extends boolean = false,
+    TOnError extends ProcedureOnError = ProcedureOnError,
+  >(
+    options: NextRouteProcedureOptions<
+      Procedure<TDefinition, TContext, TOutput, THandler>,
+      TMethod,
+      TValidateOutput,
+      TOnError
+    >,
+  ): NextRouteHandler<
+    Procedure<TDefinition, TContext, TOutput, THandler>,
+    TMethod,
+    TValidateOutput,
+    TOnError
+  >;
 }
 
 export interface ProcedureBuilder<
@@ -778,17 +802,30 @@ const createProcedureBuilder = <
     cookies: (schema, options) => withInputContract("cookies", schema, options),
     output: withOutput,
     use: withMiddleware,
-    handle: (...args) =>
-      ({
+    handle: (...args) => {
+      const handledProcedure = {
         definition,
         middlewares,
         handler: args[0],
-      }) as Procedure<
+        nextRoute: ((options) =>
+          adaptProcedureToNextRoute(
+            handledProcedure as never,
+            options as never,
+          )) as Procedure<
+          TDefinition,
+          TContext,
+          ExtractProcedureOutput<TDefinition>,
+          (typeof args)[0]
+        >["nextRoute"],
+      } as Procedure<
         TDefinition,
         TContext,
         ExtractProcedureOutput<TDefinition>,
         (typeof args)[0]
-      >,
+      >;
+
+      return handledProcedure;
+    },
   };
 };
 
