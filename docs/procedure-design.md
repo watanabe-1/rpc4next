@@ -125,9 +125,8 @@ const getUser = procedure
         includePosts: query.includePosts ?? false,
       },
     };
-  });
-
-export const GET = nextRoute(getUser);
+  })
+  .nextRoute({ method: "GET", onError });
 ```
 
 This keeps route files and HTTP methods explicit while moving contract assembly into a builder.
@@ -229,6 +228,13 @@ Input contract methods should accept Standard Schema V1-compatible schema values
 ### `nextRoute(procedure)`
 
 A Next adapter that converts a procedure into a route handler compatible with `export const GET`, `POST`, and other supported HTTP method exports.
+
+Ergonomics note:
+
+- the default route-file shape should be terminal `.handle(...).nextRoute(options)` because it keeps single-route authoring linear and local
+- that sugar should remain a thin delegation to the same adapter internals, equivalent to `nextRoute(procedure, options)`
+- the implementation goal is API ergonomics, not a collapse of responsibilities; procedure construction and Next route adaptation should still stay separate internally
+- the standalone `nextRoute(procedure, options)` form should remain supported because it keeps shared `baseProcedure` reuse and `createProcedureKit(...).nextRoute(...)` composition straightforward
 
 ### `defineError`
 
@@ -1419,6 +1425,7 @@ Design backlog after phase 14:
 - re-center route error handling around required `nextRoute(..., { onError })`
 - keep `createProcedureKit(...)` only as an optional project preset
 - remove `procedure.error(...)` from the core procedure contract if the mandatory `onError` model proves cleaner in practice
+- consider adding `.nextRoute(options)` as optional sugar over `nextRoute(procedure, options)` if the current split keeps feeling heavier than necessary in route files
 
 Remaining notable gap versus the old middleware-first path:
 

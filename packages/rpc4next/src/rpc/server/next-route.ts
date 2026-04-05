@@ -350,6 +350,20 @@ export interface NextRouteOptions<
   onError: TOnError;
 }
 
+export type NextRouteProcedureOptions<
+  TProcedure extends {
+    definition: ProcedureDefinition;
+    middlewares: readonly ProcedureMiddleware[];
+    handler: (...args: never[]) => unknown;
+  },
+  TMethod extends HttpMethod | undefined = undefined,
+  TValidateOutput extends boolean = false,
+  TOnError extends ProcedureOnError = ProcedureOnError,
+> = NextRouteOptions<Exclude<TMethod, undefined>, TOnError> &
+  NextRouteMethodConstraint<TProcedure, TMethod> & {
+    validateOutput?: TValidateOutput;
+  };
+
 const parseOutputWithSchema = async (
   schema: StandardSchemaV1,
   value: unknown,
@@ -643,10 +657,12 @@ export const nextRoute = <
   TOnError extends ProcedureOnError = ProcedureOnError,
 >(
   procedure: TProcedure,
-  options: NextRouteOptions<Exclude<TMethod, undefined>, TOnError> &
-    NextRouteMethodConstraint<TProcedure, TMethod> & {
-      validateOutput?: TValidateOutput;
-    },
+  options: NextRouteProcedureOptions<
+    TProcedure,
+    TMethod,
+    TValidateOutput,
+    TOnError
+  >,
 ): NextRouteHandler<TProcedure, TMethod, TValidateOutput, TOnError> => {
   const handler = procedure.handler as (
     context: InferProcedureHandlerContext<TProcedure>,

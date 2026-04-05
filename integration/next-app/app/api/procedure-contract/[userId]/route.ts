@@ -1,4 +1,4 @@
-import { nextRoute, procedure } from "rpc4next/server";
+import { procedure } from "rpc4next/server";
 import { z } from "zod";
 import { onError } from "../../_shared/on-error";
 import { routeContract } from "./route-contract";
@@ -11,7 +11,7 @@ const querySchema = z.object({
   includePosts: z.enum(["true", "false"]).optional(),
 });
 
-const getProcedureUser = procedure
+export const GET = procedure
   .forRoute(routeContract)
   .meta({
     tags: ["procedure-contract"],
@@ -42,8 +42,7 @@ const getProcedureUser = procedure
       source: "procedure-contract",
       requestId: ctx.requestId,
     },
-  }));
-
-export const GET = nextRoute(getProcedureUser, { method: "GET", onError });
+  }))
+  .nextRoute({ method: "GET", onError });
 
 export type Query = z.input<typeof querySchema>;

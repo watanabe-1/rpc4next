@@ -1,4 +1,5 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
+import { defaultProcedureOnError } from "./on-error";
 import { defineProcedureMiddleware, procedure } from "./procedure";
 import type { ProcedureRouteContract } from "./procedure-types";
 import type { StandardSchemaV1 } from "./standard-schema";
@@ -141,6 +142,21 @@ describe("procedure builder type definitions", () => {
       }),
     },
   };
+
+  const avatarSchema: StandardSchemaV1<{ avatar: string }, { avatar: string }> =
+    {
+      "~standard": {
+        version: 1,
+        vendor: "rpc4next-test",
+        types: {
+          input: {} as { avatar: string },
+          output: {} as { avatar: string },
+        },
+        validate: (value) => ({
+          value: value as { avatar: string },
+        }),
+      },
+    };
 
   it("supports custom procedure validators without zod coupling", () => {
     const customValidatorProcedure = procedure
@@ -502,5 +518,92 @@ describe("procedure builder type definitions", () => {
 
     expectTypeOf(publicProcedure.definition).toExtend<object>();
     expectTypeOf(editorProcedure.definition).toExtend<object>();
+  });
+
+  it("adds nextRoute sugar without changing validated input and output inference", () => {
+    const queryRoute = procedure
+      .forRoute(guardedUserRouteContract)
+      .params(userIdSchema)
+      .query(includeDraftsSchema)
+      .output({
+        _output: {
+          ok: true as const,
+          userId: "" as string,
+          includeDrafts: false as boolean,
+        },
+      })
+      .handle(async ({ params, query, response }) =>
+        response.json({
+          ok: true,
+          userId: params.userId,
+          includeDrafts: query.includeDrafts === "true",
+        }),
+      )
+      .nextRoute({
+        method: "GET",
+        onError: defaultProcedureOnError,
+      });
+
+    type QueryRouteResponse = Awaited<ReturnType<typeof queryRoute>>;
+    expectTypeOf<QueryRouteResponse>().toExtend<Response>();
+
+    const formDataRoute = procedure
+      .forRoute(guardedUserRouteContract)
+      .params(userIdSchema)
+      .formData(avatarSchema)
+      .handle(({ formData }) => ({
+        body: {
+          avatar: formData.avatar,
+        },
+      }))
+      .nextRoute({
+        method: "POST",
+        onError: defaultProcedureOnError,
+      });
+
+    type FormDataRouteResponse = Awaited<ReturnType<typeof formDataRoute>>;
+    expectTypeOf<FormDataRouteResponse>().toExtend<Response>();
+  });
+
+  it("keeps route binding and GET body constraints on procedure.nextRoute", () => {
+    const unboundProcedure = procedure.handle(() => ({
+      status: 204 as const,
+    }));
+
+    // @ts-expect-error nextRoute() only accepts route-bound procedures
+    unboundProcedure.nextRoute({
+      method: "GET",
+      onError: defaultProcedureOnError,
+    });
+
+    const jsonProcedure = procedure
+      .forRoute(guardedUserRouteContract)
+      .params(userIdSchema)
+      .json(titleSchema)
+      .handle(({ json }) => ({
+        body: json,
+      }));
+
+    // @ts-expect-error GET nextRoute should reject json contracts
+    jsonProcedure.nextRoute({
+      method: "GET",
+      onError: defaultProcedureOnError,
+    });
+
+    const formDataProcedure = procedure
+      .forRoute(guardedUserRouteContract)
+      .params(userIdSchema)
+      .formData(avatarSchema)
+      .handle(({ formData }) => ({
+        body: formData,
+      }));
+
+    // @ts-expect-error HEAD nextRoute should reject formData contracts
+    formDataProcedure.nextRoute({
+      method: "HEAD",
+      onError: defaultProcedureOnError,
+    });
+
+    expect(true).toBe(true);
   });
 });
