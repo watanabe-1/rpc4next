@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { defaultProcedureOnError } from "./on-error";
+import { procedure } from "./procedure";
 import { createProcedureKit } from "./procedure-kit";
 import type { ProcedureRouteContract } from "./procedure-types";
 
@@ -104,7 +105,6 @@ describe("createProcedureKit", () => {
       .handle(async ({ response }) => response.text("kit-sugar"))
       .nextRoute({
         method: "GET",
-        onError: defaultProcedureOnError,
       });
 
     const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
@@ -113,5 +113,67 @@ describe("createProcedureKit", () => {
 
     expect(response.status).toBe(200);
     await expect(response.text()).resolves.toBe("kit-sugar");
+  });
+
+  it("applies the shared onError to procedure.nextRoute sugar", async () => {
+    const procedureKit = createProcedureKit({
+      onError: (error, { response }) =>
+        response.json(
+          {
+            source: "kit-shared-onError",
+            message: error instanceof Error ? error.message : "unknown error",
+          },
+          { status: 418 },
+        ),
+    });
+    const route = procedureKit.procedure
+      .forRoute(staticRouteContract)
+      .handle(async () => {
+        throw new Error("sugar formatter");
+      })
+      .nextRoute({
+        method: "GET",
+      });
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(418);
+    await expect(response.json()).resolves.toEqual({
+      source: "kit-shared-onError",
+      message: "sugar formatter",
+    });
+  });
+
+  it("shares the same defaults mechanism as procedure.defaults({ onError })", async () => {
+    const route = procedure
+      .defaults({
+        onError: (error, { response }) =>
+          response.json(
+            {
+              source: "procedure-defaults",
+              message: error instanceof Error ? error.message : "unknown error",
+            },
+            { status: 409 },
+          ),
+      })
+      .forRoute(staticRouteContract)
+      .handle(async () => {
+        throw new Error("preset formatter");
+      })
+      .nextRoute({
+        method: "GET",
+      });
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      source: "procedure-defaults",
+      message: "preset formatter",
+    });
   });
 });

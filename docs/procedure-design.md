@@ -18,7 +18,8 @@ Phase 10 を実装してください。対象は `docs/procedure-design.md` に�
   - the integration fixture includes a shared `baseProcedure` preset under `integration/next-app/app/api/_shared/base-procedure.ts`
   - shared guarded procedures can declare multiple error variants and opt into runtime output validation
   - `procedure.formData(...)` is available publicly and validated by `nextRoute()`
-  - `createProcedureKit(...)` can provide shared project-level error formatting for procedure routes
+  - `procedure.defaults({ onError })` can provide shared project-level route defaults, including `onError`, for procedure routes
+  - `createProcedureKit(...)` remains as thin compatibility sugar over the same preset/default mechanism
   - procedure input contracts accept validator-stage failure branching through `procedure.<target>(schema, { onValidationError(...) { ... } })`
   - narrow `response.*(...)` helpers are available inside `procedure.handle(...)`, `onValidationError(...)`, and `errorFormatter`
   - README and integration fixture docs now present `procedure` / `nextRoute()` as the typed server authoring path
@@ -1186,9 +1187,19 @@ Notes:
 
 - `onError` should be required for `nextRoute(...)` and should not be allowed to return `undefined`
 - `createProcedureKit(...)` should be documented as optional convenience, not as the default entry point for procedure authoring
+- the primary abstraction should be a reusable procedure preset/default, not a separate kit namespace
+- if projects want shared route behavior such as `onError`, the preferred long-term shape is `procedure`-derived configuration reuse, for example `const appProcedure = procedure.defaults({ onError })`
+- any shared setting applied at the procedure level should flow naturally into terminal `.nextRoute(...)` without requiring a parallel builder surface that must mirror `procedure`
+- `createProcedureKit(...)` is acceptable only as a thin compatibility helper around that preset model, or as a migration bridge while the procedure-defaults path becomes the main API
 - `rpcError(...)` should remain as a standard framework error value, but it should no longer imply a required route-level error contract declaration
 - `Response` / `NextResponse` escape hatches should continue to work by allowing `onError` to return them directly
 - validator-stage customization can continue to use `onValidationError(...)`, but unexpected exceptions from validation should still flow through the required `onError`
+
+Design direction:
+
+- avoid duplicating the procedure builder API just to carry project-level route defaults; that increases long-term maintenance cost and creates an avoidable second surface that must track every builder change
+- prefer one canonical builder contract, with optional internal support for shared defaults/presets that are attached to derived procedures and consumed by `.nextRoute(...)`
+- if `createProcedureKit(...)` remains in the public API, treat it as syntax sugar over the same underlying procedure-preset mechanism rather than a separate conceptual system
 
 ## Detailed implementation order for Codex
 
@@ -1415,7 +1426,7 @@ What is now covered:
 - reusable shared presets such as `baseProcedure`
 - shared and route-local typed error contracts
 - optional runtime output validation
-- project-level error formatting through `createProcedureKit(...)`
+- project-level shared `onError` through `procedure.defaults({ onError })` or `createProcedureKit(...)`
 - validator-stage failure branching on procedure input contracts
 - raw `Response` / `NextResponse` escape hatches
 - middleware short-circuiting and incremental context widening
@@ -1423,7 +1434,7 @@ What is now covered:
 Design backlog after phase 14:
 
 - re-center route error handling around required `nextRoute(..., { onError })`
-- keep `createProcedureKit(...)` only as an optional project preset
+- keep `createProcedureKit(...)` only as an optional compatibility helper over procedure presets/defaults
 - remove `procedure.error(...)` from the core procedure contract if the mandatory `onError` model proves cleaner in practice
 - consider adding `.nextRoute(options)` as optional sugar over `nextRoute(procedure, options)` if the current split keeps feeling heavier than necessary in route files
 

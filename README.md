@@ -116,8 +116,8 @@ Notes:
 - `procedure.handle(...).nextRoute(...)` is the default recommendation for new typed routes
 - generated sibling `route-contract.ts` files are the recommended params source for procedure routes
 - input contracts consume Standard Schema V1-compatible schemas directly
-- route handlers must provide `onError`, either directly on `.nextRoute(...)` / `nextRoute(...)` or through `createProcedureKit({ onError })`
-- shared presets such as `baseProcedure`, project-level `onError`, and validator-stage customization all build on this path
+- route handlers must provide `onError`, either directly on `.nextRoute(...)` / `nextRoute(...)` or via a reusable preset such as `procedure.defaults({ onError })`
+- shared presets such as `baseProcedure`, `procedure.defaults({ onError })`, and validator-stage customization all build on this path
 
 `procedure` input contracts validate request input and return typed `400` JSON
 errors by default when validation fails. If you need custom branching at the
@@ -288,8 +288,9 @@ export const GET = procedure
 
 ### Error Handling
 
-`nextRoute()` requires `onError(error, context)`, and
-`createProcedureKit(...)` can share that policy across routes.
+`nextRoute()` requires `onError(error, context)`. For project-level reuse, prefer
+`procedure.defaults({ onError })`. `createProcedureKit(...)` remains available as
+thin compatibility sugar around the same shared-defaults model.
 
 If you want client-side inference to preserve the concrete response shape returned
 from `onError`, prefer `satisfies ProcedureOnError` over
@@ -326,10 +327,21 @@ const onError = ((error, { response }) => {
   return response.text(`handled:${message}`, { status: 500 });
 }) satisfies ProcedureOnError;
 
+const appProcedure = procedure.defaults({ onError });
+
 export const GET = nextRoute(failingProcedure, {
   method: "GET",
   onError,
 });
+
+export const POST = appProcedure
+  .forRoute(routeContract)
+  .handle(async () => {
+    throw new Error("expected failure");
+  })
+  .nextRoute({
+    method: "POST",
+  });
 ```
 
 ## Plain Next.js Route Handlers Also Work

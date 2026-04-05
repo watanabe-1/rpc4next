@@ -565,6 +565,37 @@ describe("procedure builder type definitions", () => {
     expectTypeOf<FormDataRouteResponse>().toExtend<Response>();
   });
 
+  it("lets procedure.defaults({ onError }) make terminal nextRoute onError optional", () => {
+    const appProcedure = procedure.defaults({
+      onError: defaultProcedureOnError,
+    });
+
+    const route = appProcedure
+      .forRoute(guardedUserRouteContract)
+      .params(userIdSchema)
+      .query(includeDraftsSchema)
+      .output({
+        _output: {
+          ok: true as const,
+          userId: "" as string,
+          includeDrafts: false as boolean,
+        },
+      })
+      .handle(async ({ params, query, response }) =>
+        response.json({
+          ok: true,
+          userId: params.userId,
+          includeDrafts: query.includeDrafts === "true",
+        }),
+      )
+      .nextRoute({
+        method: "GET",
+      });
+
+    type RouteResponse = Awaited<ReturnType<typeof route>>;
+    expectTypeOf<RouteResponse>().toExtend<Response>();
+  });
+
   it("keeps route binding and GET body constraints on procedure.nextRoute", () => {
     const unboundProcedure = procedure.handle(() => ({
       status: 204 as const,
@@ -574,6 +605,20 @@ describe("procedure builder type definitions", () => {
     unboundProcedure.nextRoute({
       method: "GET",
       onError: defaultProcedureOnError,
+    });
+
+    const bareBoundProcedure = procedure
+      .forRoute(guardedUserRouteContract)
+      .params(userIdSchema)
+      .handle(({ params }) => ({
+        body: {
+          userId: params.userId,
+        },
+      }));
+
+    // @ts-expect-error bare procedure.nextRoute still requires onError
+    bareBoundProcedure.nextRoute({
+      method: "GET",
     });
 
     const jsonProcedure = procedure
@@ -602,6 +647,49 @@ describe("procedure builder type definitions", () => {
     formDataProcedure.nextRoute({
       method: "HEAD",
       onError: defaultProcedureOnError,
+    });
+
+    expect(true).toBe(true);
+  });
+
+  it("keeps route binding and GET body constraints on defaulted procedure.nextRoute", () => {
+    const appProcedure = procedure.defaults({
+      onError: defaultProcedureOnError,
+    });
+
+    const unboundProcedure = appProcedure.handle(() => ({
+      status: 204 as const,
+    }));
+
+    // @ts-expect-error nextRoute() only accepts route-bound procedures
+    unboundProcedure.nextRoute({
+      method: "GET",
+    });
+
+    const jsonProcedure = appProcedure
+      .forRoute(guardedUserRouteContract)
+      .params(userIdSchema)
+      .json(titleSchema)
+      .handle(({ json }) => ({
+        body: json,
+      }));
+
+    // @ts-expect-error GET nextRoute should reject json contracts
+    jsonProcedure.nextRoute({
+      method: "GET",
+    });
+
+    const formDataProcedure = appProcedure
+      .forRoute(guardedUserRouteContract)
+      .params(userIdSchema)
+      .formData(avatarSchema)
+      .handle(({ formData }) => ({
+        body: formData,
+      }));
+
+    // @ts-expect-error HEAD nextRoute should reject formData contracts
+    formDataProcedure.nextRoute({
+      method: "HEAD",
     });
 
     expect(true).toBe(true);
