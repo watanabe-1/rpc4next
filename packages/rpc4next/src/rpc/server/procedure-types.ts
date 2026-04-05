@@ -1,8 +1,7 @@
 import type { NextRequest, NextResponse } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
-import type { RpcErrorCode, RpcErrorEnvelope } from "./error";
-import type { ProcedureErrorFormatterResponse } from "./error-formatter";
 import type { RpcMeta } from "./meta";
+import type { ProcedureOnErrorResponse } from "./on-error";
 import type { ProcedureResult } from "./procedure";
 import type { ValidationSchema } from "./route-types";
 import type {
@@ -30,7 +29,7 @@ export interface ProcedureValidationErrorContext<
   value: TValue;
   issues: readonly StandardSchemaV1Issue[];
   request: NextRequest;
-  response: ProcedureErrorFormatterResponse;
+  response: ProcedureOnErrorResponse;
 }
 
 export type ProcedureValidationErrorHandlerResult =
@@ -82,15 +81,6 @@ export interface ProcedureOutputContract<TRouteResponse = unknown> {
   runtime?: boolean;
 }
 
-export interface ProcedureErrorContract<
-  TCode extends RpcErrorCode = RpcErrorCode,
-  TDetails = unknown,
-> {
-  code?: TCode;
-  envelope?: RpcErrorEnvelope<TCode, TDetails>;
-  variants?: readonly ProcedureErrorContract[];
-}
-
 export declare const procedureRouteContractBrand: unique symbol;
 
 export type ProcedureRouteParams = Record<
@@ -123,7 +113,6 @@ export interface ProcedureDefinition<
   TValidationSchema extends ValidationSchema = ValidationSchema,
   TRouteResponse = unknown,
   TMeta extends RpcMeta = RpcMeta,
-  TError extends ProcedureErrorContract = ProcedureErrorContract,
   TRoute extends ProcedureRouteBinding | undefined =
     | ProcedureRouteBinding
     | undefined,
@@ -131,7 +120,6 @@ export interface ProcedureDefinition<
   method?: THttpMethod;
   input?: ProcedureInputContract<TValidationSchema>;
   output?: ProcedureOutputContract<TRouteResponse>;
-  error?: TError;
   meta?: TMeta;
   route?: TRoute;
 }
@@ -141,7 +129,6 @@ export type EmptyProcedureDefinition = ProcedureDefinition<
   ValidationSchema,
   unknown,
   RpcMeta,
-  never,
   undefined
 >;
 
@@ -149,45 +136,6 @@ export type MergeProcedureDefinition<
   TBase extends ProcedureDefinition,
   TExtra extends Partial<ProcedureDefinition>,
 > = Omit<TBase, keyof TExtra> & TExtra;
-
-export type ExtractProcedureErrorDefinition<
-  TDefinition extends ProcedureDefinition,
-> = TDefinition extends {
-  error?: infer TError;
-}
-  ? Exclude<TError, undefined>
-  : never;
-
-type ExtractDeclaredProcedureErrorDefinition<
-  TDefinition extends Partial<ProcedureDefinition>,
-> = "error" extends keyof TDefinition
-  ? Exclude<TDefinition["error"], undefined>
-  : never;
-
-export type MergeProcedureDefinitionWithDeclaredDefinition<
-  TBase extends ProcedureDefinition,
-  TDeclared extends Partial<ProcedureDefinition>,
-> = MergeProcedureDefinition<
-  TBase,
-  Omit<TDeclared, "error"> &
-    ([ExtractDeclaredProcedureErrorDefinition<TDeclared>] extends [never]
-      ? Record<never, never>
-      : {
-          error:
-            | ExtractProcedureErrorDefinition<TBase>
-            | ExtractDeclaredProcedureErrorDefinition<TDeclared>;
-        })
->;
-
-export type AppendProcedureErrorDefinition<
-  TDefinition extends ProcedureDefinition,
-  TError extends ProcedureErrorContract,
-> = MergeProcedureDefinition<
-  TDefinition,
-  {
-    error: ExtractProcedureErrorDefinition<TDefinition> | TError;
-  }
->;
 
 export const procedureDefinitionSymbol = Symbol.for(
   "rpc4next.procedure.definition",

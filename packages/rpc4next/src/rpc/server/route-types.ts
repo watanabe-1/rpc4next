@@ -9,13 +9,10 @@
 
 import type { NextRequest } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
-import type { RpcErrorCode } from "./error";
 import type { RpcMeta } from "./meta";
 import type {
-  AppendProcedureErrorDefinition,
   MergeProcedureDefinition,
   ProcedureDefinition,
-  ProcedureErrorContract,
   WithProcedureDefinition,
 } from "./procedure-types";
 import type { OutputSchema } from "./schema-inference";
@@ -264,17 +261,6 @@ export interface RouteDefinitionBuilder<
     MergeProcedureDefinition<
       TProcedureDefinition,
       { output: ProcedureDefinition["output"] & { response: TOutput } }
-    >
-  >;
-
-  error<TCode extends RpcErrorCode, TDetails = unknown>(
-    code: TCode,
-  ): RouteDefinitionBuilder<
-    TBindings,
-    TOnErrorResponse,
-    AppendProcedureErrorDefinition<
-      TProcedureDefinition,
-      ProcedureErrorContract<TCode, TDetails>
     >
   >;
 

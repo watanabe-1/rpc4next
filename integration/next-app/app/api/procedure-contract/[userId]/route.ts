@@ -1,5 +1,6 @@
 import { nextRoute, procedure } from "rpc4next/server";
 import { z } from "zod";
+import { onError } from "../../_shared/on-error";
 import { routeContract } from "./route-contract";
 
 const paramsSchema = z.object({
@@ -43,6 +44,6 @@ const getProcedureUser = procedure
     },
   }));
 
-export const GET = nextRoute(getProcedureUser, { method: "GET" });
+export const GET = nextRoute(getProcedureUser, { method: "GET", onError });
 
 export type Query = z.input<typeof querySchema>;

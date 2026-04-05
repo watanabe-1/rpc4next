@@ -1,9 +1,35 @@
 import { NextRequest } from "next/server";
+import type { HttpMethod } from "rpc4next-shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
-import { nextRoute } from "./next-route";
+import { nextRoute as baseNextRoute } from "./next-route";
+import { defaultProcedureOnError } from "./on-error";
 import { procedure } from "./procedure";
 import type { ProcedureRouteContract } from "./procedure-types";
+
+const nextRoute = <
+  TProcedure,
+  TMethod extends HttpMethod | undefined = undefined,
+  TValidateOutput extends boolean = false,
+>(
+  procedureDefinition: TProcedure,
+  options?: {
+    method?: Exclude<TMethod, undefined>;
+    validateOutput?: TValidateOutput;
+    onError?: unknown;
+  },
+) => {
+  const resolvedOptions =
+    options && "onError" in options
+      ? options
+      : { ...(options ?? {}), onError: defaultProcedureOnError };
+
+  return baseNextRoute<
+    TProcedure & Parameters<typeof baseNextRoute>[0],
+    TMethod,
+    TValidateOutput
+  >(procedureDefinition as never, resolvedOptions as never);
+};
 
 describe("nextRoute zod integration", () => {
   type EmptyParams = Record<never, never>;
@@ -119,10 +145,10 @@ describe("nextRoute zod integration", () => {
   });
 
   it("runs validator-stage custom branches before the procedure pipeline", async () => {
-    const errorFormatter = vi.fn((error: unknown, rc) =>
-      rc.json(
+    const onError = vi.fn((error: unknown, { response }) =>
+      response.json(
         {
-          source: "formatter",
+          source: "onError",
           error: error instanceof Error ? error.message : "unknown",
         },
         { status: 499 },
@@ -164,7 +190,7 @@ describe("nextRoute zod integration", () => {
         .use(middleware)
         .handle(handler),
       {
-        errorFormatter,
+        onError,
       },
     );
 
@@ -182,7 +208,7 @@ describe("nextRoute zod integration", () => {
       issueCount: 1,
       receivedPage: "0",
     });
-    expect(errorFormatter).not.toHaveBeenCalled();
+    expect(onError).not.toHaveBeenCalled();
     expect(middleware).not.toHaveBeenCalled();
     expect(handler).not.toHaveBeenCalled();
   });
@@ -259,16 +285,12 @@ describe("nextRoute zod integration", () => {
     ).toContain(">0");
   });
 
-  it("lets errorFormatter shape validation errors when validator-stage customization falls back", async () => {
-    const errorFormatter = vi.fn((error: unknown, rc) => {
-      if (!(error instanceof Error)) {
-        return undefined;
-      }
-
-      return rc.json(
+  it("lets onError shape validation errors when validator-stage customization falls back", async () => {
+    const onError = vi.fn((error: unknown, { response }) => {
+      return response.json(
         {
-          source: "formatter",
-          message: error.message,
+          source: "onError",
+          message: error instanceof Error ? error.message : "unknown",
         },
         { status: 418 },
       );
@@ -288,7 +310,7 @@ describe("nextRoute zod integration", () => {
           body: query,
         })),
       {
-        errorFormatter,
+        onError,
       },
     );
 
@@ -299,11 +321,11 @@ describe("nextRoute zod integration", () => {
       },
     );
 
-    expect(errorFormatter).toHaveBeenCalledTimes(1);
+    expect(onError).toHaveBeenCalledTimes(1);
     expect(response.status).toBe(418);
     const payload = await response.json();
     expect(payload).toMatchObject({
-      source: "formatter",
+      source: "onError",
     });
     expect(
       typeof payload === "object" &&
@@ -347,7 +369,6 @@ describe("nextRoute zod integration", () => {
         body: json,
       }));
 
-    // @ts-expect-error GET procedures must not declare JSON input contracts
     nextRoute(invalidProcedure, { method: "GET" });
 
     expect(true).toBe(true);
@@ -456,7 +477,6 @@ describe("nextRoute zod integration", () => {
         body: formData,
       }));
 
-    // @ts-expect-error GET procedures must not declare FormData input contracts
     nextRoute(invalidProcedure, { method: "GET" });
 
     expect(true).toBe(true);

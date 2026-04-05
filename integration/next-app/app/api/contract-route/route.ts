@@ -1,4 +1,5 @@
 import { nextRoute, procedure, type TypedNextResponse } from "rpc4next/server";
+import { onError } from "../_shared/on-error";
 import { routeContract } from "./route-contract";
 
 const contractRoute = procedure
@@ -32,4 +33,4 @@ const contractRoute = procedure
       }),
   );
 
-export const GET = nextRoute(contractRoute, { method: "GET" });
+export const GET = nextRoute(contractRoute, { method: "GET", onError });

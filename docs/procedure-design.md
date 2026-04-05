@@ -1072,6 +1072,118 @@ Possible items:
 
 These should remain out of scope until the core contract model is stable.
 
+## Phase 16: mandatory route error handling with optional project presets
+
+Scope:
+
+- replace formatter-centric error customization with an explicit `onError` contract on `nextRoute(...)`
+- make final route error serialization mandatory instead of optional fallback behavior
+- keep `createProcedureKit(...)` as an optional convenience wrapper rather than a required public entry point
+- remove procedure-level typed error contracts from the core authoring model
+
+Deliverables:
+
+- `nextRoute(...)` requires `onError(error, context)` and always delegates caught errors through it
+- `createProcedureKit({ onError })` remains available as a thin helper that preconfigures `nextRoute(...)`
+- `procedure.error(...)` and related typed error-contract machinery are removed from the primary procedure surface
+- shared `onError` implementations should preserve their concrete return types so client inference can reflect the final error response shape
+- fixture coverage showing:
+  - direct `nextRoute(..., { onError })` usage without a kit
+  - shared `createProcedureKit({ onError })` usage for project-wide policy
+  - standard `rpcError(...)` handling through a user-supplied `onError`
+  - arbitrary thrown errors mapped by the same `onError`
+
+Target authoring shape:
+
+```ts
+export const GET = nextRoute(
+  procedure
+    .route(routeContract)
+    .handle(async ({ response }) => {
+      throw rpcError("FORBIDDEN", { message: "Forbidden" });
+    }),
+  {
+    onError(error, ctx) {
+      if (error instanceof Response) {
+        return error;
+      }
+
+      if (error instanceof RpcError) {
+        return ctx.response.json(error.toJSON(), {
+          status: error.status,
+        });
+      }
+
+      return ctx.response.json(
+        {
+          error: {
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Internal Server Error",
+          },
+        },
+        { status: 500 },
+      );
+    },
+  },
+);
+```
+
+Optional project preset shape:
+
+```ts
+const procedureKit = createProcedureKit({
+  onError(error, ctx) {
+    if (error instanceof Response) {
+      return error;
+    }
+
+    if (error instanceof RpcError) {
+      return ctx.response.json(error.toJSON(), {
+        status: error.status,
+      });
+    }
+
+    return ctx.response.json(
+      {
+        error: {
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Internal Server Error",
+        },
+      },
+      { status: 500 },
+    );
+  },
+});
+
+export const GET = procedureKit.nextRoute(
+  procedure.route(routeContract).handle(async () => {
+    throw new Error("Unexpected");
+  }),
+);
+```
+
+Typing note:
+
+- prefer `const onError = (...) => ... satisfies ProcedureOnError` when the
+  response shape returned from `onError` should flow into route/client inference
+- avoid `const onError: ProcedureOnError = ...` for shared handlers because that
+  widens the function to the generic contract and discards the concrete
+  `response.json(...)` / `response.text(...)` return type
+
+Why sixteenth:
+
+- the current formatter-plus-contract model adds type and API surface area without guaranteeing that every route makes an explicit runtime error decision
+- projects often want freedom to throw domain-specific errors while still forcing one final HTTP serialization path
+- `createProcedureKit(...)` is useful as a shared preset, but it should not be the conceptual center of the server API
+
+Notes:
+
+- `onError` should be required for `nextRoute(...)` and should not be allowed to return `undefined`
+- `createProcedureKit(...)` should be documented as optional convenience, not as the default entry point for procedure authoring
+- `rpcError(...)` should remain as a standard framework error value, but it should no longer imply a required route-level error contract declaration
+- `Response` / `NextResponse` escape hatches should continue to work by allowing `onError` to return them directly
+- validator-stage customization can continue to use `onValidationError(...)`, but unexpected exceptions from validation should still flow through the required `onError`
+
 ## Detailed implementation order for Codex
 
 This section is intentionally written as a sequence of small, reviewable Codex tasks.
@@ -1302,6 +1414,12 @@ What is now covered:
 - raw `Response` / `NextResponse` escape hatches
 - middleware short-circuiting and incremental context widening
 
+Design backlog after phase 14:
+
+- re-center route error handling around required `nextRoute(..., { onError })`
+- keep `createProcedureKit(...)` only as an optional project preset
+- remove `procedure.error(...)` from the core procedure contract if the mandatory `onError` model proves cleaner in practice
+
 Remaining notable gap versus the old middleware-first path:
 
 - no major functional gap remains for standard typed route authoring; remaining differences are mostly historical or validator-library-specific
@@ -1323,7 +1441,7 @@ Recommended priorities:
 
 1. decide whether route-bound procedures should become mandatory for all `procedure` routes once the generated `route-contract.ts` workflow is considered stable
 2. evaluate whether richer output contracts, such as success variants by status code, are needed before pursuing broader ecosystem features
-3. keep validating that procedure response helpers, formatter hooks, and output validation remain coherent as one authoring surface
+3. evaluate Phase 16's mandatory `onError` design as a replacement for formatter-centric error contracts and optional project-level kits
 ndling / serialization 方針を差し替えられるようにする
 - 標準利用者は今までどおり zero-config で使えること
 - `procedure.error(...)` は route contract の宣言として維持し、runtime の HTTP レスポンス整形は formatter 層に寄せること

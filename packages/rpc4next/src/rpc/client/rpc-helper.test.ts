@@ -1,6 +1,12 @@
+import type { HttpMethod } from "rpc4next-shared";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { z } from "zod";
-import { nextRoute, type ProcedureRouteContract, procedure } from "../server";
+import {
+  nextRoute as baseNextRoute,
+  defaultProcedureOnError,
+  type ProcedureRouteContract,
+  procedure,
+} from "../server";
 import { createRpcHelper } from "./rpc-helper";
 import type { ParamsKey, QueryKey, RpcEndpoint } from "./types";
 
@@ -8,6 +14,30 @@ const queryRouteContract = {
   pathname: "/api/query",
   params: {} as Record<never, never>,
 } as ProcedureRouteContract<"/api/query", Record<never, never>>;
+
+const nextRoute = <
+  TProcedure,
+  TMethod extends HttpMethod | undefined = undefined,
+  TValidateOutput extends boolean = false,
+>(
+  procedureDefinition: TProcedure,
+  options?: {
+    method?: Exclude<TMethod, undefined>;
+    validateOutput?: TValidateOutput;
+    onError?: unknown;
+  },
+) => {
+  const resolvedOptions =
+    options && "onError" in options
+      ? options
+      : { ...(options ?? {}), onError: defaultProcedureOnError };
+
+  return baseNextRoute<
+    TProcedure & Parameters<typeof baseNextRoute>[0],
+    TMethod,
+    TValidateOutput
+  >(procedureDefinition as never, resolvedOptions as never);
+};
 
 const schema = z.object({
   name: z.string(),

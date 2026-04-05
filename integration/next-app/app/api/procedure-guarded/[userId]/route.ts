@@ -1,6 +1,7 @@
 import { nextRoute, rpcError } from "rpc4next/server";
 import { z } from "zod";
 import { guardedBaseProcedure } from "../../_shared/base-procedure";
+import { onError } from "../../_shared/on-error";
 import { routeContract } from "./route-contract";
 
 const paramsSchema = z.object({
@@ -25,7 +26,6 @@ const getGuardedProcedureUser = guardedBaseProcedure
   .params(paramsSchema)
   .query(querySchema)
   .output(outputSchema)
-  .error<"FORBIDDEN", { reason: "editor_only" }>("FORBIDDEN")
   .handle(async ({ params, query, ctx }) => {
     const role = ctx.viewer.role;
     const includeDrafts = query.includeDrafts === "true";
@@ -52,6 +52,7 @@ const getGuardedProcedureUser = guardedBaseProcedure
 
 export const GET = nextRoute(getGuardedProcedureUser, {
   method: "GET",
+  onError,
   validateOutput: true,
 });
 

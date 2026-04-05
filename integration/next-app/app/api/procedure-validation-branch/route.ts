@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { nextRoute, procedure } from "rpc4next/server";
 import { z } from "zod";
+import { onError } from "../_shared/on-error";
 import { routeContract } from "./route-contract";
 
 const getProcedureValidationBranch = procedure
@@ -46,4 +47,5 @@ const getProcedureValidationBranch = procedure
 
 export const GET = nextRoute(getProcedureValidationBranch, {
   method: "GET",
+  onError,
 });

@@ -32,13 +32,13 @@ If you want to verify the built package entrypoint instead, use the `:dist` vari
 Use these files as entry points, depending on what you want to understand:
 
 - Recommended typed procedure route: `app/api/procedure-contract/[userId]/route.ts`
-- Shared procedure preset + auth/error contracts: `app/api/procedure-guarded/[userId]/route.ts`
+- Shared procedure preset + auth policy: `app/api/procedure-guarded/[userId]/route.ts`
 - Shared procedure preset definition: `app/api/_shared/base-procedure.ts`
 - Procedure json/header/cookie input: `app/api/procedure-submit/route.ts`
 - Procedure form-data input: `app/api/procedure-form-data/route.ts`
 - Procedure runtime output validation: `app/api/procedure-invalid-output/route.ts`
 - Procedure validator-stage customization: `app/api/procedure-validation-branch/route.ts`
-- Project-level procedure formatter kit: `app/api/procedure-kit-error/route.ts`
+- Project-level procedure `onError` kit: `app/api/procedure-kit-error/route.ts`
 - Procedure-first walkthrough page: `app/procedure-examples/page.tsx`
 - Typed client setup: `src/lib/rpc-client.ts`
 - Generated output shape: `src/generated/rpc.ts`
@@ -49,7 +49,7 @@ Use these files as entry points, depending on what you want to understand:
 - Plain Next.js handler with `NextResponse.json(...)`: `app/api/next-native/[itemId]/route.ts`
 - Plain Next.js handler with `Response.json(...)`: `app/api/next-native-response/route.ts`
 - Procedure redirect helper route: `app/api/redirect-me/route.ts`
-- Procedure error formatter route: `app/api/error-demo/route.ts`
+- Direct `nextRoute(..., { onError })` route: `app/api/error-demo/route.ts`
 - Page-path typing examples: `app/photo/[id]/page.tsx` and `app/feed/page.tsx`
 - App Router folder-pattern coverage: `app/patterns/**`
 
@@ -114,9 +114,14 @@ If a change touches route scanning, generated client shape, params generation, o
 
 This workspace is intended to make scanner and runtime regressions visible in Git. Avoid hand-editing `src/generated/rpc.ts` or `app/**/route-contract.ts` unless the task is specifically about generator output.
 
-The main walkthrough in this fixture is now procedure-first. `app/api/procedure-contract/[userId]/route.ts` is the baseline typed route: it binds the generated `routeContract`, declares params/query/output in one builder, and exports `GET` through `nextRoute(...)`. `app/api/procedure-submit/route.ts` extends that path to json/header/cookie input, `app/api/procedure-form-data/route.ts` covers multipart-style input, and `app/api/procedure-guarded/[userId]/route.ts` shows the recommended shared-policy path by extending `app/api/_shared/base-procedure.ts` with route-local params/query/output/error contracts.
+The main walkthrough in this fixture is now procedure-first. `app/api/procedure-contract/[userId]/route.ts` is the baseline typed route: it binds the generated `routeContract`, declares params/query/output in one builder, and exports `GET` through `nextRoute(..., { onError })`. `app/api/procedure-submit/route.ts` extends that path to json/header/cookie input, `app/api/procedure-form-data/route.ts` covers multipart-style input, and `app/api/procedure-guarded/[userId]/route.ts` shows the recommended shared-policy path by extending `app/api/_shared/base-procedure.ts`.
 
-The procedure fixtures also cover the later design phases that made the procedure path complete enough to recommend by default. `app/api/procedure-invalid-output/route.ts` demonstrates opt-in runtime output enforcement with a Standard Schema output contract. `app/api/procedure-kit-error/route.ts` shows project-level error formatting through `createProcedureKit(...)`. `app/api/procedure-validation-branch/route.ts` shows validator-stage customization through `procedure.query(schema, { onValidationError(...) { ... } })`. `app/api/error-demo/route.ts` and `app/api/redirect-me/route.ts` show that route-level formatter and redirect ergonomics now live on the same procedure-first path.
+The procedure fixtures also cover the later design phases that made the procedure path complete enough to recommend by default. `app/api/procedure-invalid-output/route.ts` demonstrates opt-in runtime output enforcement with a Standard Schema output contract. `app/api/procedure-kit-error/route.ts` shows project-level `createProcedureKit({ onError })` usage. `app/api/procedure-validation-branch/route.ts` shows validator-stage customization through `procedure.query(schema, { onValidationError(...) { ... } })`. `app/api/error-demo/route.ts` shows direct `nextRoute(..., { onError })` handling for arbitrary thrown errors, and `app/api/_shared/on-error.ts` shows `rpcError(...)` plus generic `Error` mapping in a shared policy.
+
+When a shared handler should contribute its concrete error envelope to client-side
+response inference, define it with `satisfies ProcedureOnError` instead of
+`const onError: ProcedureOnError = ...`. The explicit annotation widens the
+function type and loses the specific `response.json(...)` shape.
 
 The fixtures also include plain Next.js routes written without `procedure`, including a static `NextResponse.json(...)` route, a dynamic route that reads `params` and `nextUrl.searchParams`, and a `Response.json(...)` route. The generated client can still call them as RPC, but their response types are intentionally broader than rpc4next's `TypedNextResponse` helpers.
 

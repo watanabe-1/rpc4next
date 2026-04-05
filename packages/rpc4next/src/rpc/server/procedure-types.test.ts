@@ -1,17 +1,42 @@
 import { NextRequest } from "next/server";
+import type { HttpMethod } from "rpc4next-shared";
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { nextRoute } from "./next-route";
+import { nextRoute as baseNextRoute } from "./next-route";
+import { defaultProcedureOnError } from "./on-error";
 import { procedure } from "./procedure";
 import {
   getProcedureDefinition,
   type ProcedureDefinition,
-  type ProcedureErrorContract,
   type ProcedureInputContract,
   type ProcedureRouteContract,
   procedureDefinitionSymbol,
 } from "./procedure-types";
 import type { ValidationSchema } from "./route-types";
 import type { StandardSchemaV1 } from "./standard-schema";
+
+const nextRoute = <
+  TProcedure,
+  TMethod extends HttpMethod | undefined = undefined,
+  TValidateOutput extends boolean = false,
+>(
+  procedureDefinition: TProcedure,
+  options?: {
+    method?: Exclude<TMethod, undefined>;
+    validateOutput?: TValidateOutput;
+    onError?: unknown;
+  },
+) => {
+  const resolvedOptions =
+    options && "onError" in options
+      ? options
+      : { ...(options ?? {}), onError: defaultProcedureOnError };
+
+  return baseNextRoute<
+    TProcedure & Parameters<typeof baseNextRoute>[0],
+    TMethod,
+    TValidateOutput
+  >(procedureDefinition as never, resolvedOptions as never);
+};
 
 describe("procedure contract internals", () => {
   it("attaches an internal procedure definition to route handlers", async () => {
@@ -49,12 +74,6 @@ describe("procedure contract internals", () => {
       input: { query: { page: string } };
       output: { query: { page: number } };
     }>;
-    type ExpectedError = ProcedureErrorContract<
-      "BAD_REQUEST",
-      {
-        issue: string;
-      }
-    >;
     type ExpectedDefinition = ProcedureDefinition<
       "GET",
       {
@@ -62,13 +81,7 @@ describe("procedure contract internals", () => {
         output: { query: { page: number } };
       },
       { ok: true },
-      { tags: string[] },
-      ProcedureErrorContract<
-        "BAD_REQUEST",
-        {
-          issue: string;
-        }
-      >
+      { tags: string[] }
     >;
 
     expectTypeOf<ExpectedInput>().toExtend<{
@@ -83,40 +96,23 @@ describe("procedure contract internals", () => {
         output: { query: { page: number } };
       };
     }>();
-    expectTypeOf<ExpectedError>().toEqualTypeOf<{
-      code?: "BAD_REQUEST";
-      envelope?: {
-        error: {
-          code: "BAD_REQUEST";
-          message: string;
-          details?: {
-            issue: string;
-          };
-        };
-      };
-      variants?: readonly ProcedureErrorContract[];
-    }>();
     expectTypeOf<ExpectedDefinition>().toExtend<{
       method?: "GET";
       meta?: { tags: string[] };
     }>();
   });
 
-  it("supports unioned error contracts for shared procedure presets", () => {
-    type SharedErrors =
-      | ProcedureErrorContract<"UNAUTHORIZED", { reason: "missing_demo_user" }>
-      | ProcedureErrorContract<"FORBIDDEN", { reason: "suspended_account" }>;
-
+  it("keeps procedure definitions centered on input output meta and route data", () => {
     type Definition = ProcedureDefinition<
       "GET",
       ValidationSchema,
       { ok: true },
-      { auth: "required" },
-      SharedErrors
+      { auth: "required" }
     >;
 
     expectTypeOf<Definition>().toExtend<{
-      error?: SharedErrors;
+      method?: "GET";
+      meta?: { auth: "required" };
     }>();
   });
 });

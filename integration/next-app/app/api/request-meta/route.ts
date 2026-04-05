@@ -1,5 +1,6 @@
 import { nextRoute, procedure } from "rpc4next/server";
 import { z } from "zod";
+import { onError } from "../_shared/on-error";
 import { routeContract } from "./route-contract";
 
 const headersSchema = z.object({
@@ -27,4 +28,4 @@ const getRequestMeta = procedure
     },
   }));
 
-export const GET = nextRoute(getRequestMeta, { method: "GET" });
+export const GET = nextRoute(getRequestMeta, { method: "GET", onError });

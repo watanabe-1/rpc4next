@@ -3,9 +3,8 @@ import type { HttpMethod } from "rpc4next-shared";
 import type { ContentType } from "../lib/content-type-types";
 import type { HttpStatusCode } from "../lib/http-status-code-types";
 import { searchParamsToObject } from "../lib/search-params";
-import type { RpcErrorCode, RpcErrorEnvelope, RpcErrorStatus } from "./error";
 import { rpcError } from "./error";
-import type { ProcedureErrorFormatter } from "./error-formatter";
+import type { ProcedureOnError } from "./on-error";
 import type {
   ProcedureMiddleware,
   ProcedureMiddlewareResult,
@@ -15,7 +14,6 @@ import {
   executePipeline,
   isProcedureResult,
   normalizeProcedureResult,
-  normalizeRpcErrorResponse,
   withProcedureMethod,
 } from "./procedure-internals";
 import type { ProcedureInputTarget } from "./procedure-types";
@@ -23,7 +21,6 @@ import {
   attachProcedureDefinition,
   type MergeProcedureDefinition,
   type ProcedureDefinition,
-  type ProcedureErrorContract,
   type ProcedureInputContract,
   type ProcedureValidationErrorHandlerResult,
   type ProcedureValidationErrorResponseMap,
@@ -176,27 +173,30 @@ type NextRouteMethodConstraint<
       : unknown;
 
 type ProcedureErrorResponse<
-  TCode extends RpcErrorCode = RpcErrorCode,
-  TDetails = unknown,
-> = TCode extends RpcErrorCode
+  TCode extends "BAD_REQUEST" | "INTERNAL_SERVER_ERROR",
+> = TCode extends "BAD_REQUEST"
   ? TypedNextResponse<
-      RpcErrorEnvelope<TCode, TDetails>,
-      RpcErrorStatus<TCode>,
+      {
+        error: {
+          code: "BAD_REQUEST";
+          message: string;
+          details?: unknown;
+        };
+      },
+      400,
       "application/json"
     >
-  : never;
-
-type InferProcedureErrorContractResponse<TError> =
-  TError extends ProcedureErrorContract<infer TCode, infer TDetails>
-    ? ProcedureErrorResponse<TCode, TDetails>
-    : never;
-
-type InferProcedureErrorResponse<TProcedure extends ProcedureTypeCarrier> =
-  "error" extends keyof InferProcedureDefinition<TProcedure>
-    ? InferProcedureErrorContractResponse<
-        InferProcedureDefinition<TProcedure>["error"]
-      >
-    : never;
+  : TypedNextResponse<
+      {
+        error: {
+          code: "INTERNAL_SERVER_ERROR";
+          message: string;
+          details?: unknown;
+        };
+      },
+      500,
+      "application/json"
+    >;
 
 type InferProcedureValidationErrorResponse<
   TProcedure extends ProcedureTypeCarrier,
@@ -295,39 +295,44 @@ type NormalizeProcedureHandlerResult<TResult> = TResult extends
         ? TypedNextResponse<undefined, ResolveStatus<TStatus, 200>, ContentType>
         : TypedNextResponse<unknown, HttpStatusCode, ContentType>;
 
+type InferProcedureOnErrorResponse<TOnError extends ProcedureOnError> =
+  NormalizeProcedureHandlerResult<Awaited<ReturnType<TOnError>>>;
+
 type NextRouteResponse<
   TProcedure extends ProcedureTypeCarrier,
   TValidateOutput extends boolean = false,
+  TOnError extends ProcedureOnError = ProcedureOnError,
 > =
   IsNever<InferProcedureHandlerResult<TProcedure>> extends true
     ?
         | TypedNextResponse<unknown, HttpStatusCode, ContentType>
+        | InferProcedureOnErrorResponse<TOnError>
         | InferProcedureValidationErrorResponse<TProcedure>
         | InferProcedureOutputValidationErrorResponse<
             TProcedure,
             TValidateOutput
           >
-        | InferProcedureErrorResponse<TProcedure>
     :
         | NormalizeProcedureHandlerResult<
             InferProcedureHandlerResult<TProcedure>
           >
+        | InferProcedureOnErrorResponse<TOnError>
         | InferProcedureValidationErrorResponse<TProcedure>
         | InferProcedureOutputValidationErrorResponse<
             TProcedure,
             TValidateOutput
-          >
-        | InferProcedureErrorResponse<TProcedure>;
+          >;
 
 export type NextRouteHandler<
   TProcedure extends ProcedureTypeCarrier = ProcedureTypeCarrier,
   TMethod extends HttpMethod | undefined = undefined,
   TValidateOutput extends boolean = false,
+  TOnError extends ProcedureOnError = ProcedureOnError,
 > = WithProcedureDefinition<
   (
     request: NextRequest,
     segmentData: { params: Promise<Params> },
-  ) => Promise<NextRouteResponse<TProcedure, TValidateOutput>>,
+  ) => Promise<NextRouteResponse<TProcedure, TValidateOutput, TOnError>>,
   TMethod extends HttpMethod
     ? MergeProcedureDefinition<
         InferProcedureDefinition<TProcedure>,
@@ -336,10 +341,13 @@ export type NextRouteHandler<
     : InferProcedureDefinition<TProcedure>
 >;
 
-export interface NextRouteOptions<TMethod extends HttpMethod = HttpMethod> {
+export interface NextRouteOptions<
+  TMethod extends HttpMethod = HttpMethod,
+  TOnError extends ProcedureOnError = ProcedureOnError,
+> {
   method?: TMethod;
   validateOutput?: boolean;
-  errorFormatter?: ProcedureErrorFormatter;
+  onError: TOnError;
 }
 
 const parseOutputWithSchema = async (
@@ -632,16 +640,14 @@ export const nextRoute = <
   TProcedure extends ProcedureTypeCarrier,
   TMethod extends HttpMethod | undefined = undefined,
   TValidateOutput extends boolean = false,
+  TOnError extends ProcedureOnError = ProcedureOnError,
 >(
   procedure: TProcedure,
-  options: NextRouteOptions<Exclude<TMethod, undefined>> &
-    NextRouteMethodConstraint<TProcedure, TMethod> & {
-      validateOutput?: TValidateOutput;
-    } = {} as NextRouteOptions<Exclude<TMethod, undefined>> &
+  options: NextRouteOptions<Exclude<TMethod, undefined>, TOnError> &
     NextRouteMethodConstraint<TProcedure, TMethod> & {
       validateOutput?: TValidateOutput;
     },
-): NextRouteHandler<TProcedure, TMethod, TValidateOutput> => {
+): NextRouteHandler<TProcedure, TMethod, TValidateOutput, TOnError> => {
   const handler = procedure.handler as (
     context: InferProcedureHandlerContext<TProcedure>,
   ) =>
@@ -662,8 +668,9 @@ export const nextRoute = <
   const routeHandler = async (
     request: NextRequest,
     segmentData: { params: Promise<Params> },
-  ): Promise<NextRouteResponse<TProcedure, TValidateOutput>> => {
+  ): Promise<NextRouteResponse<TProcedure, TValidateOutput, TOnError>> => {
     const routeContext = createRouteContext(request, segmentData);
+    const errorResponse = createResponseHelpers();
     const response =
       createResponseHelpers<InferProcedureDeclaredOutput<TProcedure>>();
 
@@ -678,7 +685,7 @@ export const nextRoute = <
         return normalizeProcedureResult(
           routeContext,
           inputResult.response,
-        ) as NextRouteResponse<TProcedure, TValidateOutput>;
+        ) as NextRouteResponse<TProcedure, TValidateOutput, TOnError>;
       }
 
       const { params, query, json, formData, headers, cookies } =
@@ -758,31 +765,19 @@ export const nextRoute = <
       return normalizeProcedureResult(
         routeContext,
         normalizedResult,
-      ) as NextRouteResponse<TProcedure, TValidateOutput>;
+      ) as NextRouteResponse<TProcedure, TValidateOutput, TOnError>;
     } catch (error) {
-      if (error instanceof Response) {
-        return error as NextRouteResponse<TProcedure, TValidateOutput>;
-      }
+      const handled = await options.onError(error, {
+        request,
+        params: await segmentData.params,
+        response: errorResponse,
+        routeContext,
+      });
 
-      const rpcErrorResponse = normalizeRpcErrorResponse(error, routeContext);
-      const formattedResponse = options.errorFormatter
-        ? await options.errorFormatter(error, routeContext)
-        : rpcErrorResponse;
-      if (formattedResponse) {
-        return formattedResponse as NextRouteResponse<
-          TProcedure,
-          TValidateOutput
-        >;
-      }
-
-      if (options.errorFormatter && rpcErrorResponse) {
-        return rpcErrorResponse as NextRouteResponse<
-          TProcedure,
-          TValidateOutput
-        >;
-      }
-
-      throw error;
+      return normalizeProcedureResult(
+        routeContext,
+        handled,
+      ) as NextRouteResponse<TProcedure, TValidateOutput, TOnError>;
     }
   };
 
@@ -800,5 +795,5 @@ export const nextRoute = <
           },
         }
       : {}),
-  }) as NextRouteHandler<TProcedure, TMethod, TValidateOutput>;
+  }) as NextRouteHandler<TProcedure, TMethod, TValidateOutput, TOnError>;
 };

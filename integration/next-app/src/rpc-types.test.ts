@@ -588,7 +588,7 @@ describe("integration next-app generated RPC type coverage", () => {
     type RedirectGet = (typeof client.api)["redirect-me"]["$get"];
     type RedirectResponse = Awaited<ReturnType<RedirectGet>>;
     expectTypeOf<RedirectResponse>().toEqualTypeOf<
-      TypedNextResponse<undefined, 307, "">
+      TypedNextResponse<never, HttpStatusCode, ContentType>
     >();
   });
 

@@ -17,7 +17,6 @@ import type {
   RpcErrorStatus,
 } from "../server/error";
 import type {
-  ProcedureErrorContract,
   ProcedureInputContract,
   ProcedureOutputContract,
   ProcedureValidationErrorResponseMap,
@@ -243,18 +242,6 @@ type ProcedureErrorResponse<
     >
   : never;
 
-type InferProcedureErrorContractResponse<TError> =
-  TError extends ProcedureErrorContract<infer TCode, infer TDetails>
-    ? ProcedureErrorResponse<TCode, TDetails>
-    : never;
-
-type InferProcedureErrorResponse<T> =
-  "error" extends keyof ExtractAttachedProcedureDefinition<T>
-    ? InferProcedureErrorContractResponse<
-        ExtractAttachedProcedureDefinition<T>["error"]
-      >
-    : never;
-
 type ResolveStatus<
   TStatus,
   TDefault extends HttpStatusCode,
@@ -363,7 +350,6 @@ type InferTypedNextResponseType<T> = T extends (
           | Awaited<ReturnType<T>>
           | InferProcedureValidationErrorResponse<T>
           | InferProcedureOutputValidationErrorResponse<T>
-          | InferProcedureErrorResponse<T>
       :
           | TypedNextResponse<
               InferNextResponseType<T>,
@@ -372,12 +358,10 @@ type InferTypedNextResponseType<T> = T extends (
             >
           | InferProcedureValidationErrorResponse<T>
           | InferProcedureOutputValidationErrorResponse<T>
-          | InferProcedureErrorResponse<T>
     :
         | InferTypedNextResponseTypeFromOutput<T, InferProcedureOutput<T>>
         | InferProcedureValidationErrorResponse<T>
         | InferProcedureOutputValidationErrorResponse<T>
-        | InferProcedureErrorResponse<T>
   : TypedNextResponse<InferNextResponseType<T>, HttpStatusCode, ContentType>;
 
 type PathProxyAsProperty<T> = {

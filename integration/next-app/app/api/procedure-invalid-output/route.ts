@@ -1,5 +1,6 @@
 import { nextRoute, procedure } from "rpc4next/server";
 import { z } from "zod";
+import { onError } from "../_shared/on-error";
 import { routeContract } from "./route-contract";
 
 const outputSchema = z.object({
@@ -29,5 +30,6 @@ const getProcedureInvalidOutput = procedure
 
 export const GET = nextRoute(getProcedureInvalidOutput, {
   method: "GET",
+  onError,
   validateOutput: true,
 });

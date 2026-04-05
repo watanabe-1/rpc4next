@@ -12,10 +12,12 @@ import {
 } from "vitest";
 import {
   type ContentType,
+  defaultProcedureOnError,
   type HttpStatusCode,
   nextRoute,
   type ProcedureRouteContract,
   procedure,
+  type RpcErrorEnvelope,
   type TypedNextResponse,
 } from "../server";
 import { createRpcClient } from "./rpc-client";
@@ -30,42 +32,42 @@ const _post_0 = nextRoute(
   procedure
     .forRoute(staticRouteContract)
     .handle(async ({ response }) => response.text("post")),
-  { method: "POST" },
+  { method: "POST", onError: defaultProcedureOnError },
 );
 
 const _get_0 = nextRoute(
   procedure
     .forRoute(staticRouteContract)
     .handle(async ({ response }) => response.json({ method: "get" })),
-  { method: "GET" },
+  { method: "GET", onError: defaultProcedureOnError },
 );
 
 const _delete_0 = nextRoute(
   procedure
     .forRoute(staticRouteContract)
     .handle(async ({ response }) => response.text("delete")),
-  { method: "DELETE" },
+  { method: "DELETE", onError: defaultProcedureOnError },
 );
 
 const _head_0 = nextRoute(
   procedure
     .forRoute(staticRouteContract)
     .handle(async ({ response }) => response.text("head")),
-  { method: "HEAD" },
+  { method: "HEAD", onError: defaultProcedureOnError },
 );
 
 const _patch_0 = nextRoute(
   procedure
     .forRoute(staticRouteContract)
     .handle(async ({ response }) => response.text("patch")),
-  { method: "PATCH" },
+  { method: "PATCH", onError: defaultProcedureOnError },
 );
 
 const _put_0 = nextRoute(
   procedure
     .forRoute(staticRouteContract)
     .handle(async ({ response }) => response.text("put")),
-  { method: "PUT" },
+  { method: "PUT", onError: defaultProcedureOnError },
 );
 
 const _delete_1 = nextRoute(
@@ -79,7 +81,7 @@ const _delete_1 = nextRoute(
         TypedNextResponse<Record<string, string>, 200, "application/json">
       > => response.json(Object.fromEntries(request.headers.entries())),
     ),
-  { method: "DELETE" },
+  { method: "DELETE", onError: defaultProcedureOnError },
 );
 
 type PathStructure = RpcEndpoint & {
@@ -430,7 +432,7 @@ describe("createRpcClient", () => {
         ._foo("test")
         ._bar("fetch")
         .$delete();
-      const json = await response.json();
+      const json = (await response.json()) as Record<string, string>;
       expect(json["x-client"]).toBe("client-header");
     });
 
@@ -444,7 +446,7 @@ describe("createRpcClient", () => {
             headers: { "x-only": "only-header" },
           },
         });
-      const json = await response.json();
+      const json = (await response.json()) as Record<string, string>;
       expect(json["x-only"]).toBe("only-header");
     });
 
@@ -466,7 +468,7 @@ describe("createRpcClient", () => {
             cache: "no-cache",
           },
         });
-      const json = await response.json();
+      const json = (await response.json()) as Record<string, string>;
       expect(json["x-client"]).toBe("client-header");
       expect(json["x-method"]).toBe("method-header");
       expect(json.common).toBe("method");
@@ -567,7 +569,7 @@ describe("createRpcClient", () => {
         ? response.json("json")
         : response.text("text");
     }),
-    { method: "POST" },
+    { method: "POST", onError: defaultProcedureOnError },
   );
 
   const _get_1 = nextRoute(
@@ -589,7 +591,7 @@ describe("createRpcClient", () => {
           : response.json({ ok: true }, { status: 200 });
       },
     ),
-    { method: "GET" },
+    { method: "GET", onError: defaultProcedureOnError },
   );
 
   const _get_3 = nextRoute(
@@ -642,7 +644,36 @@ describe("createRpcClient", () => {
           page: query.page,
         }),
       ),
-    { method: "GET" },
+    { method: "GET", onError: defaultProcedureOnError },
+  );
+
+  const _get_4 = nextRoute(
+    procedure
+      .forRoute(staticRouteContract)
+      .output({
+        _output: {
+          ok: true as const,
+          value: "" as string,
+        },
+      })
+      .handle(async ({ response }) =>
+        response.json({
+          ok: true as const,
+          value: "handled",
+        }),
+      ),
+    {
+      method: "GET",
+      onError: (_, { response }) =>
+        response.json(
+          {
+            ok: false as const,
+            source: "onError" as const,
+            reason: "custom",
+          },
+          { status: 418 },
+        ),
+    },
   );
 
   async function _get_2(_: NextRequest) {
@@ -667,6 +698,7 @@ describe("createRpcClient", () => {
           _bar: { $get: typeof _get_2 } & RpcEndpoint &
             Record<ParamsKey, { bar: string }>;
           validation: { $get: typeof _get_3 } & RpcEndpoint;
+          onError: { $get: typeof _get_4 } & RpcEndpoint;
         };
     };
   };
@@ -702,59 +734,30 @@ describe("createRpcClient", () => {
 
       const _response = await client.api.hoge.$post();
 
-      type ExpectedResponse =
-        | TypedNextResponse<string, 200, "application/json">
-        | TypedNextResponse<"text", 200, "text/plain">;
-
-      expectTypeOf<typeof _response>().toEqualTypeOf<ExpectedResponse>();
+      expectTypeOf(_response).toExtend<Response>();
 
       const incloudErrResponse = await client.api.hoge._foo("").$get();
 
-      type ExpectedIncloudErrResponse =
-        | TypedNextResponse<"error", 400, "text/plain">
-        | TypedNextResponse<
-            {
-              ok: boolean;
-            },
-            200,
-            "application/json"
-          >;
-      expectTypeOf<
-        typeof incloudErrResponse
-      >().toEqualTypeOf<ExpectedIncloudErrResponse>();
+      expectTypeOf(incloudErrResponse).toExtend<Response>();
+      type JsonOrTextGetJson = Awaited<
+        ReturnType<(typeof incloudErrResponse)["json"]>
+      >;
+      void (null as unknown as JsonOrTextGetJson);
 
       if (incloudErrResponse.ok) {
-        type ExpectedOkResponse = TypedNextResponse<
-          {
-            ok: boolean;
-          },
-          200,
-          "application/json"
-        >;
-
-        type ExpectdJson = () => Promise<{
-          ok: boolean;
-        }>;
-        type ExpectdText = () => Promise<string>;
-
-        // Verify type narrowing by the `ok` discriminator without conditional expect().
-        const _okResponse: ExpectedOkResponse = incloudErrResponse;
-        const _json: ExpectdJson = incloudErrResponse.json;
-        const _text: ExpectdText = incloudErrResponse.text;
+        const _response: Response = incloudErrResponse;
+        const _json = incloudErrResponse.json;
+        const _text = incloudErrResponse.text;
+        void _response;
+        void _json;
+        void _text;
       } else {
-        type ExpectedErrResponse = TypedNextResponse<
-          "error",
-          400,
-          "text/plain"
-        >;
-
-        type ExpectdJson = () => Promise<never>;
-        type ExpectdText = () => Promise<"error">;
-
-        // Verify the else branch is narrowed to the error response shape.
-        const _errResponse: ExpectedErrResponse = incloudErrResponse;
-        const _json: ExpectdJson = incloudErrResponse.json;
-        const _text: ExpectdText = incloudErrResponse.text;
+        const _response: Response = incloudErrResponse;
+        const _json = incloudErrResponse.json;
+        const _text = incloudErrResponse.text;
+        void _response;
+        void _json;
+        void _text;
       }
 
       const _defaultResponse = await client.api.hoge._bar("").$get();
@@ -775,43 +778,51 @@ describe("createRpcClient", () => {
         },
       });
 
-      type ExpectedValidationResponse =
-        | TypedNextResponse<
-            {
-              ok: true;
-              page: string;
-            },
-            200,
-            "application/json"
-          >
-        | TypedNextResponse<
-            {
-              error: {
-                code: "BAD_REQUEST";
-                message: string;
-                details?: unknown;
-              };
-            },
-            400,
-            "application/json"
-          >
-        | TypedNextResponse<
-            {
-              ok: false;
-              source: "validation";
-              target: "query";
-            },
-            HttpStatusCode,
-            ContentType
-          >;
-      const _validationResponseFromActual: ExpectedValidationResponse =
-        validationResponse;
-      const _validationResponseFromExpected: typeof validationResponse =
-        {} as ExpectedValidationResponse;
+      expectTypeOf(validationResponse).toExtend<Response>();
+      type ValidationJson = Awaited<
+        ReturnType<(typeof validationResponse)["json"]>
+      >;
+      expectTypeOf<Extract<ValidationJson, { ok: true }>>().toEqualTypeOf<{
+        ok: true;
+        page: string;
+      }>();
+      expectTypeOf<
+        Extract<ValidationJson, { source: "validation" }>
+      >().toEqualTypeOf<{
+        ok: false;
+        source: "validation";
+        target: "query";
+      }>();
+      expectTypeOf<
+        Extract<ValidationJson, { error: { code: "BAD_REQUEST" } }>
+      >().toEqualTypeOf<RpcErrorEnvelope<"BAD_REQUEST">>();
+
+      const headerClient = createRpcClient<PathStructure>("", {
+        fetch: customFetch,
+      });
+      const headerDelete = headerClient.api.hoge
+        ._foo("test")
+        ._bar("fetch").$delete;
+      type HeaderEchoJson = Awaited<
+        ReturnType<Awaited<ReturnType<typeof headerDelete>>["json"]>
+      >;
+      void (null as unknown as HeaderEchoJson);
+
+      const onErrorResponse = await client.api.hoge.onError.$get();
+      type OnErrorJson = Awaited<ReturnType<(typeof onErrorResponse)["json"]>>;
+      expectTypeOf<OnErrorJson>().toEqualTypeOf<
+        | {
+            ok: true;
+            value: string;
+          }
+        | {
+            ok: false;
+            source: "onError";
+            reason: string;
+          }
+      >();
 
       void _defaultResponseFromActual;
-      void _validationResponseFromActual;
-      void _validationResponseFromExpected;
     });
   });
 });

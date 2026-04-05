@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
 import { describe, expect, expectTypeOf, it } from "vitest";
+import { defaultProcedureOnError } from "./on-error";
 import { createProcedureKit } from "./procedure-kit";
 import type { ProcedureRouteContract } from "./procedure-types";
-import type { TypedNextResponse } from "./types";
 
 describe("createProcedureKit", () => {
   type EmptyParams = Record<never, never>;
@@ -12,23 +12,18 @@ describe("createProcedureKit", () => {
     params: {} as EmptyParams,
   } as ProcedureRouteContract<"/api/test", EmptyParams>;
 
-  it("applies the project-level errorFormatter to nextRoute", async () => {
+  it("applies the project-level onError to nextRoute", async () => {
     const procedureKit = createProcedureKit({
-      errorFormatter: (error, response) => {
-        if (!(error instanceof Error)) {
-          return undefined;
-        }
-
-        return response.json(
+      onError: (error, { response }) =>
+        response.json(
           {
             success: false,
             error: {
-              message: error.message,
+              message: error instanceof Error ? error.message : "unknown error",
             },
           },
           { status: 500 },
-        );
-      },
+        ),
     });
     const route = procedureKit.nextRoute(
       procedureKit.procedure.forRoute(staticRouteContract).handle(async () => {
@@ -49,66 +44,42 @@ describe("createProcedureKit", () => {
     });
   });
 
-  it("preserves explicit procedure error contracts in kit-backed route types", () => {
-    const procedureKit = createProcedureKit();
+  it("keeps kit-backed route types focused on handler results", () => {
+    const procedureKit = createProcedureKit({
+      onError: defaultProcedureOnError,
+    });
     const route = procedureKit.nextRoute(
-      procedureKit.procedure
-        .forRoute(staticRouteContract)
-        .error<"FORBIDDEN", { reason: string }>("FORBIDDEN")
-        .handle(async () => ({
-          status: 204 as const,
-        })),
+      procedureKit.procedure.forRoute(staticRouteContract).handle(async () => ({
+        status: 204 as const,
+      })),
     );
 
     type ActualResponse = Awaited<ReturnType<typeof route>>;
-    type ExpectedResponse =
-      | TypedNextResponse<
-          undefined,
-          204,
-          import("../lib/content-type-types").ContentType
-        >
-      | TypedNextResponse<
-          {
-            error: {
-              code: "FORBIDDEN";
-              message: string;
-              details?: { reason: string };
-            };
-          },
-          403,
-          "application/json"
-        >;
-    expectTypeOf<ActualResponse>().toEqualTypeOf<ExpectedResponse>();
+    expectTypeOf<ActualResponse>().toExtend<Response>();
   });
 
-  it("uses the kit errorRegistry to resolve rpcError status before formatting", async () => {
+  it("keeps rpcError available while the kit onError decides serialization", async () => {
     const procedureKit = createProcedureKit({
-      errorRegistry: {
-        FORBIDDEN: { status: 451 },
-      },
-      errorFormatter: (error, response) => {
-        if (!(error instanceof Error)) {
-          return undefined;
-        }
-
-        return response.json(
+      onError: (error, { response }) =>
+        response.json(
           {
             success: false,
-            message: error.message,
+            message: error instanceof Error ? error.message : "unknown error",
           },
           {
             status:
-              "status" in error && typeof error.status === "number"
+              error instanceof Error &&
+              "status" in error &&
+              typeof error.status === "number"
                 ? error.status
                 : 500,
           },
-        );
-      },
+        ),
     });
     const route = procedureKit.nextRoute(
       procedureKit.procedure.forRoute(staticRouteContract).handle(async () => {
         throw procedureKit.rpcError("FORBIDDEN", {
-          message: "project registry override",
+          message: "project onError override",
         });
       }),
     );
@@ -117,10 +88,10 @@ describe("createProcedureKit", () => {
       params: Promise.resolve({}),
     });
 
-    expect(response.status).toBe(451);
+    expect(response.status).toBe(403);
     await expect(response.json()).resolves.toEqual({
       success: false,
-      message: "project registry override",
+      message: "project onError override",
     });
   });
 });
