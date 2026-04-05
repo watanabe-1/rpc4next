@@ -176,4 +176,82 @@ describe("createProcedureKit", () => {
       message: "preset formatter",
     });
   });
+
+  it("lets route-level onError override procedure.defaults({ onError })", async () => {
+    const route = procedure
+      .defaults({
+        onError: (error, { response }) =>
+          response.json(
+            {
+              source: "shared-default",
+              message: error instanceof Error ? error.message : "unknown error",
+            },
+            { status: 409 },
+          ),
+      })
+      .forRoute(staticRouteContract)
+      .handle(async () => {
+        throw new Error("override formatter");
+      })
+      .nextRoute({
+        method: "GET",
+        onError: (error, { response }) =>
+          response.json(
+            {
+              source: "route-level",
+              message: error instanceof Error ? error.message : "unknown error",
+            },
+            { status: 410 },
+          ),
+      });
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(410);
+    await expect(response.json()).resolves.toEqual({
+      source: "route-level",
+      message: "override formatter",
+    });
+  });
+
+  it("lets route-level onError override createProcedureKit shared defaults", async () => {
+    const procedureKit = createProcedureKit({
+      onError: (error, { response }) =>
+        response.json(
+          {
+            source: "kit-default",
+            message: error instanceof Error ? error.message : "unknown error",
+          },
+          { status: 418 },
+        ),
+    });
+    const route = procedureKit.procedure
+      .forRoute(staticRouteContract)
+      .handle(async () => {
+        throw new Error("kit override formatter");
+      })
+      .nextRoute({
+        method: "GET",
+        onError: (error, { response }) =>
+          response.json(
+            {
+              source: "kit-route-level",
+              message: error instanceof Error ? error.message : "unknown error",
+            },
+            { status: 419 },
+          ),
+      });
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(419);
+    await expect(response.json()).resolves.toEqual({
+      source: "kit-route-level",
+      message: "kit override formatter",
+    });
+  });
 });
