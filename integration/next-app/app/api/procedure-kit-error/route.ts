@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { procedureKit, rpcError } from "../_shared/procedure-kit";
+import { appProcedure, rpcError } from "../_shared/procedure-kit";
 import { routeContract } from "./route-contract";
 
-const getProcedureKitError = procedureKit.procedure
+export const GET = appProcedure
   .forRoute(routeContract)
   .query(
     z.object({
@@ -24,8 +24,7 @@ const getProcedureKitError = procedureKit.procedure
         source: "procedure-kit-error" as const,
       },
     };
+  })
+  .nextRoute({
+    method: "GET",
   });
-
-export const GET = procedureKit.nextRoute(getProcedureKitError, {
-  method: "GET",
-});

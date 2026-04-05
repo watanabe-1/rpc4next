@@ -19,6 +19,9 @@ export interface CreateProcedureKitOptions {
 export const createProcedureKit = <TOnError extends ProcedureOnError>(options: {
   onError: TOnError;
 }) => {
+  const presetProcedure = procedure.defaults({
+    onError: options.onError,
+  });
   const kitRpcError = (<TCode extends RpcErrorCode, TDetails = unknown>(
     code: TCode,
     init?: RpcErrorInit<TCode, TDetails>,
@@ -55,7 +58,7 @@ export const createProcedureKit = <TOnError extends ProcedureOnError>(options: {
     >;
 
   return {
-    procedure,
+    procedure: presetProcedure,
     rpcError: kitRpcError,
     nextRoute,
   };

@@ -1,35 +1,46 @@
-import { createProcedureKit, isRpcError, procedure } from "rpc4next/server";
+import {
+  createProcedureKit,
+  isRpcError,
+  type ProcedureOnError,
+  procedure,
+} from "rpc4next/server";
 
-export const procedureKit = createProcedureKit({
-  onError: (error, { response }) => {
-    if (error instanceof Response) {
-      return error;
-    }
+const sharedOnError = ((error, { response }) => {
+  if (error instanceof Response) {
+    return error;
+  }
 
-    if (isRpcError(error)) {
-      return response.json(
-        {
-          success: false,
-          error: {
-            code: error.code,
-            message: error.message,
-            details: error.details,
-          },
-        },
-        { status: error.status },
-      );
-    }
-
+  if (isRpcError(error)) {
     return response.json(
       {
         success: false,
         error: {
-          message: error instanceof Error ? error.message : "unknown error",
+          code: error.code,
+          message: error.message,
+          details: error.details,
         },
       },
-      { status: 500 },
+      { status: error.status },
     );
-  },
+  }
+
+  return response.json(
+    {
+      success: false,
+      error: {
+        message: error instanceof Error ? error.message : "unknown error",
+      },
+    },
+    { status: 500 },
+  );
+}) satisfies ProcedureOnError;
+
+export const appProcedure = procedure.defaults({
+  onError: sharedOnError,
+});
+
+export const procedureKit = createProcedureKit({
+  onError: sharedOnError,
 });
 
 export const rpcError = procedureKit.rpcError;
