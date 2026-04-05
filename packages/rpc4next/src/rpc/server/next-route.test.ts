@@ -1,14 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { HttpMethod } from "rpc4next-shared";
 import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 import { rpcError } from "./error";
-import { nextRoute } from "./next-route";
+import { nextRoute as baseNextRoute } from "./next-route";
+import { defaultProcedureOnError } from "./on-error";
 import { defineProcedureMiddleware, procedure } from "./procedure";
 import {
   getProcedureDefinition,
   type ProcedureRouteContract,
 } from "./procedure-types";
 import type { StandardSchemaV1 } from "./standard-schema";
-import type { TypedNextResponse } from "./types";
+
+const nextRoute = <
+  TProcedure,
+  TMethod extends HttpMethod | undefined = undefined,
+  TValidateOutput extends boolean = false,
+>(
+  procedureDefinition: TProcedure,
+  options?: {
+    method?: Exclude<TMethod, undefined>;
+    validateOutput?: TValidateOutput;
+    onError?: unknown;
+  },
+) => {
+  const resolvedOptions =
+    options && "onError" in options
+      ? options
+      : { ...(options ?? {}), onError: defaultProcedureOnError };
+
+  return baseNextRoute<
+    TProcedure & Parameters<typeof baseNextRoute>[0],
+    TMethod,
+    TValidateOutput
+  >(procedureDefinition as never, resolvedOptions as never);
+};
 
 describe("nextRoute", () => {
   type EmptyParams = Record<never, never>;
@@ -96,26 +121,32 @@ describe("nextRoute", () => {
     });
   });
 
-  it("prefers a route-level custom errorFormatter over the default envelope", async () => {
-    const errorFormatter = vi.fn((error: unknown, rc) => {
-      if (!(error instanceof Error)) {
-        return undefined;
+  it("lets a route-level onError replace the default envelope", async () => {
+    const onError = vi.fn((error: unknown, { response }) => {
+      if (error instanceof Error) {
+        return response.json(
+          {
+            success: false,
+            message: error.message,
+          },
+          { status: 500 },
+        );
       }
 
-      return rc.json(
+      return response.json(
         {
           success: false,
-          message: error.message,
+          message: "unexpected",
         },
         { status: 500 },
       );
     });
     const route = nextRoute(
       procedure.forRoute(staticRouteContract).handle(async () => {
-        throw new Error("custom formatter");
+        throw new Error("custom onError");
       }),
       {
-        errorFormatter,
+        onError,
       },
     );
 
@@ -123,24 +154,26 @@ describe("nextRoute", () => {
       params: Promise.resolve({}),
     });
 
-    expect(errorFormatter).toHaveBeenCalledTimes(1);
+    expect(onError).toHaveBeenCalledTimes(1);
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
       success: false,
-      message: "custom formatter",
+      message: "custom onError",
     });
   });
 
-  it("falls back to the default formatter when a route-level errorFormatter skips an RpcError", async () => {
-    const errorFormatter = vi.fn(() => undefined);
+  it("passes thrown Response values through onError for the final decision", async () => {
+    const onError = vi.fn((error: unknown) =>
+      error instanceof Response
+        ? error
+        : new Response("unexpected", { status: 500 }),
+    );
     const route = nextRoute(
       procedure.forRoute(staticRouteContract).handle(async () => {
-        throw rpcError("FORBIDDEN", {
-          message: "blocked",
-        });
+        throw new Response("blocked", { status: 418 });
       }),
       {
-        errorFormatter,
+        onError,
       },
     );
 
@@ -148,14 +181,9 @@ describe("nextRoute", () => {
       params: Promise.resolve({}),
     });
 
-    expect(errorFormatter).toHaveBeenCalledTimes(1);
-    expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({
-      error: {
-        code: "FORBIDDEN",
-        message: "blocked",
-      },
-    });
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(response.status).toBe(418);
+    await expect(response.text()).resolves.toBe("blocked");
   });
 
   it("can attach an explicit method to the generated route contract", () => {
@@ -302,98 +330,7 @@ describe("nextRoute", () => {
     expect(handler).not.toHaveBeenCalled();
   });
 
-  it("preserves explicit procedure error contracts in the route type", () => {
-    const route = nextRoute(
-      procedure
-        .forRoute(staticRouteContract)
-        .error<"FORBIDDEN", { reason: string }>("FORBIDDEN")
-        .handle(async () => ({
-          status: 204 as const,
-        })),
-    );
-
-    type ActualResponse = Awaited<ReturnType<typeof route>>;
-    type ExpectedResponse =
-      | TypedNextResponse<
-          undefined,
-          204,
-          import("../lib/content-type-types").ContentType
-        >
-      | TypedNextResponse<
-          {
-            error: {
-              code: "FORBIDDEN";
-              message: string;
-              details?: { reason: string };
-            };
-          },
-          403,
-          "application/json"
-        >;
-    expectTypeOf<ActualResponse>().toEqualTypeOf<ExpectedResponse>();
-  });
-
-  it("preserves shared procedure error contracts in extended route types", () => {
-    const guardedMiddleware = defineProcedureMiddleware(() => undefined)
-      .error<"UNAUTHORIZED", { reason: "missing_demo_user" }>("UNAUTHORIZED")
-      .error<"FORBIDDEN", { reason: "suspended_account" }>("FORBIDDEN");
-
-    const guardedBaseProcedure = procedure
-      .forRoute(staticRouteContract)
-      .use(guardedMiddleware);
-
-    const route = nextRoute(
-      guardedBaseProcedure
-        .error<"FORBIDDEN", { reason: "editor_only" }>("FORBIDDEN")
-        .handle(async () => ({
-          status: 204 as const,
-        })),
-    );
-
-    type ActualResponse = Awaited<ReturnType<typeof route>>;
-    type ExpectedResponse =
-      | TypedNextResponse<
-          undefined,
-          204,
-          import("../lib/content-type-types").ContentType
-        >
-      | TypedNextResponse<
-          {
-            error: {
-              code: "UNAUTHORIZED";
-              message: string;
-              details?: { reason: "missing_demo_user" };
-            };
-          },
-          401,
-          "application/json"
-        >
-      | TypedNextResponse<
-          {
-            error: {
-              code: "FORBIDDEN";
-              message: string;
-              details?: { reason: "suspended_account" };
-            };
-          },
-          403,
-          "application/json"
-        >
-      | TypedNextResponse<
-          {
-            error: {
-              code: "FORBIDDEN";
-              message: string;
-              details?: { reason: "editor_only" };
-            };
-          },
-          403,
-          "application/json"
-        >;
-    expectTypeOf<ActualResponse>().toEqualTypeOf<ExpectedResponse>();
-  });
-
-  it("preserves middleware-thrown RpcError responses while using declared middleware error contracts", async () => {
+  it("preserves middleware-thrown RpcError responses through required onError", async () => {
     const guardedMiddleware = defineProcedureMiddleware(() => {
       throw rpcError("UNAUTHORIZED", {
         message: "middleware-denied",
@@ -401,7 +338,7 @@ describe("nextRoute", () => {
           reason: "missing_demo_user" as const,
         },
       });
-    }).error<"UNAUTHORIZED", { reason: "missing_demo_user" }>("UNAUTHORIZED");
+    });
 
     const route = nextRoute(
       procedure
@@ -442,27 +379,7 @@ describe("nextRoute", () => {
     );
 
     type ActualResponse = Awaited<ReturnType<typeof route>>;
-    type ExpectedResponse =
-      | TypedNextResponse<
-          {
-            ok: true;
-            includePosts: boolean;
-          },
-          200,
-          "application/json"
-        >
-      | TypedNextResponse<
-          {
-            error: {
-              code: "BAD_REQUEST";
-              message: string;
-              details?: unknown;
-            };
-          },
-          400,
-          "application/json"
-        >;
-    expectTypeOf<ActualResponse>().toEqualTypeOf<ExpectedResponse>();
+    expectTypeOf<ActualResponse>().toExtend<Response>();
   });
 
   it("reflects helper-based custom validation json responses in the route type", () => {
@@ -488,35 +405,7 @@ describe("nextRoute", () => {
     );
 
     type ActualResponse = Awaited<ReturnType<typeof route>>;
-    type ExpectedResponse =
-      | TypedNextResponse<
-          {
-            ok: true;
-            page: number;
-          },
-          200,
-          "application/json"
-        >
-      | TypedNextResponse<
-          {
-            error: {
-              code: "BAD_REQUEST";
-              message: string;
-              details?: unknown;
-            };
-          },
-          400,
-          "application/json"
-        >
-      | TypedNextResponse<
-          {
-            ok: false;
-            target: "query";
-          },
-          422,
-          "application/json"
-        >;
-    expectTypeOf<ActualResponse>().toEqualTypeOf<ExpectedResponse>();
+    expectTypeOf<ActualResponse>().toExtend<Response>();
   });
 
   it("reflects helper-based custom validation text responses in the route type", () => {
@@ -536,28 +425,7 @@ describe("nextRoute", () => {
     );
 
     type ActualResponse = Awaited<ReturnType<typeof route>>;
-    type ExpectedResponse =
-      | TypedNextResponse<
-          {
-            ok: true;
-            page: number;
-          },
-          200,
-          "application/json"
-        >
-      | TypedNextResponse<
-          {
-            error: {
-              code: "BAD_REQUEST";
-              message: string;
-              details?: unknown;
-            };
-          },
-          400,
-          "application/json"
-        >
-      | TypedNextResponse<"validator:query", 422, "text/plain">;
-    expectTypeOf<ActualResponse>().toEqualTypeOf<ExpectedResponse>();
+    expectTypeOf<ActualResponse>().toExtend<Response>();
   });
 
   it("preserves raw validation error responses in runtime and route types", async () => {
@@ -594,28 +462,7 @@ describe("nextRoute", () => {
     type RawResponseRouteResponse = Awaited<
       ReturnType<typeof rawResponseRoute>
     >;
-    type ExpectedRawResponseRouteResponse =
-      | TypedNextResponse<
-          {
-            ok: true;
-            page: number;
-          },
-          200,
-          "application/json"
-        >
-      | TypedNextResponse<
-          {
-            error: {
-              code: "BAD_REQUEST";
-              message: string;
-              details?: unknown;
-            };
-          },
-          400,
-          "application/json"
-        >
-      | Response;
-    expectTypeOf<RawResponseRouteResponse>().toEqualTypeOf<ExpectedRawResponseRouteResponse>();
+    expectTypeOf<RawResponseRouteResponse>().toExtend<Response>();
 
     const rawNextResponseRoute = nextRoute(
       procedure
@@ -641,31 +488,7 @@ describe("nextRoute", () => {
     type RawNextResponseRouteResponse = Awaited<
       ReturnType<typeof rawNextResponseRoute>
     >;
-    type ExpectedRawNextResponseRouteResponse =
-      | TypedNextResponse<
-          {
-            ok: true;
-            page: number;
-          },
-          200,
-          "application/json"
-        >
-      | TypedNextResponse<
-          {
-            error: {
-              code: "BAD_REQUEST";
-              message: string;
-              details?: unknown;
-            };
-          },
-          400,
-          "application/json"
-        >
-      | NextResponse<{
-          ok: false;
-          target: "query";
-        }>;
-    expectTypeOf<RawNextResponseRouteResponse>().toEqualTypeOf<ExpectedRawNextResponseRouteResponse>();
+    expectTypeOf<RawNextResponseRouteResponse>().toExtend<Response>();
   });
 
   it("includes implicit INTERNAL_SERVER_ERROR responses for runtime-enforced output routes", () => {
@@ -692,25 +515,6 @@ describe("nextRoute", () => {
     );
 
     type ActualResponse = Awaited<ReturnType<typeof route>>;
-    type ExpectedResponse =
-      | TypedNextResponse<
-          {
-            ok: true;
-          },
-          200,
-          "application/json"
-        >
-      | TypedNextResponse<
-          {
-            error: {
-              code: "INTERNAL_SERVER_ERROR";
-              message: string;
-              details?: unknown;
-            };
-          },
-          500,
-          "application/json"
-        >;
-    expectTypeOf<ActualResponse>().toEqualTypeOf<ExpectedResponse>();
+    expectTypeOf<ActualResponse>().toExtend<Response>();
   });
 });

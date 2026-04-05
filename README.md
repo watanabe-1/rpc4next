@@ -116,7 +116,8 @@ Notes:
 - `procedure` / `nextRoute()` is the default recommendation for new typed routes
 - generated sibling `route-contract.ts` files are the recommended params source for procedure routes
 - input contracts consume Standard Schema V1-compatible schemas directly
-- shared presets such as `baseProcedure`, typed error contracts, project-level `errorFormatter`, and validator-stage customization all build on this path
+- route handlers must provide `onError`, either directly on `nextRoute(...)` or through `createProcedureKit({ onError })`
+- shared presets such as `baseProcedure`, project-level `onError`, and validator-stage customization all build on this path
 
 `procedure` input contracts validate request input and return typed `400` JSON
 errors by default when validation fails. If you need custom branching at the
@@ -246,10 +247,10 @@ It supports:
 
 - `forRoute(routeContract)` for generated route-contract binding
 - direct schema contracts for `params`, `query`, `json`, `formData`, `headers`, and `cookies`
-- `meta(...)`, `output(...)`, and typed `error(...)` contracts
+- `meta(...)` and `output(...)`
 - shared presets via reusable builders such as `baseProcedure`
 - validator-stage customization with `onValidationError(...)`
-- adaptation to App Router exports through `nextRoute(procedure, { method })`
+- adaptation to App Router exports through `nextRoute(procedure, { method, onError })`
 
 Example:
 
@@ -282,30 +283,52 @@ const getUser = procedure
     },
   }));
 
-export const GET = nextRoute(getUser, { method: "GET" });
+export const GET = nextRoute(getUser, { method: "GET", onError });
 ```
 
-### Error Formatting
+### Error Handling
 
-`nextRoute()` can reshape thrown errors with an `errorFormatter`, and
+`nextRoute()` requires `onError(error, context)`, and
 `createProcedureKit(...)` can share that policy across routes.
 
+If you want client-side inference to preserve the concrete response shape returned
+from `onError`, prefer `satisfies ProcedureOnError` over
+`const onError: ProcedureOnError = ...`. A direct type annotation widens the
+return type to the generic `ProcedureOnError` contract, while `satisfies`
+checks the contract without discarding the specific `response.json(...)` /
+`response.text(...)` result type.
+
 ```ts
-import { nextRoute, procedure } from "rpc4next/server";
+import {
+  isRpcError,
+  nextRoute,
+  procedure,
+  type ProcedureOnError,
+} from "rpc4next/server";
 import { routeContract } from "./route-contract";
 
 const failingProcedure = procedure.forRoute(routeContract).handle(async () => {
   throw new Error("expected failure");
 });
 
+const onError = ((error, { response }) => {
+  if (error instanceof Response) {
+    return error;
+  }
+
+  if (isRpcError(error)) {
+    return response.json(error.toJSON(), { status: error.status });
+  }
+
+  const message =
+    error instanceof Error ? error.message : "unknown integration error";
+
+  return response.text(`handled:${message}`, { status: 500 });
+}) satisfies ProcedureOnError;
+
 export const GET = nextRoute(failingProcedure, {
   method: "GET",
-  errorFormatter: (error, response) => {
-    const message =
-      error instanceof Error ? error.message : "unknown integration error";
-
-    return response.text(`handled:${message}`, { status: 500 });
-  },
+  onError,
 });
 ```
 

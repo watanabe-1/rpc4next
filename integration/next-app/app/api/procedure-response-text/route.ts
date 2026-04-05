@@ -1,5 +1,6 @@
 import { nextRoute, procedure } from "rpc4next/server";
 import { z } from "zod";
+import { onError } from "../_shared/on-error";
 import { routeContract } from "./route-contract";
 
 const getProcedureResponseText = procedure
@@ -15,4 +16,5 @@ const getProcedureResponseText = procedure
 
 export const GET = nextRoute(getProcedureResponseText, {
   method: "GET",
+  onError,
 });

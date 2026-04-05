@@ -73,9 +73,7 @@ const guardedProcedureMiddleware = defineProcedureMiddleware<
       },
     };
   },
-)
-  .error<"UNAUTHORIZED", { reason: "missing_demo_user" }>("UNAUTHORIZED")
-  .error<"FORBIDDEN", { reason: "suspended_account" }>("FORBIDDEN");
+);
 
 export const guardedBaseProcedure = procedure
   .headers(guardedProcedureHeadersSchema)

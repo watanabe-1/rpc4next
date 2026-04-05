@@ -1,62 +1,62 @@
+import type { HttpMethod } from "rpc4next-shared";
 import {
   rpcError as baseRpcError,
-  getDefaultRpcErrorStatus,
   type RpcErrorCode,
   type RpcErrorInit,
 } from "./error";
 import {
-  defaultRpcErrorFormatter,
-  type ProcedureErrorFormatter,
-} from "./error-formatter";
-import { nextRoute as baseNextRoute } from "./next-route";
+  nextRoute as baseNextRoute,
+  type NextRouteHandler,
+  type NextRouteOptions,
+} from "./next-route";
+import type { ProcedureOnError } from "./on-error";
 import { procedure } from "./procedure";
 
-export interface ProcedureErrorRegistryEntry {
-  status: number;
-}
-
-export type ProcedureErrorRegistry = Record<
-  string,
-  ProcedureErrorRegistryEntry
->;
-
 export interface CreateProcedureKitOptions {
-  errorFormatter?: ProcedureErrorFormatter;
-  errorRegistry?: ProcedureErrorRegistry;
+  onError: ProcedureOnError;
 }
 
-export const createProcedureKit = (options: CreateProcedureKitOptions = {}) => {
-  const kitErrorFormatter = options.errorFormatter ?? defaultRpcErrorFormatter;
+export const createProcedureKit = <TOnError extends ProcedureOnError>(options: {
+  onError: TOnError;
+}) => {
   const kitRpcError = (<TCode extends RpcErrorCode, TDetails = unknown>(
     code: TCode,
     init?: RpcErrorInit<TCode, TDetails>,
-  ) => {
-    const registryStatus = options.errorRegistry?.[code]?.status;
-
-    return baseRpcError(code, {
-      ...init,
-      status: (init?.status ??
-        registryStatus ??
-        getDefaultRpcErrorStatus(code)) as RpcErrorInit<
-        TCode,
-        TDetails
-      >["status"],
-    });
-  }) as typeof baseRpcError;
-  const nextRoute = ((procedureDefinition, routeOptions) =>
+  ) => baseRpcError(code, init)) as typeof baseRpcError;
+  const nextRoute = <
+    TProcedure,
+    TMethod extends HttpMethod | undefined = undefined,
+    TValidateOutput extends boolean = false,
+  >(
+    procedureDefinition: TProcedure,
+    routeOptions?: Omit<
+      NextRouteOptions<Exclude<TMethod, undefined>, TOnError>,
+      "onError"
+    > & {
+      validateOutput?: TValidateOutput;
+    },
+  ): NextRouteHandler<
+    TProcedure & Parameters<typeof baseNextRoute>[0],
+    TMethod,
+    TValidateOutput,
+    TOnError
+  > =>
     baseNextRoute(
       procedureDefinition as never,
       {
         ...routeOptions,
-        errorFormatter: routeOptions?.errorFormatter ?? kitErrorFormatter,
+        onError: options.onError,
       } as never,
-    )) as typeof baseNextRoute;
+    ) as NextRouteHandler<
+      TProcedure & Parameters<typeof baseNextRoute>[0],
+      TMethod,
+      TValidateOutput,
+      TOnError
+    >;
 
   return {
     procedure,
     rpcError: kitRpcError,
-    defaultRpcErrorFormatter,
-    errorRegistry: options.errorRegistry,
     nextRoute,
   };
 };

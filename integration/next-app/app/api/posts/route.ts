@@ -1,5 +1,6 @@
 import { nextRoute, procedure } from "rpc4next/server";
 import { z } from "zod";
+import { onError } from "../_shared/on-error";
 import { routeContract } from "./route-contract";
 
 const bodySchema = z.object({
@@ -23,4 +24,4 @@ const postRoute = procedure
     },
   }));
 
-export const POST = nextRoute(postRoute, { method: "POST" });
+export const POST = nextRoute(postRoute, { method: "POST", onError });

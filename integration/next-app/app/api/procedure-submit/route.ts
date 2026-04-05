@@ -1,5 +1,6 @@
 import { nextRoute, procedure } from "rpc4next/server";
 import { z } from "zod";
+import { onError } from "../_shared/on-error";
 import { routeContract } from "./route-contract";
 
 const submitProcedure = procedure
@@ -39,4 +40,4 @@ const submitProcedure = procedure
     },
   }));
 
-export const POST = nextRoute(submitProcedure, { method: "POST" });
+export const POST = nextRoute(submitProcedure, { method: "POST", onError });

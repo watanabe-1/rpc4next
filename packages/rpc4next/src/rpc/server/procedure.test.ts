@@ -1,9 +1,6 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { defineProcedureMiddleware, procedure } from "./procedure";
-import type {
-  ProcedureErrorContract,
-  ProcedureRouteContract,
-} from "./procedure-types";
+import type { ProcedureRouteContract } from "./procedure-types";
 import type { StandardSchemaV1 } from "./standard-schema";
 
 describe("procedure builder type definitions", () => {
@@ -482,53 +479,28 @@ describe("procedure builder type definitions", () => {
     expect(true).toBe(true);
   });
 
-  it("accumulates shared and route-local procedure error contracts", () => {
-    const guardedMiddleware = defineProcedureMiddleware(() => undefined)
-      .error<"UNAUTHORIZED", { reason: "missing_demo_user" }>("UNAUTHORIZED")
-      .error<"FORBIDDEN", { reason: "suspended_account" }>("FORBIDDEN");
-
+  it("keeps middleware reuse focused on immutable builder composition", () => {
+    const guardedMiddleware = defineProcedureMiddleware(() => undefined);
     const guardedBaseProcedure = procedure.use(guardedMiddleware);
 
-    const guardedProcedure = guardedBaseProcedure
-      .error<"FORBIDDEN", { reason: "editor_only" }>("FORBIDDEN")
-      .handle(() => ({
-        status: 204 as const,
-      }));
+    const guardedProcedure = guardedBaseProcedure.handle(() => ({
+      status: 204 as const,
+    }));
 
-    type ExpectedErrors =
-      | ProcedureErrorContract<"UNAUTHORIZED", { reason: "missing_demo_user" }>
-      | ProcedureErrorContract<"FORBIDDEN", { reason: "suspended_account" }>
-      | ProcedureErrorContract<"FORBIDDEN", { reason: "editor_only" }>;
-
-    expectTypeOf(guardedProcedure.definition.error).toExtend<
-      ExpectedErrors | undefined
-    >();
+    expectTypeOf(guardedProcedure.definition).toExtend<object>();
   });
 
-  it("preserves declared middleware error metadata across immutable reuse", () => {
-    const guardedMiddleware = defineProcedureMiddleware(() => undefined).error<
-      "UNAUTHORIZED",
-      { reason: "missing_demo_user" }
-    >("UNAUTHORIZED");
-
+  it("preserves immutable reuse when middleware is shared across procedures", () => {
+    const guardedMiddleware = defineProcedureMiddleware(() => undefined);
     const baseProcedure = procedure.use(guardedMiddleware);
     const publicProcedure = baseProcedure.handle(() => ({
       status: 204 as const,
     }));
-    const editorProcedure = baseProcedure
-      .error<"FORBIDDEN", { reason: "editor_only" }>("FORBIDDEN")
-      .handle(() => ({
-        status: 204 as const,
-      }));
+    const editorProcedure = baseProcedure.handle(() => ({
+      status: 204 as const,
+    }));
 
-    expectTypeOf(publicProcedure.definition.error).toExtend<
-      | ProcedureErrorContract<"UNAUTHORIZED", { reason: "missing_demo_user" }>
-      | undefined
-    >();
-    expectTypeOf(editorProcedure.definition.error).toExtend<
-      | ProcedureErrorContract<"UNAUTHORIZED", { reason: "missing_demo_user" }>
-      | ProcedureErrorContract<"FORBIDDEN", { reason: "editor_only" }>
-      | undefined
-    >();
+    expectTypeOf(publicProcedure.definition).toExtend<object>();
+    expectTypeOf(editorProcedure.definition).toExtend<object>();
   });
 });

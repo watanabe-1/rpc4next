@@ -1,18 +1,10 @@
 import type { NextResponse } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
-import type { RpcErrorCode } from "./error";
-import {
-  defaultRpcErrorFormatter,
-  type ProcedureErrorFormatterResponse,
-} from "./error-formatter";
 import type { RpcMeta } from "./meta";
 import type { ProcedureResult } from "./procedure";
 import type {
-  AppendProcedureErrorDefinition,
   MergeProcedureDefinition,
-  MergeProcedureDefinitionWithDeclaredDefinition,
   ProcedureDefinition,
-  ProcedureErrorContract,
   ProcedureInputContract,
   ProcedureInputOptions,
   ProcedureInputTarget,
@@ -111,45 +103,6 @@ export const withProcedureOutput = <
   >;
 };
 
-export const withProcedureError = <
-  TDefinition extends ProcedureDefinition,
-  TCode extends RpcErrorCode,
-  TDetails = unknown,
->(
-  definition: TDefinition,
-  code: TCode,
-): AppendProcedureErrorDefinition<
-  TDefinition,
-  ProcedureErrorContract<TCode, TDetails>
-> => {
-  const existingError = definition.error as ProcedureErrorContract | undefined;
-  const variants =
-    existingError?.variants ??
-    (existingError?.code
-      ? [
-          {
-            code: existingError.code,
-          },
-        ]
-      : []);
-
-  return {
-    ...definition,
-    error: {
-      code,
-      variants: [
-        ...variants,
-        {
-          code,
-        },
-      ],
-    },
-  } as AppendProcedureErrorDefinition<
-    TDefinition,
-    ProcedureErrorContract<TCode, TDetails>
-  >;
-};
-
 export const withProcedureInputContract = <
   TDefinition extends ProcedureDefinition,
   TValidationSchema extends ValidationSchema,
@@ -209,41 +162,6 @@ export const withProcedureInputContract = <
   >;
 };
 
-export const withDeclaredProcedureDefinition = <
-  TBase extends ProcedureDefinition,
-  TDeclared extends Partial<ProcedureDefinition>,
->(
-  definition: TBase,
-  declaredDefinition: TDeclared,
-): MergeProcedureDefinitionWithDeclaredDefinition<TBase, TDeclared> => {
-  const declaredError = declaredDefinition.error as
-    | ProcedureErrorContract
-    | undefined;
-  const existingError = definition.error as ProcedureErrorContract | undefined;
-  const variants = [
-    ...(existingError?.variants ??
-      (existingError?.code ? [{ code: existingError.code }] : [])),
-    ...(declaredError?.variants ??
-      (declaredError?.code ? [{ code: declaredError.code }] : [])),
-  ];
-
-  return {
-    ...definition,
-    ...declaredDefinition,
-    ...(declaredError
-      ? {
-          error: {
-            ...declaredError,
-            variants,
-          },
-        }
-      : {}),
-  } as unknown as MergeProcedureDefinitionWithDeclaredDefinition<
-    TBase,
-    TDeclared
-  >;
-};
-
 export const isProcedureResult = (value: unknown): value is ProcedureResult => {
   if (typeof value !== "object" || value === null) {
     return false;
@@ -290,13 +208,6 @@ export const normalizeProcedureResult = (
     headersInit: result.headers,
     status: result.status,
   });
-};
-
-export const normalizeRpcErrorResponse = (
-  error: unknown,
-  routeContext: ProcedureErrorFormatterResponse,
-) => {
-  return defaultRpcErrorFormatter(error, routeContext);
 };
 
 export const executePipeline = async <

@@ -9,7 +9,6 @@ const getProcedureKitError = procedureKit.procedure
       mode: z.enum(["deny"]).optional(),
     }),
   )
-  .error<"FORBIDDEN", { reason: "kit_formatter" }>("FORBIDDEN")
   .handle(async ({ query }) => {
     if (query.mode === "deny") {
       throw rpcError("FORBIDDEN", {

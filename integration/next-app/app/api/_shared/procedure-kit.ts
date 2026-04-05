@@ -1,25 +1,34 @@
 import { createProcedureKit, isRpcError, procedure } from "rpc4next/server";
 
 export const procedureKit = createProcedureKit({
-  errorFormatter: (error, response) => {
-    if (!isRpcError(error)) {
-      return undefined;
+  onError: (error, { response }) => {
+    if (error instanceof Response) {
+      return error;
+    }
+
+    if (isRpcError(error)) {
+      return response.json(
+        {
+          success: false,
+          error: {
+            code: error.code,
+            message: error.message,
+            details: error.details,
+          },
+        },
+        { status: error.status },
+      );
     }
 
     return response.json(
       {
         success: false,
         error: {
-          code: error.code,
-          message: error.message,
-          details: error.details,
+          message: error instanceof Error ? error.message : "unknown error",
         },
       },
-      { status: error.status },
+      { status: 500 },
     );
-  },
-  errorRegistry: {
-    FORBIDDEN: { status: 403 },
   },
 });
 

@@ -1,5 +1,6 @@
 import { nextRoute, procedure } from "rpc4next/server";
 import { z } from "zod";
+import { onError } from "../../_shared/on-error";
 import { routeContract } from "./route-contract";
 
 export type Query = {
@@ -33,4 +34,4 @@ const getUser = procedure
     },
   }));
 
-export const GET = nextRoute(getUser, { method: "GET" });
+export const GET = nextRoute(getUser, { method: "GET", onError });

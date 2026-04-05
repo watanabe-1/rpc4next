@@ -1,10 +1,36 @@
 import { type as arktype } from "arktype";
 import { NextRequest } from "next/server";
+import type { HttpMethod } from "rpc4next-shared";
 import { describe, expect, it } from "vitest";
-import { nextRoute } from "./next-route";
+import { nextRoute as baseNextRoute } from "./next-route";
+import { defaultProcedureOnError } from "./on-error";
 import { procedure } from "./procedure";
 import type { ProcedureRouteContract } from "./procedure-types";
 import type { StandardSchemaV1 } from "./standard-schema";
+
+const nextRoute = <
+  TProcedure,
+  TMethod extends HttpMethod | undefined = undefined,
+  TValidateOutput extends boolean = false,
+>(
+  procedureDefinition: TProcedure,
+  options?: {
+    method?: Exclude<TMethod, undefined>;
+    validateOutput?: TValidateOutput;
+    onError?: unknown;
+  },
+) => {
+  const resolvedOptions =
+    options && "onError" in options
+      ? options
+      : { ...(options ?? {}), onError: defaultProcedureOnError };
+
+  return baseNextRoute<
+    TProcedure & Parameters<typeof baseNextRoute>[0],
+    TMethod,
+    TValidateOutput
+  >(procedureDefinition as never, resolvedOptions as never);
+};
 
 describe("nextRoute arktype integration", () => {
   type EmptyParams = Record<never, never>;

@@ -11,7 +11,12 @@ import {
 } from "vitest";
 import { z } from "zod";
 import { searchParamsToObject } from "../lib/search-params";
-import { nextRoute, type ProcedureRouteContract, procedure } from "../server";
+import {
+  defaultProcedureOnError,
+  nextRoute,
+  type ProcedureRouteContract,
+  procedure,
+} from "../server";
 import { createRpcClient } from "./rpc-client";
 import type { RpcClientOptions, RpcEndpoint } from "./types";
 
@@ -34,7 +39,7 @@ const _get_1 = nextRoute(
   procedure
     .forRoute(staticRouteContract)
     .handle(async ({ response }) => response.text("text")),
-  { method: "GET" },
+  { method: "GET", onError: defaultProcedureOnError },
 );
 
 const _post_1 = nextRoute(
@@ -42,7 +47,7 @@ const _post_1 = nextRoute(
     .forRoute(staticRouteContract)
     .json(schema)
     .handle(async ({ response }) => response.text("text")),
-  { method: "POST" },
+  { method: "POST", onError: defaultProcedureOnError },
 );
 
 const _post_2 = nextRoute(
@@ -50,7 +55,7 @@ const _post_2 = nextRoute(
     .forRoute(staticRouteContract)
     .headers(schema)
     .handle(async ({ response }) => response.text("text")),
-  { method: "POST" },
+  { method: "POST", onError: defaultProcedureOnError },
 );
 
 const _post_3 = nextRoute(
@@ -58,7 +63,7 @@ const _post_3 = nextRoute(
     .forRoute(staticRouteContract)
     .cookies(schema)
     .handle(async ({ response }) => response.text("text")),
-  { method: "POST" },
+  { method: "POST", onError: defaultProcedureOnError },
 );
 
 const _post_4 = nextRoute(
@@ -66,7 +71,7 @@ const _post_4 = nextRoute(
     .forRoute(staticRouteContract)
     .query(schema)
     .handle(async ({ response }) => response.text("text")),
-  { method: "POST" },
+  { method: "POST", onError: defaultProcedureOnError },
 );
 
 const _post_5 = nextRoute(
@@ -74,7 +79,7 @@ const _post_5 = nextRoute(
     .forRoute(staticRouteContract)
     .query(optionalSchema)
     .handle(async ({ response }) => response.text("text")),
-  { method: "POST" },
+  { method: "POST", onError: defaultProcedureOnError },
 );
 
 const _post_all = nextRoute(
@@ -85,7 +90,7 @@ const _post_all = nextRoute(
     .cookies(schema)
     .query(schema)
     .handle(async ({ response }) => response.text("text")),
-  { method: "POST" },
+  { method: "POST", onError: defaultProcedureOnError },
 );
 
 const server = setupServer();
