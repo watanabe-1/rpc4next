@@ -7,7 +7,11 @@ import {
 } from "rpc4next-shared";
 import { END_POINT_FILE_NAMES } from "../constants.js";
 import type { EndPointFileNames } from "../types.js";
-import { scanAppDirCache, visitedDirsCache } from "./cache.js";
+import {
+  createScanAppDirCacheKey,
+  scanAppDirCache,
+  visitedDirsCache,
+} from "./cache.js";
 import {
   INDENT,
   NEWLINE,
@@ -448,7 +452,14 @@ export const scanAppDir = (
   parentParams: ParentParam[] = [],
   rootDir = input,
 ): ScanResult => {
-  const cachedScanResult = scanAppDirCache.get(input);
+  const cacheKey = createScanAppDirCacheKey({
+    output,
+    input,
+    indent,
+    rootDir,
+    parentParams,
+  });
+  const cachedScanResult = scanAppDirCache.get(cacheKey);
   if (cachedScanResult !== undefined) return cachedScanResult;
 
   const context: ScanContext = {
@@ -486,7 +497,7 @@ export const scanAppDir = (
     paramsTypes: accumulator.paramsTypes,
   };
 
-  scanAppDirCache.set(input, result);
+  scanAppDirCache.set(cacheKey, result);
 
   return result;
 };

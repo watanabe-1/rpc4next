@@ -10,6 +10,7 @@ import {
 import type { ImportAliasName } from "./alias.js";
 import {
   clearScanAppDirCacheAbove,
+  createScanAppDirCacheKey,
   scanAppDirCache,
   visitedDirsCache,
 } from "./cache.js";
@@ -504,11 +505,20 @@ describe("route-scanner", () => {
       });
 
       visitedDirsCache.set(tmpPath("testApp", "group", "(user)"), true);
-      scanAppDirCache.set(tmpPosixPath("testApp", "group", "(user)"), {
-        pathStructure: "   ",
-        imports: [],
-        paramsTypes: [],
-      });
+      scanAppDirCache.set(
+        createScanAppDirCacheKey({
+          output: tmpPath("output"),
+          input: tmpPosixPath("testApp", "group", "(user)"),
+          indent: "  ",
+          rootDir: tmpPath("testApp"),
+          parentParams: [],
+        }),
+        {
+          pathStructure: "   ",
+          imports: [],
+          paramsTypes: [],
+        },
+      );
 
       expect(() => scanAppDir(tmpPath("output"), tmpPath("testApp"))).toThrow(
         `Invalid empty child path structure in grouped/parallel route: ${tmpPosixPath("testApp", "group", "(user)")}`,
@@ -854,6 +864,86 @@ describe("route-scanner", () => {
       const result1 = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       const result2 = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(result1).toBe(result2);
+    });
+
+    it("should not reuse a cached subtree scan across different root directories", () => {
+      setupTree({
+        testApp: {
+          nested: {
+            "[id]": {
+              "page.tsx": "export function Page() {};",
+            },
+          },
+        },
+      });
+
+      const nestedPath = tmpPath("testApp", "nested");
+      const nestedFromParent = scanAppDir(
+        tmpPath("output"),
+        nestedPath,
+        "  ",
+        [],
+        tmpPath("testApp"),
+      );
+      const nestedStandalone = scanAppDir(tmpPath("output"), nestedPath);
+
+      expect(nestedFromParent).not.toBe(nestedStandalone);
+      expect(nestedFromParent.pathStructure).toBe(`{
+    "_id": RpcEndpoint & Record<ParamsKey, { "id": string }>
+  }`);
+      expect(nestedStandalone.pathStructure).toBe(`{
+  "_id": RpcEndpoint & Record<ParamsKey, { "id": string }>
+}`);
+      expect(nestedFromParent.paramsTypes).toStrictEqual([
+        {
+          paramsType: '{ "id": string }',
+          dirPath: tmpPosixPath("testApp", "nested", "[id]"),
+          pathname: "/nested/[id]",
+        },
+      ]);
+      expect(nestedStandalone.paramsTypes).toStrictEqual([
+        {
+          paramsType: '{ "id": string }',
+          dirPath: tmpPosixPath("testApp", "nested", "[id]"),
+          pathname: "/[id]",
+        },
+      ]);
+    });
+
+    it("should not reuse a cached subtree scan across different parent params", () => {
+      setupTree({
+        testApp: {
+          child: {
+            "page.tsx": "export function Page() {};",
+          },
+        },
+      });
+
+      const childPath = tmpPath("testApp", "child");
+      const childWithoutParentParams = scanAppDir(tmpPath("output"), childPath);
+      const childWithParentParams = scanAppDir(
+        tmpPath("output"),
+        childPath,
+        "",
+        [
+          {
+            paramName: "user",
+            routeType: {
+              isDynamic: true,
+              isCatchAll: false,
+              isOptionalCatchAll: false,
+              isGroup: false,
+              isParallel: false,
+            },
+          },
+        ],
+      );
+
+      expect(childWithoutParentParams).not.toBe(childWithParentParams);
+      expect(childWithoutParentParams.pathStructure).toBe("RpcEndpoint");
+      expect(childWithParentParams.pathStructure).toBe(
+        'RpcEndpoint & Record<ParamsKey, { "user": string }>',
+      );
     });
 
     it("should clear cache when clearScanAppDirCache is called with the exact path", () => {
