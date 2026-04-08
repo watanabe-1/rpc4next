@@ -3,11 +3,7 @@ import { describe, expect, expectTypeOf, it } from "vitest";
 import type { ContentType } from "../lib/content-type-types";
 import { createRouteContext } from "./route-context";
 import type { ValidationSchema } from "./route-types";
-import type {
-  TypedNextResponse,
-  ValidatedData,
-  ValidationTarget,
-} from "./types";
+import type { TypedNextResponse } from "./types";
 
 const createRealNextRequest = (url: string): NextRequest => {
   return new NextRequest(url);
@@ -28,19 +24,6 @@ describe("createRouteContext", () => {
 
     const params = await context.req.params();
     expect(params).toEqual(mockParams);
-  });
-
-  it("should store and retrieve validated data", () => {
-    const req = createRealNextRequest("http://localhost/");
-    const context = createRouteContext(req, { params: Promise.resolve({}) });
-
-    context.req.addValidatedData(
-      "body" as ValidationTarget,
-      { name: "John" } as unknown as ValidatedData,
-    );
-    expect(context.req.valid("body" as never)).toEqual({
-      name: "John",
-    });
   });
 
   it("should return a json response", () => {

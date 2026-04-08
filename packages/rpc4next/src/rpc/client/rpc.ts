@@ -1,9 +1,3 @@
-/*!
- * Inspired by the design of Hono (https://github.com/honojs/hono)
- * and pathpida (https://github.com/aspida/pathpida)
- * particularly their routing structures and developer experience.
- */
-
 import { isDynamic, isOptionalCatchAll } from "./client-utils";
 import type {
   PathParamsInput,
