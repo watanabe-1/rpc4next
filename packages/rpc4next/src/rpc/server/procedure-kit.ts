@@ -16,9 +16,11 @@ export interface CreateProcedureKitOptions {
   onError: ProcedureOnError;
 }
 
-export const createProcedureKit = <TOnError extends ProcedureOnError>(options: {
-  onError: TOnError;
-}) => {
+export const createProcedureKit = <TOnError extends ProcedureOnError>(
+  options: CreateProcedureKitOptions & {
+    onError: TOnError;
+  },
+) => {
   const presetProcedure = procedure.defaults({
     onError: options.onError,
   });

@@ -1,47 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildUrlSuffix, createUrl, replaceDynamicSegments } from "./url";
-
-describe("buildUrlSuffix", () => {
-  it("returns an empty string when no URL is provided", () => {
-    expect(buildUrlSuffix()).toBe("");
-  });
-
-  it("returns a query string when a query is provided", () => {
-    const url = { query: { foo: "bar", baz: "qux" } };
-    const result = buildUrlSuffix(url);
-    // Since URLSearchParams does not guarantee parameter order,
-    // verify that it starts with '?' and contains each parameter
-    expect(result.startsWith("?")).toBe(true);
-    expect(result).toContain("foo=bar");
-    expect(result).toContain("baz=qux");
-  });
-
-  it("returns a hash string when a hash is provided", () => {
-    const url = { hash: "section1" };
-    expect(buildUrlSuffix(url)).toBe("#section1");
-  });
-
-  it("returns a combined query and hash string when both are provided", () => {
-    const url = { query: { a: "1" }, hash: "section2" };
-    const result = buildUrlSuffix(url);
-    expect(result.startsWith("?")).toBe(true);
-    expect(result).toContain("a=1");
-    expect(result).toContain("#section2");
-  });
-});
-
-describe("replaceDynamicSegments", () => {
-  it("replaces dynamic segments with specified values", () => {
-    const basePath = "/_____optional/___catch/_dynamic";
-    const replacements = {
-      optionalCatchAll: "/opt",
-      catchAll: "/cat",
-      dynamic: "/dyn",
-    };
-    const result = replaceDynamicSegments(basePath, replacements);
-    expect(result).toBe("/opt/cat/dyn");
-  });
-});
+import { createUrl } from "./url";
 
 describe("createUrl", () => {
   it("generates a URL with dynamic parameters and query/hash", () => {
@@ -60,6 +18,35 @@ describe("createUrl", () => {
     expect(result.params).toEqual(expectedParams);
 
     expect(result.pathname).toBe("/user/[id]/profile");
+  });
+
+  it("appends only a hash when provided", () => {
+    const result = createUrl(
+      ["https://example.com", "docs"],
+      {},
+      [],
+    )({
+      hash: "section1",
+    });
+
+    expect(result.relativePath).toBe("/docs#section1");
+    expect(result.path).toBe("https://example.com/docs#section1");
+  });
+
+  it("appends query parameters and hash when both are provided", () => {
+    const result = createUrl(
+      ["https://example.com", "search"],
+      {},
+      [],
+    )({
+      query: { foo: "bar", baz: "qux" },
+      hash: "filters",
+    });
+
+    expect(result.relativePath.startsWith("/search?")).toBe(true);
+    expect(result.relativePath).toContain("foo=bar");
+    expect(result.relativePath).toContain("baz=qux");
+    expect(result.relativePath).toContain("#filters");
   });
 
   it("generates a URL with a catch-all parameter", () => {
