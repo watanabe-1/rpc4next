@@ -1,5 +1,6 @@
+import { rpcError } from "rpc4next/server";
 import { z } from "zod";
-import { appProcedure, rpcError } from "../_shared/procedure-kit";
+import { appProcedure } from "../_shared/procedure-defaults";
 import { routeContract } from "./route-contract";
 
 export const GET = appProcedure
@@ -12,8 +13,8 @@ export const GET = appProcedure
   .handle(async ({ query }) => {
     if (query.mode === "deny") {
       throw rpcError("FORBIDDEN", {
-        message: "Procedure kit formatter denied the request.",
-        details: { reason: "kit_formatter" },
+        message: "Procedure defaults formatter denied the request.",
+        details: { reason: "defaults_formatter" },
       });
     }
 
@@ -21,7 +22,7 @@ export const GET = appProcedure
       status: 200,
       body: {
         ok: true as const,
-        source: "procedure-kit-error" as const,
+        source: "procedure-defaults-error" as const,
       },
     };
   })

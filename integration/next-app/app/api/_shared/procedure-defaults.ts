@@ -1,9 +1,4 @@
-import {
-  createProcedureKit,
-  isRpcError,
-  type ProcedureOnError,
-  procedure,
-} from "rpc4next/server";
+import { isRpcError, type ProcedureOnError, procedure } from "rpc4next/server";
 
 const sharedOnError = ((error, { response }) => {
   if (error instanceof Response) {
@@ -38,11 +33,5 @@ const sharedOnError = ((error, { response }) => {
 export const appProcedure = procedure.defaults({
   onError: sharedOnError,
 });
-
-export const procedureKit = createProcedureKit({
-  onError: sharedOnError,
-});
-
-export const rpcError = procedureKit.rpcError;
 
 export { procedure };

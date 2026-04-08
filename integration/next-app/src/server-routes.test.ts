@@ -472,13 +472,13 @@ describe("integration next-app server route handlers", () => {
     });
   });
 
-  it("applies the shared procedure kit error formatter to procedure routes", async () => {
-    const { GET: procedureKitErrorGet } = await import(
-      "../app/api/procedure-kit-error/route"
+  it("applies the shared procedure defaults error formatter to procedure routes", async () => {
+    const { GET: procedureDefaultsErrorGet } = await import(
+      "../app/api/procedure-defaults-error/route"
     );
-    const response = await procedureKitErrorGet(
+    const response = await procedureDefaultsErrorGet(
       new NextRequest(
-        "http://127.0.0.1:3000/api/procedure-kit-error?mode=deny",
+        "http://127.0.0.1:3000/api/procedure-defaults-error?mode=deny",
       ),
       { params: Promise.resolve({}) },
     );
@@ -488,9 +488,9 @@ describe("integration next-app server route handlers", () => {
       success: false,
       error: {
         code: "FORBIDDEN",
-        message: "Procedure kit formatter denied the request.",
+        message: "Procedure defaults formatter denied the request.",
         details: {
-          reason: "kit_formatter",
+          reason: "defaults_formatter",
         },
       },
     });

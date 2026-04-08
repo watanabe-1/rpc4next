@@ -3,10 +3,10 @@ import { describe, expect, expectTypeOf, it } from "vitest";
 import { z } from "zod";
 import {
   nextRoute as baseNextRoute,
-  defaultProcedureOnError,
   type ProcedureRouteContract,
   procedure,
 } from "../server";
+import { defaultProcedureOnError } from "../server/on-error";
 import { createRpcHelper } from "./rpc-helper";
 import type { ParamsKey, QueryKey, RpcEndpoint } from "./types";
 

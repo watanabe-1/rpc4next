@@ -11,12 +11,8 @@ import {
 } from "vitest";
 import { z } from "zod";
 import { searchParamsToObject } from "../lib/search-params";
-import {
-  defaultProcedureOnError,
-  nextRoute,
-  type ProcedureRouteContract,
-  procedure,
-} from "../server";
+import { nextRoute, type ProcedureRouteContract, procedure } from "../server";
+import { defaultProcedureOnError } from "../server/on-error";
 import { createRpcClient } from "./rpc-client";
 import type { RpcClientOptions, RpcEndpoint } from "./types";
 
