@@ -61,11 +61,9 @@ export type ErrorHandler<
 
 export type RouteHandlerResponse<
   TRouteResponse extends RouteResponse,
-  // _TValidationSchema is used as a generic to allow referencing the ValidationSchema on the client side.
+  // Kept for type inference from RouteHandler on the client side.
   _TValidationSchema extends ValidationSchema,
-> =
-  // Exclude void | undefined because a response is always returned or an error is thrown internally
-  Promise<Exclude<Awaited<TRouteResponse>, undefined | undefined>>;
+> = Promise<Exclude<Awaited<TRouteResponse>, undefined>>;
 
 export type RouteHandler<
   TParams extends RouteBindings["params"],
