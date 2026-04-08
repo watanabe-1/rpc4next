@@ -48,7 +48,7 @@ This document proposes a staged evolution toward a `procedure`-oriented design. 
 - Keep `app/**` files as the route source of truth.
 - Preserve the current type inference model based on exported route types.
 - Introduce `procedure`-style contract building inspired by tRPC, without adopting tRPC's router-first model.
-- Add route metadata and output contracts in a way that is useful to the generator and client.
+- Add lightweight descriptive metadata and explicit output contracts without expanding the CLI's current responsibility.
 - Standardize server error shape for client ergonomics.
 - Keep migration cost low for existing `routeHandlerFactory()` users.
 - Make implementation safe for Codex to perform incrementally.
@@ -79,9 +79,9 @@ Procedure contracts should be framework-agnostic enough to be adapted into Next 
 
 The initial implementation should coexist with `routeHandlerFactory()`. Internals may move toward `procedure`, but the public migration should be gradual.
 
-### 5. Generator-first metadata
+### 5. Minimal descriptive metadata
 
-If new type information cannot be consumed by the CLI or client, it should not be introduced unless it clearly improves authoring ergonomics.
+If new metadata cannot improve route authoring readability directly, it should not be introduced. The CLI should stay focused on path structure, exported HTTP methods, exported `Query` types, and generated route contracts rather than accumulating unrelated route annotations.
 
 ## Problems in the current design
 
@@ -94,7 +94,7 @@ If new type information cannot be consumed by the CLI or client, it should not b
 - route params are inferred from file paths
 - query/body/header/cookie contracts come from validator middleware
 - response shape is inferred indirectly from `TypedNextResponse`
-- metadata such as auth or cache policy has no first-class place
+- lightweight route descriptions such as summary/tags/deprecated have no first-class place
 
 ### Overloads are costly
 
@@ -112,7 +112,7 @@ Introduce a first-class `procedure` contract builder with a Next adapter.
 
 ```ts
 const getUser = procedure
-  .meta({ tags: ["users"], auth: "optional" })
+  .meta({ summary: "Get a user", tags: ["users"] })
   .params(paramsSchema)
   .query(querySchema)
   .output(userResponseSchema)
@@ -171,7 +171,7 @@ And it avoids coupling the public procedure API to a specific validator library 
 Adopt:
 
 - builder style contract composition
-- first-class `meta`
+- optional descriptive `meta`
 - a clear split between contract construction and execution
 
 Do not adopt:
@@ -252,7 +252,9 @@ throw rpcError("UNAUTHORIZED", {
 
 ### `meta`
 
-Route metadata should be typed but extensible.
+Route metadata should stay typed but intentionally lightweight. It is useful for
+human-readable route description and optional tooling, but it should not become
+the mechanism for rpc4next-specific policy or Next.js runtime configuration.
 
 Initial recommended shape:
 
@@ -260,14 +262,13 @@ Initial recommended shape:
 type RpcMeta = {
   summary?: string;
   tags?: string[];
-  auth?: "required" | "optional" | "none";
-  cache?: "default" | "no-store" | "force-cache";
-  idempotent?: boolean;
   deprecated?: boolean;
 };
 ```
 
-This should remain open to user extension later.
+This should remain open to user extension later, but the built-in surface should
+stop at descriptive fields. `meta` should not affect generated client types or
+CLI output in the current design.
 
 ## Handler model
 
@@ -554,7 +555,10 @@ Target authoring shape:
 // app/api/_shared/base-procedure.ts
 export const baseProcedure = procedure
   .headers(commonHeadersSchema)
-  .meta({ auth: "required" })
+  .meta({
+    summary: "Shared guarded procedure preset",
+    tags: ["guarded"],
+  })
   .use(authMiddleware);
 
 // app/api/users/[userId]/route.ts
@@ -1245,12 +1249,11 @@ Expected work:
 
 - define `RpcMeta`
 - allow metadata attachment on internal definitions
-- expose metadata to the generator shape where possible
+- document `meta` as descriptive server-side annotation only
 
 Validation:
 
 - root test/lint/typecheck
-- generated fixture diff review if generator output changes
 
 ### Step 4
 
@@ -1383,7 +1386,7 @@ If the generator reads only legacy route exports, new procedure-based routes may
 
 Mitigation:
 
-- decide early whether the generator should read only exported HTTP handler functions or also procedure metadata exports
+- decide early whether the generator should read only exported HTTP handler functions or also inspect additional contract exports
 - prefer keeping generated inference centered on exported `GET`/`POST` functions whenever possible
 
 ### Over-promising runtime validation

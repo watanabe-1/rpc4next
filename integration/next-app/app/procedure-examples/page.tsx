@@ -387,7 +387,7 @@ export default async function ProcedureExamplesPage() {
   ContentType
 >;`,
       whyItLooksLikeThat:
-        "This route is a plain App Router handler that returns Response.json(...) without procedure metadata, so the generated client only knows it is some HTTP response.",
+        "This route is a plain App Router handler that returns Response.json(...) without procedure contracts, so the generated client only knows it is some HTTP response.",
       runtime: await readResponsePreview(nativeResponse),
     },
     {
@@ -412,9 +412,9 @@ export default async function ProcedureExamplesPage() {
         inferred.
       </p>
       <p>
-        The comparison is easiest to read as a pattern table: the more route
-        metadata rpc4next has, the narrower the generated client response type
-        becomes.
+        The comparison is easiest to read as a pattern table: the more explicit
+        route contracts rpc4next has, the narrower the generated client response
+        type becomes.
       </p>
       {examples.map((example) => (
         <section key={example.title}>

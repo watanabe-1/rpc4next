@@ -18,7 +18,10 @@ describe("procedure builder zod integration", () => {
 
   it("threads input, middleware context, and output contracts", () => {
     const userProcedure = procedure
-      .meta({ tags: ["procedure"], auth: "optional" as const })
+      .meta({
+        summary: "Procedure builder zod integration example",
+        tags: ["procedure"],
+      })
       .params(z.object({ userId: z.string() }))
       .query(
         z.object({
@@ -89,8 +92,8 @@ describe("procedure builder zod integration", () => {
         };
       };
       meta?: {
+        summary: string;
         tags: string[];
-        auth: "optional";
       };
       output?: {
         response?: {

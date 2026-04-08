@@ -347,8 +347,8 @@ describe("procedure builder type definitions", () => {
     const baseProcedure = procedure
       .headers(roleHeaderSchema)
       .meta({
+        summary: "Shared base procedure preset",
         tags: ["shared-base-procedure"],
-        auth: "optional" as const,
       })
       .use(({ headers }) => ({
         ctx: {

@@ -15,8 +15,6 @@ export const GET = procedure
     summary:
       "Phase 7 fixture that demonstrates runtime-enforced output validation failures",
     tags: ["procedure-examples", "runtime-output-enforcement"],
-    auth: "optional",
-    idempotent: true,
   })
   .output(outputSchema)
   .handle(async () => ({

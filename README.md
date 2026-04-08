@@ -69,9 +69,9 @@ If you prefer to inspect a complete app before wiring this into your own project
 
 `rpc4next` can scan plain Next.js App Router handlers as-is, but the recommended
 typed server authoring path is `procedure` with terminal `.nextRoute(...)`
-sugar. This keeps the
-route file as the source of truth while making input, output, metadata, and
-shared policy explicit.
+sugar. This keeps the route file as the source of truth while making input,
+output, and reusable builder composition explicit. Optional `meta(...)` values
+remain lightweight descriptive annotations rather than a policy system.
 
 ```ts
 // app/api/users/[userId]/route.ts
@@ -89,7 +89,7 @@ const querySchema = z.object({
 
 export const GET = procedure
   .forRoute(routeContract)
-  .meta({ tags: ["users"], auth: "optional" })
+  .meta({ summary: "Get a user", tags: ["users"] })
   .params(paramsSchema)
   .query(querySchema)
   .output({
@@ -247,7 +247,7 @@ It supports:
 
 - `forRoute(routeContract)` for generated route-contract binding
 - direct schema contracts for `params`, `query`, `json`, `formData`, `headers`, and `cookies`
-- `meta(...)` and `output(...)`
+- `meta(...)` for lightweight descriptive annotations and `output(...)`
 - shared presets via reusable builders such as `baseProcedure`
 - validator-stage customization with `onValidationError(...)`
 - adaptation to App Router exports through terminal `procedure.handle(...).nextRoute({ method, onError })`
