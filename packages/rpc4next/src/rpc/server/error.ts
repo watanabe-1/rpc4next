@@ -73,7 +73,7 @@ export interface RpcErrorInit<
   code?: TCode;
 }
 
-export const getDefaultRpcErrorStatus = <TCode extends RpcErrorCode>(
+const getDefaultRpcErrorStatus = <TCode extends RpcErrorCode>(
   code: TCode,
 ): RpcErrorStatus<TCode> => {
   return DEFAULT_RPC_ERROR_STATUS[code] as RpcErrorStatus<TCode>;

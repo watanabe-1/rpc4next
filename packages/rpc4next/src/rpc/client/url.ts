@@ -31,7 +31,7 @@ import type { PathParamsInput, UrlOptions, UrlResult } from "./types";
  * @param url - Optional URL options containing query parameters and/or a hash fragment.
  * @returns A URL suffix string beginning with `?` and/or `#`, or an empty string if none exist.
  */
-export const buildUrlSuffix = (url?: UrlOptions) => {
+const buildUrlSuffix = (url?: UrlOptions) => {
   if (!url) return "";
   const query = url.query
     ? `?${new URLSearchParams(url.query as Record<string, string>).toString()}`
@@ -84,22 +84,6 @@ export const buildUrlSuffix = (url?: UrlOptions) => {
  *
  * @returns A new path string with all dynamic segment markers replaced.
  */
-export const replaceDynamicSegments = (
-  basePath: string,
-  replacements: {
-    optionalCatchAll: string;
-    catchAll: string;
-    dynamic: string;
-  },
-): string =>
-  basePath
-    // optionalCatchAll
-    .replace(/\/_{5}(\w+)/g, replacements.optionalCatchAll)
-    // catchAll
-    .replace(/\/_{3}(\w+)/g, replacements.catchAll)
-    // dynamic
-    .replace(/\/_(\w+)/g, replacements.dynamic);
-
 const safeDecodeSegment = (value: string) => {
   try {
     return decodeURIComponent(value);
@@ -145,7 +129,7 @@ const getPathnameSegment = (segment: string) => {
  *
  * The returned builder optionally appends a suffix (e.g. query/hash) via
  * `buildUrlSuffix(url)` and also produces a Next.js-style `pathname` by converting
- * dynamic markers using `replaceDynamicSegments`.
+ * underscore-prefixed dynamic markers into their bracket form.
  *
  * In addition, params keys are normalized by removing leading underscores
  * (e.g. `__id` -> `id`) in the returned `params`.
@@ -169,7 +153,7 @@ const getPathnameSegment = (segment: string) => {
  * const result = build({ query: { page: "1" } });
  * // result.path: "https://example.com/users/a%20b?page=1"
  * // result.relativePath: "/users/a%20b?page=1"
- * // result.pathname: "/users/[$1]" (depending on replaceDynamicSegments behavior)
+ * // result.pathname: "/users/[id]"
  * // result.params: { id: "a b" }
  * ```
  */

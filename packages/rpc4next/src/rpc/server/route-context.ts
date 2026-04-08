@@ -24,7 +24,7 @@ type ResponseHelperMetadata = {
   payload?: unknown;
 };
 
-export const responseHelperMetadataSymbol = Symbol.for(
+const responseHelperMetadataSymbol = Symbol.for(
   "rpc4next.response.helper.metadata",
 );
 
