@@ -13,7 +13,7 @@ export {
   rpcError,
 } from "./error";
 export type { InferRouteMeta, RpcMeta, RpcMetaBase } from "./meta";
-export { getRouteMeta, withMeta } from "./meta";
+export { getRouteMeta } from "./meta";
 export { nextRoute } from "./next-route";
 export type {
   ProcedureOnError,
@@ -21,7 +21,6 @@ export type {
   ProcedureOnErrorResponse,
   ProcedureOnErrorResult,
 } from "./on-error";
-export { defaultProcedureOnError } from "./on-error";
 export type { OutputContract } from "./output";
 export { output, withOutput } from "./output";
 export type {
@@ -36,8 +35,6 @@ export type {
   ProcedureResult,
 } from "./procedure";
 export { defineProcedureMiddleware, procedure } from "./procedure";
-export type { CreateProcedureKitOptions } from "./procedure-kit";
-export { createProcedureKit } from "./procedure-kit";
 export type {
   ProcedureInputOptions,
   ProcedureRouteContract,

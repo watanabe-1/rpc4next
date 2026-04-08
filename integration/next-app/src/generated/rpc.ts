@@ -8,11 +8,11 @@ import type { GET as GET_ac9bcfb08eed44cd } from "../../app/api/next-native/rout
 import type { POST as POST_90625e305d8eaaef } from "../../app/api/posts/route";
 import type { Query as Query_328fe40401e7f48d } from "../../app/api/procedure-contract/[userId]/route";
 import type { GET as GET_3919bdb64fa44631 } from "../../app/api/procedure-contract/[userId]/route";
+import type { GET as GET_bcc78455031f398c } from "../../app/api/procedure-defaults-error/route";
 import type { POST as POST_abb045cb5ac672e1 } from "../../app/api/procedure-form-data/route";
 import type { Query as Query_a31809be53fb5dc9 } from "../../app/api/procedure-guarded/[userId]/route";
 import type { GET as GET_98a6cb8e2c497f98 } from "../../app/api/procedure-guarded/[userId]/route";
 import type { GET as GET_deded1d327aade95 } from "../../app/api/procedure-invalid-output/route";
-import type { GET as GET_8bc66acff0eaa243 } from "../../app/api/procedure-kit-error/route";
 import type { GET as GET_6f931f4b52452942 } from "../../app/api/procedure-response-redirect/route";
 import type { GET as GET_606490d8c1f931f7 } from "../../app/api/procedure-response-text/route";
 import type { POST as POST_ff7e41c09dae8fb9 } from "../../app/api/procedure-submit/route";
@@ -35,12 +35,12 @@ export type PathStructure = RpcEndpoint & {
     "procedure-contract": {
       "_userId": Record<QueryKey, Query_328fe40401e7f48d> & { "$get": typeof GET_3919bdb64fa44631 } & RpcEndpoint & Record<ParamsKey, { "userId": string }>
     },
+    "procedure-defaults-error": { "$get": typeof GET_bcc78455031f398c } & RpcEndpoint,
     "procedure-form-data": { "$post": typeof POST_abb045cb5ac672e1 } & RpcEndpoint,
     "procedure-guarded": {
       "_userId": Record<QueryKey, Query_a31809be53fb5dc9> & { "$get": typeof GET_98a6cb8e2c497f98 } & RpcEndpoint & Record<ParamsKey, { "userId": string }>
     },
     "procedure-invalid-output": { "$get": typeof GET_deded1d327aade95 } & RpcEndpoint,
-    "procedure-kit-error": { "$get": typeof GET_8bc66acff0eaa243 } & RpcEndpoint,
     "procedure-response-redirect": { "$get": typeof GET_6f931f4b52452942 } & RpcEndpoint,
     "procedure-response-text": { "$get": typeof GET_606490d8c1f931f7 } & RpcEndpoint,
     "procedure-submit": { "$post": typeof POST_ff7e41c09dae8fb9 } & RpcEndpoint,

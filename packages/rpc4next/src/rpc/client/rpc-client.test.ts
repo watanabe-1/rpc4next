@@ -12,7 +12,6 @@ import {
 } from "vitest";
 import {
   type ContentType,
-  defaultProcedureOnError,
   type HttpStatusCode,
   nextRoute,
   type ProcedureRouteContract,
@@ -20,6 +19,7 @@ import {
   type RpcErrorEnvelope,
   type TypedNextResponse,
 } from "../server";
+import { defaultProcedureOnError } from "../server/on-error";
 import { createRpcClient } from "./rpc-client";
 import type { ParamsKey, QueryKey, RpcEndpoint } from "./types";
 

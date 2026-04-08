@@ -289,8 +289,8 @@ export const GET = procedure
 ### Error Handling
 
 `nextRoute()` requires `onError(error, context)`. For project-level reuse, prefer
-`procedure.defaults({ onError })`. `createProcedureKit(...)` remains available as
-thin compatibility sugar around the same shared-defaults model.
+`procedure.defaults({ onError })` and export a shared `appProcedure` or
+similar preset from your project.
 
 If you want client-side inference to preserve the concrete response shape returned
 from `onError`, prefer `satisfies ProcedureOnError` over
