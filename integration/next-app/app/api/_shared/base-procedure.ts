@@ -79,9 +79,7 @@ export const guardedBaseProcedure = procedure
   .headers(guardedProcedureHeadersSchema)
   .meta({
     summary:
-      "Shared guardedProcedure preset with auth/policy error contracts for the integration fixture",
+      "Shared guardedProcedure preset with descriptive annotations for the integration fixture",
     tags: ["procedure-examples", "shared-base-procedure", "shared-errors"],
-    auth: "required",
-    idempotent: true,
   })
   .use(guardedProcedureMiddleware);

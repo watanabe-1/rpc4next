@@ -5,8 +5,8 @@ import { routeContract } from "./route-contract";
 export const GET = procedure
   .forRoute(routeContract)
   .meta({
+    summary: "Contract route example",
     tags: ["contract-route"],
-    auth: "optional",
   })
   .output({
     _output: {

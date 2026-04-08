@@ -51,7 +51,10 @@ describe("nextRoute zod integration", () => {
     const route = nextRoute(
       procedure
         .forRoute(dynamicUserRouteContract)
-        .meta({ tags: ["procedure-contract"], auth: "optional" as const })
+        .meta({
+          summary: "Procedure contract route",
+          tags: ["procedure-contract"],
+        })
         .params(z.object({ userId: z.string().min(1) }))
         .query(
           z.object({

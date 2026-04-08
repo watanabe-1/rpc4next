@@ -11,9 +11,6 @@ import {
 export interface RpcMetaBase {
   summary?: string;
   tags?: string[];
-  auth?: "required" | "optional" | "none";
-  cache?: "default" | "no-store" | "force-cache";
-  idempotent?: boolean;
   deprecated?: boolean;
 }
 

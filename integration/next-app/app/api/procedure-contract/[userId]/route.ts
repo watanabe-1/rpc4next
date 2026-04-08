@@ -14,8 +14,8 @@ const querySchema = z.object({
 export const GET = procedure
   .forRoute(routeContract)
   .meta({
+    summary: "Procedure contract route",
     tags: ["procedure-contract"],
-    auth: "optional",
   })
   .params(paramsSchema)
   .query(querySchema)

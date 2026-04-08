@@ -107,12 +107,12 @@ describe("procedure contract internals", () => {
       "GET",
       ValidationSchema,
       { ok: true },
-      { auth: "required" }
+      { deprecated: true }
     >;
 
     expectTypeOf<Definition>().toExtend<{
       method?: "GET";
-      meta?: { auth: "required" };
+      meta?: { deprecated: true };
     }>();
   });
 });
