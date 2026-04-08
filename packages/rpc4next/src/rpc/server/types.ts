@@ -131,7 +131,7 @@ export type Query = Record<string, string | string[]>;
 export interface RouteContext<
   TParams = Params,
   TQuery = Query,
-  TValidationSchema extends ValidationSchema = ValidationSchema,
+  _TValidationSchema extends ValidationSchema = ValidationSchema,
 > extends ResponseHelpers {
   /**
    * The original `NextRequest` object, extended with helper methods
@@ -152,33 +152,8 @@ export interface RouteContext<
      * @returns Route parameters
      */
     params: () => Promise<TParams>;
-
-    /**
-     * Retrieves validated data for a specific request part (e.g., `body`, `query`, `params`)
-     * that has been previously stored via `addValidatedData`.
-     *
-     * @param target - The part of the request to validate.
-     * @returns The validation result of the target.
-     */
-    valid: <TValidationTarget extends ValidationTarget>(
-      target: Extract<TValidationTarget, keyof TValidationSchema["output"]>,
-    ) => ValidationOutputFor<TValidationTarget, TValidationSchema>;
-
-    /**
-     * Stores validated data for a specific part of the request.
-     * This data can be retrieved later using `valid(...)`.
-     *
-     * @param target - The request part to associate the value with.
-     * @param value - The validated data.
-     */
-    addValidatedData: (target: ValidationTarget, value: ValidatedData) => void;
   };
 }
-
-declare const __validatedBrand: unique symbol;
-export type ValidatedData = {
-  [__validatedBrand]: true;
-};
 
 type ValidationTargetKey =
   | "params"
@@ -205,11 +180,6 @@ export type ValidationInputFor<
   TTarget extends ValidationTarget,
   TSchema extends ValidationSchema,
 > = ValidationFor<"input", TTarget, TSchema>;
-
-type ValidationOutputFor<
-  TTarget extends ValidationTarget,
-  TSchema extends ValidationSchema,
-> = ValidationFor<"output", TTarget, TSchema>;
 
 export type ConditionalValidationInput<
   TTarget extends ValidationTarget,

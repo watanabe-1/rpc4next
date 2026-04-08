@@ -15,8 +15,6 @@ import type {
   RouteContext,
   TypedNextResponse,
   TypedResponseInit,
-  ValidatedData,
-  ValidationTarget,
 } from "./types";
 
 type ResponseHelperKind = "body" | "json" | "text" | "redirect";
@@ -173,19 +171,12 @@ export const createRouteContext = <
   req: NextRequest,
   segmentData: { params: Promise<TParams> },
 ): RouteContext<TParams, TQuery, TValidationSchema> => {
-  const validationResults = {} as Record<ValidationTarget, unknown>;
   const responseHelpers = createResponseHelpers();
 
   return {
     req: Object.assign(req, {
       query: () => searchParamsToObject<TQuery>(req.nextUrl.searchParams),
       params: () => segmentData.params,
-      valid: (target: ValidationTarget) => {
-        return validationResults[target] as never;
-      },
-      addValidatedData: (target: ValidationTarget, value: ValidatedData) => {
-        validationResults[target] = value;
-      },
     }),
     ...responseHelpers,
   };
