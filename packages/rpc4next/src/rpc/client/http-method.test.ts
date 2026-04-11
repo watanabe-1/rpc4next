@@ -607,6 +607,40 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     expect(calledInit?.body).toBeUndefined();
   });
 
+  it("removes defaultOptions.init.body for GET requests", async () => {
+    const key = "$get";
+    const paths = ["http://example.com", "api", "nobody"];
+    const params = {};
+    const dynamicKeys: string[] = [];
+
+    let calledInit: CapturedInit | undefined = {};
+    global.fetch = ((_input, _init) => {
+      calledInit = _init as CapturedInit | undefined;
+
+      return Promise.resolve(new Response(null, { status: 200 }));
+    }) as typeof fetch;
+
+    const defaultOptions = {
+      init: {
+        headers: { Accept: "application/json" },
+        body: "default-body",
+      },
+    };
+    const requestFn = httpMethod(
+      key,
+      paths,
+      params,
+      dynamicKeys,
+      defaultOptions,
+    );
+
+    await requestFn();
+
+    expect(calledInit?.method).toBe("GET");
+    expect(calledInit?.headers).toEqual({ accept: "application/json" });
+    expect(calledInit?.body).toBeUndefined();
+  });
+
   it("does not set content-type for FormData (let the browser set multipart boundary)", async () => {
     const key = "$post";
     const paths = ["http://example.com", "api", "upload"];
@@ -804,6 +838,71 @@ describe("httpMethod (integration test without excessive mocks)", () => {
 
     expect(calledInit?.method).toBe("HEAD");
     expect(calledInit?.body).toBeUndefined();
+  });
+
+  it("removes options.init.body for HEAD requests", async () => {
+    const key = "$head";
+    const paths = ["http://example.com", "api", "head"];
+    const params = {};
+    const dynamicKeys: string[] = [];
+
+    let calledInit: CapturedInit | undefined = {};
+    global.fetch = ((_input, _init) => {
+      calledInit = _init as CapturedInit | undefined;
+
+      return Promise.resolve(new Response(null, { status: 200 }));
+    }) as typeof fetch;
+
+    const defaultOptions = { init: {} };
+    const requestFn = httpMethod(
+      key,
+      paths,
+      params,
+      dynamicKeys,
+      defaultOptions,
+    );
+
+    await requestFn(undefined, {
+      init: {
+        headers: { Accept: "application/json" },
+        body: "client-body",
+      },
+    });
+
+    expect(calledInit?.method).toBe("HEAD");
+    expect(calledInit?.headers).toEqual({ accept: "application/json" });
+    expect(calledInit?.body).toBeUndefined();
+  });
+
+  it("keeps init.body for POST when no methodParam.body is provided", async () => {
+    const key = "$post";
+    const paths = ["http://example.com", "api", "priority"];
+    const params = {};
+    const dynamicKeys: string[] = [];
+
+    let calledInit: CapturedInit | undefined = {};
+    global.fetch = ((_input, _init) => {
+      calledInit = _init as CapturedInit | undefined;
+
+      return Promise.resolve(new Response(null, { status: 200 }));
+    }) as typeof fetch;
+
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, {
+      init: {
+        headers: { Accept: "application/json" },
+        body: "default-body",
+      },
+    });
+
+    await requestFn(undefined, {
+      init: {
+        body: "client-body",
+      },
+    });
+
+    expect(calledInit?.method).toBe("POST");
+    expect(calledInit?.headers).toEqual({ accept: "application/json" });
+    expect(calledInit?.body).toBe("client-body");
   });
 
   it("wraps non-Error rejections with helpful message", async () => {
