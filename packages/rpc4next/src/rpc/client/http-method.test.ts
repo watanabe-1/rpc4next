@@ -68,6 +68,31 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     });
   });
 
+  it("serializes array query values as repeated keys and omits undefined values", async () => {
+    const key = "$get";
+    const paths = ["http://example.com", "api", "users"];
+    const params = {};
+    const dynamicKeys: string[] = [];
+
+    let calledUrl: RequestInfo | URL | null = null;
+    const customFetch: typeof fetch = (_input) => {
+      calledUrl = _input;
+
+      return Promise.resolve(new Response(null, { status: 200 }));
+    };
+
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, {
+      fetch: customFetch,
+      init: {},
+    });
+
+    await requestFn({
+      url: { query: { tag: ["a", "b"], q: "term", empty: undefined } },
+    });
+
+    expect(calledUrl).toBe("http://example.com/api/users?tag=a&tag=b&q=term");
+  });
+
   it("uses $post with body.json and sets inferred content-type when none provided", async () => {
     const key = "$post";
     const paths = ["http://example.com", "api", "posts"];
