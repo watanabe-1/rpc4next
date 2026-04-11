@@ -49,6 +49,32 @@ describe("createUrl", () => {
     expect(result.relativePath).toContain("#filters");
   });
 
+  it("serializes array query values as repeated keys", () => {
+    const result = createUrl(
+      ["https://example.com", "search"],
+      {},
+      [],
+    )({
+      query: { tag: ["a", "b"] },
+    });
+
+    expect(result.relativePath).toBe("/search?tag=a&tag=b");
+    expect(result.path).toBe("https://example.com/search?tag=a&tag=b");
+  });
+
+  it("omits undefined query values", () => {
+    const result = createUrl(
+      ["https://example.com", "search"],
+      {},
+      [],
+    )({
+      query: { tag: undefined, q: "term" },
+    });
+
+    expect(result.relativePath).toBe("/search?q=term");
+    expect(result.path).toBe("https://example.com/search?q=term");
+  });
+
   it("generates a URL with a catch-all parameter", () => {
     const paths = ["https://example.com", "user", "___ids"];
     const params = { ___ids: ["1", "2", "3"] };

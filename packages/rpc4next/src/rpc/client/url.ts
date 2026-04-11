@@ -33,9 +33,29 @@ import type { PathParamsInput, UrlOptions, UrlResult } from "./types";
  */
 const buildUrlSuffix = (url?: UrlOptions) => {
   if (!url) return "";
-  const query = url.query
-    ? `?${new URLSearchParams(url.query as Record<string, string>).toString()}`
-    : "";
+  const searchParams = new URLSearchParams();
+
+  if (url.query) {
+    for (const [key, value] of Object.entries(
+      url.query as Record<string, string | string[] | undefined>,
+    )) {
+      if (value === undefined) {
+        continue;
+      }
+
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          searchParams.append(key, item);
+        }
+
+        continue;
+      }
+
+      searchParams.append(key, value);
+    }
+  }
+
+  const query = searchParams.size > 0 ? `?${searchParams.toString()}` : "";
   const hash = url.hash ? `#${url.hash}` : "";
 
   return query + hash;
