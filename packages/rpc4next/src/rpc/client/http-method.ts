@@ -144,6 +144,10 @@ export const httpMethod = (
     );
     mergedInit.method = method;
 
+    if (method === "GET" || method === "HEAD") {
+      delete mergedInit.body;
+    }
+
     if (Object.keys(mergedHeaders).length > 0) {
       mergedInit.headers = mergedHeaders;
     }
