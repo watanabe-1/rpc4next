@@ -797,19 +797,27 @@ export const nextRoute = <
     }
   };
 
-  return attachProcedureDefinition(routeHandler, {
-    ...(options.method
-      ? withProcedureMethod(procedure.definition, options.method)
-      : procedure.definition),
-    ...(options.validateOutput &&
-    procedure.definition.output !== undefined &&
-    outputSchema !== undefined
-      ? {
-          output: {
-            ...procedure.definition.output,
-            runtime: true,
-          },
-        }
-      : {}),
-  }) as NextRouteHandler<TProcedure, TMethod, TValidateOutput, TOnError>;
+  const definitionWithMethod = options.method
+    ? withProcedureMethod(procedure.definition, options.method)
+    : procedure.definition;
+
+  const shouldEnableRuntimeOutputValidation =
+    options.validateOutput &&
+    definitionWithMethod.output !== undefined &&
+    outputSchema !== undefined;
+
+  const routeDefinition = shouldEnableRuntimeOutputValidation
+    ? {
+        ...definitionWithMethod,
+        output: {
+          ...definitionWithMethod.output,
+          runtime: true,
+        },
+      }
+    : definitionWithMethod;
+
+  return attachProcedureDefinition(
+    routeHandler,
+    routeDefinition,
+  ) as NextRouteHandler<TProcedure, TMethod, TValidateOutput, TOnError>;
 };
