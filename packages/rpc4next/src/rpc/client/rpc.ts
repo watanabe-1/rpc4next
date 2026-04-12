@@ -19,8 +19,12 @@ const createProxy = <T>(
 
   const proxy = new Proxy(target, {
     // Calling the proxy supplies a value for the most recent dynamic segment.
-    apply(_t, _thisArg, argArray: unknown[]) {
-      const value = argArray[0] as string | number | undefined;
+    apply(
+      _t,
+      _thisArg,
+      argArray: [value?: string | number | string[] | undefined, ...unknown[]],
+    ) {
+      const value = argArray[0];
       const lastPath = paths[paths.length - 1];
       const lastKey = dynamicKeys[dynamicKeys.length - 1];
 
