@@ -1,5 +1,44 @@
 # Changelog
 
+## [0.7.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.6.1...rpc4next-v0.7.0) (2026-04-16)
+
+
+### Features
+
+* add procedure contract foundations ([#382](https://github.com/watanabe-1/rpc4next/issues/382)) ([3f0eb7d](https://github.com/watanabe-1/rpc4next/commit/3f0eb7d83afe75709d503a033666e37319e79df4))
+* add shared baseProcedure preset example for procedure routes ([#393](https://github.com/watanabe-1/rpc4next/issues/393)) ([ae36dfb](https://github.com/watanabe-1/rpc4next/commit/ae36dfbf081aad60d47534e944eebc4080118982))
+* **client:** Infer custom validation response types ([#413](https://github.com/watanabe-1/rpc4next/issues/413)) ([91b96b7](https://github.com/watanabe-1/rpc4next/commit/91b96b7a131bbb39b305b920dacd8bf818d75fbb))
+* generate route contracts and require bound procedure ([#397](https://github.com/watanabe-1/rpc4next/issues/397)) ([6d1eb87](https://github.com/watanabe-1/rpc4next/commit/6d1eb8792311af7a583506444a2c83ff3b76b0d8))
+* preserve shared procedure error contracts across routes and client types ([#394](https://github.com/watanabe-1/rpc4next/issues/394)) ([488bdb9](https://github.com/watanabe-1/rpc4next/commit/488bdb989feb7d4c9a1602314892c6e9d580d6c3))
+* **rpc4next:** start phase 3 with procedure builder and nextRoute ([#384](https://github.com/watanabe-1/rpc4next/issues/384)) ([2132ea8](https://github.com/watanabe-1/rpc4next/commit/2132ea8ac717b49cda33f5029d7e5d08efdd17c6))
+* **server:** Add Arktype and Valibot schema support ([#407](https://github.com/watanabe-1/rpc4next/issues/407)) ([a152731](https://github.com/watanabe-1/rpc4next/commit/a1527314435ac0c29cd2d4d17c6028b5a29fa8fa))
+* **server:** Add configurable procedure error formatting ([#400](https://github.com/watanabe-1/rpc4next/issues/400)) ([a2a6161](https://github.com/watanabe-1/rpc4next/commit/a2a61611f283ea602792bc070312d9fcdaa23daa))
+* **server:** add first-class procedure.formData support ([#398](https://github.com/watanabe-1/rpc4next/issues/398)) ([7669ce0](https://github.com/watanabe-1/rpc4next/commit/7669ce0d4327e6b898a32e9f2780d96b359f5420))
+* **server:** add opt-in runtime output validation for procedures ([#395](https://github.com/watanabe-1/rpc4next/issues/395)) ([61bc70f](https://github.com/watanabe-1/rpc4next/commit/61bc70f3538a1f18e9d3822aef2138ae7f70a4f6))
+* **server:** Add procedure defaults for shared onError ([#429](https://github.com/watanabe-1/rpc4next/issues/429)) ([fc39764](https://github.com/watanabe-1/rpc4next/commit/fc39764f67d26bfda705c52e86044920e23a58ee))
+* **server:** Add procedure nextRoute sugar ([#428](https://github.com/watanabe-1/rpc4next/issues/428)) ([59463b4](https://github.com/watanabe-1/rpc4next/commit/59463b4953d9470d57ca4ac933076cffba79a573))
+* **server:** Add procedure response helpers ([#403](https://github.com/watanabe-1/rpc4next/issues/403)) ([d80dc85](https://github.com/watanabe-1/rpc4next/commit/d80dc85bfe34d713cd0723a2888185fba5b1b974))
+* **server:** Add procedure validation branching ([#401](https://github.com/watanabe-1/rpc4next/issues/401)) ([13d957b](https://github.com/watanabe-1/rpc4next/commit/13d957b5b1b0efa4a78f313344afbef936d5fc41))
+* **server:** Add Standard Schema V1 procedure support ([#392](https://github.com/watanabe-1/rpc4next/issues/392)) ([5207824](https://github.com/watanabe-1/rpc4next/commit/520782476193b8c23a03009354d7dcd94036947f))
+* **server:** Bind kit rpcError to error registry status ([#411](https://github.com/watanabe-1/rpc4next/issues/411)) ([075438f](https://github.com/watanabe-1/rpc4next/commit/075438fda7c67b8a28f1961c6f4a603b5489b82a))
+* **server:** Validate response helper output payload ([#412](https://github.com/watanabe-1/rpc4next/issues/412)) ([4be5db6](https://github.com/watanabe-1/rpc4next/commit/4be5db60f724cff45fee3ae8d33898d0c65cec07))
+
+
+### Bug Fixes
+
+* **client:** Remove body from GET and HEAD requests ([#440](https://github.com/watanabe-1/rpc4next/issues/440)) ([27b19e1](https://github.com/watanabe-1/rpc4next/commit/27b19e1411078e53985ba51c6b542c68b57b8889))
+* **client:** Support array query serialization ([#439](https://github.com/watanabe-1/rpc4next/issues/439)) ([cb8bebb](https://github.com/watanabe-1/rpc4next/commit/cb8bebb916962ceb21f381f7980e7f4de774ea2d))
+* **monorepo:** Preserve raw validation error responses ([#414](https://github.com/watanabe-1/rpc4next/issues/414)) ([254ccc8](https://github.com/watanabe-1/rpc4next/commit/254ccc83ae0caaaef7d817f638a4bd3b6642b0fb))
+* Preserve helper response statusText ([#416](https://github.com/watanabe-1/rpc4next/issues/416)) ([48d8603](https://github.com/watanabe-1/rpc4next/commit/48d860354ec6ec692d66206810d111ba4e40b629))
+* Preserve literal output types in procedure responses ([#404](https://github.com/watanabe-1/rpc4next/issues/404)) ([cb0d051](https://github.com/watanabe-1/rpc4next/commit/cb0d0516188fed3e8123baf2626a5d21842e3eb2))
+* **rpc4next:** align procedure bad-request and rpcError status contracts ([#389](https://github.com/watanabe-1/rpc4next/issues/389)) ([67d5d82](https://github.com/watanabe-1/rpc4next/commit/67d5d8275bdd87d64825ffabca0da0be7da7a5a6))
+* **rpc4next:** align procedure contract typing with runtime ([#386](https://github.com/watanabe-1/rpc4next/issues/386)) ([187e5c8](https://github.com/watanabe-1/rpc4next/commit/187e5c84b6fb683db60c63bf6a76f78b3d47ae94))
+* **rpc4next:** align procedure route query, error, and method typing ([#385](https://github.com/watanabe-1/rpc4next/issues/385)) ([f3cc213](https://github.com/watanabe-1/rpc4next/commit/f3cc213046e9dc55d95a142f07f052dff3dd7bff))
+* **rpc4next:** guard invalid procedure methods and read request metadata from NextRequest ([#390](https://github.com/watanabe-1/rpc4next/issues/390)) ([540974e](https://github.com/watanabe-1/rpc4next/commit/540974ebbc55299ed122947c3c8c9f45c4e1e6bf))
+* **rpc4next:** normalize procedure JSON errors and add error contracts ([#387](https://github.com/watanabe-1/rpc4next/issues/387)) ([b155911](https://github.com/watanabe-1/rpc4next/commit/b1559119d399ecd16e45c428e1e03edbca6057b7))
+* **server:** Align procedure response helpers ([#410](https://github.com/watanabe-1/rpc4next/issues/410)) ([0a6c23b](https://github.com/watanabe-1/rpc4next/commit/0a6c23bf4afa2e77148eebe7e9969f22d4d948e5))
+* Validate reflected procedure output payloads ([#419](https://github.com/watanabe-1/rpc4next/issues/419)) ([369a631](https://github.com/watanabe-1/rpc4next/commit/369a6319e832c81e0e2dcabdbdbd22ac58e665fe))
+
 ## [0.6.1](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.6.0...rpc4next-v0.6.1) (2026-03-16)
 
 
