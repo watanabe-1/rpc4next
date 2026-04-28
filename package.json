@@ -33,7 +33,7 @@
     "diff2prompt": "diff2prompt --excludeFile=.gitignore"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.11",
+    "@biomejs/biome": "^2.4.12",
     "@types/node": "^25.6.0",
     "@vitest/coverage-v8": "^4.1.4",
     "@vitest/ui": "^4.1.4",
@@ -41,9 +41,9 @@
     "diff2prompt": "^0.0.10",
     "esbuild": "^0.28.0",
     "fast-glob": "^3.3.3",
-    "msw": "^2.13.2",
-    "next": "16.2.3",
-    "typescript": "^6.0.2",
+    "msw": "^2.13.4",
+    "next": "16.2.4",
+    "typescript": "^6.0.3",
     "valibot": "^1.3.1",
     "vitest": "^4.1.4",
     "zod": "^4.3.6"
