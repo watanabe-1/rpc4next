@@ -23,11 +23,10 @@ type ParamValue = string | string[] | undefined;
  * @example
  * safeDecode(undefined); // undefined
  */
-function safeDecode(value: string): string;
-function safeDecode(value: string | undefined): string | undefined;
-function safeDecode(value: string | null): string | undefined;
-function safeDecode(value: undefined | null): undefined;
-function safeDecode(value: string | undefined | null): string | undefined {
+function safeDecode<T extends string | undefined | null>(
+  value: T,
+): T extends string ? string : undefined;
+function safeDecode(value: string | undefined | null) {
   if (value === null || value === undefined) return undefined;
   try {
     return decodeURIComponent(value);
