@@ -683,6 +683,28 @@ describe("route-scanner", () => {
 }`);
     });
 
+    it("should decode valid static segments for canonical route contract pathnames", () => {
+      setupTree({
+        testApp: {
+          patterns: {
+            "%5Fescaped": {
+              "page.tsx": "export function Escaped() {};",
+            },
+          },
+        },
+      });
+
+      const { paramsTypes } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+
+      expect(paramsTypes).toStrictEqual([
+        {
+          paramsType: "{}",
+          dirPath: tmpPosixPath("testApp", "patterns", "%5Fescaped"),
+          pathname: "/patterns/_escaped",
+        },
+      ]);
+    });
+
     it("should keep the original segment name when decodeURIComponent fails", () => {
       setupTree({
         testApp: {
@@ -703,6 +725,28 @@ describe("route-scanner", () => {
     "%E0%A4%A": RpcEndpoint
   }
 }`);
+    });
+
+    it("should keep malformed encoded static segments in canonical route contract pathnames", () => {
+      setupTree({
+        testApp: {
+          patterns: {
+            "%E0%A4%A": {
+              "page.tsx": "export function BrokenEncoding() {};",
+            },
+          },
+        },
+      });
+
+      const { paramsTypes } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+
+      expect(paramsTypes).toStrictEqual([
+        {
+          paramsType: "{}",
+          dirPath: tmpPosixPath("testApp", "patterns", "%E0%A4%A"),
+          pathname: "/patterns/%E0%A4%A",
+        },
+      ]);
     });
 
     it("should skip private directories even if cached as targetable and keep intercepting routes out of path structure", () => {

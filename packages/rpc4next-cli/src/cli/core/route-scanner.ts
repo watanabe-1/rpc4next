@@ -95,14 +95,18 @@ const stripInterceptingSegmentPrefix = (entryName: string): string => {
   }
 };
 
-const decodeStaticSegment = (entryName: string): string => {
+const safeDecodeSegment = (entryName: string): string => {
   try {
-    const decoded = decodeURIComponent(entryName);
-
-    return decoded.startsWith("_") ? entryName : decoded;
+    return decodeURIComponent(entryName);
   } catch {
     return entryName;
   }
+};
+
+const getStaticSegmentKey = (entryName: string): string => {
+  const decoded = safeDecodeSegment(entryName);
+
+  return decoded.startsWith("_") ? entryName : decoded;
 };
 
 const getDirectoryMeta = (entryName: string) => {
@@ -121,7 +125,7 @@ const getDirectoryMeta = (entryName: string) => {
     segmentName.endsWith("]");
   const isDynamic = segmentName.startsWith("[") && segmentName.endsWith("]");
   const isPrivate = !isIntercept && segmentName.startsWith("_");
-  const staticKeyName = decodeStaticSegment(segmentName);
+  const staticKeyName = getStaticSegmentKey(segmentName);
 
   return {
     isCatchAll,
@@ -279,7 +283,11 @@ const toRoutePathname = (baseDir: string, fullPath: string): string => {
         return null;
       }
 
-      return meta.segmentName;
+      if (meta.isDynamic || meta.isCatchAll || meta.isOptionalCatchAll) {
+        return meta.segmentName;
+      }
+
+      return safeDecodeSegment(meta.segmentName);
     })
     .filter((segment): segment is string => segment !== null);
 
