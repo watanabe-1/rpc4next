@@ -1,5 +1,6 @@
 import type { NextResponse } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
+
 import type { RpcMeta } from "./meta";
 import type { ProcedureResult } from "./procedure";
 import type {
@@ -32,10 +33,7 @@ export const withProcedureMethod = <
   } as MergeProcedureDefinition<TDefinition, { method: TMethod }>;
 };
 
-export const withProcedureMeta = <
-  TDefinition extends ProcedureDefinition,
-  TMeta extends RpcMeta,
->(
+export const withProcedureMeta = <TDefinition extends ProcedureDefinition, TMeta extends RpcMeta>(
   definition: TDefinition,
   meta: TMeta,
 ): MergeProcedureDefinition<TDefinition, { meta: TMeta }> => {
@@ -54,10 +52,7 @@ export const withProcedureRouteBinding = <
 ): MergeProcedureDefinition<
   TDefinition,
   {
-    route: ProcedureRouteBinding<
-      TRouteContract["pathname"],
-      TRouteContract["params"]
-    >;
+    route: ProcedureRouteBinding<TRouteContract["pathname"], TRouteContract["params"]>;
   }
 > => {
   return {
@@ -69,19 +64,12 @@ export const withProcedureRouteBinding = <
   } as MergeProcedureDefinition<
     TDefinition,
     {
-      route: ProcedureRouteBinding<
-        TRouteContract["pathname"],
-        TRouteContract["params"]
-      >;
+      route: ProcedureRouteBinding<TRouteContract["pathname"], TRouteContract["params"]>;
     }
   >;
 };
 
-export const withProcedureOutput = <
-  TDefinition extends ProcedureDefinition,
-  TOutput,
-  TSchema,
->(
+export const withProcedureOutput = <TDefinition extends ProcedureDefinition, TOutput, TSchema>(
   definition: TDefinition,
   schema: TSchema,
 ): MergeProcedureDefinition<
@@ -118,12 +106,8 @@ export const withProcedureInputContract = <
 ): MergeProcedureDefinition<
   TDefinition,
   {
-    input: ProcedureInputContract<
-      TValidationSchema,
-      TValidationErrorResponses
-    > & {
-      contracts: NonNullable<TDefinition["input"]>["contracts"] &
-        Record<TTarget, TSchema>;
+    input: ProcedureInputContract<TValidationSchema, TValidationErrorResponses> & {
+      contracts: NonNullable<TDefinition["input"]>["contracts"] & Record<TTarget, TSchema>;
     };
   }
 > => {
@@ -131,15 +115,15 @@ export const withProcedureInputContract = <
     ...definition,
     input: {
       contracts: {
-        ...(definition.input?.contracts ?? {}),
+        ...definition.input?.contracts,
         [target]: schema,
       },
       options: {
-        ...(definition.input?.options ?? {}),
+        ...definition.input?.options,
         ...(options === undefined ? {} : { [target]: options }),
       },
       validationErrorResponses: {
-        ...(definition.input?.validationErrorResponses ?? {}),
+        ...definition.input?.validationErrorResponses,
       } as TValidationErrorResponses,
       validationSchema: {
         ...(definition.input?.validationSchema ?? {
@@ -151,12 +135,8 @@ export const withProcedureInputContract = <
   } as unknown as MergeProcedureDefinition<
     TDefinition,
     {
-      input: ProcedureInputContract<
-        TValidationSchema,
-        TValidationErrorResponses
-      > & {
-        contracts: NonNullable<TDefinition["input"]>["contracts"] &
-          Record<TTarget, TSchema>;
+      input: ProcedureInputContract<TValidationSchema, TValidationErrorResponses> & {
+        contracts: NonNullable<TDefinition["input"]>["contracts"] & Record<TTarget, TSchema>;
       };
     }
   >;
@@ -167,12 +147,7 @@ export const isProcedureResult = (value: unknown): value is ProcedureResult => {
     return false;
   }
 
-  return (
-    "status" in value ||
-    "headers" in value ||
-    "body" in value ||
-    "redirect" in value
-  );
+  return "status" in value || "headers" in value || "body" in value || "redirect" in value;
 };
 
 export const normalizeProcedureResult = (
@@ -210,19 +185,12 @@ export const normalizeProcedureResult = (
   });
 };
 
-export const executePipeline = async <
-  TContext,
-  TResult,
-  TTerminal extends TResult,
->(
+export const executePipeline = async <TContext, TResult, TTerminal extends TResult>(
   steps: readonly ((context: TContext) => TResult | Promise<TResult>)[],
   context: TContext,
   options: {
     isTerminal: (result: TResult) => result is TTerminal;
-    applyResult?: (
-      context: TContext,
-      result: Exclude<TResult, TTerminal>,
-    ) => void;
+    applyResult?: (context: TContext, result: Exclude<TResult, TTerminal>) => void;
   },
 ): Promise<TTerminal | undefined> => {
   for (const step of steps) {

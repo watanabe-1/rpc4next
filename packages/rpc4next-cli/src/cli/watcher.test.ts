@@ -1,35 +1,40 @@
-import * as path from "node:path";
 import chokidar, { type FSWatcher } from "chokidar";
+import * as path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import * as cacheModule from "./core/cache.js";
 import * as debounceModule from "./debounce.js";
 import { setupWatcher } from "./watcher.js";
 
 vi.mock("./core/cache.js", () => ({
-  clearCntCache: vi.fn(),
-  clearVisitedDirsCacheAbove: vi.fn(),
-  clearScanAppDirCacheAbove: vi.fn(),
+  clearCntCache: vi.fn<(...args: unknown[]) => unknown>(),
+  clearVisitedDirsCacheAbove: vi.fn<(...args: unknown[]) => unknown>(),
+  clearScanAppDirCacheAbove: vi.fn<(...args: unknown[]) => unknown>(),
 }));
 
-vi.spyOn(debounceModule, "debounceOnceRunningWithTrailing").mockImplementation(
-  (fn) => fn,
-);
+vi.spyOn(debounceModule, "debounceOnceRunningWithTrailing").mockImplementation((fn) => fn);
+
+type WatchAllHandler = (event: string, path: string) => void;
+type WatchErrorHandler = (error: unknown) => void;
+type WatchReadyHandler = () => void;
+type WatchHandler = WatchAllHandler | WatchErrorHandler | WatchReadyHandler;
+type FakeWatcher = {
+  on: (event: string, cb: WatchHandler) => FakeWatcher;
+};
 
 const logger = {
-  info: vi.fn(),
-  success: vi.fn(),
-  error: vi.fn(),
+  info: vi.fn<(...args: unknown[]) => void>(),
+  success: vi.fn<(...args: unknown[]) => void>(),
+  error: vi.fn<(...args: unknown[]) => void>(),
 };
 
-const onGenerate = vi.fn();
+const onGenerate = vi.fn<() => void>();
 
-const fakeOn = vi.fn();
-const fakeWatcher = {
+const fakeOn = vi.fn<(event: string, cb: WatchHandler) => FakeWatcher>();
+const fakeWatcher: FakeWatcher = {
   on: fakeOn,
 };
-vi.spyOn(chokidar, "watch").mockReturnValue(
-  fakeWatcher as unknown as FSWatcher,
-);
+vi.spyOn(chokidar, "watch").mockReturnValue(fakeWatcher as unknown as FSWatcher);
 
 describe("setupWatcher", () => {
   beforeEach(() => {
@@ -55,13 +60,13 @@ describe("setupWatcher", () => {
     setupWatcher(baseDir, onGenerate, logger);
 
     const readyHandler = fakeOn.mock.calls.find(
-      (call) => call[0] === "ready",
-    )?.[1];
+      (call: [string, WatchHandler]) => call[0] === "ready",
+    )?.[1] as WatchReadyHandler | undefined;
 
     let allHandler: ((event: string, path: string) => void) | undefined;
-    fakeOn.mockImplementation((event, cb) => {
+    fakeOn.mockImplementation((event: string, cb: WatchHandler) => {
       if (event === "all") {
-        allHandler = cb;
+        allHandler = cb as WatchAllHandler;
       }
 
       return fakeWatcher;
@@ -75,12 +80,8 @@ describe("setupWatcher", () => {
     expect(logger.info).toHaveBeenCalledWith(expectedRelative, {
       event: "change",
     });
-    expect(cacheModule.clearVisitedDirsCacheAbove).toHaveBeenCalledWith(
-      targetPath,
-    );
-    expect(cacheModule.clearScanAppDirCacheAbove).toHaveBeenCalledWith(
-      targetPath,
-    );
+    expect(cacheModule.clearVisitedDirsCacheAbove).toHaveBeenCalledWith(targetPath);
+    expect(cacheModule.clearScanAppDirCacheAbove).toHaveBeenCalledWith(targetPath);
     expect(onGenerate).toHaveBeenCalledTimes(2); // ready + change
   });
 
@@ -91,12 +92,12 @@ describe("setupWatcher", () => {
     setupWatcher(baseDir, onGenerate, logger);
 
     const readyHandler = fakeOn.mock.calls.find(
-      (call) => call[0] === "ready",
-    )?.[1];
+      (call: [string, WatchHandler]) => call[0] === "ready",
+    )?.[1] as WatchReadyHandler | undefined;
 
-    fakeOn.mockImplementation((event, cb) => {
+    fakeOn.mockImplementation((event: string, cb: WatchHandler) => {
       if (event === "all") {
-        cb("change", nonTargetPath);
+        (cb as WatchAllHandler)("change", nonTargetPath);
       }
 
       return fakeWatcher;
@@ -106,10 +107,7 @@ describe("setupWatcher", () => {
 
     const expectedRelative = path.relative(process.cwd(), nonTargetPath);
 
-    expect(logger.info).not.toHaveBeenCalledWith(
-      expectedRelative,
-      expect.anything(),
-    );
+    expect(logger.info).not.toHaveBeenCalledWith(expectedRelative, expect.anything());
     expect(cacheModule.clearVisitedDirsCacheAbove).not.toHaveBeenCalled();
     expect(cacheModule.clearScanAppDirCacheAbove).not.toHaveBeenCalled();
     expect(onGenerate).toHaveBeenCalledTimes(1); // only from ready
@@ -123,13 +121,13 @@ describe("setupWatcher", () => {
     setupWatcher(baseDir, onGenerate, logger);
 
     const readyHandler = fakeOn.mock.calls.find(
-      (call) => call[0] === "ready",
-    )?.[1];
+      (call: [string, WatchHandler]) => call[0] === "ready",
+    )?.[1] as WatchReadyHandler | undefined;
 
     let allHandler: ((event: string, path: string) => void) | undefined;
-    fakeOn.mockImplementation((event, cb) => {
+    fakeOn.mockImplementation((event: string, cb: WatchHandler) => {
       if (event === "all") {
-        allHandler = cb;
+        allHandler = cb as WatchAllHandler;
       }
 
       return fakeWatcher;
@@ -163,22 +161,18 @@ describe("setupWatcher", () => {
     setupWatcher("/base/dir", onGenerate, logger);
 
     const errorHandler = fakeOn.mock.calls.find(
-      (call) => call[0] === "error",
-    )?.[1];
+      (call: [string, WatchHandler]) => call[0] === "error",
+    )?.[1] as WatchErrorHandler | undefined;
 
     expect(errorHandler).toBeDefined();
 
     errorHandler?.(new Error("Something went wrong"));
 
-    expect(logger.error).toHaveBeenCalledWith(
-      "Watcher error: Something went wrong",
-    );
+    expect(logger.error).toHaveBeenCalledWith("Watcher error: Something went wrong");
 
     errorHandler?.("some string error");
 
-    expect(logger.error).toHaveBeenCalledWith(
-      "Unknown watcher error: some string error",
-    );
+    expect(logger.error).toHaveBeenCalledWith("Unknown watcher error: some string error");
   });
 
   it("should close watcher on SIGINT/SIGTERM", async () => {
@@ -192,21 +186,19 @@ describe("setupWatcher", () => {
     });
 
     const logger = {
-      info: vi.fn(),
-      success: vi.fn(),
-      error: vi.fn(),
+      info: vi.fn<(...args: unknown[]) => void>(),
+      success: vi.fn<(...args: unknown[]) => void>(),
+      error: vi.fn<(...args: unknown[]) => void>(),
     };
 
     // On success
-    const mockClose = vi.fn().mockResolvedValue(undefined);
+    const mockClose = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
     const watcherSuccess = {
-      on: vi.fn(),
+      on: vi.fn<(...args: unknown[]) => unknown>(),
       close: mockClose,
     };
 
-    vi.spyOn(chokidar, "watch").mockReturnValueOnce(
-      watcherSuccess as unknown as FSWatcher,
-    );
+    vi.spyOn(chokidar, "watch").mockReturnValueOnce(watcherSuccess as unknown as FSWatcher);
 
     setupWatcher("/base/dir", onGenerate, logger);
     await handlers.SIGINT?.();
@@ -219,15 +211,13 @@ describe("setupWatcher", () => {
     process.removeAllListeners("SIGTERM");
 
     // On failure
-    const mockCloseError = vi.fn().mockRejectedValue(new Error("close fail"));
+    const mockCloseError = vi.fn<() => Promise<void>>().mockRejectedValue(new Error("close fail"));
     const watcherError = {
-      on: vi.fn(),
+      on: vi.fn<(...args: unknown[]) => unknown>(),
       close: mockCloseError,
     };
 
-    vi.spyOn(chokidar, "watch").mockReturnValueOnce(
-      watcherError as unknown as FSWatcher,
-    );
+    vi.spyOn(chokidar, "watch").mockReturnValueOnce(watcherError as unknown as FSWatcher);
 
     setupWatcher("/base/dir", onGenerate, logger);
 
@@ -237,9 +227,7 @@ describe("setupWatcher", () => {
     await flushPromises();
 
     expect(mockCloseError).toHaveBeenCalled();
-    expect(logger.error).toHaveBeenCalledWith(
-      "Failed to close watcher: close fail",
-    );
+    expect(logger.error).toHaveBeenCalledWith("Failed to close watcher: close fail");
   });
 
   it("should correctly ignore non-target files and include target files", () => {
@@ -259,20 +247,12 @@ describe("setupWatcher", () => {
     expect(ignoredFn).toBeDefined();
 
     // If we exclude everything except files using ignored, the watch mode will terminate, so we added "only files" to the exclusion condition.
-    expect(
-      ignoredFn?.("/base/dir/should/ignore", { isFile: () => false }),
-    ).toBe(false);
+    expect(ignoredFn?.("/base/dir/should/ignore", { isFile: () => false })).toBe(false);
 
-    expect(ignoredFn?.("/base/dir/non-target.ts", { isFile: () => true })).toBe(
-      true,
-    );
+    expect(ignoredFn?.("/base/dir/non-target.ts", { isFile: () => true })).toBe(true);
 
-    expect(ignoredFn?.("/base/dir/route.ts", { isFile: () => true })).toBe(
-      false,
-    );
+    expect(ignoredFn?.("/base/dir/route.ts", { isFile: () => true })).toBe(false);
 
-    expect(ignoredFn?.("/base/dir/page.tsx", { isFile: () => true })).toBe(
-      false,
-    );
+    expect(ignoredFn?.("/base/dir/page.tsx", { isFile: () => true })).toBe(false);
   });
 });

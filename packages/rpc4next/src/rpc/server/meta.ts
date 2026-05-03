@@ -1,8 +1,5 @@
-import type {
-  ProcedureDefinition,
-  WithProcedureDefinition,
-} from "./procedure-types";
 import { getProcedureDefinition } from "./procedure-types";
+import type { ProcedureDefinition, WithProcedureDefinition } from "./procedure-types";
 
 export interface RpcMetaBase {
   summary?: string;
@@ -10,8 +7,7 @@ export interface RpcMetaBase {
   deprecated?: boolean;
 }
 
-export type RpcMeta<TExtra extends object = Record<never, never>> =
-  RpcMetaBase & TExtra;
+export type RpcMeta<TExtra extends object = Record<never, never>> = RpcMetaBase & TExtra;
 
 type ExtractProcedureDefinition<TValue> =
   TValue extends WithProcedureDefinition<unknown, infer TDefinition>

@@ -1,15 +1,12 @@
 import fs from "node:fs";
-import type { HttpMethod } from "rpc4next-shared";
 import { HTTP_METHODS_EXCLUDE_OPTIONS } from "rpc4next-shared";
-import type { ImportAliasName } from "./alias.js";
+import type { HttpMethod } from "rpc4next-shared";
+
 import { createImportAlias } from "./alias.js";
+import type { ImportAliasName } from "./alias.js";
 import { QUERY_TYPES, TYPE_KEY_QUERY } from "./constants.js";
 import { createRelativeImportPath } from "./path-utils.js";
-import {
-  createImport,
-  createObjectType,
-  createRecodeType,
-} from "./type-utils.js";
+import { createImport, createObjectType, createRecodeType } from "./type-utils.js";
 
 type ScanDefinition<T extends ImportAliasName> = {
   importName: string;
@@ -39,9 +36,7 @@ const buildDefinition = <T extends ImportAliasName>(
 
 const findQueryExport = (fileContents: string) => {
   return QUERY_TYPES.find((type) =>
-    new RegExp(`export (interface ${type} ?{|type ${type} ?=)`).test(
-      fileContents,
-    ),
+    new RegExp(`export (interface ${type} ?{|type ${type} ?=)`).test(fileContents),
   );
 };
 
@@ -71,9 +66,7 @@ export const scanEndpointFile = (
     hasRouteExport(fileContents, method),
   ).map((method) =>
     buildDefinition(outputFile, inputFile, method, (type, importAlias) =>
-      createObjectType([
-        { name: `$${type.toLowerCase()}`, type: `typeof ${importAlias}` },
-      ]),
+      createObjectType([{ name: `$${type.toLowerCase()}`, type: `typeof ${importAlias}` }]),
     ),
   );
 

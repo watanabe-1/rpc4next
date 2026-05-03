@@ -1,4 +1,5 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
+
 import { defaultProcedureOnError } from "./on-error";
 import { defineProcedureMiddleware, procedure } from "./procedure";
 import type { ProcedureRouteContract } from "./procedure-types";
@@ -8,15 +9,9 @@ describe("procedure builder type definitions", () => {
   const guardedUserRouteContract = {
     pathname: "/api/procedure-guarded/[userId]",
     params: {} as { userId: string },
-  } as ProcedureRouteContract<
-    "/api/procedure-guarded/[userId]",
-    { userId: string }
-  >;
+  } as ProcedureRouteContract<"/api/procedure-guarded/[userId]", { userId: string }>;
 
-  const parsePage: StandardSchemaV1<
-    { page?: string | string[] },
-    { page: number }
-  > = {
+  const parsePage: StandardSchemaV1<{ page?: string | string[] }, { page: number }> = {
     "~standard": {
       version: 1,
       vendor: "rpc4next-test",
@@ -46,25 +41,21 @@ describe("procedure builder type definitions", () => {
     },
   };
 
-  const userIdSchema: StandardSchemaV1<{ userId: string }, { userId: string }> =
-    {
-      "~standard": {
-        version: 1,
-        vendor: "rpc4next-test",
-        types: {
-          input: {} as { userId: string },
-          output: {} as { userId: string },
-        },
-        validate: (value) => ({
-          value: value as { userId: string },
-        }),
+  const userIdSchema: StandardSchemaV1<{ userId: string }, { userId: string }> = {
+    "~standard": {
+      version: 1,
+      vendor: "rpc4next-test",
+      types: {
+        input: {} as { userId: string },
+        output: {} as { userId: string },
       },
-    };
+      validate: (value) => ({
+        value: value as { userId: string },
+      }),
+    },
+  };
 
-  const invalidUserIdSchema: StandardSchemaV1<
-    { userId?: string },
-    { userId?: string }
-  > = {
+  const invalidUserIdSchema: StandardSchemaV1<{ userId?: string }, { userId?: string }> = {
     "~standard": {
       version: 1,
       vendor: "rpc4next-test",
@@ -143,33 +134,30 @@ describe("procedure builder type definitions", () => {
     },
   };
 
-  const avatarSchema: StandardSchemaV1<{ avatar: string }, { avatar: string }> =
-    {
-      "~standard": {
-        version: 1,
-        vendor: "rpc4next-test",
-        types: {
-          input: {} as { avatar: string },
-          output: {} as { avatar: string },
-        },
-        validate: (value) => ({
-          value: value as { avatar: string },
-        }),
+  const avatarSchema: StandardSchemaV1<{ avatar: string }, { avatar: string }> = {
+    "~standard": {
+      version: 1,
+      vendor: "rpc4next-test",
+      types: {
+        input: {} as { avatar: string },
+        output: {} as { avatar: string },
       },
-    };
+      validate: (value) => ({
+        value: value as { avatar: string },
+      }),
+    },
+  };
 
   it("supports custom procedure validators without zod coupling", () => {
-    const customValidatorProcedure = procedure
-      .query(parsePage)
-      .handle(({ query }) => {
-        const _query: { page: number } = query;
+    const customValidatorProcedure = procedure.query(parsePage).handle(({ query }) => {
+      const _query: { page: number } = query;
 
-        void _query;
+      void _query;
 
-        return {
-          status: 200 as const,
-        };
-      });
+      return {
+        status: 200 as const,
+      };
+    });
 
     expectTypeOf(customValidatorProcedure.handler).parameters.toExtend<
       [
@@ -440,24 +428,22 @@ describe("procedure builder type definitions", () => {
         },
       }));
 
-    const guardedProcedure = guardedBaseProcedure
-      .params(userIdSchema)
-      .handle(({ params, ctx }) => {
-        const _params: { userId: string } = params;
-        const _ctx: {
-          requestId: string;
-          viewer: {
-            role: "reader" | "editor";
-          };
-        } = ctx;
-
-        void _params;
-        void _ctx;
-
-        return {
-          status: 200 as const,
+    const guardedProcedure = guardedBaseProcedure.params(userIdSchema).handle(({ params, ctx }) => {
+      const _params: { userId: string } = params;
+      const _ctx: {
+        requestId: string;
+        viewer: {
+          role: "reader" | "editor";
         };
-      });
+      } = ctx;
+
+      void _params;
+      void _ctx;
+
+      return {
+        status: 200 as const,
+      };
+    });
 
     expectTypeOf(guardedProcedure.handler).parameters.toExtend<
       [

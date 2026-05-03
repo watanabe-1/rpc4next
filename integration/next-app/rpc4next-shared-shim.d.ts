@@ -1,13 +1,5 @@
 declare module "rpc4next-shared" {
-  export const HTTP_METHODS: readonly [
-    "GET",
-    "HEAD",
-    "OPTIONS",
-    "POST",
-    "PUT",
-    "DELETE",
-    "PATCH",
-  ];
+  export const HTTP_METHODS: readonly ["GET", "HEAD", "OPTIONS", "POST", "PUT", "DELETE", "PATCH"];
 
   export const OPTIONAL_CATCH_ALL_PREFIX: "_____";
   export const CATCH_ALL_PREFIX: "___";

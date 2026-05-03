@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { createUrl } from "./url";
 
 describe("createUrl", () => {

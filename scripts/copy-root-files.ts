@@ -2,42 +2,30 @@ import fs from "node:fs";
 import path from "node:path";
 
 type CopyRootFilesOptions = {
-  /**
-   * Package directories location relative to rootDir.
-   * Default: "packages"
-   */
+  /** Package directories location relative to rootDir. Default: "packages" */
   packagesDirName?: string;
 
   /**
-   * Filenames to copy from rootDir into each package dir
-   * only when the target file does not exist.
+   * Filenames to copy from rootDir into each package dir only when the target file does not exist.
    *
-   * e.g. ["README.md", "LICENSE"]
+   * E.g. ["README.md", "LICENSE"]
    */
   fileNames: string[];
 
-  /**
-   * Optional logger for CLI/debug output.
-   * Default: no logging
-   */
+  /** Optional logger for CLI/debug output. Default: no logging */
   logger?: (message: string) => void;
 };
 
 export type CopyRootFilesResult = {
-  /**
-   * Map of filename -> list of package names where the file was copied.
-   */
+  /** Map of filename -> list of package names where the file was copied. */
   copied: Record<string, string[]>;
 };
 
 /**
- * Copy root files (e.g. README.md, LICENSE) into each package directory
- * only if the target file does not already exist.
+ * Copy root files (e.g. README.md, LICENSE) into each package directory only if the target file
+ * does not already exist.
  */
-export function copyRootFiles(
-  rootDir: string,
-  options: CopyRootFilesOptions,
-): CopyRootFilesResult {
+export function copyRootFiles(rootDir: string, options: CopyRootFilesOptions): CopyRootFilesResult {
   const packagesDir = path.join(rootDir, options.packagesDirName ?? "packages");
   options.logger?.(
     `[copy-root-files] start rootDir=${rootDir} packagesDir=${packagesDir} files=${options.fileNames.join(",")}`,
@@ -70,26 +58,18 @@ export function copyRootFiles(
         options.logger?.(`[copy-root-files] copied ${fileName} -> ${destPath}`);
         copied[fileName].push(pkgName);
       } else {
-        options.logger?.(
-          `[copy-root-files] skipped (already exists) ${fileName} -> ${destPath}`,
-        );
+        options.logger?.(`[copy-root-files] skipped (already exists) ${fileName} -> ${destPath}`);
       }
     }
   }
 
-  const copiedCount = Object.values(copied).reduce(
-    (total, names) => total + names.length,
-    0,
-  );
+  const copiedCount = Object.values(copied).reduce((total, names) => total + names.length, 0);
   options.logger?.(`[copy-root-files] done copied=${copiedCount}`);
 
   return { copied };
 }
 
-export function runCli(
-  cwd = process.cwd(),
-  logger?: (message: string) => void,
-) {
+export function runCli(cwd = process.cwd(), logger?: (message: string) => void) {
   return copyRootFiles(cwd, {
     fileNames: ["README.md", "LICENSE"],
     logger,

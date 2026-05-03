@@ -1,15 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { handleCli } from "./cli-handler.js";
 import * as generatorModule from "./generator.js";
 import type { CliOptions, Logger } from "./types.js";
 import * as watcherModule from "./watcher.js";
 
 vi.mock("./generator.js", () => ({
-  generate: vi.fn(),
+  generate: vi.fn<(...args: unknown[]) => unknown>(),
 }));
 
 vi.mock("./watcher.js", () => ({
-  setupWatcher: vi.fn(),
+  setupWatcher: vi.fn<(...args: unknown[]) => unknown>(),
 }));
 
 describe("handleCli", () => {
@@ -20,9 +21,9 @@ describe("handleCli", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     logger = {
-      error: vi.fn(),
-      info: vi.fn(),
-      success: vi.fn(),
+      error: vi.fn<(...args: unknown[]) => void>(),
+      info: vi.fn<(...args: unknown[]) => void>(),
+      success: vi.fn<(...args: unknown[]) => void>(),
     };
   });
 
@@ -31,9 +32,7 @@ describe("handleCli", () => {
     const result = handleCli(baseDir, outputPath, options, logger);
 
     expect(result).toBe(1);
-    expect(logger.error).toHaveBeenCalledWith(
-      "Error: --params-file requires a filename.",
-    );
+    expect(logger.error).toHaveBeenCalledWith("Error: --params-file requires a filename.");
     expect(generatorModule.generate).not.toHaveBeenCalled();
   });
 
@@ -97,9 +96,7 @@ describe("handleCli", () => {
     const result = handleCli(baseDir, outputPath, options, logger);
 
     expect(result).toBe(1);
-    expect(logger.error).toHaveBeenCalledWith(
-      "Failed to generate: something went wrong",
-    );
+    expect(logger.error).toHaveBeenCalledWith("Failed to generate: something went wrong");
   });
 
   it("should return 1 and log unknown error if generate throws a non-Error", () => {
@@ -131,8 +128,6 @@ describe("handleCli", () => {
     const callback = mockedSetupWatcher.mock.calls[0][1];
     callback();
 
-    expect(logger.error).toHaveBeenCalledWith(
-      "Failed to generate: watch failure",
-    );
+    expect(logger.error).toHaveBeenCalledWith("Failed to generate: watch failure");
   });
 });

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { runCli } from "./cli.js";
+
 import * as cliHandler from "./cli-handler.js";
+import { runCli } from "./cli.js";
 import * as configModule from "./config.js";
 import { EXIT_FAILURE } from "./constants.js";
 import * as loggerModule from "./logger.js";
@@ -18,9 +19,9 @@ class ExitSignal extends Error {
 
 describe("runCli", () => {
   const mockLogger = {
-    error: vi.fn(),
-    info: vi.fn(),
-    success: vi.fn(),
+    error: vi.fn<(...args: unknown[]) => void>(),
+    info: vi.fn<(...args: unknown[]) => void>(),
+    success: vi.fn<(...args: unknown[]) => void>(),
   };
 
   beforeEach(() => {
@@ -40,12 +41,7 @@ describe("runCli", () => {
     runCli(["node", "cli", "src", "types.ts"]);
     await flushAsync();
 
-    expect(handleCliSpy).toHaveBeenCalledWith(
-      "src",
-      "types.ts",
-      { watch: false },
-      mockLogger,
-    );
+    expect(handleCliSpy).toHaveBeenCalledWith("src", "types.ts", { watch: false }, mockLogger);
   });
 
   it("loads required args from rpc4next.config.json when positionals are omitted", async () => {
@@ -88,9 +84,7 @@ describe("runCli", () => {
 
   it("exits with failure and prints help when required args are missing", () => {
     const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
-      code?: number,
-    ) => {
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: number) => {
       throw new ExitSignal(code);
     }) as never);
 
@@ -119,12 +113,7 @@ describe("runCli", () => {
     runCli(["node", "cli", "src", "types.ts", "--watch"]);
     await flushAsync();
 
-    expect(handleCliSpy).toHaveBeenCalledWith(
-      "src",
-      "types.ts",
-      { watch: true },
-      mockLogger,
-    );
+    expect(handleCliSpy).toHaveBeenCalledWith("src", "types.ts", { watch: true }, mockLogger);
     expect(process.exit).not.toHaveBeenCalled();
   });
 
@@ -213,19 +202,12 @@ describe("runCli", () => {
     ]);
     await flushAsync();
 
-    expect(handleCliSpy).toHaveBeenCalledWith(
-      "src",
-      "types.ts",
-      { watch: false },
-      mockLogger,
-    );
+    expect(handleCliSpy).toHaveBeenCalledWith("src", "types.ts", { watch: false }, mockLogger);
   });
 
   it("accepts user-args-only help flag that starts with '-'", () => {
     const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
-      code?: number,
-    ) => {
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: number) => {
       throw new ExitSignal(code);
     }) as never);
 
@@ -236,14 +218,9 @@ describe("runCli", () => {
     expect(exitSpy).toHaveBeenCalledWith(0);
   });
 
-  it.each([
-    ["-h"],
-    ["--help"],
-  ])("exits 0 and skips handleCli on help: %s", (helpFlag) => {
+  it.each([["-h"], ["--help"]])("exits 0 and skips handleCli on help: %s", (helpFlag) => {
     const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
-      code?: number,
-    ) => {
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: number) => {
       throw new ExitSignal(code);
     }) as never);
 
@@ -267,9 +244,7 @@ describe("runCli", () => {
 
   it("exits with failure when argv is empty", () => {
     const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
-      code?: number,
-    ) => {
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: number) => {
       throw new ExitSignal(code);
     }) as never);
 
@@ -298,16 +273,12 @@ describe("runCli", () => {
   });
 
   it("logs and exits when handleCli throws Error", async () => {
-    vi.spyOn(cliHandler, "handleCli").mockRejectedValue(
-      new Error("Something went wrong"),
-    );
+    vi.spyOn(cliHandler, "handleCli").mockRejectedValue(new Error("Something went wrong"));
 
     runCli(["node", "cli", "src", "types.ts"]);
     await flushAsync();
 
-    expect(mockLogger.error).toHaveBeenCalledWith(
-      "Unexpected error occurred:Something went wrong",
-    );
+    expect(mockLogger.error).toHaveBeenCalledWith("Unexpected error occurred:Something went wrong");
     expect(process.exit).toHaveBeenCalledWith(EXIT_FAILURE);
   });
 
@@ -317,17 +288,13 @@ describe("runCli", () => {
     runCli(["node", "cli", "src", "types.ts"]);
     await flushAsync();
 
-    expect(mockLogger.error).toHaveBeenCalledWith(
-      "Unexpected error occurred:plain string error",
-    );
+    expect(mockLogger.error).toHaveBeenCalledWith("Unexpected error occurred:plain string error");
     expect(process.exit).toHaveBeenCalledWith(EXIT_FAILURE);
   });
 
   it("logs invalid arguments when non-Error is thrown in outer try block", () => {
     const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
-      code?: number,
-    ) => {
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: number) => {
       if (code === 0) throw "EXIT_NON_ERROR";
       throw new ExitSignal(code);
     }) as never);
@@ -335,9 +302,7 @@ describe("runCli", () => {
     expect(() => runCli(["--help"])).toThrow(ExitSignal);
 
     expect(handleCliSpy).not.toHaveBeenCalled();
-    expect(mockLogger.error).toHaveBeenCalledWith(
-      "Invalid arguments: EXIT_NON_ERROR",
-    );
+    expect(mockLogger.error).toHaveBeenCalledWith("Invalid arguments: EXIT_NON_ERROR");
     expect(exitSpy).toHaveBeenLastCalledWith(EXIT_FAILURE);
   });
 });

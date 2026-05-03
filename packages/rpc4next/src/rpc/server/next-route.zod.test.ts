@@ -1,7 +1,8 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
+
 import { nextRoute as baseNextRoute } from "./next-route";
 import { defaultProcedureOnError } from "./on-error";
 import { procedure } from "./procedure";
@@ -20,15 +21,12 @@ const nextRoute = <
   },
 ) => {
   const resolvedOptions =
-    options && "onError" in options
-      ? options
-      : { ...(options ?? {}), onError: defaultProcedureOnError };
+    options && "onError" in options ? options : { ...options, onError: defaultProcedureOnError };
 
-  return baseNextRoute<
-    TProcedure & Parameters<typeof baseNextRoute>[0],
-    TMethod,
-    TValidateOutput
-  >(procedureDefinition as never, resolvedOptions as never);
+  return baseNextRoute<TProcedure & Parameters<typeof baseNextRoute>[0], TMethod, TValidateOutput>(
+    procedureDefinition as never,
+    resolvedOptions as never,
+  );
 };
 
 describe("nextRoute zod integration", () => {
@@ -148,19 +146,20 @@ describe("nextRoute zod integration", () => {
   });
 
   it("runs validator-stage custom branches before the procedure pipeline", async () => {
-    const onError = vi.fn((error: unknown, { response }) =>
-      response.json(
-        {
-          source: "onError",
-          error: error instanceof Error ? error.message : "unknown",
-        },
-        { status: 499 },
-      ),
+    const onError = vi.fn<(error: unknown, context: { response: typeof NextResponse }) => Response>(
+      (error: unknown, { response }) =>
+        response.json(
+          {
+            source: "onError",
+            error: error instanceof Error ? error.message : "unknown",
+          },
+          { status: 499 },
+        ),
     );
-    const middleware = vi.fn(() => ({
+    const middleware = vi.fn<() => { ctx: { reached: boolean } }>(() => ({
       ctx: { reached: true },
     }));
-    const handler = vi.fn(() => ({
+    const handler = vi.fn<() => { body: { ok: boolean } }>(() => ({
       body: {
         ok: true,
       },
@@ -180,9 +179,7 @@ describe("nextRoute zod integration", () => {
                   target,
                   issueCount: issues.length,
                   receivedPage:
-                    typeof value === "object" &&
-                    value !== null &&
-                    "page" in value
+                    typeof value === "object" && value !== null && "page" in value
                       ? value.page
                       : undefined,
                 },
@@ -197,12 +194,9 @@ describe("nextRoute zod integration", () => {
       },
     );
 
-    const response = await route(
-      new NextRequest("http://127.0.0.1:3000/api/test?page=0"),
-      {
-        params: Promise.resolve({}),
-      },
-    );
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api/test?page=0"), {
+      params: Promise.resolve({}),
+    });
 
     expect(response.status).toBe(422);
     await expect(response.json()).resolves.toEqual({
@@ -235,12 +229,9 @@ describe("nextRoute zod integration", () => {
       { method: "GET" },
     );
 
-    const response = await route(
-      new NextRequest("http://127.0.0.1:3000/api/test?page=0"),
-      {
-        params: Promise.resolve({}),
-      },
-    );
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api/test?page=0"), {
+      params: Promise.resolve({}),
+    });
 
     expect(response.status).toBe(422);
     expect(response.headers.get("content-type")).toContain("text/plain");
@@ -261,12 +252,9 @@ describe("nextRoute zod integration", () => {
         })),
     );
 
-    const response = await route(
-      new NextRequest("http://127.0.0.1:3000/api/test?page=0"),
-      {
-        params: Promise.resolve({}),
-      },
-    );
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api/test?page=0"), {
+      params: Promise.resolve({}),
+    });
 
     expect(response.status).toBe(400);
     const payload = await response.json();
@@ -289,15 +277,17 @@ describe("nextRoute zod integration", () => {
   });
 
   it("lets onError shape validation errors when validator-stage customization falls back", async () => {
-    const onError = vi.fn((error: unknown, { response }) => {
-      return response.json(
-        {
-          source: "onError",
-          message: error instanceof Error ? error.message : "unknown",
-        },
-        { status: 418 },
-      );
-    });
+    const onError = vi.fn<(error: unknown, context: { response: typeof NextResponse }) => Response>(
+      (error: unknown, { response }) => {
+        return response.json(
+          {
+            source: "onError",
+            message: error instanceof Error ? error.message : "unknown",
+          },
+          { status: 418 },
+        );
+      },
+    );
     const route = nextRoute(
       procedure
         .forRoute(staticRouteContract)
@@ -317,12 +307,9 @@ describe("nextRoute zod integration", () => {
       },
     );
 
-    const response = await route(
-      new NextRequest("http://127.0.0.1:3000/api/test?page=0"),
-      {
-        params: Promise.resolve({}),
-      },
-    );
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api/test?page=0"), {
+      params: Promise.resolve({}),
+    });
 
     expect(onError).toHaveBeenCalledTimes(1);
     expect(response.status).toBe(418);
@@ -358,8 +345,7 @@ describe("nextRoute zod integration", () => {
     await expect(response.json()).resolves.toEqual({
       error: {
         code: "BAD_REQUEST",
-        message:
-          "JSON input contracts are not supported for GET or HEAD requests.",
+        message: "JSON input contracts are not supported for GET or HEAD requests.",
       },
     });
   });
@@ -400,10 +386,7 @@ describe("nextRoute zod integration", () => {
 
     const payload = new FormData();
     payload.set("displayName", "demo-user");
-    payload.set(
-      "avatar",
-      new File(["avatar"], "avatar.png", { type: "image/png" }),
-    );
+    payload.set("avatar", new File(["avatar"], "avatar.png", { type: "image/png" }));
     payload.append("tags", "alpha");
     payload.append("tags", "beta");
 
@@ -446,10 +429,7 @@ describe("nextRoute zod integration", () => {
 
     const payload = new FormData();
     payload.set("displayName", "scalar-user");
-    payload.set(
-      "avatar",
-      new File(["avatar"], "scalar.png", { type: "image/png" }),
-    );
+    payload.set("avatar", new File(["avatar"], "scalar.png", { type: "image/png" }));
 
     const response = await route(
       new NextRequest("http://127.0.0.1:3000/api/procedure", {
@@ -507,8 +487,7 @@ describe("nextRoute zod integration", () => {
     await expect(response.json()).resolves.toEqual({
       error: {
         code: "BAD_REQUEST",
-        message:
-          "FormData input contracts are not supported for GET or HEAD requests.",
+        message: "FormData input contracts are not supported for GET or HEAD requests.",
       },
     });
   });
@@ -537,12 +516,9 @@ describe("nextRoute zod integration", () => {
       { method: "GET" },
     );
 
-    const result = await route(
-      new NextRequest("http://127.0.0.1:3000/api/test?page=2"),
-      {
-        params: Promise.resolve({}),
-      },
-    );
+    const result = await route(new NextRequest("http://127.0.0.1:3000/api/test?page=2"), {
+      params: Promise.resolve({}),
+    });
 
     expect(result.status).toBe(200);
     await expect(result.json()).resolves.toEqual({
@@ -735,12 +711,9 @@ describe("nextRoute zod integration", () => {
       { method: "GET", validateOutput: true },
     );
 
-    const jsonResponse = await jsonRoute(
-      new NextRequest("http://127.0.0.1:3000/api/json"),
-      {
-        params: Promise.resolve({}),
-      },
-    );
+    const jsonResponse = await jsonRoute(new NextRequest("http://127.0.0.1:3000/api/json"), {
+      params: Promise.resolve({}),
+    });
 
     expect(jsonResponse.status).toBe(201);
     expect(jsonResponse.statusText).toBe("Created via helper");
@@ -762,12 +735,9 @@ describe("nextRoute zod integration", () => {
       { method: "GET", validateOutput: true },
     );
 
-    const textResponse = await textRoute(
-      new NextRequest("http://127.0.0.1:3000/api/text"),
-      {
-        params: Promise.resolve({}),
-      },
-    );
+    const textResponse = await textRoute(new NextRequest("http://127.0.0.1:3000/api/text"), {
+      params: Promise.resolve({}),
+    });
 
     expect(textResponse.status).toBe(202);
     expect(textResponse.statusText).toBe("Accepted via helper");
@@ -786,12 +756,9 @@ describe("nextRoute zod integration", () => {
       { method: "GET", validateOutput: true },
     );
 
-    const bodyResponse = await bodyRoute(
-      new NextRequest("http://127.0.0.1:3000/api/body"),
-      {
-        params: Promise.resolve({}),
-      },
-    );
+    const bodyResponse = await bodyRoute(new NextRequest("http://127.0.0.1:3000/api/body"), {
+      params: Promise.resolve({}),
+    });
 
     expect(bodyResponse.status).toBe(203);
     expect(bodyResponse.statusText).toBe("Non-Authoritative via helper");
@@ -853,15 +820,12 @@ describe("nextRoute zod integration", () => {
           }),
         )
         .handle(async () => {
-          return new Response(
-            JSON.stringify({ ok: true, slug: "raw-response" }),
-            {
-              status: 202,
-              headers: {
-                "content-type": "application/json",
-              },
+          return new Response(JSON.stringify({ ok: true, slug: "raw-response" }), {
+            status: 202,
+            headers: {
+              "content-type": "application/json",
             },
-          );
+          });
         }),
       { method: "GET", validateOutput: true },
     );
@@ -982,12 +946,9 @@ describe("nextRoute zod integration", () => {
       { method: "GET" },
     );
 
-    const response = await route(
-      new NextRequest("http://127.0.0.1:3000/api/test?page=0"),
-      {
-        params: Promise.resolve({}),
-      },
-    );
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api/test?page=0"), {
+      params: Promise.resolve({}),
+    });
 
     expect(response.status).toBe(409);
     await expect(response.json()).resolves.toEqual({

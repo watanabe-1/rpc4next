@@ -39,9 +39,7 @@ export interface StandardSchemaV1Issue {
   readonly path?: ReadonlyArray<PropertyKey | { key: PropertyKey }>;
 }
 
-export const isStandardSchemaV1 = (
-  value: unknown,
-): value is StandardSchemaV1 => {
+export const isStandardSchemaV1 = (value: unknown): value is StandardSchemaV1 => {
   return (
     (typeof value === "object" || typeof value === "function") &&
     value !== null &&

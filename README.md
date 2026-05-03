@@ -300,12 +300,7 @@ checks the contract without discarding the specific `response.json(...)` /
 `response.text(...)` result type.
 
 ```ts
-import {
-  isRpcError,
-  nextRoute,
-  procedure,
-  type ProcedureOnError,
-} from "rpc4next/server";
+import { isRpcError, nextRoute, procedure, type ProcedureOnError } from "rpc4next/server";
 import { routeContract } from "./route-contract";
 
 const failingProcedure = procedure.forRoute(routeContract).handle(async () => {
@@ -321,8 +316,7 @@ const onError = ((error, { response }) => {
     return response.json(error.toJSON(), { status: error.status });
   }
 
-  const message =
-    error instanceof Error ? error.message : "unknown integration error";
+  const message = error instanceof Error ? error.message : "unknown integration error";
 
   return response.text(`handled:${message}`, { status: 500 });
 }) satisfies ProcedureOnError;
@@ -359,10 +353,7 @@ export type Query = {
   filter?: string;
 };
 
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ itemId: string }> },
-) {
+export async function GET(request: NextRequest, context: { params: Promise<{ itemId: string }> }) {
   const { itemId } = await context.params;
   const filter = request.nextUrl.searchParams.get("filter") ?? "all";
 

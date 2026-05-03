@@ -1,5 +1,6 @@
 import path from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
+
 import {
   clearScanAppDirCacheAbove,
   clearVisitedDirsCacheAbove,
@@ -60,9 +61,7 @@ describe("clearVisitedDirsCacheAbove", () => {
     clearVisitedDirsCacheAbove(relativeTarget);
 
     expect(visitedDirsCache.has(absoluteTarget)).toBe(false);
-    expect(visitedDirsCache.has(path.join(absoluteTarget, "subdir"))).toBe(
-      true,
-    );
+    expect(visitedDirsCache.has(path.join(absoluteTarget, "subdir"))).toBe(true);
   });
 
   it("removes parent directory and ancestors when given a file path", () => {
@@ -139,24 +138,16 @@ describe("clearScanAppDirCacheAbove", () => {
   it("removes target directory and its ancestors from scanAppDirCache", () => {
     clearScanAppDirCacheAbove("/project/src/app");
 
-    expect(
-      [...scanAppDirCache.keys()].some((key) => key.includes("/project\u0000")),
-    ).toBe(false);
-    expect(
-      [...scanAppDirCache.keys()].some((key) =>
-        key.includes("/project/src\u0000"),
-      ),
-    ).toBe(false);
-    expect(
-      [...scanAppDirCache.keys()].some((key) =>
-        key.includes("/project/src/app\u0000"),
-      ),
-    ).toBe(false);
-    expect(
-      [...scanAppDirCache.keys()].some((key) =>
-        key.includes("/project/other\u0000"),
-      ),
-    ).toBe(true);
+    expect([...scanAppDirCache.keys()].some((key) => key.includes("/project\u0000"))).toBe(false);
+    expect([...scanAppDirCache.keys()].some((key) => key.includes("/project/src\u0000"))).toBe(
+      false,
+    );
+    expect([...scanAppDirCache.keys()].some((key) => key.includes("/project/src/app\u0000"))).toBe(
+      false,
+    );
+    expect([...scanAppDirCache.keys()].some((key) => key.includes("/project/other\u0000"))).toBe(
+      true,
+    );
   });
 
   it("does nothing if no matching ancestor exists", () => {

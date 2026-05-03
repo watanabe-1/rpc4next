@@ -1,8 +1,8 @@
 import type { ContentType } from "../server";
 
 /**
- * Represents HTTP request headers with optional fields.
- * This type includes general request headers, CORS/security-related headers, and client-specific headers.
+ * Represents HTTP request headers with optional fields. This type includes general request headers,
+ * CORS/security-related headers, and client-specific headers.
  */
 export type HttpRequestHeaders = Partial<{
   // General headers

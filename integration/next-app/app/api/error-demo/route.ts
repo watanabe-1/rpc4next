@@ -1,4 +1,5 @@
 import { nextRoute, procedure } from "rpc4next/server";
+
 import { routeContract } from "./route-contract";
 
 const failingProcedure = procedure.forRoute(routeContract).handle(async () => {
@@ -8,8 +9,7 @@ const failingProcedure = procedure.forRoute(routeContract).handle(async () => {
 export const GET = nextRoute(failingProcedure, {
   method: "GET",
   onError: (error) => {
-    const message =
-      error instanceof Error ? error.message : "unknown integration error";
+    const message = error instanceof Error ? error.message : "unknown integration error";
 
     return new Response(`handled:${message}`, {
       status: 500,

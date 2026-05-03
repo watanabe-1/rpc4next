@@ -1,13 +1,9 @@
 import type { TypedNextResponse } from "./types";
 
-export type RouteResponse =
-  | TypedNextResponse
-  | Promise<TypedNextResponse | undefined>;
+export type RouteResponse = TypedNextResponse | Promise<TypedNextResponse | undefined>;
 
 export interface ValidationSchema {
-  // biome-ignore lint/complexity/noBannedTypes: empty object contract is intentional
   input: {};
-  // biome-ignore lint/complexity/noBannedTypes: empty object contract is intentional
   output: {};
 }
 

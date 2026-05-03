@@ -1,14 +1,10 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("integration next-app rpc4next browser client e2e", () => {
-  test("generated client performs live GET and POST requests in the browser", async ({
-    page,
-  }) => {
+  test("generated client performs live GET and POST requests in the browser", async ({ page }) => {
     await page.goto("/e2e-client");
 
-    await expect(
-      page.getByRole("heading", { name: "rpc4next browser client e2e" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "rpc4next browser client e2e" })).toBeVisible();
 
     await page.getByRole("button", { name: "call users" }).click();
     await expect(page.getByTestId("users-result")).toHaveText(
@@ -54,15 +50,9 @@ test.describe("integration next-app rpc4next browser client e2e", () => {
     );
 
     await page.getByRole("button", { name: "call invalid users" }).click();
-    await expect(page.getByTestId("invalid-users-result")).toContainText(
-      '"status":400',
-    );
-    await expect(page.getByTestId("invalid-users-result")).toContainText(
-      '"code":"BAD_REQUEST"',
-    );
-    await expect(page.getByTestId("invalid-users-result")).toContainText(
-      "includePosts",
-    );
+    await expect(page.getByTestId("invalid-users-result")).toContainText('"status":400');
+    await expect(page.getByTestId("invalid-users-result")).toContainText('"code":"BAD_REQUEST"');
+    await expect(page.getByTestId("invalid-users-result")).toContainText("includePosts");
   });
 
   test("generated client handles guarded procedure success and typed forbidden envelopes", async ({
@@ -86,17 +76,11 @@ test.describe("integration next-app rpc4next browser client e2e", () => {
       }),
     );
 
-    await page
-      .getByRole("button", { name: "call forbidden procedure" })
-      .click();
-    await expect(page.getByTestId("procedure-forbidden-result")).toContainText(
-      '"status":403',
-    );
+    await page.getByRole("button", { name: "call forbidden procedure" }).click();
+    await expect(page.getByTestId("procedure-forbidden-result")).toContainText('"status":403');
     await expect(page.getByTestId("procedure-forbidden-result")).toContainText(
       '"code":"FORBIDDEN"',
     );
-    await expect(page.getByTestId("procedure-forbidden-result")).toContainText(
-      "editor_only",
-    );
+    await expect(page.getByTestId("procedure-forbidden-result")).toContainText("editor_only");
   });
 });
