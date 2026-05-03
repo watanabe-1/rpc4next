@@ -9,6 +9,14 @@ const workspaceRoot = path.resolve(
 );
 const generatedRpcPath = path.join(workspaceRoot, "src/generated/rpc.ts");
 const generatedRpc = fs.readFileSync(generatedRpcPath, "utf8");
+const escapedRouteContract = fs.readFileSync(
+  path.join(workspaceRoot, "app/patterns/%5Fescaped/route-contract.ts"),
+  "utf8",
+);
+const malformedRouteContract = fs.readFileSync(
+  path.join(workspaceRoot, "app/patterns/%E3%81%ZZ/route-contract.ts"),
+  "utf8",
+);
 
 const fixturePaths = [
   "app/patterns/dynamic/[category]/page.tsx",
@@ -43,6 +51,11 @@ describe("integration next-app folder pattern coverage", () => {
 
   it("preserves malformed encoded folder keys in PathStructure", () => {
     expect(generatedRpc.includes('"%E3%81%ZZ"')).toBe(true);
+  });
+
+  it("normalizes generated route contract pathnames with the client pathname rules", () => {
+    expect(escapedRouteContract.includes('"/patterns/_escaped"')).toBe(true);
+    expect(malformedRouteContract.includes('"/patterns/%E3%81%ZZ"')).toBe(true);
   });
 
   it("excludes intercepting route variants from PathStructure", () => {
