@@ -9,7 +9,10 @@ import {
   TYPE_KEY_QUERY,
   TYPE_RPC_ENDPOINT,
 } from "./constants.js";
-import { generatePathStructure } from "./generate-path-structure.js";
+import {
+  generatePathStructure,
+  ROUTE_CONTRACT_GENERATED_MARKER,
+} from "./generate-path-structure.js";
 
 const scanAppDir = vi.hoisted(() => vi.fn());
 vi.mock("./route-scanner.js", () => ({
@@ -74,6 +77,8 @@ describe("generatePathStructure", () => {
     expect(paramsTypes).toStrictEqual([
       {
         paramsType: [
+          ROUTE_CONTRACT_GENERATED_MARKER,
+          "",
           'import type { ProcedureRouteContract } from "rpc4next/server";',
           "",
           'export type Params = { "hoge": string };',

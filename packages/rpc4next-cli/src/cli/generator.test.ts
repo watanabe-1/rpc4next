@@ -2,11 +2,17 @@ import fs from "node:fs";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  cleanupTempDir,
+  makeTempDir,
+  writeTree,
+} from "../test-helpers/tmp-dir.js";
+import {
   SUCCESS_INDENT_LEVEL,
   SUCCESS_PAD_LENGTH,
   SUCCESS_SEPARATOR,
 } from "./constants.js";
 import * as generatePathStructure from "./core/generate-path-structure.js";
+import { ROUTE_CONTRACT_GENERATED_MARKER } from "./core/generate-path-structure.js";
 import { generate } from "./generator.js";
 import { padMessage } from "./logger.js";
 
@@ -22,6 +28,7 @@ describe("generate", () => {
   const paramsFileName = "params.ts";
 
   beforeEach(() => {
+    vi.restoreAllMocks();
     vi.clearAllMocks();
   });
 
@@ -165,6 +172,7 @@ describe("generate", () => {
       return "";
     });
     vi.spyOn(fs, "writeFileSync").mockImplementation(() => {});
+    vi.spyOn(fs, "readdirSync").mockReturnValue([]);
 
     generate({
       baseDir,
@@ -227,6 +235,7 @@ describe("generate", () => {
       return "params-type-1";
     });
     vi.spyOn(fs, "writeFileSync").mockImplementation(() => {});
+    vi.spyOn(fs, "readdirSync").mockReturnValue([]);
 
     generate({
       baseDir,
@@ -250,5 +259,136 @@ describe("generate", () => {
       outputPath,
       "generated-type-content",
     );
+  });
+
+  it("removes stale generated params files outside the current scan result", () => {
+    const tmpDir = makeTempDir();
+    const appDir = path.join(tmpDir, "app");
+    const currentDir = path.join(appDir, "current");
+    const staleDir = path.join(appDir, "stale");
+    const staleFilePath = path.join(staleDir, paramsFileName);
+    const currentFilePath = path.join(currentDir, paramsFileName);
+
+    try {
+      writeTree(tmpDir, {
+        app: {
+          current: {
+            [paramsFileName]: `${ROUTE_CONTRACT_GENERATED_MARKER}\nold-current`,
+          },
+          stale: {
+            [paramsFileName]: `${ROUTE_CONTRACT_GENERATED_MARKER}\nold-stale`,
+          },
+        },
+        src: {
+          generated: {},
+        },
+      });
+
+      vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
+        pathStructure: "generated-type-content",
+        paramsTypes: [
+          {
+            paramsType: `${ROUTE_CONTRACT_GENERATED_MARKER}\nnew-current`,
+            dirPath: currentDir,
+          },
+        ],
+      });
+
+      generate({
+        baseDir: appDir,
+        outputPath: path.join(tmpDir, "src", "generated", "rpc.ts"),
+        paramsFileName,
+        logger,
+      });
+
+      expect(fs.existsSync(currentFilePath)).toBe(true);
+      expect(fs.readFileSync(currentFilePath, "utf8")).toBe(
+        `${ROUTE_CONTRACT_GENERATED_MARKER}\nnew-current`,
+      );
+      expect(fs.existsSync(staleFilePath)).toBe(false);
+    } finally {
+      cleanupTempDir(tmpDir);
+    }
+  });
+
+  it("keeps markerless params files even when they are stale", () => {
+    const tmpDir = makeTempDir();
+    const appDir = path.join(tmpDir, "app");
+    const currentDir = path.join(appDir, "current");
+    const manualDir = path.join(appDir, "manual");
+    const manualFilePath = path.join(manualDir, paramsFileName);
+
+    try {
+      writeTree(tmpDir, {
+        app: {
+          current: {},
+          manual: {
+            [paramsFileName]: "handwritten-content",
+          },
+        },
+        src: {
+          generated: {},
+        },
+      });
+
+      vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
+        pathStructure: "generated-type-content",
+        paramsTypes: [
+          {
+            paramsType: `${ROUTE_CONTRACT_GENERATED_MARKER}\nnew-current`,
+            dirPath: currentDir,
+          },
+        ],
+      });
+
+      generate({
+        baseDir: appDir,
+        outputPath: path.join(tmpDir, "src", "generated", "rpc.ts"),
+        paramsFileName,
+        logger,
+      });
+
+      expect(fs.existsSync(manualFilePath)).toBe(true);
+      expect(fs.readFileSync(manualFilePath, "utf8")).toBe(
+        "handwritten-content",
+      );
+    } finally {
+      cleanupTempDir(tmpDir);
+    }
+  });
+
+  it("does not cleanup stale params files when paramsFileName is null", () => {
+    const tmpDir = makeTempDir();
+    const appDir = path.join(tmpDir, "app");
+    const staleFilePath = path.join(appDir, "stale", paramsFileName);
+
+    try {
+      writeTree(tmpDir, {
+        app: {
+          stale: {
+            [paramsFileName]: `${ROUTE_CONTRACT_GENERATED_MARKER}\nstale`,
+          },
+        },
+        src: {
+          generated: {},
+        },
+      });
+
+      vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
+        pathStructure: "generated-type-content",
+        paramsTypes: [],
+      });
+
+      generate({
+        baseDir: appDir,
+        outputPath: path.join(tmpDir, "src", "generated", "rpc.ts"),
+        paramsFileName: null,
+        logger,
+      });
+
+      expect(fs.existsSync(staleFilePath)).toBe(true);
+    } finally {
+      cleanupTempDir(tmpDir);
+    }
   });
 });

@@ -5,7 +5,10 @@ import {
   SUCCESS_PAD_LENGTH,
   SUCCESS_SEPARATOR,
 } from "./constants.js";
-import { generatePathStructure } from "./core/generate-path-structure.js";
+import {
+  generatePathStructure,
+  ROUTE_CONTRACT_GENERATED_MARKER,
+} from "./core/generate-path-structure.js";
 import { relativeFromRoot } from "./core/path-utils.js";
 import { padMessage } from "./logger.js";
 import type { Logger } from "./types.js";
@@ -22,6 +25,77 @@ const writeFileIfChanged = (filePath: string, nextContent: string): boolean => {
   fs.writeFileSync(filePath, nextContent);
 
   return true;
+};
+
+const isWithinBaseDir = (targetPath: string, baseDir: string): boolean => {
+  const resolvedBaseDir = path.resolve(baseDir);
+  const resolvedTargetPath = path.resolve(targetPath);
+  const relativePath = path.relative(resolvedBaseDir, resolvedTargetPath);
+
+  return (
+    relativePath === "" ||
+    (!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
+  );
+};
+
+const listGeneratedCandidateFiles = (
+  baseDir: string,
+  paramsFileName: string,
+): string[] => {
+  const files: string[] = [];
+
+  const visit = (dirPath: string) => {
+    for (const entry of fs.readdirSync(dirPath, { withFileTypes: true })) {
+      const entryPath = path.join(dirPath, entry.name);
+
+      if (entry.isDirectory()) {
+        visit(entryPath);
+        continue;
+      }
+
+      if (entry.isFile() && entry.name === paramsFileName) {
+        files.push(entryPath);
+      }
+    }
+  };
+
+  if (!fs.existsSync(baseDir)) {
+    return files;
+  }
+
+  visit(baseDir);
+
+  return files;
+};
+
+const cleanupStaleGeneratedParamsFiles = ({
+  baseDir,
+  paramsFileName,
+  expectedFilePaths,
+}: {
+  baseDir: string;
+  paramsFileName: string;
+  expectedFilePaths: Set<string>;
+}) => {
+  for (const filePath of listGeneratedCandidateFiles(baseDir, paramsFileName)) {
+    const resolvedFilePath = path.resolve(filePath);
+
+    if (expectedFilePaths.has(resolvedFilePath)) {
+      continue;
+    }
+
+    if (!isWithinBaseDir(resolvedFilePath, baseDir)) {
+      continue;
+    }
+
+    const currentContent = fs.readFileSync(resolvedFilePath, "utf8");
+
+    if (!currentContent.includes(ROUTE_CONTRACT_GENERATED_MARKER)) {
+      continue;
+    }
+
+    fs.rmSync(resolvedFilePath, { force: true });
+  }
 };
 
 export const generate = ({
@@ -66,12 +140,23 @@ export const generate = ({
 
   if (paramsFileName) {
     let wroteParamsFile = false;
+    const expectedFilePaths = new Set(
+      paramsTypes.map(({ dirPath }) =>
+        path.resolve(path.join(dirPath, paramsFileName)),
+      ),
+    );
 
     paramsTypes.forEach(({ paramsType, dirPath }) => {
       const filePath = path.join(dirPath, paramsFileName);
       const didWrite = writeFileIfChanged(filePath, paramsType);
 
       wroteParamsFile = wroteParamsFile || didWrite;
+    });
+
+    cleanupStaleGeneratedParamsFiles({
+      baseDir,
+      paramsFileName,
+      expectedFilePaths,
     });
 
     if (wroteParamsFile) {
