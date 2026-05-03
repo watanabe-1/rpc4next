@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.7.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.6.0...rpc4next-cli-v0.7.0) (2026-05-03)
+
+
+### Features
+
+* generate route contracts and require bound procedure ([#397](https://github.com/watanabe-1/rpc4next/issues/397)) ([6d1eb87](https://github.com/watanabe-1/rpc4next/commit/6d1eb8792311af7a583506444a2c83ff3b76b0d8))
+
+
+### Bug Fixes
+
+* **cli:** Isolate scan cache by context ([#431](https://github.com/watanabe-1/rpc4next/issues/431)) ([384cece](https://github.com/watanabe-1/rpc4next/commit/384cece9771808586dee9e4107d347aff9e4aafa))
+* **cli:** Normalize route contract pathnames ([#453](https://github.com/watanabe-1/rpc4next/issues/453)) ([31751d8](https://github.com/watanabe-1/rpc4next/commit/31751d8ab71bcdf94c19ba0e88db623ac110c1b0))
+* **cli:** Remove stale generated params files ([#454](https://github.com/watanabe-1/rpc4next/issues/454)) ([7e52f96](https://github.com/watanabe-1/rpc4next/commit/7e52f96e62d30b1871574ba116e1d0b54beab151))
+
 ## [0.6.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.5.0...rpc4next-cli-v0.6.0) (2026-03-15)
 
 
