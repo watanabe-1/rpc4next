@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
 import { describe, expect, expectTypeOf, it } from "vitest";
+
 import { nextRoute as baseNextRoute } from "./next-route";
 import { defaultProcedureOnError } from "./on-error";
 import { procedure } from "./procedure";
@@ -27,15 +28,12 @@ const nextRoute = <
   },
 ) => {
   const resolvedOptions =
-    options && "onError" in options
-      ? options
-      : { ...(options ?? {}), onError: defaultProcedureOnError };
+    options && "onError" in options ? options : { ...options, onError: defaultProcedureOnError };
 
-  return baseNextRoute<
-    TProcedure & Parameters<typeof baseNextRoute>[0],
-    TMethod,
-    TValidateOutput
-  >(procedureDefinition as never, resolvedOptions as never);
+  return baseNextRoute<TProcedure & Parameters<typeof baseNextRoute>[0], TMethod, TValidateOutput>(
+    procedureDefinition as never,
+    resolvedOptions as never,
+  );
 };
 
 describe("procedure contract internals", () => {
@@ -45,9 +43,7 @@ describe("procedure contract internals", () => {
       params: {} as Record<never, never>,
     } as ProcedureRouteContract<"/api/test", Record<never, never>>;
     const handler = nextRoute(
-      procedure
-        .forRoute(routeContract)
-        .handle(async ({ response }) => response.text("ok")),
+      procedure.forRoute(routeContract).handle(async ({ response }) => response.text("ok")),
       { method: "GET" },
     );
 
@@ -59,9 +55,7 @@ describe("procedure contract internals", () => {
         params: {},
       },
     });
-    expect(Object.keys(handler)).not.toContain(
-      String(procedureDefinitionSymbol),
-    );
+    expect(Object.keys(handler)).not.toContain(String(procedureDefinitionSymbol));
 
     const response = await handler(new NextRequest("http://localhost"), {
       params: Promise.resolve({}),
@@ -86,10 +80,7 @@ describe("procedure contract internals", () => {
 
     expectTypeOf<ExpectedInput>().toExtend<{
       contracts?: Partial<
-        Record<
-          "params" | "query" | "json" | "formData" | "headers" | "cookies",
-          StandardSchemaV1
-        >
+        Record<"params" | "query" | "json" | "formData" | "headers" | "cookies", StandardSchemaV1>
       >;
       validationSchema?: {
         input: { query: { page: string } };

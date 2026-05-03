@@ -1,5 +1,6 @@
 import { describe, expectTypeOf, it } from "vitest";
 import { z } from "zod";
+
 import type { InferSchemaInput, InferSchemaOutput } from "./schema-inference";
 
 describe("schema inference zod integration", () => {

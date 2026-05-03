@@ -1,8 +1,9 @@
 import type { ContentType } from "./content-type-types";
 
 /**
- * Represents HTTP response headers with optional fields, parameterized by the content type.
- * This type includes common headers used for caching, content description, CORS, authentication, security, cookies, redirects, connection, and server information.
+ * Represents HTTP response headers with optional fields, parameterized by the content type. This
+ * type includes common headers used for caching, content description, CORS, authentication,
+ * security, cookies, redirects, connection, and server information.
  *
  * @template TContentType - The specific content type for the `Content-Type` header.
  */

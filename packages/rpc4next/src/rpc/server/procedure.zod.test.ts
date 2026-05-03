@@ -1,20 +1,15 @@
 import { describe, expectTypeOf, it, vi } from "vitest";
 import { z } from "zod";
+
 import { procedure } from "./procedure";
-import type {
-  ProcedureRouteContract,
-  ProcedureValidationErrorContext,
-} from "./procedure-types";
+import type { ProcedureRouteContract, ProcedureValidationErrorContext } from "./procedure-types";
 import type { TypedNextResponse } from "./types";
 
 describe("procedure builder zod integration", () => {
   const guardedUserRouteContract = {
     pathname: "/api/procedure-guarded/[userId]",
     params: {} as { userId: string },
-  } as ProcedureRouteContract<
-    "/api/procedure-guarded/[userId]",
-    { userId: string }
-  >;
+  } as ProcedureRouteContract<"/api/procedure-guarded/[userId]", { userId: string }>;
 
   it("threads input, middleware context, and output contracts", () => {
     const userProcedure = procedure
@@ -43,39 +38,33 @@ describe("procedure builder zod integration", () => {
           requestId: headers["x-procedure-test"],
         },
       }))
-      .handle(
-        async ({ params, query, json, headers, cookies, ctx, response }) => {
-          const _params: { userId: string } = params;
-          const _query: {
-            includePosts?: "true" | "false" | undefined;
-          } = query;
-          const _json: { title: string } = json;
-          const _headers: { "x-procedure-test": string } = headers;
-          const _cookies: { session: string } = cookies;
-          const _ctx: { requestId: string } = ctx;
-          const _response: {
-            json: (data: {
-              ok: true;
-              userId: string;
-              source: "procedure";
-            }) => unknown;
-          } = response;
+      .handle(async ({ params, query, json, headers, cookies, ctx, response }) => {
+        const _params: { userId: string } = params;
+        const _query: {
+          includePosts?: "true" | "false" | undefined;
+        } = query;
+        const _json: { title: string } = json;
+        const _headers: { "x-procedure-test": string } = headers;
+        const _cookies: { session: string } = cookies;
+        const _ctx: { requestId: string } = ctx;
+        const _response: {
+          json: (data: { ok: true; userId: string; source: "procedure" }) => unknown;
+        } = response;
 
-          void _params;
-          void _query;
-          void _json;
-          void _headers;
-          void _cookies;
-          void _ctx;
-          void _response;
+        void _params;
+        void _query;
+        void _json;
+        void _headers;
+        void _cookies;
+        void _ctx;
+        void _response;
 
-          return response.json({
-            ok: true as const,
-            userId: params.userId,
-            source: "procedure" as const,
-          });
-        },
-      );
+        return response.json({
+          ok: true as const,
+          userId: params.userId,
+          source: "procedure" as const,
+        });
+      });
 
     expectTypeOf(userProcedure.definition).toExtend<{
       input?: {
@@ -187,19 +176,19 @@ describe("procedure builder zod integration", () => {
   });
 
   it("types validator-stage customization against the target input shape", () => {
-    const onValidationError = vi.fn(
-      ({ target, value, issues }: ProcedureValidationErrorContext<"query">) => {
-        const _target: "query" = target;
-        const _value: unknown = value;
-        const _issues: readonly { message: string }[] = issues;
+    const onValidationError = vi.fn<
+      (context: ProcedureValidationErrorContext<"query">) => undefined
+    >(({ target, value, issues }: ProcedureValidationErrorContext<"query">) => {
+      const _target: "query" = target;
+      const _value: unknown = value;
+      const _issues: readonly { message: string }[] = issues;
 
-        void _target;
-        void _value;
-        void _issues;
+      void _target;
+      void _value;
+      void _issues;
 
-        return undefined;
-      },
-    );
+      return undefined;
+    });
 
     const pagedProcedure = procedure
       .query(

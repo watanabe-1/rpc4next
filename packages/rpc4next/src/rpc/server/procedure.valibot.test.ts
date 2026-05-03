@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
 import * as v from "valibot";
 import { describe, expect, expectTypeOf, it } from "vitest";
+
 import { nextRoute as baseNextRoute } from "./next-route";
 import { defaultProcedureOnError } from "./on-error";
 import { procedure } from "./procedure";
@@ -21,15 +22,12 @@ const nextRoute = <
   },
 ) => {
   const resolvedOptions =
-    options && "onError" in options
-      ? options
-      : { ...(options ?? {}), onError: defaultProcedureOnError };
+    options && "onError" in options ? options : { ...options, onError: defaultProcedureOnError };
 
-  return baseNextRoute<
-    TProcedure & Parameters<typeof baseNextRoute>[0],
-    TMethod,
-    TValidateOutput
-  >(procedureDefinition as never, resolvedOptions as never);
+  return baseNextRoute<TProcedure & Parameters<typeof baseNextRoute>[0], TMethod, TValidateOutput>(
+    procedureDefinition as never,
+    resolvedOptions as never,
+  );
 };
 
 describe("procedure builder valibot integration", () => {
@@ -67,24 +65,18 @@ describe("procedure builder valibot integration", () => {
         })),
     );
 
-    const success = await route(
-      new NextRequest("http://127.0.0.1:3000/api/test?page=2"),
-      {
-        params: Promise.resolve({}),
-      },
-    );
+    const success = await route(new NextRequest("http://127.0.0.1:3000/api/test?page=2"), {
+      params: Promise.resolve({}),
+    });
 
     expect(success.status).toBe(200);
     await expect(success.json()).resolves.toEqual({
       page: "2",
     });
 
-    const failure = await route(
-      new NextRequest("http://127.0.0.1:3000/api/test"),
-      {
-        params: Promise.resolve({}),
-      },
-    );
+    const failure = await route(new NextRequest("http://127.0.0.1:3000/api/test"), {
+      params: Promise.resolve({}),
+    });
 
     expect(failure.status).toBe(422);
     await expect(failure.json()).resolves.toEqual({

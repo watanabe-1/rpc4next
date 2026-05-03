@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createRpcClient } from "rpc4next/client";
+
 import type { PathStructure } from "../../src/generated/rpc";
 
 const client = createRpcClient<PathStructure>("");
@@ -107,17 +108,15 @@ export default function E2eClientPage() {
       <button
         type="button"
         onClick={async () => {
-          const response = await client.api["procedure-guarded"]
-            ._userId("browser-user")
-            .$get({
-              url: { query: { includeDrafts: "true" } },
-              requestHeaders: {
-                headers: {
-                  "x-demo-user": "browser-user",
-                  "x-demo-role": "editor",
-                },
+          const response = await client.api["procedure-guarded"]._userId("browser-user").$get({
+            url: { query: { includeDrafts: "true" } },
+            requestHeaders: {
+              headers: {
+                "x-demo-user": "browser-user",
+                "x-demo-role": "editor",
               },
-            });
+            },
+          });
           const payload = await stringifyResponse(response);
 
           setResult((current) => ({ ...current, procedureGuarded: payload }));
@@ -128,14 +127,12 @@ export default function E2eClientPage() {
       <button
         type="button"
         onClick={async () => {
-          const response = await client.api["procedure-guarded"]
-            ._userId("browser-user")
-            .$get({
-              url: { query: { includeDrafts: "true" } },
-              requestHeaders: {
-                headers: { "x-demo-user": "browser-user" },
-              },
-            });
+          const response = await client.api["procedure-guarded"]._userId("browser-user").$get({
+            url: { query: { includeDrafts: "true" } },
+            requestHeaders: {
+              headers: { "x-demo-user": "browser-user" },
+            },
+          });
           const payload = await stringifyResponse(response);
 
           setResult((current) => ({ ...current, procedureForbidden: payload }));
@@ -147,12 +144,8 @@ export default function E2eClientPage() {
       <pre data-testid="posts-result">{result.posts}</pre>
       <pre data-testid="request-meta-result">{result.requestMeta}</pre>
       <pre data-testid="invalid-users-result">{result.invalidUsers}</pre>
-      <pre data-testid="procedure-guarded-result">
-        {result.procedureGuarded}
-      </pre>
-      <pre data-testid="procedure-forbidden-result">
-        {result.procedureForbidden}
-      </pre>
+      <pre data-testid="procedure-guarded-result">{result.procedureGuarded}</pre>
+      <pre data-testid="procedure-forbidden-result">{result.procedureForbidden}</pre>
     </main>
   );
 }

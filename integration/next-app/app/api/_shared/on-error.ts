@@ -15,8 +15,7 @@ export const onError = ((error, { response }) => {
     {
       error: {
         code: "INTERNAL_SERVER_ERROR",
-        message:
-          error instanceof Error ? error.message : "Unknown integration error",
+        message: error instanceof Error ? error.message : "Unknown integration error",
       },
     },
     { status: 500 },

@@ -4,9 +4,7 @@ type SearchPatternPageProps = {
   }>;
 };
 
-export default async function SearchPatternPage({
-  searchParams,
-}: SearchPatternPageProps) {
+export default async function SearchPatternPage({ searchParams }: SearchPatternPageProps) {
   const { q = "none" } = await searchParams;
 
   return <div>search:{q}</div>;

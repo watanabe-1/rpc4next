@@ -1,5 +1,6 @@
 import { type as arktype } from "arktype";
 import { describe, expectTypeOf, it } from "vitest";
+
 import type { InferSchemaInput, InferSchemaOutput } from "./schema-inference";
 
 describe("schema inference arktype integration", () => {

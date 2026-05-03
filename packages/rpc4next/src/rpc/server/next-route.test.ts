@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
 import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
+
 import { rpcError } from "./error";
 import { nextRoute as baseNextRoute } from "./next-route";
 import { defaultProcedureOnError } from "./on-error";
 import { defineProcedureMiddleware, procedure } from "./procedure";
-import {
-  getProcedureDefinition,
-  type ProcedureRouteContract,
-} from "./procedure-types";
+import { getProcedureDefinition, type ProcedureRouteContract } from "./procedure-types";
 import type { StandardSchemaV1 } from "./standard-schema";
 
 const nextRoute = <
@@ -24,15 +22,12 @@ const nextRoute = <
   },
 ) => {
   const resolvedOptions =
-    options && "onError" in options
-      ? options
-      : { ...(options ?? {}), onError: defaultProcedureOnError };
+    options && "onError" in options ? options : { ...options, onError: defaultProcedureOnError };
 
-  return baseNextRoute<
-    TProcedure & Parameters<typeof baseNextRoute>[0],
-    TMethod,
-    TValidateOutput
-  >(procedureDefinition as never, resolvedOptions as never);
+  return baseNextRoute<TProcedure & Parameters<typeof baseNextRoute>[0], TMethod, TValidateOutput>(
+    procedureDefinition as never,
+    resolvedOptions as never,
+  );
 };
 
 describe("nextRoute", () => {
@@ -43,10 +38,7 @@ describe("nextRoute", () => {
     params: {} as EmptyParams,
   } as ProcedureRouteContract<"/api/test", EmptyParams>;
 
-  const pageSchema: StandardSchemaV1<
-    { page?: string | string[] },
-    { page: number }
-  > = {
+  const pageSchema: StandardSchemaV1<{ page?: string | string[] }, { page: number }> = {
     "~standard": {
       version: 1,
       vendor: "rpc4next-test",
@@ -72,38 +64,36 @@ describe("nextRoute", () => {
     },
   };
 
-  const outputSchema: StandardSchemaV1<
-    { ok: boolean; slug: string },
-    { ok: true; slug: string }
-  > = {
-    "~standard": {
-      version: 1,
-      vendor: "rpc4next-test",
-      types: {
-        input: {} as { ok: boolean; slug: string },
-        output: {} as { ok: true; slug: string },
-      },
-      validate: (value) => {
-        const input =
-          typeof value === "object" && value !== null
-            ? (value as { ok?: boolean; slug?: string })
-            : {};
+  const outputSchema: StandardSchemaV1<{ ok: boolean; slug: string }, { ok: true; slug: string }> =
+    {
+      "~standard": {
+        version: 1,
+        vendor: "rpc4next-test",
+        types: {
+          input: {} as { ok: boolean; slug: string },
+          output: {} as { ok: true; slug: string },
+        },
+        validate: (value) => {
+          const input =
+            typeof value === "object" && value !== null
+              ? (value as { ok?: boolean; slug?: string })
+              : {};
 
-        if (input.ok !== true || typeof input.slug !== "string") {
+          if (input.ok !== true || typeof input.slug !== "string") {
+            return {
+              issues: [{ message: "ok must be true and slug must be a string" }],
+            };
+          }
+
           return {
-            issues: [{ message: "ok must be true and slug must be a string" }],
+            value: {
+              ok: true as const,
+              slug: input.slug,
+            },
           };
-        }
-
-        return {
-          value: {
-            ok: true as const,
-            slug: input.slug,
-          },
-        };
+        },
       },
-    },
-  };
+    };
 
   afterEach(() => {
     vi.restoreAllMocks();
@@ -119,12 +109,9 @@ describe("nextRoute", () => {
         })),
     );
 
-    const response = await route(
-      new NextRequest("http://127.0.0.1:3000/api/procedure?page=2"),
-      {
-        params: Promise.resolve({}),
-      },
-    );
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api/procedure?page=2"), {
+      params: Promise.resolve({}),
+    });
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
@@ -155,25 +142,27 @@ describe("nextRoute", () => {
   });
 
   it("lets a route-level onError replace the default envelope", async () => {
-    const onError = vi.fn((error: unknown, { response }) => {
-      if (error instanceof Error) {
+    const onError = vi.fn<(error: unknown, context: { response: typeof NextResponse }) => Response>(
+      (error: unknown, { response }) => {
+        if (error instanceof Error) {
+          return response.json(
+            {
+              success: false,
+              message: error.message,
+            },
+            { status: 500 },
+          );
+        }
+
         return response.json(
           {
             success: false,
-            message: error.message,
+            message: "unexpected",
           },
           { status: 500 },
         );
-      }
-
-      return response.json(
-        {
-          success: false,
-          message: "unexpected",
-        },
-        { status: 500 },
-      );
-    });
+      },
+    );
     const route = nextRoute(
       procedure.forRoute(staticRouteContract).handle(async () => {
         throw new Error("custom onError");
@@ -196,10 +185,8 @@ describe("nextRoute", () => {
   });
 
   it("passes thrown Response values through onError for the final decision", async () => {
-    const onError = vi.fn((error: unknown) =>
-      error instanceof Response
-        ? error
-        : new Response("unexpected", { status: 500 }),
+    const onError = vi.fn<(error: unknown) => Response>((error: unknown) =>
+      error instanceof Response ? error : new Response("unexpected", { status: 500 }),
     );
     const route = nextRoute(
       procedure.forRoute(staticRouteContract).handle(async () => {
@@ -333,10 +320,10 @@ describe("nextRoute", () => {
   });
 
   it("short-circuits middleware responses before later middleware or handler execution", async () => {
-    const laterMiddleware = vi.fn(() => ({
+    const laterMiddleware = vi.fn<() => { ctx: { reached: boolean } }>(() => ({
       ctx: { reached: true },
     }));
-    const handler = vi.fn(async () => ({
+    const handler = vi.fn<() => Promise<{ body: { ok: boolean } }>>(async () => ({
       body: { ok: true },
     }));
     const route = nextRoute(
@@ -462,7 +449,7 @@ describe("nextRoute", () => {
   });
 
   it("supports procedure.handle(...).nextRoute(...) as thin sugar", async () => {
-    const onError = vi.fn(defaultProcedureOnError);
+    const onError = vi.fn<typeof defaultProcedureOnError>(defaultProcedureOnError);
     const route = procedure
       .forRoute(staticRouteContract)
       .query(pageSchema)
@@ -476,12 +463,9 @@ describe("nextRoute", () => {
         onError,
       });
 
-    const response = await route(
-      new NextRequest("http://127.0.0.1:3000/api/test?page=2"),
-      {
-        params: Promise.resolve({}),
-      },
-    );
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api/test?page=2"), {
+      params: Promise.resolve({}),
+    });
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
@@ -535,12 +519,9 @@ describe("nextRoute", () => {
         onError: defaultProcedureOnError,
       });
 
-    const response = await route(
-      new NextRequest("http://127.0.0.1:3000/api/test"),
-      {
-        params: Promise.resolve({}),
-      },
-    );
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api/test"), {
+      params: Promise.resolve({}),
+    });
 
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
@@ -583,9 +564,7 @@ describe("nextRoute", () => {
     expect(response.status).toBe(422);
     await expect(response.text()).resolves.toBe("validator:raw");
 
-    type RawResponseRouteResponse = Awaited<
-      ReturnType<typeof rawResponseRoute>
-    >;
+    type RawResponseRouteResponse = Awaited<ReturnType<typeof rawResponseRoute>>;
     expectTypeOf<RawResponseRouteResponse>().toExtend<Response>();
 
     const rawNextResponseRoute = nextRoute(
@@ -609,9 +588,7 @@ describe("nextRoute", () => {
         })),
     );
 
-    type RawNextResponseRouteResponse = Awaited<
-      ReturnType<typeof rawNextResponseRoute>
-    >;
+    type RawNextResponseRouteResponse = Awaited<ReturnType<typeof rawNextResponseRoute>>;
     expectTypeOf<RawNextResponseRouteResponse>().toExtend<Response>();
   });
 

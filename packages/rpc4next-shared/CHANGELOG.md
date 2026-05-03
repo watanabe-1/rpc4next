@@ -2,50 +2,43 @@
 
 ## [0.3.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-shared-v0.2.0...rpc4next-shared-v0.3.0) (2026-03-05)
 
-
 ### Features
 
-* **rpc4next-shared:** Add package README ([#256](https://github.com/watanabe-1/rpc4next/issues/256)) ([a8bef38](https://github.com/watanabe-1/rpc4next/commit/a8bef388f48b9f5dd5c5b2922205136de91890a2))
+- **rpc4next-shared:** Add package README ([#256](https://github.com/watanabe-1/rpc4next/issues/256)) ([a8bef38](https://github.com/watanabe-1/rpc4next/commit/a8bef388f48b9f5dd5c5b2922205136de91890a2))
 
 ## [0.2.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-shared-v0.1.5...rpc4next-shared-v0.2.0) (2026-03-04)
 
-
 ### Features
 
-* **ci:** copy root files before publish ([#252](https://github.com/watanabe-1/rpc4next/issues/252)) ([408fd0c](https://github.com/watanabe-1/rpc4next/commit/408fd0c9b562d2f07a4dbf43697aae5c8e366da8))
+- **ci:** copy root files before publish ([#252](https://github.com/watanabe-1/rpc4next/issues/252)) ([408fd0c](https://github.com/watanabe-1/rpc4next/commit/408fd0c9b562d2f07a4dbf43697aae5c8e366da8))
 
 ## [0.1.5](https://github.com/watanabe-1/rpc4next/compare/rpc4next-shared-v0.1.4...rpc4next-shared-v0.1.5) (2026-02-26)
 
-
 ### Bug Fixes
 
-* **deps:** bump the bun group with 16 updates ([#196](https://github.com/watanabe-1/rpc4next/issues/196)) ([c2f5560](https://github.com/watanabe-1/rpc4next/commit/c2f5560c0db83baeafc9a1503cbcc48ff2300d92))
+- **deps:** bump the bun group with 16 updates ([#196](https://github.com/watanabe-1/rpc4next/issues/196)) ([c2f5560](https://github.com/watanabe-1/rpc4next/commit/c2f5560c0db83baeafc9a1503cbcc48ff2300d92))
 
 ## [0.1.4](https://github.com/watanabe-1/rpc4next/compare/rpc4next-shared-v0.1.3...rpc4next-shared-v0.1.4) (2026-02-23)
 
-
 ### Bug Fixes
 
-* **build:** Add .js extensions to shared ESM re-exports ([#229](https://github.com/watanabe-1/rpc4next/issues/229)) ([15bb8ce](https://github.com/watanabe-1/rpc4next/commit/15bb8ce33b92e09ed916b4c61cba6e67d7bedc80))
-* **build:** Normalize homepage field placement in package manifests ([#231](https://github.com/watanabe-1/rpc4next/issues/231)) ([2f20f6b](https://github.com/watanabe-1/rpc4next/commit/2f20f6bdaccd32c654fd85910ac52b1d6fb12956))
+- **build:** Add .js extensions to shared ESM re-exports ([#229](https://github.com/watanabe-1/rpc4next/issues/229)) ([15bb8ce](https://github.com/watanabe-1/rpc4next/commit/15bb8ce33b92e09ed916b4c61cba6e67d7bedc80))
+- **build:** Normalize homepage field placement in package manifests ([#231](https://github.com/watanabe-1/rpc4next/issues/231)) ([2f20f6b](https://github.com/watanabe-1/rpc4next/commit/2f20f6bdaccd32c654fd85910ac52b1d6fb12956))
 
 ## [0.1.3](https://github.com/watanabe-1/rpc4next/compare/rpc4next-shared-v0.1.2...rpc4next-shared-v0.1.3) (2026-02-23)
 
-
 ### Bug Fixes
 
-* **build:** reorder version field in package manifests ([#227](https://github.com/watanabe-1/rpc4next/issues/227)) ([cfe7827](https://github.com/watanabe-1/rpc4next/commit/cfe7827ee5d08a791a7425b4c9ea6759e10ec05d))
+- **build:** reorder version field in package manifests ([#227](https://github.com/watanabe-1/rpc4next/issues/227)) ([cfe7827](https://github.com/watanabe-1/rpc4next/commit/cfe7827ee5d08a791a7425b4c9ea6759e10ec05d))
 
 ## [0.1.2](https://github.com/watanabe-1/rpc4next/compare/rpc4next-shared-v0.1.1...rpc4next-shared-v0.1.2) (2026-02-23)
 
-
 ### Bug Fixes
 
-* **release:** align package homepage metadata ([#224](https://github.com/watanabe-1/rpc4next/issues/224)) ([be1f29c](https://github.com/watanabe-1/rpc4next/commit/be1f29c5467db2e42592f92a143c93a716fe9846))
+- **release:** align package homepage metadata ([#224](https://github.com/watanabe-1/rpc4next/issues/224)) ([be1f29c](https://github.com/watanabe-1/rpc4next/commit/be1f29c5467db2e42592f92a143c93a716fe9846))
 
 ## [0.1.1](https://github.com/watanabe-1/rpc4next/compare/rpc4next-shared-v0.1.0...rpc4next-shared-v0.1.1) (2026-02-23)
 
-
 ### Bug Fixes
 
-* **release:** add explicit package versions ([#221](https://github.com/watanabe-1/rpc4next/issues/221)) ([eaec4e3](https://github.com/watanabe-1/rpc4next/commit/eaec4e3b71dcc7aefc99b023dbc7b0ba584e5128))
+- **release:** add explicit package versions ([#221](https://github.com/watanabe-1/rpc4next/issues/221)) ([eaec4e3](https://github.com/watanabe-1/rpc4next/commit/eaec4e3b71dcc7aefc99b023dbc7b0ba584e5128))

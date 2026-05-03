@@ -1,4 +1,5 @@
 import type { NextRequest, NextResponse } from "next/server";
+
 import { createRpcErrorEnvelope, isRpcError } from "./error";
 import type { ProcedureResult } from "./procedure";
 import type { Params, ResponseHelpers, RouteContext } from "./types";
@@ -21,9 +22,10 @@ export type ProcedureOnErrorResult =
   | ProcedureResult
   | Promise<Response | NextResponse | ProcedureResult>;
 
-export type ProcedureOnError<
-  TResult extends ProcedureOnErrorResult = ProcedureOnErrorResult,
-> = (error: unknown, context: ProcedureOnErrorContext) => TResult;
+export type ProcedureOnError<TResult extends ProcedureOnErrorResult = ProcedureOnErrorResult> = (
+  error: unknown,
+  context: ProcedureOnErrorContext,
+) => TResult;
 
 export const defaultProcedureOnError = ((error, context) => {
   if (error instanceof Response) {

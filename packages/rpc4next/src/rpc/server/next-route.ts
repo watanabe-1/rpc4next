@@ -1,22 +1,18 @@
 import type { NextRequest, NextResponse } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
+
 import type { ContentType } from "../lib/content-type-types";
 import type { HttpStatusCode } from "../lib/http-status-code-types";
 import { searchParamsToObject } from "../lib/search-params";
 import { rpcError } from "./error";
 import type { ProcedureOnError } from "./on-error";
-import type {
-  ProcedureMiddleware,
-  ProcedureMiddlewareResult,
-  ProcedureResult,
-} from "./procedure";
+import type { ProcedureMiddleware, ProcedureMiddlewareResult, ProcedureResult } from "./procedure";
 import {
   executePipeline,
   isProcedureResult,
   normalizeProcedureResult,
   withProcedureMethod,
 } from "./procedure-internals";
-import type { ProcedureInputTarget } from "./procedure-types";
 import {
   attachProcedureDefinition,
   type MergeProcedureDefinition,
@@ -26,6 +22,7 @@ import {
   type ProcedureValidationErrorResponseMap,
   type WithProcedureDefinition,
 } from "./procedure-types";
+import type { ProcedureInputTarget } from "./procedure-types";
 import {
   createResponseHelpers,
   createRouteContext,
@@ -49,8 +46,7 @@ const isValidationTerminalResult = (
 };
 
 const formDataToObject = (formData: FormData) => {
-  const normalized: Record<string, FormDataEntryValue | FormDataEntryValue[]> =
-    {};
+  const normalized: Record<string, FormDataEntryValue | FormDataEntryValue[]> = {};
 
   for (const [key, value] of formData.entries()) {
     const existing = normalized[key];
@@ -60,9 +56,7 @@ const formDataToObject = (formData: FormData) => {
       continue;
     }
 
-    normalized[key] = Array.isArray(existing)
-      ? [...existing, value]
-      : [existing, value];
+    normalized[key] = Array.isArray(existing) ? [...existing, value] : [existing, value];
   }
 
   return normalized;
@@ -107,9 +101,7 @@ const getContractValue = async (
     return Object.fromEntries(request.headers.entries());
   }
 
-  return Object.fromEntries(
-    request.cookies.getAll().map((cookie) => [cookie.name, cookie.value]),
-  );
+  return Object.fromEntries(request.cookies.getAll().map((cookie) => [cookie.name, cookie.value]));
 };
 
 type ProcedureTypeCarrier = {
@@ -118,12 +110,11 @@ type ProcedureTypeCarrier = {
   handler: (...args: never[]) => unknown;
 };
 
-type InferProcedureDefinition<TProcedure extends ProcedureTypeCarrier> =
-  TProcedure extends {
-    definition: infer TDefinition extends ProcedureDefinition;
-  }
-    ? TDefinition
-    : ProcedureDefinition;
+type InferProcedureDefinition<TProcedure extends ProcedureTypeCarrier> = TProcedure extends {
+  definition: infer TDefinition extends ProcedureDefinition;
+}
+  ? TDefinition
+  : ProcedureDefinition;
 
 type ProcedureIsRouteBound<TProcedure extends ProcedureTypeCarrier> =
   InferProcedureDefinition<TProcedure> extends {
@@ -172,40 +163,34 @@ type NextRouteMethodConstraint<
           : unknown
       : unknown;
 
-type ProcedureErrorResponse<
-  TCode extends "BAD_REQUEST" | "INTERNAL_SERVER_ERROR",
-> = TCode extends "BAD_REQUEST"
-  ? TypedNextResponse<
-      {
-        error: {
-          code: "BAD_REQUEST";
-          message: string;
-          details?: unknown;
-        };
-      },
-      400,
-      "application/json"
-    >
-  : TypedNextResponse<
-      {
-        error: {
-          code: "INTERNAL_SERVER_ERROR";
-          message: string;
-          details?: unknown;
-        };
-      },
-      500,
-      "application/json"
-    >;
+type ProcedureErrorResponse<TCode extends "BAD_REQUEST" | "INTERNAL_SERVER_ERROR"> =
+  TCode extends "BAD_REQUEST"
+    ? TypedNextResponse<
+        {
+          error: {
+            code: "BAD_REQUEST";
+            message: string;
+            details?: unknown;
+          };
+        },
+        400,
+        "application/json"
+      >
+    : TypedNextResponse<
+        {
+          error: {
+            code: "INTERNAL_SERVER_ERROR";
+            message: string;
+            details?: unknown;
+          };
+        },
+        500,
+        "application/json"
+      >;
 
-type InferProcedureValidationErrorResponse<
-  TProcedure extends ProcedureTypeCarrier,
-> =
+type InferProcedureValidationErrorResponse<TProcedure extends ProcedureTypeCarrier> =
   InferProcedureDefinition<TProcedure> extends {
-    input: ProcedureInputContract<
-      infer TValidationSchema,
-      infer TValidationErrorResponses
-    >;
+    input: ProcedureInputContract<infer TValidationSchema, infer TValidationErrorResponses>;
   }
     ? keyof TValidationSchema["input"] extends never
       ? never
@@ -217,10 +202,7 @@ type InferProcedureValidationErrorResponse<
 type InferProcedureCustomValidationErrorResponse<TValidationErrorResponses> =
   TValidationErrorResponses extends ProcedureValidationErrorResponseMap
     ? NormalizeProcedureHandlerResult<
-        Exclude<
-          TValidationErrorResponses[keyof TValidationErrorResponses],
-          undefined
-        >
+        Exclude<TValidationErrorResponses[keyof TValidationErrorResponses], undefined>
       >
     : never;
 
@@ -235,24 +217,20 @@ type InferProcedureOutputValidationErrorResponse<
     : never
   : never;
 
-type InferProcedureHandlerResult<TProcedure extends ProcedureTypeCarrier> =
-  TProcedure extends {
-    handler: (...args: never[]) => infer TResult;
-  }
-    ? Awaited<TResult>
-    : never;
+type InferProcedureHandlerResult<TProcedure extends ProcedureTypeCarrier> = TProcedure extends {
+  handler: (...args: never[]) => infer TResult;
+}
+  ? Awaited<TResult>
+  : never;
 
-type InferProcedureHandler<TProcedure extends ProcedureTypeCarrier> =
-  TProcedure extends {
-    handler: infer THandler;
-  }
-    ? THandler
-    : never;
+type InferProcedureHandler<TProcedure extends ProcedureTypeCarrier> = TProcedure extends {
+  handler: infer THandler;
+}
+  ? THandler
+  : never;
 
 type InferProcedureHandlerContext<TProcedure extends ProcedureTypeCarrier> =
-  InferProcedureHandler<TProcedure> extends (context: infer TContext) => unknown
-    ? TContext
-    : never;
+  InferProcedureHandler<TProcedure> extends (context: infer TContext) => unknown ? TContext : never;
 
 type InferProcedureDeclaredOutput<TProcedure extends ProcedureTypeCarrier> =
   InferProcedureDefinition<TProcedure>["output"] extends {
@@ -263,21 +241,15 @@ type InferProcedureDeclaredOutput<TProcedure extends ProcedureTypeCarrier> =
 
 type IsNever<T> = [T] extends [never] ? true : false;
 
-type ResolveStatus<
-  TStatus,
-  TDefault extends HttpStatusCode,
-> = TStatus extends HttpStatusCode ? TStatus : TDefault;
+type ResolveStatus<TStatus, TDefault extends HttpStatusCode> = TStatus extends HttpStatusCode
+  ? TStatus
+  : TDefault;
 
-type NormalizeProcedureBodyResponse<
-  TBody,
-  TStatus extends HttpStatusCode,
-> = TBody extends string
+type NormalizeProcedureBodyResponse<TBody, TStatus extends HttpStatusCode> = TBody extends string
   ? TypedNextResponse<TBody, TStatus, "text/plain">
   : TypedNextResponse<TBody, TStatus, "application/json">;
 
-type NormalizeProcedureHandlerResult<TResult> = TResult extends
-  | Response
-  | NextResponse
+type NormalizeProcedureHandlerResult<TResult> = TResult extends Response | NextResponse
   ? TResult
   : TResult extends {
         redirect: string;
@@ -308,20 +280,12 @@ type NextRouteResponse<
         | TypedNextResponse<unknown, HttpStatusCode, ContentType>
         | InferProcedureOnErrorResponse<TOnError>
         | InferProcedureValidationErrorResponse<TProcedure>
-        | InferProcedureOutputValidationErrorResponse<
-            TProcedure,
-            TValidateOutput
-          >
+        | InferProcedureOutputValidationErrorResponse<TProcedure, TValidateOutput>
     :
-        | NormalizeProcedureHandlerResult<
-            InferProcedureHandlerResult<TProcedure>
-          >
+        | NormalizeProcedureHandlerResult<InferProcedureHandlerResult<TProcedure>>
         | InferProcedureOnErrorResponse<TOnError>
         | InferProcedureValidationErrorResponse<TProcedure>
-        | InferProcedureOutputValidationErrorResponse<
-            TProcedure,
-            TValidateOutput
-          >;
+        | InferProcedureOutputValidationErrorResponse<TProcedure, TValidateOutput>;
 
 export type NextRouteHandler<
   TProcedure extends ProcedureTypeCarrier = ProcedureTypeCarrier,
@@ -334,10 +298,7 @@ export type NextRouteHandler<
     segmentData: { params: Promise<Params> },
   ) => Promise<NextRouteResponse<TProcedure, TValidateOutput, TOnError>>,
   TMethod extends HttpMethod
-    ? MergeProcedureDefinition<
-        InferProcedureDefinition<TProcedure>,
-        { method: TMethod }
-      >
+    ? MergeProcedureDefinition<InferProcedureDefinition<TProcedure>, { method: TMethod }>
     : InferProcedureDefinition<TProcedure>
 >;
 
@@ -364,10 +325,7 @@ export type NextRouteProcedureOptions<
     validateOutput?: TValidateOutput;
   };
 
-const parseOutputWithSchema = async (
-  schema: StandardSchemaV1,
-  value: unknown,
-) => {
+const parseOutputWithSchema = async (schema: StandardSchemaV1, value: unknown) => {
   const result = await schema["~standard"].validate(value);
 
   if (result.issues) {
@@ -421,9 +379,7 @@ const getProcedureOutputValidationValue = (
     return undefined;
   }
 
-  return isSuccessfulStatus(getHttpStatusCode(result.status))
-    ? helperMetadata.payload
-    : undefined;
+  return isSuccessfulStatus(getHttpStatusCode(result.status)) ? helperMetadata.payload : undefined;
 };
 
 const isBodyInitLike = (value: unknown): value is BodyInit | null => {
@@ -464,11 +420,7 @@ const applyParsedProcedureOutput = (
   const helperMetadata = getResponseHelperMetadata(result);
   const status = getHttpStatusCode(result.status);
 
-  if (
-    !helperMetadata ||
-    helperMetadata.kind === "redirect" ||
-    !isSuccessfulStatus(status)
-  ) {
+  if (!helperMetadata || helperMetadata.kind === "redirect" || !isSuccessfulStatus(status)) {
     return result;
   }
 
@@ -512,12 +464,8 @@ const validateProcedureInputs = async (
     );
   }
 
-  if (
-    Object.values(contracts).some((contract) => !isStandardSchemaV1(contract))
-  ) {
-    throw new Error(
-      "Procedure input contracts must implement Standard Schema V1.",
-    );
+  if (Object.values(contracts).some((contract) => !isStandardSchemaV1(contract))) {
+    throw new Error("Procedure input contracts must implement Standard Schema V1.");
   }
 
   const parseContract = async <TTarget extends ProcedureInputTarget>(
@@ -584,8 +532,7 @@ const validateProcedureInputs = async (
       ? contracts.json
         ? (() => {
             throw rpcError("BAD_REQUEST", {
-              message:
-                "JSON input contracts are not supported for GET or HEAD requests.",
+              message: "JSON input contracts are not supported for GET or HEAD requests.",
             });
           })()
         : {
@@ -602,37 +549,24 @@ const validateProcedureInputs = async (
       ? contracts.formData
         ? (() => {
             throw rpcError("BAD_REQUEST", {
-              message:
-                "FormData input contracts are not supported for GET or HEAD requests.",
+              message: "FormData input contracts are not supported for GET or HEAD requests.",
             });
           })()
         : {
             ok: true as const,
             value: undefined,
           }
-      : await parseContract(
-          "formData",
-          contracts.formData,
-          async () => undefined,
-        );
+      : await parseContract("formData", contracts.formData, async () => undefined);
   if (!formDataResult.ok) {
     return formDataResult;
   }
 
-  const headersResult = await parseContract(
-    "headers",
-    contracts.headers,
-    async () => undefined,
-  );
+  const headersResult = await parseContract("headers", contracts.headers, async () => undefined);
   if (!headersResult.ok) {
     return headersResult;
   }
 
-  const cookiesResult = await parseContract(
-    "cookies",
-    contracts.cookies,
-    async () => undefined,
-  );
+  const cookiesResult = await parseContract("cookies", contracts.cookies, async () => undefined);
   if (!cookiesResult.ok) {
     return cookiesResult;
   }
@@ -657,25 +591,14 @@ export const nextRoute = <
   TOnError extends ProcedureOnError = ProcedureOnError,
 >(
   procedure: TProcedure,
-  options: NextRouteProcedureOptions<
-    TProcedure,
-    TMethod,
-    TValidateOutput,
-    TOnError
-  >,
+  options: NextRouteProcedureOptions<TProcedure, TMethod, TValidateOutput, TOnError>,
 ): NextRouteHandler<TProcedure, TMethod, TValidateOutput, TOnError> => {
   const handler = procedure.handler as (
     context: InferProcedureHandlerContext<TProcedure>,
-  ) =>
-    | InferProcedureHandlerResult<TProcedure>
-    | Promise<InferProcedureHandlerResult<TProcedure>>;
+  ) => InferProcedureHandlerResult<TProcedure> | Promise<InferProcedureHandlerResult<TProcedure>>;
   const outputSchema = procedure.definition.output?.schema;
 
-  if (
-    options.validateOutput &&
-    outputSchema !== undefined &&
-    !isStandardSchemaV1(outputSchema)
-  ) {
+  if (options.validateOutput && outputSchema !== undefined && !isStandardSchemaV1(outputSchema)) {
     throw new Error(
       "Procedure output contracts must implement Standard Schema V1 when validateOutput is enabled.",
     );
@@ -687,8 +610,7 @@ export const nextRoute = <
   ): Promise<NextRouteResponse<TProcedure, TValidateOutput, TOnError>> => {
     const routeContext = createRouteContext(request, segmentData);
     const errorResponse = createResponseHelpers();
-    const response =
-      createResponseHelpers<InferProcedureDeclaredOutput<TProcedure>>();
+    const response = createResponseHelpers<InferProcedureDeclaredOutput<TProcedure>>();
 
     try {
       const inputResult = await validateProcedureInputs(
@@ -698,14 +620,14 @@ export const nextRoute = <
         procedure.definition,
       );
       if (!inputResult.ok) {
-        return normalizeProcedureResult(
-          routeContext,
-          inputResult.response,
-        ) as NextRouteResponse<TProcedure, TValidateOutput, TOnError>;
+        return normalizeProcedureResult(routeContext, inputResult.response) as NextRouteResponse<
+          TProcedure,
+          TValidateOutput,
+          TOnError
+        >;
       }
 
-      const { params, query, json, formData, headers, cookies } =
-        inputResult.values;
+      const { params, query, json, formData, headers, cookies } = inputResult.values;
 
       const executionContext = {
         request,
@@ -726,9 +648,7 @@ export const nextRoute = <
         [
           ...(procedure.middlewares as readonly ((
             context: typeof executionContext,
-          ) =>
-            | ProcedureMiddlewareResult
-            | Promise<ProcedureMiddlewareResult>)[]),
+          ) => ProcedureMiddlewareResult | Promise<ProcedureMiddlewareResult>)[]),
           (context) =>
             handler({
               ...context,
@@ -737,9 +657,7 @@ export const nextRoute = <
         ],
         executionContext,
         {
-          isTerminal: (
-            value,
-          ): value is Response | NextResponse | ProcedureResult =>
+          isTerminal: (value): value is Response | NextResponse | ProcedureResult =>
             value instanceof Response || isProcedureResult(value),
           applyResult: (context, value) => {
             if (value && typeof value === "object" && "ctx" in value) {
@@ -754,15 +672,10 @@ export const nextRoute = <
 
       const outputValidationValue =
         options.validateOutput && outputSchema !== undefined
-          ? getProcedureOutputValidationValue(
-              result as Response | NextResponse | ProcedureResult,
-            )
+          ? getProcedureOutputValidationValue(result as Response | NextResponse | ProcedureResult)
           : undefined;
 
-      let normalizedResult = result as
-        | Response
-        | NextResponse
-        | ProcedureResult;
+      let normalizedResult = result as Response | NextResponse | ProcedureResult;
 
       if (outputValidationValue !== undefined) {
         const parsedOutput = await parseOutputWithSchema(
@@ -771,17 +684,15 @@ export const nextRoute = <
         );
 
         normalizedResult =
-          applyParsedProcedureOutput(
-            routeContext,
-            normalizedResult,
-            parsedOutput,
-          ) ?? normalizedResult;
+          applyParsedProcedureOutput(routeContext, normalizedResult, parsedOutput) ??
+          normalizedResult;
       }
 
-      return normalizeProcedureResult(
-        routeContext,
-        normalizedResult,
-      ) as NextRouteResponse<TProcedure, TValidateOutput, TOnError>;
+      return normalizeProcedureResult(routeContext, normalizedResult) as NextRouteResponse<
+        TProcedure,
+        TValidateOutput,
+        TOnError
+      >;
     } catch (error) {
       const handled = await options.onError(error, {
         request,
@@ -790,10 +701,11 @@ export const nextRoute = <
         routeContext,
       });
 
-      return normalizeProcedureResult(
-        routeContext,
-        handled,
-      ) as NextRouteResponse<TProcedure, TValidateOutput, TOnError>;
+      return normalizeProcedureResult(routeContext, handled) as NextRouteResponse<
+        TProcedure,
+        TValidateOutput,
+        TOnError
+      >;
     }
   };
 
@@ -816,8 +728,10 @@ export const nextRoute = <
       }
     : definitionWithMethod;
 
-  return attachProcedureDefinition(
-    routeHandler,
-    routeDefinition,
-  ) as NextRouteHandler<TProcedure, TMethod, TValidateOutput, TOnError>;
+  return attachProcedureDefinition(routeHandler, routeDefinition) as NextRouteHandler<
+    TProcedure,
+    TMethod,
+    TValidateOutput,
+    TOnError
+  >;
 };

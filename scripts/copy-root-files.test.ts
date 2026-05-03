@@ -2,11 +2,11 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
 import { copyRootFiles, runCli } from "./copy-root-files.js";
 
 const readText = (file: string) => fs.readFileSync(file, "utf8");
-const writeText = (file: string, text: string) =>
-  fs.writeFileSync(file, text, "utf8");
+const writeText = (file: string, text: string) => fs.writeFileSync(file, text, "utf8");
 const mkdirp = (p: string) => fs.mkdirSync(p, { recursive: true });
 
 describe("copyRootFiles", () => {
@@ -95,9 +95,7 @@ describe("copyRootFiles", () => {
     const res = copyRootFiles(tmpDir, { fileNames: ["README.md"] });
 
     expect(readText(path.join(pkgA, "README.md"))).toBe("root readme\n");
-    expect(
-      fs.existsSync(path.join(packagesDir, "not-a-package.txt", "README.md")),
-    ).toBe(false);
+    expect(fs.existsSync(path.join(packagesDir, "not-a-package.txt", "README.md"))).toBe(false);
     expect(res.copied).toEqual({
       "README.md": ["a"],
     });

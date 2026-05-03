@@ -2186,8 +2186,8 @@ type KnownContentType =
   | "video/vnd.youtube.yt";
 
 /**
- * A content type that can be either one of the predefined `KnownContentType` values,
- * or any other custom string.
+ * A content type that can be either one of the predefined `KnownContentType` values, or any other
+ * custom string.
  */
 // Allow KnownContentType values with autocomplete, plus any custom string.
 // (string & {}) keeps literal types while accepting arbitrary strings.

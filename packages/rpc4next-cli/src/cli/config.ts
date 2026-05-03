@@ -12,8 +12,7 @@ export interface CliConfig {
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.length > 0;
 
-export const getConfigPath = (cwd = process.cwd()) =>
-  path.join(cwd, CONFIG_FILE_NAME);
+export const getConfigPath = (cwd = process.cwd()) => path.join(cwd, CONFIG_FILE_NAME);
 
 export const loadCliConfig = (cwd = process.cwd()): CliConfig => {
   const configPath = getConfigPath(cwd);
@@ -22,10 +21,7 @@ export const loadCliConfig = (cwd = process.cwd()): CliConfig => {
     return {};
   }
 
-  const raw = JSON.parse(fs.readFileSync(configPath, "utf8")) as Record<
-    string,
-    unknown
-  > | null;
+  const raw = JSON.parse(fs.readFileSync(configPath, "utf8")) as Record<string, unknown> | null;
 
   if (!raw || Array.isArray(raw)) {
     throw new Error(`${CONFIG_FILE_NAME} must contain a JSON object.`);
@@ -42,18 +38,14 @@ export const loadCliConfig = (cwd = process.cwd()): CliConfig => {
 
   if ("outputPath" in raw) {
     if (!isNonEmptyString(raw.outputPath)) {
-      throw new Error(
-        `${CONFIG_FILE_NAME} field "outputPath" must be a string.`,
-      );
+      throw new Error(`${CONFIG_FILE_NAME} field "outputPath" must be a string.`);
     }
     config.outputPath = raw.outputPath;
   }
 
   if ("paramsFile" in raw) {
     if (!isNonEmptyString(raw.paramsFile)) {
-      throw new Error(
-        `${CONFIG_FILE_NAME} field "paramsFile" must be a string.`,
-      );
+      throw new Error(`${CONFIG_FILE_NAME} field "paramsFile" must be a string.`);
     }
     config.paramsFile = raw.paramsFile;
   }
