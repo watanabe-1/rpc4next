@@ -8,6 +8,7 @@
     "**/bin/**",
     "**/.next/**",
     "**/coverage/**",
+    "**/playwright-report/**",
     "**/test-results/**"
   ],
   "jsPlugins": ["./oxlint/rpc4next.mjs"],
