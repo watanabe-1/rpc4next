@@ -21,6 +21,7 @@ This repository now uses `oxlint` and `oxfmt` for active linting and formatting.
 - `vitest/require-top-level-describe`
 - `padding-line-between-statements`
 - `spaced-comment`
+- `vitest/no-export`
 
 It also maps the current Biome test-oriented rules to Oxlint equivalents where available:
 
@@ -36,7 +37,6 @@ It also maps the current Biome test-oriented rules to Oxlint equivalents where a
 These old ESLint rules are not restored in the draft config:
 
 - `import/order`
-- `vitest/no-export`
 - `vitest/no-done-callback`
 
 Current handling:
@@ -48,6 +48,14 @@ Current handling:
   - restored with the local `return-padding/padding-line-before-return` Oxlint JS plugin rule
 - `spaced-comment`
   - restored with the local `local/comment-spacing` Oxlint JS plugin rule
+- `vitest/no-export`
+  - restored with the local `test/no-export` Oxlint JS plugin rule
+- `vitest/no-done-callback`
+  - intentionally not restored
+  - Vitest has deprecated callback-style tests since `v0.10.0`
+  - prefer `async`/`await` or returning a `Promise` from tests and hooks instead of accepting a
+    `done` callback
+  - TypeScript/Vitest types should catch most direct `done` callback usage in this repository
 
 If those gaps matter, the next options are:
 

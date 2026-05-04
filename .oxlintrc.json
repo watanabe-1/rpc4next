@@ -10,7 +10,11 @@
     "**/coverage/**",
     "**/test-results/**"
   ],
-  "jsPlugins": ["./oxlint/comment-spacing.mjs", "./oxlint/padding-line-before-return.mjs"],
+  "jsPlugins": [
+    "./oxlint/comment-spacing.mjs",
+    "./oxlint/padding-line-before-return.mjs",
+    "./oxlint/no-export-in-test.mjs"
+  ],
   "rules": {
     "local/comment-spacing": "error",
     "return-padding/padding-line-before-return": "error",
@@ -40,7 +44,8 @@
         "vitest/no-duplicate-hooks": "error",
         "vitest/no-standalone-expect": "error",
         "vitest/expect-expect": "error",
-        "vitest/no-conditional-expect": "error"
+        "vitest/no-conditional-expect": "error",
+        "test/no-export": "error"
       }
     }
   ]
