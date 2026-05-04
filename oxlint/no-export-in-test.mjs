@@ -49,7 +49,7 @@ function isIdentifier(node, name) {
 
 export default {
   meta: {
-    name: "test",
+    name: "rpc4next",
   },
   rules: {
     "no-export": rule,

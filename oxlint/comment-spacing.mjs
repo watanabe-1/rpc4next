@@ -45,7 +45,7 @@ function shouldCheckComment(comment) {
 
 export default {
   meta: {
-    name: "local",
+    name: "rpc4next",
   },
   rules: {
     "comment-spacing": rule,

@@ -37,7 +37,7 @@ function hasBlankLineBetween(previousStatement, statement) {
 
 export default {
   meta: {
-    name: "return-padding",
+    name: "rpc4next",
   },
   rules: {
     "padding-line-before-return": rule,
