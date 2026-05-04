@@ -11,6 +11,9 @@
     "**/test-results/**"
   ],
   "jsPlugins": ["./oxlint/rpc4next.mjs"],
+  "options": {
+    "reportUnusedDisableDirectives": "error"
+  },
   "rules": {
     "rpc4next/comment-spacing": "error",
     "rpc4next/padding-line-before-return": "error",

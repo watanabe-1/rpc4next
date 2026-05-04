@@ -3,6 +3,7 @@
   "ignorePatterns": [
     "integration/**/app/**/route-contract.ts",
     "integration/**/src/generated/**",
+    "**/node_modules/**",
     "**/dist/**",
     "**/bin/**",
     "**/.next/**",
