@@ -1,12 +1,5 @@
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { INDENT } from "./core/constants.js";
 import { createLogger, padMessage } from "./logger.js";
 
@@ -21,8 +14,8 @@ describe("createLogger", () => {
   const originalLog = console.log;
   const originalError = console.error;
 
-  const mockLog = vi.fn();
-  const mockError = vi.fn();
+  const mockLog = vi.fn<typeof console.log>();
+  const mockError = vi.fn<typeof console.error>();
 
   beforeAll(() => {
     console.log = mockLog;

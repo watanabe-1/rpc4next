@@ -4,12 +4,8 @@ test.describe("integration next-app e2e", () => {
   test("home page renders generated rpc url", async ({ page }) => {
     await page.goto("/");
 
-    await expect(
-      page.getByRole("heading", { name: "rpc4next integration app" }),
-    ).toBeVisible();
-    await expect(
-      page.getByText("/api/users/demo-user?includePosts=true"),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "rpc4next integration app" })).toBeVisible();
+    await expect(page.getByText("/api/users/demo-user?includePosts=true")).toBeVisible();
   });
 
   test("dynamic photo route renders segment params", async ({ page }) => {
@@ -21,14 +17,10 @@ test.describe("integration next-app e2e", () => {
   test("nested dynamic route renders both params", async ({ page }) => {
     await page.goto("/photo/demo-photo/comments/demo-comment");
 
-    await expect(
-      page.getByText("photo-comment:demo-photo/demo-comment"),
-    ).toBeVisible();
+    await expect(page.getByText("photo-comment:demo-photo/demo-comment")).toBeVisible();
   });
 
-  test("dynamic API route returns validated query and params", async ({
-    request,
-  }) => {
+  test("dynamic API route returns validated query and params", async ({ request }) => {
     const response = await request.get("/api/users/e2e-user?includePosts=true");
 
     expect(response.ok()).toBe(true);
@@ -39,20 +31,14 @@ test.describe("integration next-app e2e", () => {
     });
   });
 
-  test("procedure examples page renders the procedure-first walkthrough", async ({
-    page,
-  }) => {
+  test("procedure examples page renders the procedure-first walkthrough", async ({ page }) => {
     await page.goto("/procedure-examples");
 
-    await expect(
-      page.getByRole("heading", { name: "Procedure examples" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Procedure examples" })).toBeVisible();
     await expect(
       page.getByText("This page calls the live integration routes through"),
     ).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "Narrow procedure GET" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Narrow procedure GET" })).toBeVisible();
     await expect(
       page.getByRole("heading", {
         name: "POST with typed body, headers, and cookies",
@@ -73,23 +59,18 @@ test.describe("integration next-app e2e", () => {
         name: "Plain Response.json route stays broad",
       }),
     ).toBeVisible();
-    await expect(
-      page.getByText('"source": "procedure-validation-branch"'),
-    ).toBeVisible();
+    await expect(page.getByText('"source": "procedure-validation-branch"')).toBeVisible();
   });
 
   test("guarded procedure route returns success and typed forbidden errors", async ({
     request,
   }) => {
-    const okResponse = await request.get(
-      "/api/procedure-guarded/e2e-user?includeDrafts=true",
-      {
-        headers: {
-          "x-demo-user": "e2e-user",
-          "x-demo-role": "editor",
-        },
+    const okResponse = await request.get("/api/procedure-guarded/e2e-user?includeDrafts=true", {
+      headers: {
+        "x-demo-user": "e2e-user",
+        "x-demo-role": "editor",
       },
-    );
+    });
 
     expect(okResponse.ok()).toBe(true);
     await expect(okResponse.json()).resolves.toEqual({
@@ -134,9 +115,7 @@ test.describe("integration next-app e2e", () => {
     });
   });
 
-  test("request metadata API route validates headers and cookies", async ({
-    request,
-  }) => {
+  test("request metadata API route validates headers and cookies", async ({ request }) => {
     const response = await request.get("/api/request-meta", {
       headers: {
         "x-integration-test": "playwright",
@@ -155,27 +134,17 @@ test.describe("integration next-app e2e", () => {
     const response = await request.get("/api/error-demo");
 
     expect(response.status()).toBe(500);
-    await expect(response.text()).resolves.toBe(
-      "handled:expected integration failure",
-    );
+    await expect(response.text()).resolves.toBe("handled:expected integration failure");
   });
 
-  test("procedure response.text helper route returns plain text", async ({
-    request,
-  }) => {
-    const response = await request.get(
-      "/api/procedure-response-text?name=playwright",
-    );
+  test("procedure response.text helper route returns plain text", async ({ request }) => {
+    const response = await request.get("/api/procedure-response-text?name=playwright");
 
     expect(response.status()).toBe(200);
-    await expect(response.text()).resolves.toBe(
-      "procedure-response-text:playwright",
-    );
+    await expect(response.text()).resolves.toBe("procedure-response-text:playwright");
   });
 
-  test("procedure response.redirect helper route returns a redirect", async ({
-    request,
-  }) => {
+  test("procedure response.redirect helper route returns a redirect", async ({ request }) => {
     const response = await request.get("/api/procedure-response-redirect", {
       maxRedirects: 0,
     });
@@ -184,9 +153,7 @@ test.describe("integration next-app e2e", () => {
     expect(response.headers().location).toBe("http://127.0.0.1:3000/feed");
   });
 
-  test("redirect API route returns the redirect response", async ({
-    request,
-  }) => {
+  test("redirect API route returns the redirect response", async ({ request }) => {
     const response = await request.get("/api/redirect-me", {
       maxRedirects: 0,
     });
@@ -195,9 +162,7 @@ test.describe("integration next-app e2e", () => {
     expect(response.headers().location).toBe("http://127.0.0.1:3000/feed");
   });
 
-  test("pattern routes resolve dynamic and catch-all params", async ({
-    page,
-  }) => {
+  test("pattern routes resolve dynamic and catch-all params", async ({ page }) => {
     await page.goto("/patterns/dynamic/books/ts-guide");
 
     await expect(page.getByText("nested-dynamic:books/ts-guide")).toBeVisible();
@@ -212,9 +177,7 @@ test.describe("integration next-app e2e", () => {
     await expect(page.getByText("optional-catch-all:one/two")).toBeVisible();
   });
 
-  test("pattern routes expose grouped and parallel branches on public urls", async ({
-    page,
-  }) => {
+  test("pattern routes expose grouped and parallel branches on public urls", async ({ page }) => {
     await page.goto("/patterns/reports");
     await expect(page.getByText("grouped-pattern")).toBeVisible();
 

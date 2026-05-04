@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+
 import { cleanupTempDir, makeTempDir } from "../test-helpers/tmp-dir.js";
 import { getConfigPath, loadCliConfig } from "./config.js";
 
@@ -75,9 +76,7 @@ describe("loadCliConfig", () => {
 
     fs.writeFileSync(getConfigPath(cwd), JSON.stringify([]));
 
-    expect(() => loadCliConfig(cwd)).toThrow(
-      "rpc4next.config.json must contain a JSON object.",
-    );
+    expect(() => loadCliConfig(cwd)).toThrow("rpc4next.config.json must contain a JSON object.");
   });
 
   it("throws for invalid outputPath values", () => {
@@ -114,8 +113,6 @@ describe("loadCliConfig", () => {
   });
 
   it("builds the config path from cwd", () => {
-    expect(getConfigPath("/work/demo")).toBe(
-      path.join("/work/demo", "rpc4next.config.json"),
-    );
+    expect(getConfigPath("/work/demo")).toBe(path.join("/work/demo", "rpc4next.config.json"));
   });
 });

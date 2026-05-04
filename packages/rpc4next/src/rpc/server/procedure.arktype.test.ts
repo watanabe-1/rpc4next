@@ -1,13 +1,15 @@
 import { type as arktype } from "arktype";
 import { describe, expect, expectTypeOf, it } from "vitest";
+
 import { procedure } from "./procedure";
 import type { StandardSchemaV1 } from "./standard-schema";
 import type { TypedNextResponse } from "./types";
 
 describe("procedure builder arktype integration", () => {
   it("threads arktype input contracts into the handler context", () => {
-    const pageSchema: StandardSchemaV1<{ page: string }, { page: string }> =
-      arktype({ page: "string" });
+    const pageSchema: StandardSchemaV1<{ page: string }, { page: string }> = arktype({
+      page: "string",
+    });
 
     const arktypeProcedure = procedure.query(pageSchema).handle(({ query }) => {
       const _query: { page: string } = query;

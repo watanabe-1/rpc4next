@@ -32,29 +32,25 @@ const DEFAULT_RPC_ERROR_STATUS: Record<RpcErrorCode, number> = {
   INTERNAL_SERVER_ERROR: 500,
 };
 
-export type RpcErrorStatus<TCode extends RpcErrorCode = RpcErrorCode> =
-  TCode extends "BAD_REQUEST"
-    ? 400
-    : TCode extends "UNAUTHORIZED"
-      ? 401
-      : TCode extends "FORBIDDEN"
-        ? 403
-        : TCode extends "NOT_FOUND"
-          ? 404
-          : TCode extends "CONFLICT"
-            ? 409
-            : TCode extends "UNPROCESSABLE_CONTENT"
-              ? 422
-              : TCode extends "TOO_MANY_REQUESTS"
-                ? 429
-                : TCode extends "INTERNAL_SERVER_ERROR"
-                  ? 500
-                  : never;
+export type RpcErrorStatus<TCode extends RpcErrorCode = RpcErrorCode> = TCode extends "BAD_REQUEST"
+  ? 400
+  : TCode extends "UNAUTHORIZED"
+    ? 401
+    : TCode extends "FORBIDDEN"
+      ? 403
+      : TCode extends "NOT_FOUND"
+        ? 404
+        : TCode extends "CONFLICT"
+          ? 409
+          : TCode extends "UNPROCESSABLE_CONTENT"
+            ? 422
+            : TCode extends "TOO_MANY_REQUESTS"
+              ? 429
+              : TCode extends "INTERNAL_SERVER_ERROR"
+                ? 500
+                : never;
 
-export interface RpcErrorEnvelope<
-  TCode extends RpcErrorCode = RpcErrorCode,
-  TDetails = unknown,
-> {
+export interface RpcErrorEnvelope<TCode extends RpcErrorCode = RpcErrorCode, TDetails = unknown> {
   error: {
     code: TCode;
     message: string;
@@ -62,10 +58,7 @@ export interface RpcErrorEnvelope<
   };
 }
 
-export interface RpcErrorInit<
-  TCode extends RpcErrorCode = RpcErrorCode,
-  TDetails = unknown,
-> {
+export interface RpcErrorInit<TCode extends RpcErrorCode = RpcErrorCode, TDetails = unknown> {
   message?: string;
   details?: TDetails;
   status?: RpcErrorStatus<TCode>;
@@ -79,10 +72,7 @@ const getDefaultRpcErrorStatus = <TCode extends RpcErrorCode>(
   return DEFAULT_RPC_ERROR_STATUS[code] as RpcErrorStatus<TCode>;
 };
 
-export class RpcError<
-  TCode extends RpcErrorCode = RpcErrorCode,
-  TDetails = unknown,
-> extends Error {
+export class RpcError<TCode extends RpcErrorCode = RpcErrorCode, TDetails = unknown> extends Error {
   readonly code: TCode;
   readonly details: TDetails | undefined;
   readonly status: RpcErrorStatus<TCode>;
@@ -95,8 +85,7 @@ export class RpcError<
     this.name = "RpcError";
     this.code = init.code ?? code;
     this.details = init.details;
-    this.status = (init.status ??
-      getDefaultRpcErrorStatus(code)) as RpcErrorStatus<TCode>;
+    this.status = (init.status ?? getDefaultRpcErrorStatus(code)) as RpcErrorStatus<TCode>;
   }
 
   toJSON(): RpcErrorEnvelope<TCode, TDetails> {
@@ -113,10 +102,7 @@ export const isRpcError = (value: unknown): value is RpcError => {
   return value instanceof RpcError;
 };
 
-export const createRpcErrorEnvelope = <
-  TCode extends RpcErrorCode,
-  TDetails = unknown,
->(
+export const createRpcErrorEnvelope = <TCode extends RpcErrorCode, TDetails = unknown>(
   error:
     | RpcError<TCode, TDetails>
     | {

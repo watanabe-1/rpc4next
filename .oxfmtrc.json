@@ -1,0 +1,40 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "ignorePatterns": [
+    "integration/**/app/**/route-contract.ts",
+    "integration/**/src/generated/**",
+    "**/dist/**",
+    "**/bin/**",
+    "**/.next/**",
+    "**/coverage/**",
+    "**/test-results/**"
+  ],
+  "tabWidth": 2,
+  "singleQuote": false,
+  "semi": true,
+  "jsdoc": true,
+  "trailingComma": "all",
+  "arrowParens": "always",
+  "sortImports": {
+    "order": "asc",
+    "newlinesBetween": false,
+    "groups": [
+      ["builtin", "type-builtin", "external", "type-external"],
+      { "newlinesBetween": true },
+      [
+        "internal",
+        "type-internal",
+        "subpath",
+        "type-subpath",
+        "parent",
+        "type-parent",
+        "sibling",
+        "type-sibling",
+        "index",
+        "type-index"
+      ],
+      "style",
+      "unknown"
+    ]
+  }
+}

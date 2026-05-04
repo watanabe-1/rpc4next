@@ -1,5 +1,6 @@
 import type { NextRequest, NextResponse } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
+
 import type { ContentType } from "../lib/content-type-types";
 import type { HttpResponseHeaders } from "../lib/http-response-headers-types";
 import type {
@@ -12,11 +13,11 @@ import type { ValidationSchema } from "./route-types";
 /**
  * Represents the result of an HTTP response status check.
  *
- * If the status code is in the range of successful HTTP status codes (e.g., 200–299),
- * `ok` is `true` and `status` is set to the given successful status code.
+ * If the status code is in the range of successful HTTP status codes (e.g., 200–299), `ok` is
+ * `true` and `status` is set to the given successful status code.
  *
- * Otherwise, `ok` is `false` and `status` is set to a non-successful status code
- * (i.e., `T` excluding successful status codes).
+ * Otherwise, `ok` is `false` and `status` is set to a non-successful status code (i.e., `T`
+ * excluding successful status codes).
  *
  * @template T - An HTTP status code to classify.
  */
@@ -33,10 +34,7 @@ type HttpStatus<T extends HttpStatusCode> = T extends SuccessfulHttpStatusCode
  * @template TStatus - The HTTP status code.
  * @template TContentType - The content type of the response.
  */
-export type TypedResponseInit<
-  TStatus extends HttpStatusCode,
-  TContentType extends ContentType,
-> =
+export type TypedResponseInit<TStatus extends HttpStatusCode, TContentType extends ContentType> =
   | ({
       headers?: HttpResponseHeaders<TContentType> & Record<string, string>;
       headersInit?: never;
@@ -49,12 +47,13 @@ export type TypedResponseInit<
     });
 
 /**
- * A strongly typed wrapper around the standard Next.js `NextResponse` object,
- * with additional type information for status code, content type, and response body.
+ * A strongly typed wrapper around the standard Next.js `NextResponse` object, with additional type
+ * information for status code, content type, and response body.
  *
  * @template TData - The type of the response body (e.g., a JSON object or string).
  * @template TStatus - The HTTP status code type of the response.
- * @template TContentType - The content type of the response (e.g., "application/json" or "text/plain").
+ * @template TContentType - The content type of the response (e.g., "application/json" or
+ *   "text/plain").
  */
 export interface TypedNextResponse<
   TData = unknown,
@@ -62,17 +61,14 @@ export interface TypedNextResponse<
   TContentType extends ContentType = ContentType,
 > extends NextResponse {
   /**
-   * Returns the parsed response body as JSON, if the content type is "application/json".
-   * Otherwise, returns a `Promise<never>`.
+   * Returns the parsed response body as JSON, if the content type is "application/json". Otherwise,
+   * returns a `Promise<never>`.
    */
-  json: TContentType extends "application/json"
-    ? () => Promise<TData>
-    : () => Promise<never>;
+  json: TContentType extends "application/json" ? () => Promise<TData> : () => Promise<never>;
 
   /**
-   * Returns the response body as plain text, if the content type is "text/plain".
-   * If the expected type `T` is not a string, returns `Promise<never>`.
-   * Otherwise, returns the raw string body.
+   * Returns the response body as plain text, if the content type is "text/plain". If the expected
+   * type `T` is not a string, returns `Promise<never>`. Otherwise, returns the raw string body.
    */
   text: TContentType extends "text/plain"
     ? TData extends string
@@ -80,14 +76,10 @@ export interface TypedNextResponse<
       : () => Promise<never>
     : () => Promise<string>;
 
-  /**
-   * Indicates whether the HTTP status code represents a successful response.
-   */
+  /** Indicates whether the HTTP status code represents a successful response. */
   readonly ok: HttpStatus<TStatus>["ok"];
 
-  /**
-   * The HTTP status code of the response, typed based on the given `TStatus`.
-   */
+  /** The HTTP status code of the response, typed based on the given `TStatus`. */
   readonly status: HttpStatus<TStatus>["status"];
 }
 
@@ -134,8 +126,8 @@ export interface RouteContext<
   _TValidationSchema extends ValidationSchema = ValidationSchema,
 > extends ResponseHelpers {
   /**
-   * The original `NextRequest` object, extended with helper methods
-   * for parsing parameters, query, and managing validation.
+   * The original `NextRequest` object, extended with helper methods for parsing parameters, query,
+   * and managing validation.
    */
   req: NextRequest & {
     /**
@@ -146,8 +138,8 @@ export interface RouteContext<
     query: () => TQuery;
 
     /**
-     * Resolves and returns dynamic route parameters.
-     * Typically sourced from the Next.js segment config.
+     * Resolves and returns dynamic route parameters. Typically sourced from the Next.js segment
+     * config.
      *
      * @returns Route parameters
      */
@@ -155,26 +147,19 @@ export interface RouteContext<
   };
 }
 
-type ValidationTargetKey =
-  | "params"
-  | "query"
-  | "json"
-  | "formData"
-  | "headers"
-  | "cookies";
+type ValidationTargetKey = "params" | "query" | "json" | "formData" | "headers" | "cookies";
 
-export type ValidationTarget<THttpMethod extends HttpMethod = HttpMethod> =
-  THttpMethod extends "GET" | "HEAD"
-    ? Exclude<ValidationTargetKey, "json" | "formData">
-    : ValidationTargetKey;
+export type ValidationTarget<THttpMethod extends HttpMethod = HttpMethod> = THttpMethod extends
+  | "GET"
+  | "HEAD"
+  ? Exclude<ValidationTargetKey, "json" | "formData">
+  : ValidationTargetKey;
 
 type ValidationFor<
   TDirection extends keyof ValidationSchema,
   TTarget extends ValidationTarget,
   TSchema extends ValidationSchema,
-> = TTarget extends keyof TSchema[TDirection]
-  ? TSchema[TDirection][TTarget]
-  : never;
+> = TTarget extends keyof TSchema[TDirection] ? TSchema[TDirection][TTarget] : never;
 
 export type ValidationInputFor<
   TTarget extends ValidationTarget,
@@ -186,6 +171,4 @@ export type ConditionalValidationInput<
   TExpected extends ValidationTarget,
   TSchema extends ValidationSchema,
   TFallback,
-> = TTarget extends TExpected
-  ? ValidationInputFor<TTarget, TSchema>
-  : TFallback;
+> = TTarget extends TExpected ? ValidationInputFor<TTarget, TSchema> : TFallback;

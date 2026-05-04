@@ -1,12 +1,9 @@
+import { attachProcedureDefinition, getProcedureDefinition } from "./procedure-types";
 import type {
   MergeProcedureDefinition,
   ProcedureDefinition,
   ProcedureOutputContract,
   WithProcedureDefinition,
-} from "./procedure-types";
-import {
-  attachProcedureDefinition,
-  getProcedureDefinition,
 } from "./procedure-types";
 import type { InferSchemaOutput } from "./schema-inference";
 

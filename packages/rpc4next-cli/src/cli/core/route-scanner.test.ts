@@ -1,5 +1,6 @@
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import {
   cleanupTempDir,
   type FsTreeDirectory,
@@ -18,7 +19,7 @@ import { toPosixPath } from "./path-utils.js";
 import { hasTargetFiles, scanAppDir } from "./route-scanner.js";
 
 vi.mock("./alias.js", () => ({
-  createImportAlias: vi.fn(
+  createImportAlias: vi.fn<(inputPath: string, name: ImportAliasName) => string>(
     (_inputPath: string, name: ImportAliasName) => `${name}_asmocked`,
   ),
 }));
@@ -184,9 +185,7 @@ describe("route-scanner", () => {
       });
 
       expect(hasTargetFiles(tmpPath("except", "intercepts"))).toBe(true);
-      expect(
-        hasTargetFiles(tmpPath("except", "intercepts", "(.)intercept")),
-      ).toBe(true);
+      expect(hasTargetFiles(tmpPath("except", "intercepts", "(.)intercept"))).toBe(true);
       expect(hasTargetFiles(tmpPath("except", "private"))).toBe(false);
       expect(hasTargetFiles(tmpPath("except", "node"))).toBe(false);
     });
@@ -259,9 +258,7 @@ describe("route-scanner", () => {
       expectedImports.forEach((statement, i) => {
         expect(imports[i].statement).equals(statement);
       });
-      expect(imports.every((imp) => !imp.statement.includes("OPTIONS"))).toBe(
-        true,
-      );
+      expect(imports.every((imp) => !imp.statement.includes("OPTIONS"))).toBe(true);
       expect(paramsTypes).toStrictEqual([
         {
           paramsType: '{ "id": string }',
@@ -284,10 +281,7 @@ describe("route-scanner", () => {
         },
       });
 
-      const { pathStructure } = scanAppDir(
-        tmpPath("output"),
-        tmpPath("testApp"),
-      );
+      const { pathStructure } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(pathStructure).equals(`{
   "page": {
     "_user": {
@@ -302,17 +296,13 @@ describe("route-scanner", () => {
         testApp: {
           query: {
             home: {
-              "page.tsx":
-                "export type Query = {query : string;} export function Home() {};",
+              "page.tsx": "export type Query = {query : string;} export function Home() {};",
             },
           },
         },
       });
 
-      const { pathStructure } = scanAppDir(
-        tmpPath("output"),
-        tmpPath("testApp"),
-      );
+      const { pathStructure } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(pathStructure).equals(`{
   "query": {
     "home": Record<QueryKey, Query_asmocked> & RpcEndpoint
@@ -335,10 +325,7 @@ describe("route-scanner", () => {
         },
       });
 
-      const { pathStructure } = scanAppDir(
-        tmpPath("output"),
-        tmpPath("testApp"),
-      );
+      const { pathStructure } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(pathStructure).equals(`{
   "dynamic": {
     "_user": {
@@ -363,10 +350,7 @@ describe("route-scanner", () => {
         },
       });
 
-      const { pathStructure } = scanAppDir(
-        tmpPath("output"),
-        tmpPath("testApp"),
-      );
+      const { pathStructure } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(pathStructure).equals(`{
   "catchAll": {
     "_user": {
@@ -389,10 +373,7 @@ describe("route-scanner", () => {
         },
       });
 
-      const { pathStructure } = scanAppDir(
-        tmpPath("output"),
-        tmpPath("testApp"),
-      );
+      const { pathStructure } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(pathStructure).equals(`{
   "OptionalCatchAll": {
     "user": {
@@ -415,10 +396,7 @@ describe("route-scanner", () => {
         },
       });
 
-      const { pathStructure } = scanAppDir(
-        tmpPath("output"),
-        tmpPath("testApp"),
-      );
+      const { pathStructure } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(pathStructure).equals(`{
   "group": {
     "home": RpcEndpoint
@@ -437,10 +415,7 @@ describe("route-scanner", () => {
         },
       });
 
-      const { pathStructure } = scanAppDir(
-        tmpPath("output"),
-        tmpPath("testApp"),
-      );
+      const { pathStructure } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(pathStructure).equals(`{
   "group": RpcEndpoint
 }`);
@@ -464,10 +439,7 @@ describe("route-scanner", () => {
         },
       });
 
-      const { pathStructure, paramsTypes } = scanAppDir(
-        tmpPath("output"),
-        tmpPath("testApp"),
-      );
+      const { pathStructure, paramsTypes } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(pathStructure).equals(`{
   "group": {
     "base": RpcEndpoint
@@ -475,13 +447,7 @@ describe("route-scanner", () => {
 }`);
       expect(paramsTypes).toStrictEqual([
         {
-          dirPath: tmpPosixPath(
-            "testApp",
-            "group",
-            "(user)",
-            "(.)modal",
-            "[id]",
-          ),
+          dirPath: tmpPosixPath("testApp", "group", "(user)", "(.)modal", "[id]"),
           paramsType: '{ "id": string }',
           pathname: "/group/modal/[id]",
         },
@@ -539,10 +505,7 @@ describe("route-scanner", () => {
         },
       });
 
-      const { pathStructure } = scanAppDir(
-        tmpPath("output"),
-        tmpPath("testApp"),
-      );
+      const { pathStructure } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(pathStructure).equals(`{
   "parallel": RpcEndpoint & {
     "home": RpcEndpoint
@@ -581,10 +544,7 @@ describe("route-scanner", () => {
         },
       });
 
-      const { pathStructure, paramsTypes } = scanAppDir(
-        tmpPath("output"),
-        tmpPath("testApp"),
-      );
+      const { pathStructure, paramsTypes } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(pathStructure).equals(`{
   "base": RpcEndpoint
 }`);
@@ -595,43 +555,22 @@ describe("route-scanner", () => {
           pathname: "/base",
         },
         {
-          dirPath: tmpPosixPath(
-            "testApp",
-            "intercepts",
-            "(...)intercept",
-            "[[...optionalParts]]",
-          ),
+          dirPath: tmpPosixPath("testApp", "intercepts", "(...)intercept", "[[...optionalParts]]"),
           paramsType: '{ "optionalParts": string[] | undefined }',
           pathname: "/intercepts/intercept/[[...optionalParts]]",
         },
         {
-          dirPath: tmpPosixPath(
-            "testApp",
-            "intercepts",
-            "(..)(..)intercept",
-            "[...parts]",
-          ),
+          dirPath: tmpPosixPath("testApp", "intercepts", "(..)(..)intercept", "[...parts]"),
           paramsType: '{ "parts": string[] }',
           pathname: "/intercepts/intercept/[...parts]",
         },
         {
-          dirPath: tmpPosixPath(
-            "testApp",
-            "intercepts",
-            "(..)intercept",
-            "nested",
-            "[slug]",
-          ),
+          dirPath: tmpPosixPath("testApp", "intercepts", "(..)intercept", "nested", "[slug]"),
           paramsType: '{ "slug": string }',
           pathname: "/intercepts/intercept/nested/[slug]",
         },
         {
-          dirPath: tmpPosixPath(
-            "testApp",
-            "intercepts",
-            "(.)intercept",
-            "[id]",
-          ),
+          dirPath: tmpPosixPath("testApp", "intercepts", "(.)intercept", "[id]"),
           paramsType: '{ "id": string }',
           pathname: "/intercepts/intercept/[id]",
         },
@@ -652,10 +591,7 @@ describe("route-scanner", () => {
         },
       });
 
-      const { pathStructure } = scanAppDir(
-        tmpPath("output"),
-        tmpPath("testApp"),
-      );
+      const { pathStructure } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(pathStructure).equals(`{
   "base": RpcEndpoint
 }`);
@@ -672,10 +608,7 @@ describe("route-scanner", () => {
         },
       });
 
-      const { pathStructure } = scanAppDir(
-        tmpPath("output"),
-        tmpPath("testApp"),
-      );
+      const { pathStructure } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(pathStructure).equals(`{
   "patterns": {
     "%5Fescaped": RpcEndpoint
@@ -716,10 +649,7 @@ describe("route-scanner", () => {
         },
       });
 
-      const { pathStructure } = scanAppDir(
-        tmpPath("output"),
-        tmpPath("testApp"),
-      );
+      const { pathStructure } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(pathStructure).equals(`{
   "patterns": {
     "%E0%A4%A": RpcEndpoint
@@ -772,19 +702,10 @@ describe("route-scanner", () => {
 
       visitedDirsCache.set(tmpPath("testApp", "parent", "_private"), true);
       visitedDirsCache.set(tmpPath("testApp", "parent", "(.)modal"), true);
-      visitedDirsCache.set(
-        path.win32.join(requireTmpDir(), "testApp", "parent", "_private"),
-        true,
-      );
-      visitedDirsCache.set(
-        path.win32.join(requireTmpDir(), "testApp", "parent", "(.)modal"),
-        true,
-      );
+      visitedDirsCache.set(path.win32.join(requireTmpDir(), "testApp", "parent", "_private"), true);
+      visitedDirsCache.set(path.win32.join(requireTmpDir(), "testApp", "parent", "(.)modal"), true);
 
-      const { pathStructure, paramsTypes } = scanAppDir(
-        tmpPath("output"),
-        tmpPath("testApp"),
-      );
+      const { pathStructure, paramsTypes } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(pathStructure).equals(`{
   "parent": {
     "public": RpcEndpoint
@@ -820,22 +741,13 @@ describe("route-scanner", () => {
         },
       });
 
-      const { pathStructure, paramsTypes } = scanAppDir(
-        tmpPath("output"),
-        tmpPath("testApp"),
-      );
+      const { pathStructure, paramsTypes } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(pathStructure).equals(`{
   "feed": RpcEndpoint
 }`);
       expect(paramsTypes).toStrictEqual([
         {
-          dirPath: tmpPosixPath(
-            "testApp",
-            "feed",
-            "@modal",
-            "(..)photo",
-            "[id]",
-          ),
+          dirPath: tmpPosixPath("testApp", "feed", "@modal", "(..)photo", "[id]"),
           paramsType: '{ "id": string }',
           pathname: "/feed/photo/[id]",
         },
@@ -849,10 +761,7 @@ describe("route-scanner", () => {
 
     it("should handle empty directories gracefully", () => {
       setupTree({ emptyDir: {} });
-      const { pathStructure } = scanAppDir(
-        tmpPath("output"),
-        tmpPath("emptyDir"),
-      );
+      const { pathStructure } = scanAppDir(tmpPath("output"), tmpPath("emptyDir"));
       expect(pathStructure).toBe("");
     });
 
@@ -885,12 +794,7 @@ describe("route-scanner", () => {
         },
         {
           paramsType: '{ "names": string[] | undefined }',
-          dirPath: tmpPosixPath(
-            "testApp",
-            "OptionalCatchAll",
-            "user",
-            "[[...names]]",
-          ),
+          dirPath: tmpPosixPath("testApp", "OptionalCatchAll", "user", "[[...names]]"),
           pathname: "/OptionalCatchAll/user/[[...names]]",
         },
       ]);
@@ -965,23 +869,18 @@ describe("route-scanner", () => {
 
       const childPath = tmpPath("testApp", "child");
       const childWithoutParentParams = scanAppDir(tmpPath("output"), childPath);
-      const childWithParentParams = scanAppDir(
-        tmpPath("output"),
-        childPath,
-        "",
-        [
-          {
-            paramName: "user",
-            routeType: {
-              isDynamic: true,
-              isCatchAll: false,
-              isOptionalCatchAll: false,
-              isGroup: false,
-              isParallel: false,
-            },
+      const childWithParentParams = scanAppDir(tmpPath("output"), childPath, "", [
+        {
+          paramName: "user",
+          routeType: {
+            isDynamic: true,
+            isCatchAll: false,
+            isOptionalCatchAll: false,
+            isGroup: false,
+            isParallel: false,
           },
-        ],
-      );
+        },
+      ]);
 
       expect(childWithoutParentParams).not.toBe(childWithParentParams);
       expect(childWithoutParentParams.pathStructure).toBe("RpcEndpoint");
@@ -1014,18 +913,12 @@ describe("route-scanner", () => {
       });
 
       const parentResult1 = scanAppDir(tmpPath("output"), tmpPath("testApp"));
-      const childResult1 = scanAppDir(
-        tmpPath("output"),
-        tmpPath("testApp", "sub"),
-      );
+      const childResult1 = scanAppDir(tmpPath("output"), tmpPath("testApp", "sub"));
 
       clearScanAppDirCacheAbove(tmpPath("testApp", "sub"));
 
       const parentResult2 = scanAppDir(tmpPath("output"), tmpPath("testApp"));
-      const childResult2 = scanAppDir(
-        tmpPath("output"),
-        tmpPath("testApp", "sub"),
-      );
+      const childResult2 = scanAppDir(tmpPath("output"), tmpPath("testApp", "sub"));
 
       expect(parentResult1).not.toBe(parentResult2);
       expect(childResult1).not.toBe(childResult2);
@@ -1130,9 +1023,7 @@ describe("route-scanner", () => {
       });
       clearScanAppDirCacheAbove(tmpPath("testApp", "index.ts"));
       const modified = scanAppDir(tmpPath("output"), tmpPath("testApp"));
-      expect(modified.pathStructure).toBe(
-        '{ "$get": typeof GET_asmocked } & RpcEndpoint',
-      );
+      expect(modified.pathStructure).toBe('{ "$get": typeof GET_asmocked } & RpcEndpoint');
     });
 
     it("should generate correct output when a folder is added in the lowest-level directory", () => {

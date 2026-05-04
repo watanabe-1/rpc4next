@@ -1,11 +1,8 @@
 import type { HttpMethod } from "rpc4next-shared";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { z } from "zod";
-import {
-  nextRoute as baseNextRoute,
-  type ProcedureRouteContract,
-  procedure,
-} from "../server";
+
+import { nextRoute as baseNextRoute, type ProcedureRouteContract, procedure } from "../server";
 import { defaultProcedureOnError } from "../server/on-error";
 import { createRpcHelper } from "./rpc-helper";
 import type { ParamsKey, QueryKey, RpcEndpoint } from "./types";
@@ -28,15 +25,12 @@ const nextRoute = <
   },
 ) => {
   const resolvedOptions =
-    options && "onError" in options
-      ? options
-      : { ...(options ?? {}), onError: defaultProcedureOnError };
+    options && "onError" in options ? options : { ...options, onError: defaultProcedureOnError };
 
-  return baseNextRoute<
-    TProcedure & Parameters<typeof baseNextRoute>[0],
-    TMethod,
-    TValidateOutput
-  >(procedureDefinition as never, resolvedOptions as never);
+  return baseNextRoute<TProcedure & Parameters<typeof baseNextRoute>[0], TMethod, TValidateOutput>(
+    procedureDefinition as never,
+    resolvedOptions as never,
+  );
 };
 
 const schema = z.object({
@@ -79,9 +73,7 @@ describe("createRpcHelper basic behavior", () => {
   });
 
   it("Dynamic segment with query and hash", () => {
-    const match = rpcHelper.fuga._foo._piyo.$match(
-      "/fuga/foo/bar?baz=value#section",
-    );
+    const match = rpcHelper.fuga._foo._piyo.$match("/fuga/foo/bar?baz=value#section");
     expect(match).toEqual({
       params: { foo: "foo", piyo: "bar" },
       query: { baz: "value" },
@@ -90,9 +82,7 @@ describe("createRpcHelper basic behavior", () => {
   });
 
   it("Query validation segment with query and hash", () => {
-    const match = rpcHelper.api.query.$match(
-      "/api/query?name=test&hoge=aa#hash123",
-    );
+    const match = rpcHelper.api.query.$match("/api/query?name=test&hoge=aa#hash123");
     expect(match).toEqual({
       params: {},
       query: { name: "test", hoge: "aa" },
@@ -124,9 +114,7 @@ describe("createRpcHelper type definitions", () => {
   });
 
   it("should infer query types correctly", async () => {
-    const _dynamic = rpcHelper.fuga._foo._piyo.$match(
-      "/fuga/dynamic/query?baz=test",
-    );
+    const _dynamic = rpcHelper.fuga._foo._piyo.$match("/fuga/dynamic/query?baz=test");
 
     type ExpectedDynamicMatch =
       | ({

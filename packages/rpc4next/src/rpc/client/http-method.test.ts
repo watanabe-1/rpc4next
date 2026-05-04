@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
 import { httpMethod } from "./http-method";
 
 // Type for capturing init (explicitly indicating presence of method and headers properties)
@@ -38,13 +39,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       init: { headers: { "Content-Type": "application/json" } },
     };
 
-    const requestFn = httpMethod(
-      key,
-      paths,
-      params,
-      dynamicKeys,
-      defaultOptions,
-    );
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, defaultOptions);
 
     const urlOptions = { query: { foo: "bar", baz: "qux" }, hash: "section1" };
     const clientOptions = {
@@ -113,13 +108,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       init: {},
     };
 
-    const requestFn = httpMethod(
-      key,
-      paths,
-      params,
-      dynamicKeys,
-      defaultOptions,
-    );
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, defaultOptions);
     await requestFn({ body: { json: params } });
 
     const expectedUrl = paths.join("/");
@@ -158,13 +147,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       return Promise.resolve(new Response(null, { status: 204 }));
     };
 
-    const requestFn = httpMethod(
-      key,
-      paths,
-      params,
-      dynamicKeys,
-      defaultOptions,
-    );
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, defaultOptions);
 
     const clientOptions = {
       fetch: optionsFetch,
@@ -204,13 +187,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       init: { headers: { Accept: "application/json" } },
     };
 
-    const requestFn = httpMethod(
-      key,
-      paths,
-      params,
-      dynamicKeys,
-      defaultOptions,
-    );
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, defaultOptions);
     await requestFn({ body: { json: params } });
 
     const expectedUrl = paths.join("/");
@@ -242,13 +219,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       init: { headers: { Accept: "application/json" } },
     };
 
-    const requestFn = httpMethod(
-      key,
-      paths,
-      params,
-      dynamicKeys,
-      defaultOptions,
-    );
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, defaultOptions);
     await requestFn();
 
     const expectedUrl = "http://example.com/api/users/123";
@@ -272,13 +243,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     }) as typeof fetch;
 
     const defaultOptions = { init: { headers: {} } };
-    const requestFn = httpMethod(
-      key,
-      paths,
-      params,
-      dynamicKeys,
-      defaultOptions,
-    );
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, defaultOptions);
     await requestFn({ body: { json: params } });
 
     const expectedUrl = paths.join("/");
@@ -299,13 +264,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     }) as typeof fetch;
 
     const defaultOptions = { init: {} };
-    const requestFn = httpMethod(
-      key,
-      paths,
-      params,
-      dynamicKeys,
-      defaultOptions,
-    );
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, defaultOptions);
 
     await expect(requestFn()).rejects.toThrow(errorMessage);
   });
@@ -328,13 +287,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     const clientHeaders = { "x-custom": "customValue" };
 
     const defaultOptions = { init: { headersInit: defaultHeaders } };
-    const requestFn = httpMethod(
-      key,
-      paths,
-      params,
-      dynamicKeys,
-      defaultOptions,
-    );
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, defaultOptions);
 
     const clientOptions = { init: { headers: clientHeaders } };
     await requestFn(undefined, clientOptions);
@@ -363,13 +316,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     const defaultHeaders = { "x-custom": "customValue" };
 
     const defaultOptions = { init: { headersInit: clientHeaders } };
-    const requestFn = httpMethod(
-      key,
-      paths,
-      params,
-      dynamicKeys,
-      defaultOptions,
-    );
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, defaultOptions);
 
     const clientOptions = { init: { headers: defaultHeaders } };
     await requestFn(undefined, clientOptions);
@@ -398,13 +345,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     const clientHeaders: [string, string][] = [["X-Custom", "customValue"]];
 
     const defaultOptions = { init: { headersInit: defaultHeaders } };
-    const requestFn = httpMethod(
-      key,
-      paths,
-      params,
-      dynamicKeys,
-      defaultOptions,
-    );
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, defaultOptions);
 
     const clientOptions = { init: { headersInit: clientHeaders } };
     await requestFn(undefined, clientOptions);
@@ -433,13 +374,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     clientHeaders.append("X-Test", "client");
 
     const defaultOptions = { init: { headersInit: defaultHeaders } };
-    const requestFn = httpMethod(
-      key,
-      paths,
-      params,
-      dynamicKeys,
-      defaultOptions,
-    );
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, defaultOptions);
 
     const clientOptions = { init: { headersInit: clientHeaders } };
     await requestFn(undefined, clientOptions);
@@ -476,13 +411,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
 
     const jsonBody = { hello: "world" };
 
-    const requestFn = httpMethod(
-      key,
-      paths,
-      params,
-      dynamicKeys,
-      defaultOptions,
-    );
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, defaultOptions);
     await requestFn({ body: { json: jsonBody } }, clientOptions);
 
     // Body should use JSON string
@@ -523,13 +452,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
 
     const jsonBody = { hello: "world" };
 
-    const requestFn = httpMethod(
-      key,
-      paths,
-      params,
-      dynamicKeys,
-      defaultOptions,
-    );
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, defaultOptions);
     await requestFn({ body: { json: jsonBody } }, clientOptions);
 
     expect(calledInit?.body).toBe(JSON.stringify(jsonBody));
@@ -557,13 +480,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       init: { headers: { Cookie: "a=1" } },
     };
 
-    const requestFn = httpMethod(
-      key,
-      paths,
-      params,
-      dynamicKeys,
-      defaultOptions,
-    );
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, defaultOptions);
 
     const methodParam = {
       requestHeaders: {
@@ -593,13 +510,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     }) as typeof fetch;
 
     const defaultOptions = { init: {} };
-    const requestFn = httpMethod(
-      key,
-      paths,
-      params,
-      dynamicKeys,
-      defaultOptions,
-    );
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, defaultOptions);
 
     await requestFn({ body: { json: { should: "be-ignored" } } });
 
@@ -626,13 +537,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
         body: "default-body",
       },
     };
-    const requestFn = httpMethod(
-      key,
-      paths,
-      params,
-      dynamicKeys,
-      defaultOptions,
-    );
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, defaultOptions);
 
     await requestFn();
 
@@ -658,13 +563,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     fd.append("file", new Blob(["abc"]), "a.txt");
 
     const defaultOptions = { init: {} };
-    const requestFn = httpMethod(
-      key,
-      paths,
-      params,
-      dynamicKeys,
-      defaultOptions,
-    );
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, defaultOptions);
 
     await requestFn({ body: { formData: fd, json: undefined } });
 
@@ -689,13 +588,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     }) as typeof fetch;
 
     const defaultOptions = { init: {} };
-    const requestFn = httpMethod(
-      key,
-      paths,
-      params,
-      dynamicKeys,
-      defaultOptions,
-    );
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, defaultOptions);
 
     const methodParam = {
       requestHeaders: {
@@ -728,13 +621,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     }) as typeof fetch;
 
     const defaultOptions = { init: {} };
-    const requestFn = httpMethod(
-      key,
-      paths,
-      params,
-      dynamicKeys,
-      defaultOptions,
-    );
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, defaultOptions);
 
     await requestFn({ body: { text: "hello", json: undefined } });
 
@@ -763,13 +650,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     usp.set("b", "2");
 
     const defaultOptions = { init: {} };
-    const requestFn = httpMethod(
-      key,
-      paths,
-      params,
-      dynamicKeys,
-      defaultOptions,
-    );
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, defaultOptions);
 
     await requestFn({ body: { urlencoded: usp, json: undefined } });
 
@@ -797,13 +678,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     const payload = new Uint8Array([1, 2, 3]).buffer;
 
     const defaultOptions = { init: {} };
-    const requestFn = httpMethod(
-      key,
-      paths,
-      params,
-      dynamicKeys,
-      defaultOptions,
-    );
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, defaultOptions);
 
     await requestFn({ body: { raw: payload, json: undefined } });
 
@@ -826,13 +701,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     }) as typeof fetch;
 
     const defaultOptions = { init: {} };
-    const requestFn = httpMethod(
-      key,
-      paths,
-      params,
-      dynamicKeys,
-      defaultOptions,
-    );
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, defaultOptions);
 
     await requestFn({ body: { json: { will: "be-ignored" } } });
 
@@ -854,13 +723,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     }) as typeof fetch;
 
     const defaultOptions = { init: {} };
-    const requestFn = httpMethod(
-      key,
-      paths,
-      params,
-      dynamicKeys,
-      defaultOptions,
-    );
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, defaultOptions);
 
     await requestFn(undefined, {
       init: {
@@ -916,13 +779,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     }) as typeof fetch;
 
     const defaultOptions = { init: {} };
-    const requestFn = httpMethod(
-      key,
-      paths,
-      params,
-      dynamicKeys,
-      defaultOptions,
-    );
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, defaultOptions);
 
     await expect(requestFn()).rejects.toThrow(
       "[httpMethod] GET http://example.com/api/boom failed: string-failure",

@@ -1,10 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import {
-  SUCCESS_INDENT_LEVEL,
-  SUCCESS_PAD_LENGTH,
-  SUCCESS_SEPARATOR,
-} from "./constants.js";
+
+import { SUCCESS_INDENT_LEVEL, SUCCESS_PAD_LENGTH, SUCCESS_SEPARATOR } from "./constants.js";
 import {
   generatePathStructure,
   ROUTE_CONTRACT_GENERATED_MARKER,
@@ -32,16 +29,10 @@ const isWithinBaseDir = (targetPath: string, baseDir: string): boolean => {
   const resolvedTargetPath = path.resolve(targetPath);
   const relativePath = path.relative(resolvedBaseDir, resolvedTargetPath);
 
-  return (
-    relativePath === "" ||
-    (!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
-  );
+  return relativePath === "" || (!relativePath.startsWith("..") && !path.isAbsolute(relativePath));
 };
 
-const listGeneratedCandidateFiles = (
-  baseDir: string,
-  paramsFileName: string,
-): string[] => {
+const listGeneratedCandidateFiles = (baseDir: string, paramsFileName: string): string[] => {
   const files: string[] = [];
 
   const visit = (dirPath: string) => {
@@ -111,10 +102,7 @@ export const generate = ({
 }) => {
   logger.info("Generating types...", { event: "generate" });
 
-  const { pathStructure, paramsTypes } = generatePathStructure(
-    outputPath,
-    baseDir,
-  );
+  const { pathStructure, paramsTypes } = generatePathStructure(outputPath, baseDir);
 
   if (writeFileIfChanged(outputPath, pathStructure)) {
     logger.success(
@@ -141,9 +129,7 @@ export const generate = ({
   if (paramsFileName) {
     let wroteParamsFile = false;
     const expectedFilePaths = new Set(
-      paramsTypes.map(({ dirPath }) =>
-        path.resolve(path.join(dirPath, paramsFileName)),
-      ),
+      paramsTypes.map(({ dirPath }) => path.resolve(path.join(dirPath, paramsFileName))),
     );
 
     paramsTypes.forEach(({ paramsType, dirPath }) => {
@@ -161,24 +147,14 @@ export const generate = ({
 
     if (wroteParamsFile) {
       logger.success(
-        padMessage(
-          "Params types",
-          paramsFileName,
-          SUCCESS_SEPARATOR,
-          SUCCESS_PAD_LENGTH,
-        ),
+        padMessage("Params types", paramsFileName, SUCCESS_SEPARATOR, SUCCESS_PAD_LENGTH),
         {
           indentLevel: SUCCESS_INDENT_LEVEL,
         },
       );
     } else {
       logger.info(
-        padMessage(
-          "Unchanged params",
-          paramsFileName,
-          SUCCESS_SEPARATOR,
-          SUCCESS_PAD_LENGTH,
-        ),
+        padMessage("Unchanged params", paramsFileName, SUCCESS_SEPARATOR, SUCCESS_PAD_LENGTH),
         {
           indentLevel: SUCCESS_INDENT_LEVEL,
         },

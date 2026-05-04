@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
+
 import { debounceOnceRunningWithTrailing } from "./debounce.js";
 
 describe("debounceOnceRunningWithTrailing", () => {
   it("should call the callback after the specified delay", async () => {
     vi.useFakeTimers();
-    const callback = vi.fn();
+    const callback = vi.fn<(value: string) => void>();
     const debounced = debounceOnceRunningWithTrailing(callback, 500);
 
     debounced("test");
@@ -21,7 +22,7 @@ describe("debounceOnceRunningWithTrailing", () => {
 
   it("should reset the delay if called repeatedly", async () => {
     vi.useFakeTimers();
-    const callback = vi.fn();
+    const callback = vi.fn<(value: string) => void>();
     const debounced = debounceOnceRunningWithTrailing(callback, 300);
 
     debounced("first");
@@ -42,7 +43,7 @@ describe("debounceOnceRunningWithTrailing", () => {
   it("should not run again while callback is running, but should run once after it finishes", async () => {
     vi.useFakeTimers();
 
-    const callback = vi.fn(async (_msg: string) => {
+    const callback = vi.fn<(msg: string) => Promise<void>>(async (_msg: string) => {
       await new Promise((resolve) => setTimeout(resolve, 1000));
     });
 
@@ -72,7 +73,7 @@ describe("debounceOnceRunningWithTrailing", () => {
 
   it("should handle no-argument case correctly", async () => {
     vi.useFakeTimers();
-    const callback = vi.fn();
+    const callback = vi.fn<() => void>();
     const debounced = debounceOnceRunningWithTrailing(callback, 400);
 
     debounced(); // no arguments

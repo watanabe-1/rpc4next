@@ -1,7 +1,6 @@
 {
   "name": "rpc4next-monorepo",
   "private": true,
-  "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/watanabe-1/rpc4next.git"
@@ -10,18 +9,18 @@
     "packages/*",
     "integration/*"
   ],
-  "engines": {
-    "node": ">=20.19.2"
-  },
+  "type": "module",
   "scripts": {
     "build": "bun --filter \"./packages/*\" --if-present build",
     "clean": "bun --filter \"./packages/*\" --if-present clean",
     "typecheck": "bun run --parallel typecheck:scripts typecheck:workspaces",
     "typecheck:scripts": "tsc -p scripts/tsconfig.json",
     "typecheck:workspaces": "bun run --parallel --filter \"./packages/*\" --filter \"./integration/*\" --if-present typecheck",
-    "lint": "biome check .",
-    "check:fix": "biome check --write .",
-    "lint:biome:demo": "biome check --config-path biome/biome.demo.json biome/tests",
+    "lint": "bun run format:oxfmt:check && oxlint .",
+    "lint:oxlint": "oxlint .",
+    "check:fix": "oxfmt . && oxlint --fix .",
+    "format:oxfmt": "oxfmt .",
+    "format:oxfmt:check": "oxfmt --check .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage.enabled true",
     "test:ui": "vitest --ui --coverage.enabled true",
@@ -33,7 +32,6 @@
     "diff2prompt": "diff2prompt --excludeFile=.gitignore"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.12",
     "@types/node": "^25.6.0",
     "@vitest/coverage-v8": "^4.1.4",
     "@vitest/ui": "^4.1.4",
@@ -43,9 +41,14 @@
     "fast-glob": "^3.3.3",
     "msw": "^2.13.4",
     "next": "16.2.4",
+    "oxfmt": "^0.47.0",
+    "oxlint": "^1.62.0",
     "typescript": "^6.0.3",
     "valibot": "^1.3.1",
     "vitest": "^4.1.4",
     "zod": "^4.3.6"
+  },
+  "engines": {
+    "node": ">=20.19.2"
   }
 }

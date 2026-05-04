@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
+
 import { STATEMENT_TERMINATOR, TYPE_SEPARATOR } from "./constants.js";
-import {
-  createImport,
-  createObjectType,
-  createRecodeType,
-} from "./type-utils.js";
+import { createImport, createObjectType, createRecodeType } from "./type-utils.js";
 
 describe("createRecodeType", () => {
   it("should create a valid Record type", () => {
@@ -20,9 +17,7 @@ describe("createRecodeType", () => {
 
 describe("createObjectType", () => {
   it("should create a valid object type with one field", () => {
-    expect(createObjectType([{ name: "id", type: "number" }])).toBe(
-      `{ "id": number }`,
-    );
+    expect(createObjectType([{ name: "id", type: "number" }])).toBe(`{ "id": number }`);
   });
 
   it("should create a valid object type with multiple fields", () => {

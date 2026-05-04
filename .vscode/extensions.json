@@ -1,6 +1,6 @@
 {
   "recommendations": [
-    "biomejs.biome", // Biome
+    "oxc.oxc-vscode", // Oxc
     "yusukehirao.vscode-markuplint", // Markuplint
     "davidanson.vscode-markdownlint" // Markdownlint
   ]

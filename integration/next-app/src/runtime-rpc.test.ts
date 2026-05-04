@@ -1,5 +1,6 @@
 import { createRpcClient } from "rpc4next/client";
 import { describe, expect, it } from "vitest";
+
 import type { PathStructure } from "./generated/rpc";
 
 type UrlExpectation = {
@@ -60,8 +61,7 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
       },
       {
         name: "nested dynamic page route",
-        actual: () =>
-          client.photo._id("photo-1").comments._commentId("c-9").$url(),
+        actual: () => client.photo._id("photo-1").comments._commentId("c-9").$url(),
         expected: {
           path: `${baseUrl}/photo/photo-1/comments/c-9`,
           relativePath: "/photo/photo-1/comments/c-9",
@@ -71,8 +71,7 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
       },
       {
         name: "catch-all page route",
-        actual: () =>
-          client.patterns["catch-all"].___parts(["alpha", "beta"]).$url(),
+        actual: () => client.patterns["catch-all"].___parts(["alpha", "beta"]).$url(),
         expected: {
           path: `${baseUrl}/patterns/catch-all/alpha/beta`,
           relativePath: "/patterns/catch-all/alpha/beta",
@@ -92,8 +91,7 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
       },
       {
         name: "nested dynamic page route under patterns",
-        actual: () =>
-          client.patterns.dynamic._category("books")._item("ts-guide").$url(),
+        actual: () => client.patterns.dynamic._category("books")._item("ts-guide").$url(),
         expected: {
           path: `${baseUrl}/patterns/dynamic/books/ts-guide`,
           relativePath: "/patterns/dynamic/books/ts-guide",
@@ -104,10 +102,7 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
       {
         name: "dynamic page route with encoded params",
         actual: () =>
-          client.patterns.dynamic
-            ._category("sci fi")
-            ._item("a/b")
-            .$url({ hash: "section-1" }),
+          client.patterns.dynamic._category("sci fi")._item("a/b").$url({ hash: "section-1" }),
         expected: {
           path: `${baseUrl}/patterns/dynamic/sci%20fi/a%2Fb#section-1`,
           relativePath: "/patterns/dynamic/sci%20fi/a%2Fb#section-1",
@@ -117,10 +112,7 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
       },
       {
         name: "optional catch-all page route with segments",
-        actual: () =>
-          client.patterns["optional-catch-all"]
-            ._____parts(["one", "two"])
-            .$url(),
+        actual: () => client.patterns["optional-catch-all"]._____parts(["one", "two"]).$url(),
         expected: {
           path: `${baseUrl}/patterns/optional-catch-all/one/two`,
           relativePath: "/patterns/optional-catch-all/one/two",
@@ -147,14 +139,12 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
     }
 
     it("should allow optional catch-all page routes without segments", () => {
-      expect(client.patterns["optional-catch-all"]._____parts().$url()).toEqual(
-        {
-          path: `${baseUrl}/patterns/optional-catch-all`,
-          relativePath: "/patterns/optional-catch-all",
-          pathname: "/patterns/optional-catch-all/[[...parts]]",
-          params: { parts: undefined },
-        },
-      );
+      expect(client.patterns["optional-catch-all"]._____parts().$url()).toEqual({
+        path: `${baseUrl}/patterns/optional-catch-all`,
+        relativePath: "/patterns/optional-catch-all",
+        pathname: "/patterns/optional-catch-all/[[...parts]]",
+        params: { parts: undefined },
+      });
     });
 
     it("should treat escaped underscore folders as static page routes", () => {
@@ -203,6 +193,7 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
       const client = createRpcClient<PathStructure>(baseUrl, {
         fetch: async (input, init) => {
           calls.push({ input, init });
+
           return new Response(JSON.stringify({ ok: true }), {
             status: 200,
             headers: { "content-type": "application/json" },
@@ -216,9 +207,7 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
 
       expect(response.status).toBe(200);
       expect(calls).toHaveLength(1);
-      expect(String(calls[0]?.input)).toBe(
-        `${baseUrl}/api/users/smoke-user?includePosts=false`,
-      );
+      expect(String(calls[0]?.input)).toBe(`${baseUrl}/api/users/smoke-user?includePosts=false`);
       expect(calls[0]?.init?.method).toBe("GET");
     });
 
@@ -227,6 +216,7 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
       const client = createRpcClient<PathStructure>(baseUrl, {
         fetch: async (input, init) => {
           calls.push({ input, init });
+
           return new Response(JSON.stringify({ ok: true }), {
             status: 200,
             headers: { "content-type": "application/json" },
@@ -251,6 +241,7 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
       const client = createRpcClient<PathStructure>(baseUrl, {
         fetch: async (input, init) => {
           calls.push({ input, init });
+
           return new Response(JSON.stringify({ ok: true }), {
             status: 201,
             headers: { "content-type": "application/json" },

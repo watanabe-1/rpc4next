@@ -1,8 +1,0 @@
-// Custom Biome plugin rule:
-// Flags any `test(...)` call so this project can enforce `it(...)` style in Vitest tests.
-`test($args)` as $call where {
-  register_diagnostic(
-    span = $call,
-    message = "Use it(...) instead of test(...)."
-  )
-}

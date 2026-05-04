@@ -2,12 +2,7 @@ import { cyan, green, red } from "./colors.js";
 import { INDENT } from "./core/constants.js";
 import type { Logger } from "./types.js";
 
-export const padMessage = (
-  label: string,
-  value: string,
-  separator = "→",
-  targetLength = 24,
-) => {
+export const padMessage = (label: string, value: string, separator = "→", targetLength = 24) => {
   return `${label.padEnd(targetLength)} ${separator} ${value}`;
 };
 

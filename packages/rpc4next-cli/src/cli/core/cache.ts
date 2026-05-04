@@ -1,4 +1,5 @@
 import path from "node:path";
+
 import type { scanAppDir } from "./route-scanner.js";
 
 // Caches
@@ -32,18 +33,12 @@ const getCachePath = (cache: Map<string, unknown>, key: string): string => {
 };
 
 // Generic function to clear cache entries above a target path
-const clearCacheAbove = (
-  cache: Map<string, unknown>,
-  targetPath: string,
-): void => {
+const clearCacheAbove = (cache: Map<string, unknown>, targetPath: string): void => {
   const basePath = normalizeCachePath(targetPath);
 
   [...cache.keys()].forEach((key) => {
     const normalizedKey = normalizeCachePath(getCachePath(cache, key));
-    if (
-      normalizedKey === basePath ||
-      basePath.startsWith(`${normalizedKey}/`)
-    ) {
+    if (normalizedKey === basePath || basePath.startsWith(`${normalizedKey}/`)) {
       cache.delete(key);
     }
   });

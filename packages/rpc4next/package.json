@@ -8,22 +8,19 @@
     "typescript"
   ],
   "homepage": "https://github.com/watanabe-1/rpc4next#readme",
+  "license": "MIT",
+  "author": "watanabe-1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/watanabe-1/rpc4next.git",
     "directory": "packages/rpc4next"
   },
-  "license": "MIT",
-  "author": "watanabe-1",
-  "type": "module",
-  "engines": {
-    "node": ">=20.19.2"
-  },
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],
+  "type": "module",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "import": {
@@ -76,6 +73,9 @@
       }
     }
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "bun run clean && bun build.ts && bun run build:types",
     "build:types": "tsc -b --force tsconfig.build-types.json",
@@ -84,8 +84,8 @@
     "test:coverage": "vitest run --coverage.enabled true",
     "test:ui": "vitest --ui --coverage.enabled true",
     "test:watch": "vitest --watch",
-    "lint": "biome check src",
-    "check:fix": "biome check --write src",
+    "lint": "oxfmt --check src && oxlint src",
+    "check:fix": "oxfmt src && oxlint --fix src",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -94,7 +94,7 @@
   "peerDependencies": {
     "next": "^15.0.0 || ^16.0.0"
   },
-  "publishConfig": {
-    "access": "public"
+  "engines": {
+    "node": ">=20.19.2"
   }
 }

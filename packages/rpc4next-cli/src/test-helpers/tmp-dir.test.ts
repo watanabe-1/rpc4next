@@ -1,12 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  cleanupTempDir,
-  makeTempDir,
-  resetTempDir,
-  writeTree,
-} from "./tmp-dir.js";
+
+import { cleanupTempDir, makeTempDir, resetTempDir, writeTree } from "./tmp-dir.js";
 
 describe("tmp-dir helpers", () => {
   const createdDirs: string[] = [];
@@ -59,9 +55,7 @@ describe("tmp-dir helpers", () => {
     });
 
     expect(fs.readFileSync(path.join(dir, "root.txt"), "utf8")).toBe("root");
-    expect(
-      fs.readFileSync(path.join(dir, "nested", "deeper", "child.txt"), "utf8"),
-    ).toBe("child");
+    expect(fs.readFileSync(path.join(dir, "nested", "deeper", "child.txt"), "utf8")).toBe("child");
   });
 
   it("resetTempDir replaces existing contents with the new tree", () => {
@@ -81,8 +75,6 @@ describe("tmp-dir helpers", () => {
     });
 
     expect(fs.existsSync(path.join(dir, "old", "stale.txt"))).toBe(false);
-    expect(fs.readFileSync(path.join(dir, "fresh", "next.txt"), "utf8")).toBe(
-      "next",
-    );
+    expect(fs.readFileSync(path.join(dir, "fresh", "next.txt"), "utf8")).toBe("next");
   });
 });

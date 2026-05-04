@@ -6,9 +6,7 @@ type StandardSchemaTypes<TSchema> = TSchema extends {
   ? NonNullable<TTypes>
   : never;
 
-export type InferSchemaInput<TSchema> = [StandardSchemaTypes<TSchema>] extends [
-  never,
-]
+export type InferSchemaInput<TSchema> = [StandardSchemaTypes<TSchema>] extends [never]
   ? TSchema extends { _input?: infer TInput }
     ? TInput
     : TSchema extends { _zod: { input: infer TInput } }
@@ -22,9 +20,7 @@ export type InferSchemaInput<TSchema> = [StandardSchemaTypes<TSchema>] extends [
     ? TInput
     : unknown;
 
-export type InferSchemaOutput<TSchema> = [
-  StandardSchemaTypes<TSchema>,
-] extends [never]
+export type InferSchemaOutput<TSchema> = [StandardSchemaTypes<TSchema>] extends [never]
   ? TSchema extends { _output?: infer TOutput }
     ? TOutput
     : TSchema extends { _zod: { output: infer TOutput } }

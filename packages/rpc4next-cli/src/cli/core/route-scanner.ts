@@ -1,23 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
-import {
-  CATCH_ALL_PREFIX,
-  DYNAMIC_PREFIX,
-  OPTIONAL_CATCH_ALL_PREFIX,
-} from "rpc4next-shared";
+import { CATCH_ALL_PREFIX, DYNAMIC_PREFIX, OPTIONAL_CATCH_ALL_PREFIX } from "rpc4next-shared";
+
 import { END_POINT_FILE_NAMES } from "../constants.js";
 import type { EndPointFileNames } from "../types.js";
-import {
-  createScanAppDirCacheKey,
-  scanAppDirCache,
-  visitedDirsCache,
-} from "./cache.js";
-import {
-  INDENT,
-  NEWLINE,
-  TYPE_KEY_PARAMS,
-  TYPE_RPC_ENDPOINT,
-} from "./constants.js";
+import { createScanAppDirCacheKey, scanAppDirCache, visitedDirsCache } from "./cache.js";
+import { INDENT, NEWLINE, TYPE_KEY_PARAMS, TYPE_RPC_ENDPOINT } from "./constants.js";
 import { toPosixPath } from "./path-utils.js";
 import { scanEndpointFile } from "./scan-utils.js";
 import { createObjectType, createRecodeType } from "./type-utils.js";
@@ -74,9 +62,7 @@ const endPointFileNames = new Set(END_POINT_FILE_NAMES);
 const INTERCEPTING_SEGMENT_PREFIXES = ["(..)(..)", "(...)", "(..)", "(.)"];
 
 const isInterceptingSegment = (entryName: string): boolean => {
-  return INTERCEPTING_SEGMENT_PREFIXES.some((prefix) =>
-    entryName.startsWith(prefix),
-  );
+  return INTERCEPTING_SEGMENT_PREFIXES.some((prefix) => entryName.startsWith(prefix));
 };
 
 const stripInterceptingSegmentPrefix = (entryName: string): string => {
@@ -111,18 +97,12 @@ const getStaticSegmentKey = (entryName: string): string => {
 
 const getDirectoryMeta = (entryName: string) => {
   const isIntercept = isInterceptingSegment(entryName);
-  const segmentName = isIntercept
-    ? stripInterceptingSegmentPrefix(entryName)
-    : entryName;
-  const isGroup =
-    !isIntercept && segmentName.startsWith("(") && segmentName.endsWith(")");
+  const segmentName = isIntercept ? stripInterceptingSegmentPrefix(entryName) : entryName;
+  const isGroup = !isIntercept && segmentName.startsWith("(") && segmentName.endsWith(")");
   const isParallel = !isIntercept && segmentName.startsWith("@");
-  const isOptionalCatchAll =
-    segmentName.startsWith("[[...") && segmentName.endsWith("]]");
+  const isOptionalCatchAll = segmentName.startsWith("[[...") && segmentName.endsWith("]]");
   const isCatchAll =
-    !isOptionalCatchAll &&
-    segmentName.startsWith("[...") &&
-    segmentName.endsWith("]");
+    !isOptionalCatchAll && segmentName.startsWith("[...") && segmentName.endsWith("]");
   const isDynamic = segmentName.startsWith("[") && segmentName.endsWith("]");
   const isPrivate = !isIntercept && segmentName.startsWith("_");
   const staticKeyName = getStaticSegmentKey(segmentName);
@@ -263,16 +243,12 @@ const appendParamsType = (
   });
 
   if (fields.length > 0) {
-    accumulator.typeFragments.push(
-      createRecodeType(TYPE_KEY_PARAMS, paramsTypeStr),
-    );
+    accumulator.typeFragments.push(createRecodeType(TYPE_KEY_PARAMS, paramsTypeStr));
   }
 };
 
 const toRoutePathname = (baseDir: string, fullPath: string): string => {
-  const relativeDir = toPosixPath(
-    path.relative(baseDir, path.dirname(fullPath)),
-  );
+  const relativeDir = toPosixPath(path.relative(baseDir, path.dirname(fullPath)));
   const pathnameSegments = relativeDir
     .split("/")
     .filter(Boolean)
@@ -299,10 +275,7 @@ const appendEndpointFile = (
   context: Pick<ScanContext, "output" | "params" | "rootDir">,
   fullPath: string,
 ) => {
-  const { query: queryDef, routes } = scanEndpointFile(
-    context.output,
-    fullPath,
-  );
+  const { query: queryDef, routes } = scanEndpointFile(context.output, fullPath);
 
   if (queryDef) {
     const { importStatement, importPath, type } = queryDef;
@@ -350,9 +323,7 @@ const mergeFlattenedChildPathStructure = (
     return;
   }
 
-  throw new Error(
-    `Invalid empty child path structure in grouped/parallel route: ${fullPath}`,
-  );
+  throw new Error(`Invalid empty child path structure in grouped/parallel route: ${fullPath}`);
 };
 
 const buildPathStructure = (
@@ -371,10 +342,7 @@ const buildPathStructure = (
     : typeString || pathStructureBody;
 };
 
-const createNextParams = (
-  params: ParentParam[],
-  meta: DirectoryMeta,
-): ParentParam[] => {
+const createNextParams = (params: ParentParam[], meta: DirectoryMeta): ParentParam[] => {
   if (!meta.isDynamic && !meta.isCatchAll && !meta.isOptionalCatchAll) {
     return params;
   }
@@ -408,9 +376,7 @@ const appendChildDirectory = (
 
   const nextParams = createNextParams(context.params, meta);
   const isFlattenDir = meta.isGroup || meta.isParallel;
-  const childIndent = isFlattenDir
-    ? context.previousIndent
-    : context.currentIndent;
+  const childIndent = isFlattenDir ? context.previousIndent : context.currentIndent;
   const childResult = scanAppDir(
     context.output,
     fullPath,
@@ -444,9 +410,7 @@ const appendChildDirectory = (
 
   const { keyName } = extractParamInfo(meta.segmentName, meta);
   const segmentKeyName =
-    meta.isDynamic || meta.isCatchAll || meta.isOptionalCatchAll
-      ? keyName
-      : meta.staticKeyName;
+    meta.isDynamic || meta.isCatchAll || meta.isOptionalCatchAll ? keyName : meta.staticKeyName;
 
   accumulator.pathStructures.push(
     `${context.currentIndent}"${segmentKeyName}": ${childResult.pathStructure}`,
@@ -484,12 +448,7 @@ export const scanAppDir = (
     const fullPath = toPosixPath(path.join(input, entry.name));
 
     if (entry.isDirectory()) {
-      appendChildDirectory(
-        accumulator,
-        context,
-        fullPath,
-        getDirectoryMeta(entry.name),
-      );
+      appendChildDirectory(accumulator, context, fullPath, getDirectoryMeta(entry.name));
     } else {
       appendEndpointFile(accumulator, context, fullPath);
     }

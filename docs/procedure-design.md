@@ -922,12 +922,7 @@ const getUsers = procedure
       page: z.coerce.number().int().positive(),
     }),
     {
-      onValidationError: ({
-        target,
-        value,
-        issues,
-        response,
-      }) => {
+      onValidationError: ({ target, value, issues, response }) => {
         return response.json(
           {
             source: "validator",
@@ -1103,11 +1098,9 @@ Target authoring shape:
 
 ```ts
 export const GET = nextRoute(
-  procedure
-    .route(routeContract)
-    .handle(async ({ response }) => {
-      throw rpcError("FORBIDDEN", { message: "Forbidden" });
-    }),
+  procedure.route(routeContract).handle(async ({ response }) => {
+    throw rpcError("FORBIDDEN", { message: "Forbidden" });
+  }),
   {
     onError(error, ctx) {
       if (error instanceof Response) {

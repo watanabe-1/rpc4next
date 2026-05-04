@@ -1,10 +1,7 @@
 import { headers } from "next/headers";
 import { createRpcClient } from "rpc4next/client";
-import type {
-  ContentType,
-  HttpStatusCode,
-  TypedNextResponse,
-} from "rpc4next/server";
+import type { ContentType, HttpStatusCode, TypedNextResponse } from "rpc4next/server";
+
 import type { PathStructure } from "@/generated/rpc";
 import type { rpcClient } from "@/lib/rpc-client";
 
@@ -79,10 +76,8 @@ type ExpectedProcedureSubmitResponse =
       400,
       "application/json"
     >;
-const _procedureSubmitFromActual: ExpectedProcedureSubmitResponse =
-  {} as ProcedureSubmitResponse;
-const _procedureSubmitFromExpected: ProcedureSubmitResponse =
-  {} as ExpectedProcedureSubmitResponse;
+const _procedureSubmitFromActual: ExpectedProcedureSubmitResponse = {} as ProcedureSubmitResponse;
+const _procedureSubmitFromExpected: ProcedureSubmitResponse = {} as ExpectedProcedureSubmitResponse;
 
 type ProcedureGuardedGet = ReturnType<
   (typeof rpcClient.api)["procedure-guarded"]["_userId"]
@@ -128,11 +123,8 @@ const _procedureGuardedFromActual: ExpectedProcedureGuardedResponse =
 const _procedureGuardedFromExpected: ProcedureGuardedResponse =
   {} as ExpectedProcedureGuardedResponse;
 
-type ProcedureValidationBranchGet =
-  (typeof rpcClient.api)["procedure-validation-branch"]["$get"];
-type ProcedureValidationBranchResponse = Awaited<
-  ReturnType<ProcedureValidationBranchGet>
->;
+type ProcedureValidationBranchGet = (typeof rpcClient.api)["procedure-validation-branch"]["$get"];
+type ProcedureValidationBranchResponse = Awaited<ReturnType<ProcedureValidationBranchGet>>;
 type ExpectedProcedureValidationBranchResponse =
   | TypedNextResponse<
       {
@@ -170,22 +162,13 @@ const _procedureValidationBranchFromActual: ExpectedProcedureValidationBranchRes
 
 type NativeResponseGet = (typeof rpcClient.api)["next-native-response"]["$get"];
 type NativeResponse = Awaited<ReturnType<NativeResponseGet>>;
-type ExpectedNativeResponse = TypedNextResponse<
-  unknown,
-  HttpStatusCode,
-  ContentType
->;
+type ExpectedNativeResponse = TypedNextResponse<unknown, HttpStatusCode, ContentType>;
 const _nativeResponseFromActual: ExpectedNativeResponse = {} as NativeResponse;
-const _nativeResponseFromExpected: NativeResponse =
-  {} as ExpectedNativeResponse;
+const _nativeResponseFromExpected: NativeResponse = {} as ExpectedNativeResponse;
 
 type RedirectGet = (typeof rpcClient.api)["redirect-me"]["$get"];
 type RedirectResponse = Awaited<ReturnType<RedirectGet>>;
-type ExpectedRedirectResponse = TypedNextResponse<
-  never,
-  HttpStatusCode,
-  ContentType
->;
+type ExpectedRedirectResponse = TypedNextResponse<never, HttpStatusCode, ContentType>;
 const _redirectFromActual: ExpectedRedirectResponse = {} as RedirectResponse;
 const _redirectFromExpected: RedirectResponse = {} as ExpectedRedirectResponse;
 
@@ -218,9 +201,7 @@ type ExampleCard = {
   runtime: ResponsePreview;
 };
 
-const readResponsePreview = async (
-  response: Response,
-): Promise<ResponsePreview> => {
+const readResponsePreview = async (response: Response): Promise<ResponsePreview> => {
   const contentType = response.headers.get("content-type") ?? "";
   const location = response.headers.get("location") ?? undefined;
 
@@ -407,14 +388,12 @@ export default async function ProcedureExamplesPage() {
     <main>
       <h1>Procedure examples</h1>
       <p>
-        This page calls the live integration routes through{" "}
-        <code>rpcClient</code> and compares how their response types are
-        inferred.
+        This page calls the live integration routes through <code>rpcClient</code> and compares how
+        their response types are inferred.
       </p>
       <p>
-        The comparison is easiest to read as a pattern table: the more explicit
-        route contracts rpc4next has, the narrower the generated client response
-        type becomes.
+        The comparison is easiest to read as a pattern table: the more explicit route contracts
+        rpc4next has, the narrower the generated client response type becomes.
       </p>
       {examples.map((example) => (
         <section key={example.title}>
@@ -436,8 +415,7 @@ export default async function ProcedureExamplesPage() {
               ok: <code>{String(example.runtime.ok)}</code>
             </li>
             <li>
-              content-type:{" "}
-              <code>{example.runtime.contentType || "(none)"}</code>
+              content-type: <code>{example.runtime.contentType || "(none)"}</code>
             </li>
             <li>
               location: <code>{example.runtime.location ?? "(none)"}</code>

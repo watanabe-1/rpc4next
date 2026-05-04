@@ -1,4 +1,5 @@
 import path from "node:path";
+
 import { EXIT_FAILURE, EXIT_SUCCESS } from "./constants.js";
 import { toPosixPath } from "./core/path-utils.js";
 import { generate } from "./generator.js";
@@ -40,8 +41,7 @@ export const handleCli = (
   const resolvedBaseDir = toPosixPath(path.resolve(baseDir));
   const resolvedOutputPath = toPosixPath(path.resolve(outputPath));
 
-  const paramsFileName =
-    typeof options.paramsFile === "string" ? options.paramsFile : null;
+  const paramsFileName = typeof options.paramsFile === "string" ? options.paramsFile : null;
 
   if (options.paramsFile !== undefined && !paramsFileName) {
     logger.error("Error: --params-file requires a filename.");
@@ -53,12 +53,7 @@ export const handleCli = (
     setupWatcher(
       resolvedBaseDir,
       () => {
-        handleGenerateSafely(
-          resolvedBaseDir,
-          resolvedOutputPath,
-          paramsFileName,
-          logger,
-        );
+        handleGenerateSafely(resolvedBaseDir, resolvedOutputPath, paramsFileName, logger);
       },
       logger,
     );
@@ -66,10 +61,5 @@ export const handleCli = (
     return EXIT_SUCCESS;
   }
 
-  return handleGenerateSafely(
-    resolvedBaseDir,
-    resolvedOutputPath,
-    paramsFileName,
-    logger,
-  );
+  return handleGenerateSafely(resolvedBaseDir, resolvedOutputPath, paramsFileName, logger);
 };

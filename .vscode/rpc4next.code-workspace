@@ -1,8 +1,8 @@
 {
   "folders": [
     {
-      "path": "../"
-    }
+      "path": "../",
+    },
   ],
   "settings": {
     "diffEditor.ignoreTrimWhitespace": false,
@@ -10,34 +10,34 @@
     "editor.guides.bracketPairs": "active",
     "editor.formatOnSave": true,
     "editor.formatOnType": true,
+    "editor.formatOnSaveMode": "file",
     "editor.lineNumbers": "on",
     "editor.rulers": [80],
     "editor.wordWrap": "on",
     "editor.codeActionsOnSave": {
-      "quickfix.biome": "explicit",
-      "source.organizeImports.biome": "explicit"
+      "source.fixAll.oxc": "always",
     },
-    "editor.defaultFormatter": "biomejs.biome",
+    "editor.defaultFormatter": "oxc.oxc-vscode",
     "[javascript]": {
-      "editor.defaultFormatter": "biomejs.biome"
+      "editor.defaultFormatter": "oxc.oxc-vscode",
     },
     "[json]": {
-      "editor.defaultFormatter": "biomejs.biome"
+      "editor.defaultFormatter": "oxc.oxc-vscode",
     },
     "[jsonc]": {
-      "editor.defaultFormatter": "biomejs.biome"
+      "editor.defaultFormatter": "oxc.oxc-vscode",
     },
     "[typescript]": {
-      "editor.defaultFormatter": "biomejs.biome"
+      "editor.defaultFormatter": "oxc.oxc-vscode",
     },
     "[typescriptreact]": {
-      "editor.defaultFormatter": "biomejs.biome"
+      "editor.defaultFormatter": "oxc.oxc-vscode",
     },
     "[html]": {
-      "editor.defaultFormatter": "biomejs.biome"
+      "editor.defaultFormatter": "oxc.oxc-vscode",
     },
     "[markdown]": {
-      "editor.defaultFormatter": "biomejs.biome"
+      "editor.defaultFormatter": "oxc.oxc-vscode",
     },
     "markuplint.enable": true,
     "js/ts.tsdk.promptToUseWorkspaceVersion": true,
@@ -45,13 +45,13 @@
     "js/ts.updateImportsOnFileMove.enabled": "always",
     "json.schemaDownload.enable": true,
     "json.schemaDownload.trustedDomains": {
-      "https://docs.renovatebot.com/": true
+      "https://docs.renovatebot.com/": true,
     },
     "files.insertFinalNewline": true,
     "files.autoGuessEncoding": true,
     "files.exclude": {
-      "**/.next": true
+      "**/.next": true,
     },
-    "files.eol": "\n"
-  }
+    "files.eol": "\n",
+  },
 }

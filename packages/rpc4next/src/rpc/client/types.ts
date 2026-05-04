@@ -5,17 +5,11 @@ import type {
   HTTP_METHOD_FUNC_KEYS,
   OPTIONAL_CATCH_ALL_PREFIX,
 } from "rpc4next-shared";
+
 import type { ContentType } from "../lib/content-type-types";
 import type { HttpRequestHeaders } from "../lib/http-request-headers-types";
-import type {
-  HttpStatusCode,
-  SuccessfulHttpStatusCode,
-} from "../lib/http-status-code-types";
-import type {
-  RpcErrorCode,
-  RpcErrorEnvelope,
-  RpcErrorStatus,
-} from "../server/error";
+import type { HttpStatusCode, SuccessfulHttpStatusCode } from "../lib/http-status-code-types";
+import type { RpcErrorCode, RpcErrorEnvelope, RpcErrorStatus } from "../server/error";
 import type {
   ProcedureInputContract,
   ProcedureOutputContract,
@@ -23,28 +17,19 @@ import type {
   procedureDefinitionSymbol,
   WithProcedureDefinition,
 } from "../server/procedure-types";
-import type {
-  RouteHandlerResponse,
-  RouteResponse,
-  ValidationSchema,
-} from "../server/route-types";
+import type { RouteHandlerResponse, RouteResponse, ValidationSchema } from "../server/route-types";
 import type { TypedNextResponse, ValidationInputFor } from "../server/types";
 
-// biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
-type DistributeOmit<T, K extends keyof any> = T extends any
-  ? Omit<T, K>
-  : never;
+type DistributeOmit<T, K extends keyof any> = T extends any ? Omit<T, K> : never;
 
-/**
- * Extension of the standard `RequestInit` interface with strongly typed headers.
- */
-export type TypedRequestInit<
-  TWithoutHeaders extends keyof HttpRequestHeaders = never,
-> = Omit<RequestInit, "headers"> &
+/** Extension of the standard `RequestInit` interface with strongly typed headers. */
+export type TypedRequestInit<TWithoutHeaders extends keyof HttpRequestHeaders = never> = Omit<
+  RequestInit,
+  "headers"
+> &
   (
     | {
-        headers?: Omit<HttpRequestHeaders, TWithoutHeaders> &
-          Record<string, string>;
+        headers?: Omit<HttpRequestHeaders, TWithoutHeaders> & Record<string, string>;
         headersInit?: never;
       }
     | {
@@ -78,13 +63,9 @@ type OptionalCatchAllKey = `${typeof OPTIONAL_CATCH_ALL_PREFIX}${string}`;
 type CatchAllKey = `${typeof CATCH_ALL_PREFIX}${string}`;
 type DynamicKey = `${typeof DYNAMIC_PREFIX}${string}`;
 
-export type PathParamsInput<
-  T = Record<string, string | number | string[] | undefined>,
-> = T;
+export type PathParamsInput<T = Record<string, string | number | string[] | undefined>> = T;
 
-type ExtractParams<T = unknown> = T extends HasParamsMarker
-  ? T[ParamsKey]
-  : Record<string, string>;
+type ExtractParams<T = unknown> = T extends HasParamsMarker ? T[ParamsKey] : Record<string, string>;
 
 export type UrlOptions<T = unknown, TQuery = unknown> = T extends HasQueryMarker
   ? AllOptional<T[QueryKey]> extends true
@@ -107,13 +88,9 @@ type IsNever<T> = [T] extends [never] ? true : false;
 type AllOptional<T> = Partial<T> extends T ? true : false;
 
 type UrlArgs<T, TQuery, TUrlOptions = UrlOptions<T, TQuery>> =
-  AllOptional<TUrlOptions> extends true
-    ? [url?: TUrlOptions]
-    : [url: TUrlOptions];
+  AllOptional<TUrlOptions> extends true ? [url?: TUrlOptions] : [url: TUrlOptions];
 type UrlArgsObj<T, TQuery, TUrlOptions = UrlOptions<T, TQuery>> =
-  AllOptional<TUrlOptions> extends true
-    ? { url?: TUrlOptions }
-    : { url: TUrlOptions };
+  AllOptional<TUrlOptions> extends true ? { url?: TUrlOptions } : { url: TUrlOptions };
 
 export type JsonBodyOptions<TJson = unknown> = { json: TJson };
 export type FormDataBodyOptions = { formData: FormData };
@@ -149,11 +126,7 @@ type MethodInitExclusions<TJson, TFormData, TCookies> =
       : "Content-Type")
   | (IsNever<TCookies> extends true ? never : "Cookie");
 type MethodOptionExclusions<TJson, TFormData, THeaders> =
-  | (IsNever<TJson> extends true
-      ? IsNever<TFormData> extends true
-        ? never
-        : "body"
-      : "body")
+  | (IsNever<TJson> extends true ? (IsNever<TFormData> extends true ? never : "body") : "body")
   | (IsNever<THeaders> extends true ? never : "headers" | "headersInit");
 
 type HttpMethodsArgs<
@@ -161,9 +134,7 @@ type HttpMethodsArgs<
   T,
   TValidationSchema extends ValidationSchema,
   TQuery = ValidationInputFor<"query", TValidationSchema>,
-  TJson = TMethod extends "$get" | "$head"
-    ? never
-    : ValidationInputFor<"json", TValidationSchema>,
+  TJson = TMethod extends "$get" | "$head" ? never : ValidationInputFor<"json", TValidationSchema>,
   TFormData = TMethod extends "$get" | "$head"
     ? never
     : ValidationInputFor<"formData", TValidationSchema>,
@@ -173,9 +144,7 @@ type HttpMethodsArgs<
     BodyArgsObj<TJson, TFormData> &
     HeadersArgsObj<THeaders, TCookies>,
 > = [
-  ...(AllOptional<TBaseArgs> extends true
-    ? [methodParam?: TBaseArgs]
-    : [methodParam: TBaseArgs]),
+  ...(AllOptional<TBaseArgs> extends true ? [methodParam?: TBaseArgs] : [methodParam: TBaseArgs]),
   option?: RpcClientOptions<
     MethodInitExclusions<TJson, TFormData, TCookies>,
     MethodOptionExclusions<TJson, TFormData, THeaders>
@@ -184,43 +153,30 @@ type HttpMethodsArgs<
 
 type InferHttpMethods<T extends HttpMethodMapLike> = {
   [K in keyof T as K extends HttpMethodFuncKey ? K : never]: (
-    ...args: HttpMethodsArgs<
-      Extract<K, HttpMethodFuncKey>,
-      T,
-      InferValidationSchema<T[K]>
-    >
+    ...args: HttpMethodsArgs<Extract<K, HttpMethodFuncKey>, T, InferValidationSchema<T[K]>>
   ) => Promise<InferTypedNextResponseType<T[K]>>;
 };
 
 type InferHttpMethodValidationSchema<T> = {
-  [K in keyof T]: K extends HttpMethodFuncKey
-    ? InferValidationSchema<T[K]>
-    : never;
+  [K in keyof T]: K extends HttpMethodFuncKey ? InferValidationSchema<T[K]> : never;
 }[keyof T & HttpMethodFuncKey];
 
-type ExtractAttachedProcedureDefinition<T> =
-  typeof procedureDefinitionSymbol extends keyof T
-    ? T extends WithProcedureDefinition<unknown, infer TDefinition>
-      ? TDefinition
-      : never
-    : never;
+type ExtractAttachedProcedureDefinition<T> = typeof procedureDefinitionSymbol extends keyof T
+  ? T extends WithProcedureDefinition<unknown, infer TDefinition>
+    ? TDefinition
+    : never
+  : never;
 
 type InferValidationSchema<T> =
   ExtractAttachedProcedureDefinition<T> extends {
     input: ProcedureInputContract<infer TValidationSchema>;
   }
     ? TValidationSchema
-    : T extends (
-          // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
-          ...args: any[]
-        ) => RouteHandlerResponse<RouteResponse, infer TValidationSchema>
+    : T extends (...args: any[]) => RouteHandlerResponse<RouteResponse, infer TValidationSchema>
       ? TValidationSchema
       : ValidationSchema;
 
-type InferNextResponseType<T> = T extends (
-  // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
-  ...args: any[]
-) => Promise<NextResponse<infer U>>
+type InferNextResponseType<T> = T extends (...args: any[]) => Promise<NextResponse<infer U>>
   ? U
   : never;
 
@@ -235,24 +191,16 @@ type ProcedureErrorResponse<
   TCode extends RpcErrorCode = RpcErrorCode,
   TDetails = unknown,
 > = TCode extends RpcErrorCode
-  ? TypedNextResponse<
-      RpcErrorEnvelope<TCode, TDetails>,
-      RpcErrorStatus<TCode>,
-      "application/json"
-    >
+  ? TypedNextResponse<RpcErrorEnvelope<TCode, TDetails>, RpcErrorStatus<TCode>, "application/json">
   : never;
 
-type ResolveStatus<
-  TStatus,
-  TDefault extends HttpStatusCode,
-> = TStatus extends HttpStatusCode ? TStatus : TDefault;
+type ResolveStatus<TStatus, TDefault extends HttpStatusCode> = TStatus extends HttpStatusCode
+  ? TStatus
+  : TDefault;
 
 type InferProcedureValidationErrorResponse<T> =
   ExtractAttachedProcedureDefinition<T> extends {
-    input: ProcedureInputContract<
-      infer TValidationSchema,
-      infer TValidationErrorResponses
-    >;
+    input: ProcedureInputContract<infer TValidationSchema, infer TValidationErrorResponses>;
   }
     ? keyof TValidationSchema["input"] extends never
       ? never
@@ -264,49 +212,33 @@ type InferProcedureValidationErrorResponse<T> =
 type InferProcedureCustomValidationErrorResponse<TValidationErrorResponses> =
   TValidationErrorResponses extends ProcedureValidationErrorResponseMap
     ? NormalizeProcedureValidationErrorResponse<
-        Exclude<
-          TValidationErrorResponses[keyof TValidationErrorResponses],
-          undefined
-        >
+        Exclude<TValidationErrorResponses[keyof TValidationErrorResponses], undefined>
       >
     : never;
 
-type NormalizeProcedureValidationErrorResponse<TResult> =
-  TResult extends TypedNextResponse
-    ? TResult
-    : TResult extends NextResponse<infer TData>
-      ? TypedNextResponse<TData, HttpStatusCode, ContentType>
-      : TResult extends Response
-        ? TypedNextResponse<unknown, HttpStatusCode, ContentType>
+type NormalizeProcedureValidationErrorResponse<TResult> = TResult extends TypedNextResponse
+  ? TResult
+  : TResult extends NextResponse<infer TData>
+    ? TypedNextResponse<TData, HttpStatusCode, ContentType>
+    : TResult extends Response
+      ? TypedNextResponse<unknown, HttpStatusCode, ContentType>
+      : TResult extends {
+            redirect: string;
+            status?: infer TStatus;
+          }
+        ? TypedNextResponse<undefined, ResolveStatus<TStatus, 307>, "">
         : TResult extends {
-              redirect: string;
+              body: infer TBody;
               status?: infer TStatus;
             }
-          ? TypedNextResponse<undefined, ResolveStatus<TStatus, 307>, "">
+          ? TBody extends string
+            ? TypedNextResponse<TBody, ResolveStatus<TStatus, 200>, "text/plain">
+            : TypedNextResponse<TBody, ResolveStatus<TStatus, 200>, "application/json">
           : TResult extends {
-                body: infer TBody;
                 status?: infer TStatus;
               }
-            ? TBody extends string
-              ? TypedNextResponse<
-                  TBody,
-                  ResolveStatus<TStatus, 200>,
-                  "text/plain"
-                >
-              : TypedNextResponse<
-                  TBody,
-                  ResolveStatus<TStatus, 200>,
-                  "application/json"
-                >
-            : TResult extends {
-                  status?: infer TStatus;
-                }
-              ? TypedNextResponse<
-                  undefined,
-                  ResolveStatus<TStatus, 200>,
-                  ContentType
-                >
-              : never;
+            ? TypedNextResponse<undefined, ResolveStatus<TStatus, 200>, ContentType>
+            : never;
 
 type InferProcedureOutputValidationErrorResponse<T> =
   ExtractAttachedProcedureDefinition<T> extends {
@@ -318,18 +250,13 @@ type InferProcedureOutputValidationErrorResponse<T> =
     : never;
 
 type ReplaceSuccessResponseBody<TResponse, TOutput> =
-  TResponse extends TypedNextResponse<
-    unknown,
-    infer TStatus,
-    infer TContentType
-  >
+  TResponse extends TypedNextResponse<unknown, infer TStatus, infer TContentType>
     ? TStatus extends SuccessfulHttpStatusCode
       ? TypedNextResponse<TOutput, TStatus, TContentType>
       : TResponse
     : never;
 
 type InferTypedNextResponseTypeFromOutput<T, TOutput> = T extends (
-  // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
   ...args: any[]
 ) => Promise<infer TResponse>
   ? [ReplaceSuccessResponseBody<TResponse, TOutput>] extends [never]
@@ -337,25 +264,15 @@ type InferTypedNextResponseTypeFromOutput<T, TOutput> = T extends (
     : ReplaceSuccessResponseBody<TResponse, TOutput>
   : TypedNextResponse<TOutput, HttpStatusCode, ContentType>;
 
-type InferTypedNextResponseType<T> = T extends (
-  // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
-  ...args: any[]
-) => Promise<unknown>
+type InferTypedNextResponseType<T> = T extends (...args: any[]) => Promise<unknown>
   ? IsNever<InferProcedureOutput<T>> extends true
-    ? T extends (
-        // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
-        ...args: any[]
-      ) => Promise<TypedNextResponse>
+    ? T extends (...args: any[]) => Promise<TypedNextResponse>
       ?
           | Awaited<ReturnType<T>>
           | InferProcedureValidationErrorResponse<T>
           | InferProcedureOutputValidationErrorResponse<T>
       :
-          | TypedNextResponse<
-              InferNextResponseType<T>,
-              HttpStatusCode,
-              ContentType
-            >
+          | TypedNextResponse<InferNextResponseType<T>, HttpStatusCode, ContentType>
           | InferProcedureValidationErrorResponse<T>
           | InferProcedureOutputValidationErrorResponse<T>
     :
@@ -372,10 +289,7 @@ type PathProxyAsProperty<T> = {
     | null;
 };
 
-type InferQuery<T> = ValidationInputFor<
-  "query",
-  InferHttpMethodValidationSchema<T>
->;
+type InferQuery<T> = ValidationInputFor<"query", InferHttpMethodValidationSchema<T>>;
 
 type PathProxyAsFunction<T> = {
   $url: (...args: UrlArgs<T, InferQuery<T>>) => UrlResult<T>;

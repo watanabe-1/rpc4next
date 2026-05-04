@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
 import { describe, expect, expectTypeOf, it } from "vitest";
+
 import { nextRoute as baseNextRoute } from "./next-route";
 import { defaultProcedureOnError } from "./on-error";
 import { procedure } from "./procedure";
@@ -21,15 +22,12 @@ const nextRoute = <
   },
 ) => {
   const resolvedOptions =
-    options && "onError" in options
-      ? options
-      : { ...(options ?? {}), onError: defaultProcedureOnError };
+    options && "onError" in options ? options : { ...options, onError: defaultProcedureOnError };
 
-  return baseNextRoute<
-    TProcedure & Parameters<typeof baseNextRoute>[0],
-    TMethod,
-    TValidateOutput
-  >(procedureDefinition as never, resolvedOptions as never);
+  return baseNextRoute<TProcedure & Parameters<typeof baseNextRoute>[0], TMethod, TValidateOutput>(
+    procedureDefinition as never,
+    resolvedOptions as never,
+  );
 };
 
 describe("Standard Schema compatibility", () => {
@@ -40,38 +38,36 @@ describe("Standard Schema compatibility", () => {
     params: {} as EmptyParams,
   } as ProcedureRouteContract<"/api/test", EmptyParams>;
 
-  const positivePageQuerySchema: StandardSchemaV1<
-    { page?: string | string[] },
-    { page: number }
-  > = {
-    "~standard": {
-      version: 1,
-      vendor: "rpc4next-test",
-      types: {
-        input: {} as { page?: string | string[] },
-        output: {} as { page: number },
-      },
-      validate: (value) => {
-        const input =
-          typeof value === "object" && value !== null
-            ? (value as { page?: string | string[] })
-            : {};
-        const page = "page" in input ? input.page : "";
-        const first = Array.isArray(page) ? page[0] : page;
-        const parsed = Number(first ?? "1");
+  const positivePageQuerySchema: StandardSchemaV1<{ page?: string | string[] }, { page: number }> =
+    {
+      "~standard": {
+        version: 1,
+        vendor: "rpc4next-test",
+        types: {
+          input: {} as { page?: string | string[] },
+          output: {} as { page: number },
+        },
+        validate: (value) => {
+          const input =
+            typeof value === "object" && value !== null
+              ? (value as { page?: string | string[] })
+              : {};
+          const page = "page" in input ? input.page : "";
+          const first = Array.isArray(page) ? page[0] : page;
+          const parsed = Number(first ?? "1");
 
-        if (!Number.isInteger(parsed) || parsed < 1) {
+          if (!Number.isInteger(parsed) || parsed < 1) {
+            return {
+              issues: [{ message: "page must be a positive integer" }],
+            };
+          }
+
           return {
-            issues: [{ message: "page must be a positive integer" }],
+            value: { page: parsed },
           };
-        }
-
-        return {
-          value: { page: parsed },
-        };
+        },
       },
-    },
-  };
+    };
 
   const uploadFormDataSchema: StandardSchemaV1<
     {
@@ -113,20 +109,11 @@ describe("Standard Schema compatibility", () => {
         const avatar = input.avatar;
         const tags = input.tags;
 
-        const normalizedDisplayName = Array.isArray(displayName)
-          ? displayName[0]
-          : displayName;
+        const normalizedDisplayName = Array.isArray(displayName) ? displayName[0] : displayName;
         const normalizedAvatar = Array.isArray(avatar) ? avatar[0] : avatar;
-        const normalizedTags = Array.isArray(tags)
-          ? tags
-          : tags === undefined
-            ? undefined
-            : [tags];
+        const normalizedTags = Array.isArray(tags) ? tags : tags === undefined ? undefined : [tags];
 
-        if (
-          typeof normalizedDisplayName !== "string" ||
-          normalizedDisplayName.length < 1
-        ) {
+        if (typeof normalizedDisplayName !== "string" || normalizedDisplayName.length < 1) {
           return {
             issues: [{ message: "displayName is required" }],
           };
@@ -143,9 +130,8 @@ describe("Standard Schema compatibility", () => {
             displayName: normalizedDisplayName,
             avatar: normalizedAvatar,
             tags:
-              normalizedTags?.map((tag) =>
-                typeof tag === "string" ? tag : String(tag),
-              ) ?? undefined,
+              normalizedTags?.map((tag) => (typeof tag === "string" ? tag : String(tag))) ??
+              undefined,
           },
         };
       },
@@ -201,17 +187,15 @@ describe("Standard Schema compatibility", () => {
   };
 
   it("infers procedure input types from Standard Schema V1", () => {
-    const pageProcedure = procedure
-      .query(positivePageQuerySchema)
-      .handle(({ query }) => {
-        const _query: { page: number } = query;
+    const pageProcedure = procedure.query(positivePageQuerySchema).handle(({ query }) => {
+      const _query: { page: number } = query;
 
-        void _query;
+      void _query;
 
-        return {
-          status: 200 as const,
-        };
-      });
+      return {
+        status: 200 as const,
+      };
+    });
 
     expectTypeOf(pageProcedure.handler).parameters.toExtend<
       [
@@ -248,12 +232,9 @@ describe("Standard Schema compatibility", () => {
         })),
     );
 
-    const response = await route(
-      new NextRequest("http://127.0.0.1:3000/api/test?page=0"),
-      {
-        params: Promise.resolve({}),
-      },
-    );
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api/test?page=0"), {
+      params: Promise.resolve({}),
+    });
 
     expect(response.status).toBe(422);
     await expect(response.json()).resolves.toEqual({
@@ -281,10 +262,7 @@ describe("Standard Schema compatibility", () => {
 
     const payload = new FormData();
     payload.set("displayName", "demo-user");
-    payload.set(
-      "avatar",
-      new File(["avatar"], "avatar.png", { type: "image/png" }),
-    );
+    payload.set("avatar", new File(["avatar"], "avatar.png", { type: "image/png" }));
     payload.append("tags", "alpha");
     payload.append("tags", "beta");
 
@@ -361,12 +339,9 @@ describe("Standard Schema compatibility", () => {
       { method: "GET", validateOutput: true },
     );
 
-    const response = await route(
-      new NextRequest("http://127.0.0.1:3000/api/test"),
-      {
-        params: Promise.resolve({}),
-      },
-    );
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api/test"), {
+      params: Promise.resolve({}),
+    });
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({

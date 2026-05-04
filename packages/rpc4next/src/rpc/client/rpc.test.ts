@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { makeCreateRpc } from "./rpc";
 import type { RpcProxyHandler } from "./types";
 

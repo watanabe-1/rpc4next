@@ -7,19 +7,14 @@ export const createRecodeType = (key: string, value: string) => {
 };
 
 export const createObjectType = (fields: { name: string; type: string }[]) => {
-  if (fields.length === 0 || fields.some(({ name, type }) => !name || !type))
-    return "";
+  if (fields.length === 0 || fields.some(({ name, type }) => !name || !type)) return "";
 
   return `{ ${fields
     .map(({ name, type }) => `"${name}": ${type}`)
     .join(`${TYPE_SEPARATOR} `)}${fields.length > 1 ? TYPE_SEPARATOR : ""} }`;
 };
 
-export const createImport = (
-  type: string,
-  path: string,
-  importAlias?: string,
-) => {
+export const createImport = (type: string, path: string, importAlias?: string) => {
   if (!type || !path) return "";
 
   return importAlias

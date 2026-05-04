@@ -1,20 +1,18 @@
 import fs from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  cleanupTempDir,
-  makeTempDir,
-  writeTree,
-} from "../../test-helpers/tmp-dir.js";
+
+import { cleanupTempDir, makeTempDir, writeTree } from "../../test-helpers/tmp-dir.js";
 import { scanEndpointFile } from "./scan-utils.js";
 
 vi.mock("./type-utils.js", () => ({
-  createImport: vi.fn(
-    (type, importPath, alias) =>
-      `import type { ${type} as ${alias} } from '${importPath}';`,
+  createImport: vi.fn<(type: string, importPath: string, alias: string) => string>(
+    (type, importPath, alias) => `import type { ${type} as ${alias} } from '${importPath}';`,
   ),
-  createRecodeType: vi.fn((key, alias) => `Record<${key}, ${alias}>`),
-  createObjectType: vi.fn(
+  createRecodeType: vi.fn<(key: string, alias: string) => string>(
+    (key, alias) => `Record<${key}, ${alias}>`,
+  ),
+  createObjectType: vi.fn<(entries: { name: string; type: string }[]) => string>(
     (entries) =>
       `{ ${entries.map((e: { name: string; type: string }) => `"${e.name}": ${e.type}`).join(",")} }`,
   ),
@@ -92,9 +90,7 @@ describe("scanEndpointFile", () => {
     expect(result.routes[0]?.importStatement).toBe(
       "import type { GET as GET_84a33c1aab9019d2 } from './input';",
     );
-    expect(result.routes[0]?.type).toBe(
-      '{ "$get": typeof GET_84a33c1aab9019d2 }',
-    );
+    expect(result.routes[0]?.type).toBe('{ "$get": typeof GET_84a33c1aab9019d2 }');
   });
 
   it("should return a route definition for an exported constant function", () => {
@@ -106,24 +102,19 @@ describe("scanEndpointFile", () => {
     const result = scanEndpointFile(outputFile, inputFile);
     expect(result.routes).toHaveLength(1);
     expect(result.routes[0]?.importName).toBe("PATCH_2fb9d0ae6e8b8cfc");
-    expect(result.routes[0]?.type).toBe(
-      '{ "$patch": typeof PATCH_2fb9d0ae6e8b8cfc }',
-    );
+    expect(result.routes[0]?.type).toBe('{ "$patch": typeof PATCH_2fb9d0ae6e8b8cfc }');
   });
 
   it("should return a route definition for a destructured export", () => {
     const { inputFile, outputFile, rootDir } = createPaths();
     writeTree(rootDir, {
-      "input.ts":
-        'export const { POST } = app.post((rc) => rc.json({test: "hello"}))',
+      "input.ts": 'export const { POST } = app.post((rc) => rc.json({test: "hello"}))',
     });
 
     const result = scanEndpointFile(outputFile, inputFile);
     expect(result.routes).toHaveLength(1);
     expect(result.routes[0]?.importName).toBe("POST_8393a35405bb7d7f");
-    expect(result.routes[0]?.type).toBe(
-      '{ "$post": typeof POST_8393a35405bb7d7f }',
-    );
+    expect(result.routes[0]?.type).toBe('{ "$post": typeof POST_8393a35405bb7d7f }');
   });
 
   it("should return a route definition for a re-exported function", () => {
@@ -135,9 +126,7 @@ describe("scanEndpointFile", () => {
     const result = scanEndpointFile(outputFile, inputFile);
     expect(result.routes).toHaveLength(1);
     expect(result.routes[0]?.importName).toBe("DELETE_bacf7eb8c865f8b9");
-    expect(result.routes[0]?.type).toBe(
-      '{ "$delete": typeof DELETE_bacf7eb8c865f8b9 }',
-    );
+    expect(result.routes[0]?.type).toBe('{ "$delete": typeof DELETE_bacf7eb8c865f8b9 }');
   });
 
   it("should return stable aliases for multiple scans of the same route", () => {
@@ -151,9 +140,7 @@ describe("scanEndpointFile", () => {
 
     expect(result1.routes[0]?.importName).toBe("PUT_203d1825e2307ab2");
     expect(result2.routes[0]?.importName).toBe("PUT_203d1825e2307ab2");
-    expect(result2.routes[0]?.type).toBe(
-      '{ "$put": typeof PUT_203d1825e2307ab2 }',
-    );
+    expect(result2.routes[0]?.type).toBe('{ "$put": typeof PUT_203d1825e2307ab2 }');
   });
 
   it("should skip non-matching route definitions", () => {

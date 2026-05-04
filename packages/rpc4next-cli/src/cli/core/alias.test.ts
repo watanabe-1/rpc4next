@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { createImportAlias } from "./alias.js";
 
 const getHashPart = (alias: string) => alias.slice(alias.lastIndexOf("_") + 1);
@@ -41,9 +42,7 @@ describe("createImportAlias", () => {
   });
 
   it("locks algorithm output for a known fixture (regression guard)", () => {
-    expect(createImportAlias("src/utils", "Query")).toBe(
-      "Query_411618e4a7080c18",
-    );
+    expect(createImportAlias("src/utils", "Query")).toBe("Query_411618e4a7080c18");
   });
 
   it("treats whitespace in the input as significant for hashing", () => {
@@ -74,15 +73,7 @@ describe("createImportAlias", () => {
 
   it("stays unique across a deterministic input set", () => {
     const set = new Set<string>();
-    const names = [
-      "Query",
-      "GET",
-      "HEAD",
-      "POST",
-      "PUT",
-      "DELETE",
-      "PATCH",
-    ] as const;
+    const names = ["Query", "GET", "HEAD", "POST", "PUT", "DELETE", "PATCH"] as const;
     for (let i = 0; i < 1000; i++) {
       const p = `p/${i}`;
       const n = names[i % names.length];

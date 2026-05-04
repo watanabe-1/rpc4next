@@ -1,5 +1,6 @@
 import type { NextRequest, NextResponse } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
+
 import type { HttpStatusCode } from "../lib/http-status-code-types";
 import type { RpcMeta } from "./meta";
 import {
@@ -35,10 +36,7 @@ import type { StandardSchemaV1 } from "./standard-schema";
 import type { Params, Query, ResponseHelpers } from "./types";
 
 type ExtractValidationSchema<TDefinition extends ProcedureDefinition> =
-  TDefinition extends ProcedureDefinition<
-    infer _THttpMethod,
-    infer TValidationSchema
-  >
+  TDefinition extends ProcedureDefinition<infer _THttpMethod, infer TValidationSchema>
     ? TValidationSchema
     : ValidationSchema;
 
@@ -78,10 +76,7 @@ type MergeProcedureDefinitionWithMiddleware<
 > = TDefinition;
 
 type ExtractBoundRouteParams<TDefinition extends ProcedureDefinition> =
-  ExtractProcedureRouteBinding<TDefinition> extends ProcedureRouteBinding<
-    string,
-    infer TParams
-  >
+  ExtractProcedureRouteBinding<TDefinition> extends ProcedureRouteBinding<string, infer TParams>
     ? TParams
     : never;
 
@@ -124,58 +119,42 @@ type ExtendValidationSchema<
   TTarget extends ProcedureInputTarget,
   TSchema,
 > = {
-  input: TValidationSchema["input"] &
-    Record<TTarget, InferSchemaInput<TSchema>>;
-  output: TValidationSchema["output"] &
-    Record<TTarget, InferSchemaOutput<TSchema>>;
+  input: TValidationSchema["input"] & Record<TTarget, InferSchemaInput<TSchema>>;
+  output: TValidationSchema["output"] & Record<TTarget, InferSchemaOutput<TSchema>>;
 };
 
 type ExtendProcedureInputDefinition<
   TDefinition extends ProcedureDefinition,
   TTarget extends ProcedureInputTarget,
   TSchema extends StandardSchemaV1,
-  TOnValidationErrorResult extends
-    ProcedureValidationErrorHandlerResult = never,
+  TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
 > = MergeProcedureDefinition<
   TDefinition,
   {
     input: ProcedureInputContract<
-      ExtendValidationSchema<
-        ExtractValidationSchema<TDefinition>,
-        TTarget,
-        TSchema
-      >,
+      ExtendValidationSchema<ExtractValidationSchema<TDefinition>, TTarget, TSchema>,
       ExtractProcedureValidationErrorResponses<TDefinition> &
-        Record<
-          TTarget,
-          InferProcedureValidationErrorRouteResponse<TOnValidationErrorResult>
-        >
+        Record<TTarget, InferProcedureValidationErrorRouteResponse<TOnValidationErrorResult>>
     > & {
-      contracts: NonNullable<TDefinition["input"]>["contracts"] &
-        Record<TTarget, TSchema>;
+      contracts: NonNullable<TDefinition["input"]>["contracts"] & Record<TTarget, TSchema>;
     };
   }
 >;
 
-type ExtractProcedureValidationErrorResponses<
-  TDefinition extends ProcedureDefinition,
-> = TDefinition extends {
-  input: ProcedureInputContract<
-    ValidationSchema,
-    infer TValidationErrorResponses
-  >;
-}
-  ? TValidationErrorResponses
-  : Record<never, never>;
+type ExtractProcedureValidationErrorResponses<TDefinition extends ProcedureDefinition> =
+  TDefinition extends {
+    input: ProcedureInputContract<ValidationSchema, infer TValidationErrorResponses>;
+  }
+    ? TValidationErrorResponses
+    : Record<never, never>;
 
-type InferProcedureValidationErrorRouteResponse<TOnValidationErrorResult> =
-  Exclude<
-    Extract<
-      Awaited<TOnValidationErrorResult>,
-      ProcedureValidationErrorResponseMap[ProcedureInputTarget]
-    >,
-    undefined
-  >;
+type InferProcedureValidationErrorRouteResponse<TOnValidationErrorResult> = Exclude<
+  Extract<
+    Awaited<TOnValidationErrorResult>,
+    ProcedureValidationErrorResponseMap[ProcedureInputTarget]
+  >,
+  undefined
+>;
 
 type HasProcedureInputContractTarget<
   TDefinition extends ProcedureDefinition,
@@ -256,8 +235,7 @@ export type ProcedureResult<TBody = unknown> = {
   redirect?: string;
 };
 
-export type ProcedureResponseHelpers<TOutput = unknown> =
-  ResponseHelpers<TOutput>;
+export type ProcedureResponseHelpers<TOutput = unknown> = ResponseHelpers<TOutput>;
 
 type ProcedureValidatedContext<
   TValidationSchema extends ValidationSchema,
@@ -313,9 +291,7 @@ export type ProcedureMiddlewareContext<
   ctx: TContext;
 };
 
-export type ProcedureMiddlewareResult<
-  TContextExtension extends object = Record<never, never>,
-> =
+export type ProcedureMiddlewareResult<TContextExtension extends object = Record<never, never>> =
   | undefined
   | Response
   | NextResponse
@@ -328,11 +304,7 @@ export type ProcedureMiddleware<
   TContext extends object = Record<never, never>,
   TContextExtension extends object = Record<never, never>,
 > = (
-  context: ProcedureMiddlewareContext<
-    TValidationSchema,
-    TBoundParams,
-    TContext
-  >,
+  context: ProcedureMiddlewareContext<TValidationSchema, TBoundParams, TContext>,
 ) =>
   | Promise<ProcedureMiddlewareResult<TContextExtension>>
   | ProcedureMiddlewareResult<TContextExtension>;
@@ -354,17 +326,10 @@ export type ProcedureHandler<
   TContext extends object = Record<never, never>,
   TOutput = unknown,
 > = (
-  context: ProcedureHandlerContext<
-    TValidationSchema,
-    TBoundParams,
-    TContext,
-    TOutput
-  >,
+  context: ProcedureHandlerContext<TValidationSchema, TBoundParams, TContext, TOutput>,
 ) => ProcedureHandlerResult<TOutput>;
 
-type ProcedureSharedDefaults<
-  TSharedOnError extends ProcedureOnError = ProcedureOnError,
-> = {
+type ProcedureSharedDefaults<TSharedOnError extends ProcedureOnError = ProcedureOnError> = {
   onError: TSharedOnError;
 };
 
@@ -429,8 +394,7 @@ export interface Procedure<
   nextRoute<
     TMethod extends HttpMethod | undefined = undefined,
     TValidateOutput extends boolean = false,
-    TOnError extends
-      ProcedureOnError = ExtractProcedureSharedOnError<TDefaults>,
+    TOnError extends ProcedureOnError = ExtractProcedureSharedOnError<TDefaults>,
   >(
     options: ProcedureNextRouteOptions<
       TDefinition,
@@ -457,19 +421,11 @@ export interface ProcedureBuilder<
 > {
   defaults<TSharedOnError extends ProcedureOnError>(defaults: {
     onError: TSharedOnError;
-  }): ProcedureBuilder<
-    TDefinition,
-    TContext,
-    ProcedureSharedDefaults<TSharedOnError>
-  >;
+  }): ProcedureBuilder<TDefinition, TContext, ProcedureSharedDefaults<TSharedOnError>>;
 
   meta<TMeta extends RpcMeta>(
     meta: TMeta,
-  ): ProcedureBuilder<
-    MergeProcedureDefinition<TDefinition, { meta: TMeta }>,
-    TContext,
-    TDefaults
-  >;
+  ): ProcedureBuilder<MergeProcedureDefinition<TDefinition, { meta: TMeta }>, TContext, TDefaults>;
 
   forRoute<TRouteContract extends ProcedureRouteContract>(
     routeContract: TRouteContract,
@@ -477,10 +433,7 @@ export interface ProcedureBuilder<
     MergeProcedureDefinition<
       TDefinition,
       {
-        route: ProcedureRouteBinding<
-          TRouteContract["pathname"],
-          TRouteContract["params"]
-        >;
+        route: ProcedureRouteBinding<TRouteContract["pathname"], TRouteContract["params"]>;
       }
     >,
     TContext,
@@ -489,74 +442,43 @@ export interface ProcedureBuilder<
 
   params<
     TSchema extends StandardSchemaV1,
-    TOnValidationErrorResult extends
-      ProcedureValidationErrorHandlerResult = never,
+    TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
   >(
     schema: BoundRouteParamsSchemaArg<TDefinition, TSchema>,
-    options?: ProcedureInputOptions<
-      "params",
-      InferSchemaInput<TSchema>,
-      TOnValidationErrorResult
-    >,
+    options?: ProcedureInputOptions<"params", InferSchemaInput<TSchema>, TOnValidationErrorResult>,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<
-      TDefinition,
-      "params",
-      TSchema,
-      TOnValidationErrorResult
-    >,
+    ExtendProcedureInputDefinition<TDefinition, "params", TSchema, TOnValidationErrorResult>,
     TContext,
     TDefaults
   >;
 
   query<
     TSchema extends StandardSchemaV1,
-    TOnValidationErrorResult extends
-      ProcedureValidationErrorHandlerResult = never,
+    TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
   >(
     schema: TSchema,
-    options?: ProcedureInputOptions<
-      "query",
-      InferSchemaInput<TSchema>,
-      TOnValidationErrorResult
-    >,
+    options?: ProcedureInputOptions<"query", InferSchemaInput<TSchema>, TOnValidationErrorResult>,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<
-      TDefinition,
-      "query",
-      TSchema,
-      TOnValidationErrorResult
-    >,
+    ExtendProcedureInputDefinition<TDefinition, "query", TSchema, TOnValidationErrorResult>,
     TContext,
     TDefaults
   >;
 
   json<
     TSchema extends StandardSchemaV1,
-    TOnValidationErrorResult extends
-      ProcedureValidationErrorHandlerResult = never,
+    TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
   >(
     schema: BodyContractSchemaArg<TDefinition, "json", TSchema>,
-    options?: ProcedureInputOptions<
-      "json",
-      InferSchemaInput<TSchema>,
-      TOnValidationErrorResult
-    >,
+    options?: ProcedureInputOptions<"json", InferSchemaInput<TSchema>, TOnValidationErrorResult>,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<
-      TDefinition,
-      "json",
-      TSchema,
-      TOnValidationErrorResult
-    >,
+    ExtendProcedureInputDefinition<TDefinition, "json", TSchema, TOnValidationErrorResult>,
     TContext,
     TDefaults
   >;
 
   formData<
     TSchema extends StandardSchemaV1,
-    TOnValidationErrorResult extends
-      ProcedureValidationErrorHandlerResult = never,
+    TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
   >(
     schema: BodyContractSchemaArg<TDefinition, "formData", TSchema>,
     options?: ProcedureInputOptions<
@@ -565,56 +487,31 @@ export interface ProcedureBuilder<
       TOnValidationErrorResult
     >,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<
-      TDefinition,
-      "formData",
-      TSchema,
-      TOnValidationErrorResult
-    >,
+    ExtendProcedureInputDefinition<TDefinition, "formData", TSchema, TOnValidationErrorResult>,
     TContext,
     TDefaults
   >;
 
   headers<
     TSchema extends StandardSchemaV1,
-    TOnValidationErrorResult extends
-      ProcedureValidationErrorHandlerResult = never,
+    TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
   >(
     schema: TSchema,
-    options?: ProcedureInputOptions<
-      "headers",
-      InferSchemaInput<TSchema>,
-      TOnValidationErrorResult
-    >,
+    options?: ProcedureInputOptions<"headers", InferSchemaInput<TSchema>, TOnValidationErrorResult>,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<
-      TDefinition,
-      "headers",
-      TSchema,
-      TOnValidationErrorResult
-    >,
+    ExtendProcedureInputDefinition<TDefinition, "headers", TSchema, TOnValidationErrorResult>,
     TContext,
     TDefaults
   >;
 
   cookies<
     TSchema extends StandardSchemaV1,
-    TOnValidationErrorResult extends
-      ProcedureValidationErrorHandlerResult = never,
+    TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
   >(
     schema: TSchema,
-    options?: ProcedureInputOptions<
-      "cookies",
-      InferSchemaInput<TSchema>,
-      TOnValidationErrorResult
-    >,
+    options?: ProcedureInputOptions<"cookies", InferSchemaInput<TSchema>, TOnValidationErrorResult>,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<
-      TDefinition,
-      "cookies",
-      TSchema,
-      TOnValidationErrorResult
-    >,
+    ExtendProcedureInputDefinition<TDefinition, "cookies", TSchema, TOnValidationErrorResult>,
     TContext,
     TDefaults
   >;
@@ -656,13 +553,7 @@ export interface ProcedureBuilder<
     >,
   >(
     ...args: ProcedureHandleArgs<TDefinition, TContext, THandler>
-  ): Procedure<
-    TDefinition,
-    TContext,
-    ExtractProcedureOutput<TDefinition>,
-    THandler,
-    TDefaults
-  >;
+  ): Procedure<TDefinition, TContext, ExtractProcedureOutput<TDefinition>, THandler, TDefaults>;
 }
 
 const createDeclaredProcedureMiddleware = <
@@ -690,23 +581,13 @@ const createProcedureBuilder = <
   const withInputContract = <
     TTarget extends ProcedureInputTarget,
     TSchema extends StandardSchemaV1,
-    TOnValidationErrorResult extends
-      ProcedureValidationErrorHandlerResult = never,
+    TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
   >(
     target: TTarget,
     schema: TSchema,
-    options?: ProcedureInputOptions<
-      TTarget,
-      InferSchemaInput<TSchema>,
-      TOnValidationErrorResult
-    >,
+    options?: ProcedureInputOptions<TTarget, InferSchemaInput<TSchema>, TOnValidationErrorResult>,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<
-      TDefinition,
-      TTarget,
-      TSchema,
-      TOnValidationErrorResult
-    >,
+    ExtendProcedureInputDefinition<TDefinition, TTarget, TSchema, TOnValidationErrorResult>,
     TContext,
     TDefaults
   > => {
@@ -729,11 +610,7 @@ const createProcedureBuilder = <
 
   const withDefaults = <TSharedOnError extends ProcedureOnError>(
     nextDefaults: ProcedureSharedDefaults<TSharedOnError>,
-  ): ProcedureBuilder<
-    TDefinition,
-    TContext,
-    ProcedureSharedDefaults<TSharedOnError>
-  > => {
+  ): ProcedureBuilder<TDefinition, TContext, ProcedureSharedDefaults<TSharedOnError>> => {
     return createProcedureBuilder(definition, middlewares, nextDefaults);
   };
 
@@ -744,11 +621,7 @@ const createProcedureBuilder = <
     TContext,
     TDefaults
   > => {
-    return createProcedureBuilder(
-      withProcedureMeta(definition, meta),
-      middlewares,
-      defaults,
-    );
+    return createProcedureBuilder(withProcedureMeta(definition, meta), middlewares, defaults);
   };
 
   const withRoute = <TRouteContract extends ProcedureRouteContract>(
@@ -757,10 +630,7 @@ const createProcedureBuilder = <
     MergeProcedureDefinition<
       TDefinition,
       {
-        route: ProcedureRouteBinding<
-          TRouteContract["pathname"],
-          TRouteContract["params"]
-        >;
+        route: ProcedureRouteBinding<TRouteContract["pathname"], TRouteContract["params"]>;
       }
     >,
     TContext,
@@ -775,22 +645,12 @@ const createProcedureBuilder = <
 
   const withParams = <
     TSchema extends StandardSchemaV1,
-    TOnValidationErrorResult extends
-      ProcedureValidationErrorHandlerResult = never,
+    TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
   >(
     schema: BoundRouteParamsSchemaArg<TDefinition, TSchema>,
-    options?: ProcedureInputOptions<
-      "params",
-      InferSchemaInput<TSchema>,
-      TOnValidationErrorResult
-    >,
+    options?: ProcedureInputOptions<"params", InferSchemaInput<TSchema>, TOnValidationErrorResult>,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<
-      TDefinition,
-      "params",
-      TSchema,
-      TOnValidationErrorResult
-    >,
+    ExtendProcedureInputDefinition<TDefinition, "params", TSchema, TOnValidationErrorResult>,
     TContext,
     TDefaults
   > => {
@@ -799,22 +659,12 @@ const createProcedureBuilder = <
 
   const withJson = <
     TSchema extends StandardSchemaV1,
-    TOnValidationErrorResult extends
-      ProcedureValidationErrorHandlerResult = never,
+    TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
   >(
     schema: BodyContractSchemaArg<TDefinition, "json", TSchema>,
-    options?: ProcedureInputOptions<
-      "json",
-      InferSchemaInput<TSchema>,
-      TOnValidationErrorResult
-    >,
+    options?: ProcedureInputOptions<"json", InferSchemaInput<TSchema>, TOnValidationErrorResult>,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<
-      TDefinition,
-      "json",
-      TSchema,
-      TOnValidationErrorResult
-    >,
+    ExtendProcedureInputDefinition<TDefinition, "json", TSchema, TOnValidationErrorResult>,
     TContext,
     TDefaults
   > => {
@@ -823,8 +673,7 @@ const createProcedureBuilder = <
 
   const withFormData = <
     TSchema extends StandardSchemaV1,
-    TOnValidationErrorResult extends
-      ProcedureValidationErrorHandlerResult = never,
+    TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
   >(
     schema: BodyContractSchemaArg<TDefinition, "formData", TSchema>,
     options?: ProcedureInputOptions<
@@ -833,12 +682,7 @@ const createProcedureBuilder = <
       TOnValidationErrorResult
     >,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<
-      TDefinition,
-      "formData",
-      TSchema,
-      TOnValidationErrorResult
-    >,
+    ExtendProcedureInputDefinition<TDefinition, "formData", TSchema, TOnValidationErrorResult>,
     TContext,
     TDefaults
   > => {
@@ -848,10 +692,7 @@ const createProcedureBuilder = <
   const withOutput = <TSchema, TOutput = InferSchemaOutput<TSchema>>(
     schema: TSchema,
   ): ProcedureBuilder<
-    MergeProcedureDefinition<
-      TDefinition,
-      { output: ProcedureOutputContract<TOutput> }
-    >,
+    MergeProcedureDefinition<TDefinition, { output: ProcedureOutputContract<TOutput> }>,
     TContext,
     TDefaults
   > => {
@@ -907,10 +748,7 @@ const createProcedureBuilder = <
         nextRoute: ((options) =>
           adaptProcedureToNextRoute(
             handledProcedure as never,
-            (defaults &&
-            typeof defaults === "object" &&
-            defaults !== null &&
-            "onError" in defaults
+            (defaults && typeof defaults === "object" && defaults !== null && "onError" in defaults
               ? {
                   ...options,
                   onError: options.onError ?? defaults.onError,
@@ -942,9 +780,6 @@ export const procedure = createProcedureBuilder<
   undefined
 >({});
 
-export const defineProcedureMiddleware = <
-  TMiddleware extends (...args: never[]) => unknown,
->(
+export const defineProcedureMiddleware = <TMiddleware extends (...args: never[]) => unknown>(
   middleware: TMiddleware,
-): DeclaredProcedureMiddleware<TMiddleware> =>
-  createDeclaredProcedureMiddleware(middleware, {});
+): DeclaredProcedureMiddleware<TMiddleware> => createDeclaredProcedureMiddleware(middleware, {});

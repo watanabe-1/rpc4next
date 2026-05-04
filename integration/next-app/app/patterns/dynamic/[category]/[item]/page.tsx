@@ -4,9 +4,7 @@ type NestedDynamicPatternPageProps = {
   params: Promise<Params>;
 };
 
-export default async function NestedDynamicPatternPage({
-  params,
-}: NestedDynamicPatternPageProps) {
+export default async function NestedDynamicPatternPage({ params }: NestedDynamicPatternPageProps) {
   const { category, item } = await params;
 
   return (

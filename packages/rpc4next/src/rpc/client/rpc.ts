@@ -1,9 +1,5 @@
 import { isDynamic, isOptionalCatchAll } from "./client-utils";
-import type {
-  PathParamsInput,
-  RpcClientOptions,
-  RpcProxyHandler,
-} from "./types";
+import type { PathParamsInput, RpcClientOptions, RpcProxyHandler } from "./types";
 
 const createProxy = <T>(
   handler: RpcProxyHandler,
@@ -19,37 +15,23 @@ const createProxy = <T>(
 
   const proxy = new Proxy(target, {
     // Calling the proxy supplies a value for the most recent dynamic segment.
-    apply(
-      _t,
-      _thisArg,
-      argArray: [value?: string | number | string[] | undefined, ...unknown[]],
-    ) {
+    apply(_t, _thisArg, argArray: [value?: string | number | string[] | undefined, ...unknown[]]) {
       const value = argArray[0];
       const lastPath = paths[paths.length - 1];
       const lastKey = dynamicKeys[dynamicKeys.length - 1];
 
       if (!lastPath || !isDynamic(lastPath)) {
         // Guard: someone called the proxy when the tail isn't dynamic.
-        throw new Error(
-          `Cannot apply a value: "${lastPath ?? ""}" is not a dynamic segment.`,
-        );
+        throw new Error(`Cannot apply a value: "${lastPath ?? ""}" is not a dynamic segment.`);
       }
       if (value === undefined && !isOptionalCatchAll(lastPath)) {
         const label = lastKey ?? lastPath;
-        throw new Error(
-          `Missing value for dynamic parameter: ${String(label)}`,
-        );
+        throw new Error(`Missing value for dynamic parameter: ${String(label)}`);
       }
 
       // Note: we keep the dynamic placeholder in `paths`.
       // The `handler` should substitute using `params`.
-      return createProxy(
-        handler,
-        options,
-        paths,
-        { ...params, [lastKey]: value },
-        dynamicKeys,
-      );
+      return createProxy(handler, options, paths, { ...params, [lastKey]: value }, dynamicKeys);
     },
 
     // Property access either:
@@ -73,10 +55,7 @@ const createProxy = <T>(
 
       // Extend the chain with either a dynamic or static segment.
       if (isDynamic(k)) {
-        return createProxy(handler, options, [...paths, k], params, [
-          ...dynamicKeys,
-          k,
-        ]);
+        return createProxy(handler, options, [...paths, k], params, [...dynamicKeys, k]);
       }
 
       return createProxy(handler, options, [...paths, k], params, dynamicKeys);

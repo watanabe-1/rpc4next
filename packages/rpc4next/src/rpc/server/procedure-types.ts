@@ -1,25 +1,15 @@
 import type { NextRequest, NextResponse } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
+
 import type { RpcMeta } from "./meta";
 import type { ProcedureOnErrorResponse } from "./on-error";
 import type { ProcedureResult } from "./procedure";
 import type { ValidationSchema } from "./route-types";
-import type {
-  StandardSchemaV1,
-  StandardSchemaV1Issue,
-} from "./standard-schema";
+import type { StandardSchemaV1, StandardSchemaV1Issue } from "./standard-schema";
 
-export type ProcedureInputTarget =
-  | "params"
-  | "query"
-  | "json"
-  | "formData"
-  | "headers"
-  | "cookies";
+export type ProcedureInputTarget = "params" | "query" | "json" | "formData" | "headers" | "cookies";
 
-export type ProcedureInputContracts = Partial<
-  Record<ProcedureInputTarget, StandardSchemaV1>
->;
+export type ProcedureInputContracts = Partial<Record<ProcedureInputTarget, StandardSchemaV1>>;
 
 export interface ProcedureValidationErrorContext<
   TTarget extends ProcedureInputTarget = ProcedureInputTarget,
@@ -52,22 +42,20 @@ type EmptyProcedureValidationErrorResponseMap = Record<never, never>;
 export interface ProcedureInputOptions<
   TTarget extends ProcedureInputTarget = ProcedureInputTarget,
   TValue = unknown,
-  TOnValidationErrorResult extends
-    ProcedureValidationErrorHandlerResult = ProcedureValidationErrorHandlerResult,
+  TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult =
+    ProcedureValidationErrorHandlerResult,
 > {
   onValidationError?: (
     context: ProcedureValidationErrorContext<TTarget, TValue>,
   ) => TOnValidationErrorResult | Promise<TOnValidationErrorResult>;
 }
 
-export type ProcedureInputOptionMap = Partial<
-  Record<ProcedureInputTarget, ProcedureInputOptions>
->;
+export type ProcedureInputOptionMap = Partial<Record<ProcedureInputTarget, ProcedureInputOptions>>;
 
 export interface ProcedureInputContract<
   TValidationSchema extends ValidationSchema = ValidationSchema,
-  TValidationErrorResponses extends
-    ProcedureValidationErrorResponseMap = EmptyProcedureValidationErrorResponseMap,
+  TValidationErrorResponses extends ProcedureValidationErrorResponseMap =
+    EmptyProcedureValidationErrorResponseMap,
 > {
   contracts?: ProcedureInputContracts;
   options?: ProcedureInputOptionMap;
@@ -83,10 +71,7 @@ export interface ProcedureOutputContract<TRouteResponse = unknown> {
 
 export declare const procedureRouteContractBrand: unique symbol;
 
-export type ProcedureRouteParams = Record<
-  string,
-  string | string[] | undefined
->;
+export type ProcedureRouteParams = Record<string, string | string[] | undefined>;
 
 export type ProcedureRouteContract<
   TPathname extends string = string,
@@ -113,9 +98,7 @@ export interface ProcedureDefinition<
   TValidationSchema extends ValidationSchema = ValidationSchema,
   TRouteResponse = unknown,
   TMeta extends RpcMeta = RpcMeta,
-  TRoute extends ProcedureRouteBinding | undefined =
-    | ProcedureRouteBinding
-    | undefined,
+  TRoute extends ProcedureRouteBinding | undefined = ProcedureRouteBinding | undefined,
 > {
   method?: THttpMethod;
   input?: ProcedureInputContract<TValidationSchema>;
@@ -137,9 +120,7 @@ export type MergeProcedureDefinition<
   TExtra extends Partial<ProcedureDefinition>,
 > = Omit<TBase, keyof TExtra> & TExtra;
 
-export const procedureDefinitionSymbol = Symbol.for(
-  "rpc4next.procedure.definition",
-);
+export const procedureDefinitionSymbol = Symbol.for("rpc4next.procedure.definition");
 
 export type WithProcedureDefinition<
   TValue,
@@ -174,7 +155,7 @@ export const getProcedureDefinition = <
     return undefined;
   }
 
-  return (
-    value as WithProcedureDefinition<Record<PropertyKey, unknown>, TDefinition>
-  )[procedureDefinitionSymbol];
+  return (value as WithProcedureDefinition<Record<PropertyKey, unknown>, TDefinition>)[
+    procedureDefinitionSymbol
+  ];
 };

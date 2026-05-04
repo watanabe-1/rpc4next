@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { describe, expect, expectTypeOf, it } from "vitest";
+
 import type { ContentType } from "../lib/content-type-types";
 import { createRouteContext } from "./route-context";
 import type { ValidationSchema } from "./route-types";
@@ -309,11 +310,7 @@ describe("createRouteContext type definitions", () => {
     const req = new NextRequest("http://localhost/?q=test");
 
     // Ensure that type inference works correctly by explicitly specifying generics
-    const _context = createRouteContext<
-      MockParams,
-      MockQuery,
-      ValidationSchema
-    >(req, {
+    const _context = createRouteContext<MockParams, MockQuery, ValidationSchema>(req, {
       params: Promise.resolve({ id: "123" }),
     });
 
@@ -335,11 +332,7 @@ describe("createRouteContext type definitions", () => {
     // json response
     const _jsonResponse = context.json({ message: "ok" }, { status: 200 });
     type InferredJson = typeof _jsonResponse;
-    type ExpectedJson = TypedNextResponse<
-      { message: string },
-      200,
-      "application/json"
-    >;
+    type ExpectedJson = TypedNextResponse<{ message: string }, 200, "application/json">;
     expectTypeOf<InferredJson>().toEqualTypeOf<ExpectedJson>();
 
     // text response
@@ -357,18 +350,11 @@ describe("createRouteContext type definitions", () => {
       },
     });
     type InferredBody = typeof _bodyResponse;
-    type ExpectedBody = TypedNextResponse<
-      "raw-body",
-      201,
-      "application/custom"
-    >;
+    type ExpectedBody = TypedNextResponse<"raw-body", 201, "application/custom">;
     expectTypeOf<InferredBody>().toEqualTypeOf<ExpectedBody>();
 
     // redirect response
-    const _redirectResponse = context.redirect(
-      "http://localhost/next-page",
-      307,
-    );
+    const _redirectResponse = context.redirect("http://localhost/next-page", 307);
     type InferredRedirect = typeof _redirectResponse;
     type ExpectedRedirect = TypedNextResponse<undefined, 307, "">;
     expectTypeOf<InferredRedirect>().toEqualTypeOf<ExpectedRedirect>();
@@ -384,22 +370,13 @@ describe("createRouteContext type definitions", () => {
     >();
 
     const _textResponse = context.text("text", 201 as const);
-    expectTypeOf(_textResponse).toEqualTypeOf<
-      TypedNextResponse<"text", 201, "text/plain">
-    >();
+    expectTypeOf(_textResponse).toEqualTypeOf<TypedNextResponse<"text", 201, "text/plain">>();
 
     const _bodyResponse = context.body("body", 202 as const);
-    expectTypeOf(_bodyResponse).toEqualTypeOf<
-      TypedNextResponse<"body", 202, ContentType>
-    >();
+    expectTypeOf(_bodyResponse).toEqualTypeOf<TypedNextResponse<"body", 202, ContentType>>();
 
-    const _redirectResponse = context.redirect(
-      "http://localhost",
-      301 as const,
-    );
-    expectTypeOf(_redirectResponse).toEqualTypeOf<
-      TypedNextResponse<undefined, 301, "">
-    >();
+    const _redirectResponse = context.redirect("http://localhost", 301 as const);
+    expectTypeOf(_redirectResponse).toEqualTypeOf<TypedNextResponse<undefined, 301, "">>();
   });
 
   it("should cause a type error when both headers and headersInit are provided", () => {

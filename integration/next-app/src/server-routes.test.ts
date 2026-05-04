@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
 import { POST } from "../app/api/posts/route";
 import { GET } from "../app/api/users/[userId]/route";
 
@@ -11,9 +12,7 @@ type ValidationErrorPayload = {
   };
 };
 
-const expectValidationErrorPayload = (
-  payload: unknown,
-): ValidationErrorPayload => {
+const expectValidationErrorPayload = (payload: unknown): ValidationErrorPayload => {
   if (
     typeof payload !== "object" ||
     payload === null ||
@@ -27,6 +26,7 @@ const expectValidationErrorPayload = (
   ) {
     throw new Error("Expected a validation error payload");
   }
+
   return payload as ValidationErrorPayload;
 };
 
@@ -36,9 +36,7 @@ describe("integration next-app server route handlers", () => {
   });
 
   it("serves the users route through the real GET handler", async () => {
-    const request = new NextRequest(
-      "http://127.0.0.1:3000/api/users/smoke-user?includePosts=true",
-    );
+    const request = new NextRequest("http://127.0.0.1:3000/api/users/smoke-user?includePosts=true");
 
     const response = await GET(request, {
       params: Promise.resolve({ userId: "smoke-user" }),
@@ -66,9 +64,7 @@ describe("integration next-app server route handlers", () => {
   });
 
   it("serves a plain Next.js route handler with an explicit output contract", async () => {
-    const { GET: explicitOutputGet } = await import(
-      "../app/api/explicit-output/route"
-    );
+    const { GET: explicitOutputGet } = await import("../app/api/explicit-output/route");
     const response = await explicitOutputGet();
 
     expect(response.status).toBe(200);
@@ -80,9 +76,7 @@ describe("integration next-app server route handlers", () => {
   });
 
   it("serves a procedure route with explicit contract metadata/output", async () => {
-    const { GET: contractRouteGet } = await import(
-      "../app/api/contract-route/route"
-    );
+    const { GET: contractRouteGet } = await import("../app/api/contract-route/route");
     const response = await contractRouteGet(
       new NextRequest("http://127.0.0.1:3000/api/contract-route"),
       { params: Promise.resolve({}) },
@@ -97,9 +91,8 @@ describe("integration next-app server route handlers", () => {
   });
 
   it("serves a procedure-based dynamic route with params and query", async () => {
-    const { GET: procedureContractGet } = await import(
-      "../app/api/procedure-contract/[userId]/route"
-    );
+    const { GET: procedureContractGet } =
+      await import("../app/api/procedure-contract/[userId]/route");
     const response = await procedureContractGet(
       new NextRequest(
         "http://127.0.0.1:3000/api/procedure-contract/procedure-user?includePosts=true",
@@ -119,13 +112,10 @@ describe("integration next-app server route handlers", () => {
   });
 
   it("runs validator-stage customization in the integration fixture", async () => {
-    const { GET: procedureValidationBranchGet } = await import(
-      "../app/api/procedure-validation-branch/route"
-    );
+    const { GET: procedureValidationBranchGet } =
+      await import("../app/api/procedure-validation-branch/route");
     const response = await procedureValidationBranchGet(
-      new NextRequest(
-        "http://127.0.0.1:3000/api/procedure-validation-branch?page=0",
-      ),
+      new NextRequest("http://127.0.0.1:3000/api/procedure-validation-branch?page=0"),
       { params: Promise.resolve({}) },
     );
 
@@ -140,27 +130,21 @@ describe("integration next-app server route handlers", () => {
   });
 
   it("serves a procedure-based route using response.text(...)", async () => {
-    const { GET: procedureResponseTextGet } = await import(
-      "../app/api/procedure-response-text/route"
-    );
+    const { GET: procedureResponseTextGet } =
+      await import("../app/api/procedure-response-text/route");
     const response = await procedureResponseTextGet(
-      new NextRequest(
-        "http://127.0.0.1:3000/api/procedure-response-text?name=server-test",
-      ),
+      new NextRequest("http://127.0.0.1:3000/api/procedure-response-text?name=server-test"),
       { params: Promise.resolve({}) },
     );
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/plain");
-    await expect(response.text()).resolves.toBe(
-      "procedure-response-text:server-test",
-    );
+    await expect(response.text()).resolves.toBe("procedure-response-text:server-test");
   });
 
   it("serves a procedure-based route using response.redirect(...)", async () => {
-    const { GET: procedureResponseRedirectGet } = await import(
-      "../app/api/procedure-response-redirect/route"
-    );
+    const { GET: procedureResponseRedirectGet } =
+      await import("../app/api/procedure-response-redirect/route");
     const response = await procedureResponseRedirectGet(
       new NextRequest("http://127.0.0.1:3000/api/procedure-response-redirect"),
       { params: Promise.resolve({}) },
@@ -171,13 +155,9 @@ describe("integration next-app server route handlers", () => {
   });
 
   it("serves a plain Next.js dynamic route handler with params and query", async () => {
-    const { GET: nativeDynamicGet } = await import(
-      "../app/api/next-native/[itemId]/route"
-    );
+    const { GET: nativeDynamicGet } = await import("../app/api/next-native/[itemId]/route");
     const response = await nativeDynamicGet(
-      new NextRequest(
-        "http://127.0.0.1:3000/api/next-native/native-item?filter=recent",
-      ),
+      new NextRequest("http://127.0.0.1:3000/api/next-native/native-item?filter=recent"),
       { params: Promise.resolve({ itemId: "native-item" }) },
     );
 
@@ -191,9 +171,7 @@ describe("integration next-app server route handlers", () => {
   });
 
   it("serves a plain Response.json route handler", async () => {
-    const { GET: nativeResponseGet } = await import(
-      "../app/api/next-native-response/route"
-    );
+    const { GET: nativeResponseGet } = await import("../app/api/next-native-response/route");
     const response = await nativeResponseGet();
 
     expect(response.status).toBe(200);
@@ -267,9 +245,7 @@ describe("integration next-app server route handlers", () => {
   });
 
   it("reads validated headers and cookies through the real GET handler chain", async () => {
-    const { GET: requestMetaGet } = await import(
-      "../app/api/request-meta/route"
-    );
+    const { GET: requestMetaGet } = await import("../app/api/request-meta/route");
     const response = await requestMetaGet(
       new NextRequest("http://127.0.0.1:3000/api/request-meta", {
         headers: {
@@ -288,9 +264,7 @@ describe("integration next-app server route handlers", () => {
   });
 
   it("serves a procedure-based POST route with json, headers, and cookies", async () => {
-    const { POST: procedureSubmitPost } = await import(
-      "../app/api/procedure-submit/route"
-    );
+    const { POST: procedureSubmitPost } = await import("../app/api/procedure-submit/route");
     const response = await procedureSubmitPost(
       new NextRequest("http://127.0.0.1:3000/api/procedure-submit", {
         method: "POST",
@@ -315,15 +289,10 @@ describe("integration next-app server route handlers", () => {
   });
 
   it("serves a procedure-based POST route with multipart form-data", async () => {
-    const { POST: procedureFormDataPost } = await import(
-      "../app/api/procedure-form-data/route"
-    );
+    const { POST: procedureFormDataPost } = await import("../app/api/procedure-form-data/route");
     const formData = new FormData();
     formData.set("displayName", "demo-user");
-    formData.set(
-      "avatar",
-      new File(["avatar-bytes"], "avatar.png", { type: "image/png" }),
-    );
+    formData.set("avatar", new File(["avatar-bytes"], "avatar.png", { type: "image/png" }));
     formData.append("tags", "alpha");
     formData.append("tags", "beta");
 
@@ -346,9 +315,8 @@ describe("integration next-app server route handlers", () => {
   });
 
   it("serves a guarded procedure route when the required role is present", async () => {
-    const { GET: procedureGuardedGet } = await import(
-      "../app/api/procedure-guarded/[userId]/route"
-    );
+    const { GET: procedureGuardedGet } =
+      await import("../app/api/procedure-guarded/[userId]/route");
     const response = await procedureGuardedGet(
       new NextRequest(
         "http://127.0.0.1:3000/api/procedure-guarded/procedure-user?includeDrafts=true",
@@ -374,9 +342,8 @@ describe("integration next-app server route handlers", () => {
   });
 
   it("returns a typed FORBIDDEN envelope from the guarded procedure route", async () => {
-    const { GET: procedureGuardedGet } = await import(
-      "../app/api/procedure-guarded/[userId]/route"
-    );
+    const { GET: procedureGuardedGet } =
+      await import("../app/api/procedure-guarded/[userId]/route");
     const response = await procedureGuardedGet(
       new NextRequest(
         "http://127.0.0.1:3000/api/procedure-guarded/procedure-user?includeDrafts=true",
@@ -402,9 +369,8 @@ describe("integration next-app server route handlers", () => {
   });
 
   it("returns a typed UNAUTHORIZED envelope from the shared guarded baseProcedure", async () => {
-    const { GET: procedureGuardedGet } = await import(
-      "../app/api/procedure-guarded/[userId]/route"
-    );
+    const { GET: procedureGuardedGet } =
+      await import("../app/api/procedure-guarded/[userId]/route");
     const response = await procedureGuardedGet(
       new NextRequest(
         "http://127.0.0.1:3000/api/procedure-guarded/procedure-user?includeDrafts=true",
@@ -425,19 +391,15 @@ describe("integration next-app server route handlers", () => {
   });
 
   it("returns a typed shared FORBIDDEN envelope from the guarded baseProcedure", async () => {
-    const { GET: procedureGuardedGet } = await import(
-      "../app/api/procedure-guarded/[userId]/route"
-    );
+    const { GET: procedureGuardedGet } =
+      await import("../app/api/procedure-guarded/[userId]/route");
     const response = await procedureGuardedGet(
-      new NextRequest(
-        "http://127.0.0.1:3000/api/procedure-guarded/procedure-user",
-        {
-          headers: {
-            "x-demo-user": "procedure-user",
-            "x-demo-role": "suspended",
-          },
+      new NextRequest("http://127.0.0.1:3000/api/procedure-guarded/procedure-user", {
+        headers: {
+          "x-demo-user": "procedure-user",
+          "x-demo-role": "suspended",
         },
-      ),
+      }),
       { params: Promise.resolve({ userId: "procedure-user" }) },
     );
 
@@ -454,9 +416,8 @@ describe("integration next-app server route handlers", () => {
   });
 
   it("normalizes invalid procedure output as an INTERNAL_SERVER_ERROR envelope", async () => {
-    const { GET: procedureInvalidOutputGet } = await import(
-      "../app/api/procedure-invalid-output/route"
-    );
+    const { GET: procedureInvalidOutputGet } =
+      await import("../app/api/procedure-invalid-output/route");
     const response = await procedureInvalidOutputGet(
       new NextRequest("http://127.0.0.1:3000/api/procedure-invalid-output"),
       { params: Promise.resolve({}) },
@@ -473,13 +434,10 @@ describe("integration next-app server route handlers", () => {
   });
 
   it("applies the shared procedure defaults error formatter to procedure routes", async () => {
-    const { GET: procedureDefaultsErrorGet } = await import(
-      "../app/api/procedure-defaults-error/route"
-    );
+    const { GET: procedureDefaultsErrorGet } =
+      await import("../app/api/procedure-defaults-error/route");
     const response = await procedureDefaultsErrorGet(
-      new NextRequest(
-        "http://127.0.0.1:3000/api/procedure-defaults-error?mode=deny",
-      ),
+      new NextRequest("http://127.0.0.1:3000/api/procedure-defaults-error?mode=deny"),
       { params: Promise.resolve({}) },
     );
 
@@ -497,9 +455,7 @@ describe("integration next-app server route handlers", () => {
   });
 
   it("returns a validation error when required request metadata is missing", async () => {
-    const { GET: requestMetaGet } = await import(
-      "../app/api/request-meta/route"
-    );
+    const { GET: requestMetaGet } = await import("../app/api/request-meta/route");
     const response = await requestMetaGet(
       new NextRequest("http://127.0.0.1:3000/api/request-meta"),
       { params: Promise.resolve({}) },
@@ -514,10 +470,9 @@ describe("integration next-app server route handlers", () => {
 
   it("returns redirect responses from integration routes", async () => {
     const { GET: redirectGet } = await import("../app/api/redirect-me/route");
-    const response = await redirectGet(
-      new NextRequest("http://127.0.0.1:3000/api/redirect-me"),
-      { params: Promise.resolve({}) },
-    );
+    const response = await redirectGet(new NextRequest("http://127.0.0.1:3000/api/redirect-me"), {
+      params: Promise.resolve({}),
+    });
 
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe("http://127.0.0.1:3000/feed");
@@ -525,15 +480,12 @@ describe("integration next-app server route handlers", () => {
 
   it("uses the route-level onError handler when the handler throws", async () => {
     const { GET: errorDemoGet } = await import("../app/api/error-demo/route");
-    const response = await errorDemoGet(
-      new NextRequest("http://127.0.0.1:3000/api/error-demo"),
-      { params: Promise.resolve({}) },
-    );
+    const response = await errorDemoGet(new NextRequest("http://127.0.0.1:3000/api/error-demo"), {
+      params: Promise.resolve({}),
+    });
 
     expect(response.status).toBe(500);
     expect(response.headers.get("content-type")).toContain("text/plain");
-    await expect(response.text()).resolves.toBe(
-      "handled:expected integration failure",
-    );
+    await expect(response.text()).resolves.toBe("handled:expected integration failure");
   });
 });

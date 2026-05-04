@@ -1,5 +1,6 @@
 import path from "node:path";
 import { parseArgs } from "node:util";
+
 import { handleCli } from "./cli-handler.js";
 import { loadCliConfig } from "./config.js";
 import { EXIT_FAILURE } from "./constants.js";
@@ -7,9 +8,8 @@ import { createLogger } from "./logger.js";
 import type { CliOptions, Logger } from "./types.js";
 
 /**
- * Normalize argv:
- * - If argv looks like process.argv (["node", "script", ...]) -> slice(2)
- * - If argv already looks like user args (["-w", ...]) -> keep as-is
+ * Normalize argv: - If argv looks like process.argv (["node", "script", ...]) -> slice(2) - If argv
+ * already looks like user args (["-w", ...]) -> keep as-is
  */
 function normalizeUserArgs(argv: string[]): string[] {
   if (argv.length === 0) return [];
@@ -20,14 +20,7 @@ function normalizeUserArgs(argv: string[]): string[] {
   // Only strip the first two tokens when argv clearly looks like process.argv.
   // Keep plain user args like ["src", "types.ts"] as-is.
   const runtimeToken = path.basename(argv[0]).toLowerCase();
-  const knownRuntimes = new Set([
-    "node",
-    "node.exe",
-    "bun",
-    "bun.exe",
-    "deno",
-    "deno.exe",
-  ]);
+  const knownRuntimes = new Set(["node", "node.exe", "bun", "bun.exe", "deno", "deno.exe"]);
   if (knownRuntimes.has(runtimeToken) && argv.length >= 2) {
     return argv.slice(2);
   }
@@ -60,12 +53,11 @@ Options:
 }
 
 /**
- * Parse "-p/--params-file [filename]" where filename is OPTIONAL.
- * - If "-p" is provided without a value, set paramsFile = true.
- * - If "-p foo" is provided, set paramsFile = "foo".
+ * Parse "-p/--params-file [filename]" where filename is OPTIONAL. - If "-p" is provided without a
+ * value, set paramsFile = true. - If "-p foo" is provided, set paramsFile = "foo".
  *
- * Note: util.parseArgs doesn't natively support "optional option value"
- * in the same way commander does, so we handle this flag manually.
+ * Note: util.parseArgs doesn't natively support "optional option value" in the same way commander
+ * does, so we handle this flag manually.
  */
 function extractOptionalValueFlag(
   args: string[],
@@ -113,10 +105,10 @@ export const runCli = (argv: string[], logger: Logger = createLogger()) => {
     const userArgs0 = normalizeUserArgs(argv);
 
     // Handle optional-value flag first (so parseArgs can stay strict/easy).
-    const { args: userArgs1, value: paramsFileRaw } = extractOptionalValueFlag(
-      userArgs0,
-      ["-p", "--params-file"],
-    );
+    const { args: userArgs1, value: paramsFileRaw } = extractOptionalValueFlag(userArgs0, [
+      "-p",
+      "--params-file",
+    ]);
 
     const { values, positionals } = parseArgs({
       args: userArgs1,
@@ -136,8 +128,7 @@ export const runCli = (argv: string[], logger: Logger = createLogger()) => {
     const config = loadCliConfig();
     const baseDir = positionals[0] ?? config.baseDir;
     const outputPath = positionals[1] ?? config.outputPath;
-    const paramsFile =
-      paramsFileRaw !== undefined ? paramsFileRaw : config.paramsFile;
+    const paramsFile = paramsFileRaw !== undefined ? paramsFileRaw : config.paramsFile;
 
     if (!baseDir || !outputPath) {
       logger.error("Missing required arguments: <baseDir> <outputPath>");
@@ -173,11 +164,7 @@ export const runCli = (argv: string[], logger: Logger = createLogger()) => {
     })();
   } catch (error) {
     // parseArgs throws on unknown options in strict mode, etc.
-    logger.error(
-      error instanceof Error
-        ? error.message
-        : `Invalid arguments: ${String(error)}`,
-    );
+    logger.error(error instanceof Error ? error.message : `Invalid arguments: ${String(error)}`);
     printHelp(logger);
     process.exit(EXIT_FAILURE as number);
   }

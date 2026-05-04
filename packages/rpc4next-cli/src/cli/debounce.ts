@@ -1,7 +1,4 @@
-export const debounceOnceRunningWithTrailing = <
-  // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
-  T extends (...args: any[]) => Promise<void> | void,
->(
+export const debounceOnceRunningWithTrailing = <T extends (...args: any[]) => Promise<void> | void>(
   func: T,
   delay: number,
 ) => {

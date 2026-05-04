@@ -3,16 +3,12 @@
   "version": "0.6.0",
   "description": "Command line interface for rpc4next. Generates RPC client type definitions from Next.js routes.",
   "homepage": "https://github.com/watanabe-1/rpc4next#readme",
+  "license": "MIT",
+  "author": "watanabe-1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/watanabe-1/rpc4next.git",
     "directory": "packages/rpc4next-cli"
-  },
-  "license": "MIT",
-  "author": "watanabe-1",
-  "type": "module",
-  "engines": {
-    "node": ">=20.19.2"
   },
   "bin": {
     "rpc4next": "dist/index.js"
@@ -20,6 +16,10 @@
   "files": [
     "dist"
   ],
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "bun run clean && bun build.ts",
     "clean": "bun -e \"const fs=require('fs'); fs.rmSync('dist',{recursive:true,force:true}); fs.rmSync('tsconfig.tsbuildinfo',{force:true});\"",
@@ -27,8 +27,8 @@
     "test:coverage": "vitest run --coverage.enabled true",
     "test:ui": "vitest --ui --coverage.enabled true",
     "test:watch": "vitest --watch",
-    "lint": "biome check src",
-    "check:fix": "biome check --write src",
+    "lint": "oxfmt --check src && oxlint src",
+    "check:fix": "oxfmt src && oxlint --fix src",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -38,7 +38,7 @@
   "peerDependencies": {
     "next": "^15.0.0 || ^16.0.0"
   },
-  "publishConfig": {
-    "access": "public"
+  "engines": {
+    "node": ">=20.19.2"
   }
 }

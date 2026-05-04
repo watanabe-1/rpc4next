@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
+
 import { nextRoute as baseNextRoute } from "./next-route";
 import { defaultProcedureOnError } from "./on-error";
 import { procedure } from "./procedure";
@@ -20,15 +21,12 @@ const nextRoute = <
   },
 ) => {
   const resolvedOptions =
-    options && "onError" in options
-      ? options
-      : { ...(options ?? {}), onError: defaultProcedureOnError };
+    options && "onError" in options ? options : { ...options, onError: defaultProcedureOnError };
 
-  return baseNextRoute<
-    TProcedure & Parameters<typeof baseNextRoute>[0],
-    TMethod,
-    TValidateOutput
-  >(procedureDefinition as never, resolvedOptions as never);
+  return baseNextRoute<TProcedure & Parameters<typeof baseNextRoute>[0], TMethod, TValidateOutput>(
+    procedureDefinition as never,
+    resolvedOptions as never,
+  );
 };
 
 describe("nextRoute valibot integration", () => {
@@ -114,10 +112,7 @@ describe("nextRoute valibot integration", () => {
 
     const payload = new FormData();
     payload.set("displayName", "valibot-user");
-    payload.set(
-      "avatar",
-      new File(["avatar"], "avatar.png", { type: "image/png" }),
-    );
+    payload.set("avatar", new File(["avatar"], "avatar.png", { type: "image/png" }));
     payload.append("tags", "alpha");
     payload.append("tags", "beta");
 
@@ -158,12 +153,9 @@ describe("nextRoute valibot integration", () => {
       { method: "GET", validateOutput: true },
     );
 
-    const response = await route(
-      new NextRequest("http://127.0.0.1:3000/api/test"),
-      {
-        params: Promise.resolve({}),
-      },
-    );
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api/test"), {
+      params: Promise.resolve({}),
+    });
 
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
@@ -200,12 +192,9 @@ describe("nextRoute valibot integration", () => {
       })),
     );
 
-    const response = await route(
-      new NextRequest("http://127.0.0.1:3000/api/test"),
-      {
-        params: Promise.resolve({}),
-      },
-    );
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api/test"), {
+      params: Promise.resolve({}),
+    });
 
     expect(response.status).toBe(409);
     await expect(response.json()).resolves.toEqual({

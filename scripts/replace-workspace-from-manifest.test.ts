@@ -2,13 +2,10 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  replaceWorkspaceDepsFromManifest,
-  runCli,
-} from "./replace-workspace-deps.js";
 
-const readJson = <T>(file: string): T =>
-  JSON.parse(fs.readFileSync(file, "utf8"));
+import { replaceWorkspaceDepsFromManifest, runCli } from "./replace-workspace-deps.js";
+
+const readJson = <T>(file: string): T => JSON.parse(fs.readFileSync(file, "utf8"));
 
 const writeJson = (file: string, obj: unknown) =>
   fs.writeFileSync(file, `${JSON.stringify(obj, null, 2)}\n`, "utf8");
@@ -60,7 +57,6 @@ describe("replaceWorkspaceDepsFromManifest", () => {
 
     const res = replaceWorkspaceDepsFromManifest({ repoRoot: tmpDir });
 
-    // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
     const core = readJson<any>(path.join(pCore, "package.json"));
     expect(core.dependencies["rpc4next-shared"]).toBe("^1.7.3");
     expect(core.peerDependencies["rpc4next-shared"]).toBe("^1.7.3");
@@ -95,7 +91,6 @@ describe("replaceWorkspaceDepsFromManifest", () => {
 
     const res = replaceWorkspaceDepsFromManifest({ repoRoot: tmpDir });
 
-    // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
     const core = readJson<any>(path.join(pCore, "package.json"));
     expect(core.dependencies["some-other-pkg"]).toBe("workspace:*");
     expect(res.updatedFiles.length).toBe(0);
@@ -104,9 +99,9 @@ describe("replaceWorkspaceDepsFromManifest", () => {
 
   it("throws if manifest is missing", () => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "rpc4next-test-"));
-    expect(() =>
-      replaceWorkspaceDepsFromManifest({ repoRoot: tmpDir ?? "" }),
-    ).toThrow(/manifest not found/i);
+    expect(() => replaceWorkspaceDepsFromManifest({ repoRoot: tmpDir ?? "" })).toThrow(
+      /manifest not found/i,
+    );
   });
 
   it("handles non-string/non-workspace specs, empty workspace suffix, and no-op replacements", () => {
@@ -137,7 +132,6 @@ describe("replaceWorkspaceDepsFromManifest", () => {
         "rpc4next-shared": "workspace:",
         "non-workspace": "^1.0.0",
         // Intentionally invalid type to hit runtime guard.
-        // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
         "non-string": 123 as any,
       },
     });
@@ -148,7 +142,6 @@ describe("replaceWorkspaceDepsFromManifest", () => {
       defaultRange: "~",
     });
 
-    // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
     const core = readJson<any>(path.join(pCore, "package.json"));
     expect(core.dependencies["rpc4next-shared"]).toBe("~1.7.3");
     expect(core.optionalDependencies["rpc4next-shared"]).toBe("~1.7.3");
@@ -192,7 +185,6 @@ describe("replaceWorkspaceDepsFromManifest", () => {
       defaultRange: "~",
     });
 
-    // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
     const core = readJson<any>(path.join(pCore, "package.json"));
     expect(core.dependencies["rpc4next-shared"]).toBe("~1.7.3");
     expect(res.changes.map((c) => `${c.depName}:${c.from}->${c.to}`)).toEqual([
@@ -228,7 +220,6 @@ describe("replaceWorkspaceDepsFromManifest", () => {
 
     const res = runCli(tmpDir);
 
-    // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
     const core = readJson<any>(path.join(pCore, "package.json"));
     expect(core.dependencies["rpc4next-shared"]).toBe("^1.7.3");
     expect(res.updatedFiles.length).toBe(1);
@@ -262,12 +253,8 @@ describe("replaceWorkspaceDepsFromManifest", () => {
       },
     });
 
-    const res = runCli(
-      tmpDir,
-      ".github/release-please/.release-please-manifest.json",
-    );
+    const res = runCli(tmpDir, ".github/release-please/.release-please-manifest.json");
 
-    // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
     const core = readJson<any>(path.join(pCore, "package.json"));
     expect(core.dependencies["rpc4next-shared"]).toBe("^1.7.3");
     expect(res.updatedFiles.length).toBe(1);

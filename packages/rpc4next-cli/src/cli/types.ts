@@ -18,16 +18,11 @@ export interface Logger {
   error: (msg: string, options?: Pick<LogOptions, "indentLevel">) => void;
 }
 
-type BuildRange<
-  N extends number,
-  Result extends number[] = [],
-> = Result["length"] extends N
+type BuildRange<N extends number, Result extends number[] = []> = Result["length"] extends N
   ? Result
   : BuildRange<N, [...Result, Result["length"]]>;
 
-type NumericRange<F extends number, T extends number> =
-  | Exclude<BuildRange<T>, BuildRange<F>>
-  | F;
+type NumericRange<F extends number, T extends number> = Exclude<BuildRange<T>, BuildRange<F>> | F;
 
 export type SuccessExitCode = 0;
 export type ErrorExitCode = NumericRange<1, 256>;

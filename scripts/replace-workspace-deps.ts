@@ -6,11 +6,7 @@ export type Manifest = Record<string, string>;
 export type ReplaceOptions = {
   repoRoot: string;
   manifestFile?: string; // Default: ".release-please-manifest.json"
-  depFields?: readonly (
-    | "dependencies"
-    | "peerDependencies"
-    | "optionalDependencies"
-  )[];
+  depFields?: readonly ("dependencies" | "peerDependencies" | "optionalDependencies")[];
   defaultRange?: "^" | "~"; // Which range to use for "workspace:*" (usually "^")
   logger?: (message: string) => void;
 };
@@ -25,22 +21,18 @@ export type ReplaceResult = {
   }>;
 };
 
-const readJson = <T>(file: string): T =>
-  JSON.parse(fs.readFileSync(file, "utf8"));
+const readJson = <T>(file: string): T => JSON.parse(fs.readFileSync(file, "utf8"));
 
 const writeJson = (file: string, obj: unknown) =>
   fs.writeFileSync(file, `${JSON.stringify(obj, null, 2)}\n`, "utf8");
 
-export function replaceWorkspaceDepsFromManifest(
-  options: ReplaceOptions,
-): ReplaceResult {
+export function replaceWorkspaceDepsFromManifest(options: ReplaceOptions): ReplaceResult {
   const repoRoot = options.repoRoot;
   const manifestFile = options.manifestFile ?? ".release-please-manifest.json";
   const manifestPath = path.join(repoRoot, manifestFile);
 
   const depFields =
-    options.depFields ??
-    (["dependencies", "peerDependencies", "optionalDependencies"] as const);
+    options.depFields ?? (["dependencies", "peerDependencies", "optionalDependencies"] as const);
 
   const defaultRange = options.defaultRange ?? "^";
 
@@ -63,7 +55,6 @@ export function replaceWorkspaceDepsFromManifest(
 
   for (const dir of packageDirs) {
     const pkgPath = path.join(repoRoot, dir, "package.json");
-    // biome-ignore lint/suspicious/noExplicitAny: intentional for existing type patterns
     const pkg = readJson<any>(pkgPath);
 
     let changed = false;
@@ -89,9 +80,7 @@ export function replaceWorkspaceDepsFromManifest(
 
         const next = `${prefix}${version}`;
 
-        options.logger?.(
-          `[replace] ${pkg.name}: ${field}.${depName} ${deps[depName]} -> ${next}`,
-        );
+        options.logger?.(`[replace] ${pkg.name}: ${field}.${depName} ${deps[depName]} -> ${next}`);
 
         result.changes.push({
           packageName: pkg.name,

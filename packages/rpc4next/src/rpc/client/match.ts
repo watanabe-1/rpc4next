@@ -6,22 +6,22 @@ type ParamValue = string | string[] | undefined;
 /**
  * Safely decodes a URI component.
  *
- * This function attempts to decode the given string using `decodeURIComponent`.
- * If the input is `null` or `undefined`, it returns `undefined`.
- * If decoding fails due to malformed percent-encoding, the original value is returned.
+ * This function attempts to decode the given string using `decodeURIComponent`. If the input is
+ * `null` or `undefined`, it returns `undefined`. If decoding fails due to malformed
+ * percent-encoding, the original value is returned.
+ *
+ * @example
+ *   safeDecode("hello%20world"); // "hello world"
+ *
+ * @example
+ *   safeDecode("%E0%A4%A"); // "%E0%A4%A" (malformed, returns original)
+ *
+ * @example
+ *   safeDecode(undefined); // undefined
  *
  * @param value - The URI component string to decode. Can be `string`, `null`, or `undefined`.
- * @returns The decoded string if successful, the original string if decoding fails,
- * or `undefined` if the input is `null` or `undefined`.
- *
- * @example
- * safeDecode("hello%20world"); // "hello world"
- *
- * @example
- * safeDecode("%E0%A4%A"); // "%E0%A4%A" (malformed, returns original)
- *
- * @example
- * safeDecode(undefined); // undefined
+ * @returns The decoded string if successful, the original string if decoding fails, or `undefined`
+ *   if the input is `null` or `undefined`.
  */
 function safeDecode<T extends string | undefined | null>(
   value: T,
@@ -36,13 +36,13 @@ function safeDecode(value: string | undefined | null) {
   }
 }
 
-const escapeRegex = (value: string) =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /**
  * Match a URL (string) against a pre-defined path pattern array.
- * @param paths e.g. ["/", "users", "_id"] or ["users", "_id"]
- * @param dynamicKeys keys in the same order the capturing groups appear
+ *
+ * @param paths E.g. ["/", "users", "_id"] or ["users", "_id"]
+ * @param dynamicKeys Keys in the same order the capturing groups appear
  */
 export const matchPath = (paths: string[], dynamicKeys: string[]) => {
   const normalizedSegments = paths

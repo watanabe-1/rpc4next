@@ -3,10 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-const workspaceRoot = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "..",
-);
+const workspaceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const generatedRpcPath = path.join(workspaceRoot, "src/generated/rpc.ts");
 const generatedRpc = fs.readFileSync(generatedRpcPath, "utf8");
 const escapedRouteContract = fs.readFileSync(

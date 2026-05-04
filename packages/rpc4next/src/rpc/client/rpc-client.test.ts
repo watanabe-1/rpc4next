@@ -1,15 +1,8 @@
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import { type NextRequest, NextResponse } from "next/server";
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  describe,
-  expect,
-  expectTypeOf,
-  it,
-} from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, expectTypeOf, it } from "vitest";
+
 import {
   type ContentType,
   type HttpStatusCode,
@@ -29,9 +22,7 @@ const staticRouteContract = {
 } as ProcedureRouteContract<"/api/hoge", Record<never, never>>;
 
 const _post_0 = nextRoute(
-  procedure
-    .forRoute(staticRouteContract)
-    .handle(async ({ response }) => response.text("post")),
+  procedure.forRoute(staticRouteContract).handle(async ({ response }) => response.text("post")),
   { method: "POST", onError: defaultProcedureOnError },
 );
 
@@ -43,30 +34,22 @@ const _get_0 = nextRoute(
 );
 
 const _delete_0 = nextRoute(
-  procedure
-    .forRoute(staticRouteContract)
-    .handle(async ({ response }) => response.text("delete")),
+  procedure.forRoute(staticRouteContract).handle(async ({ response }) => response.text("delete")),
   { method: "DELETE", onError: defaultProcedureOnError },
 );
 
 const _head_0 = nextRoute(
-  procedure
-    .forRoute(staticRouteContract)
-    .handle(async ({ response }) => response.text("head")),
+  procedure.forRoute(staticRouteContract).handle(async ({ response }) => response.text("head")),
   { method: "HEAD", onError: defaultProcedureOnError },
 );
 
 const _patch_0 = nextRoute(
-  procedure
-    .forRoute(staticRouteContract)
-    .handle(async ({ response }) => response.text("patch")),
+  procedure.forRoute(staticRouteContract).handle(async ({ response }) => response.text("patch")),
   { method: "PATCH", onError: defaultProcedureOnError },
 );
 
 const _put_0 = nextRoute(
-  procedure
-    .forRoute(staticRouteContract)
-    .handle(async ({ response }) => response.text("put")),
+  procedure.forRoute(staticRouteContract).handle(async ({ response }) => response.text("put")),
   { method: "PUT", onError: defaultProcedureOnError },
 );
 
@@ -77,9 +60,8 @@ const _delete_1 = nextRoute(
       async ({
         request,
         response,
-      }): Promise<
-        TypedNextResponse<Record<string, string>, 200, "application/json">
-      > => response.json(Object.fromEntries(request.headers.entries())),
+      }): Promise<TypedNextResponse<Record<string, string>, 200, "application/json">> =>
+        response.json(Object.fromEntries(request.headers.entries())),
     ),
   { method: "DELETE", onError: defaultProcedureOnError },
 );
@@ -214,10 +196,7 @@ describe("createRpcClient", () => {
   describe("customFetch behavior", () => {
     it("should use only client-level options when only client options are specified", async () => {
       let capturedInit: RequestInit | undefined;
-      const customFetch = async (
-        _input: RequestInfo | URL,
-        init?: RequestInit,
-      ) => {
+      const customFetch = async (_input: RequestInfo | URL, init?: RequestInit) => {
         capturedInit = init;
 
         return new Response("ok", { status: 200 });
@@ -240,10 +219,7 @@ describe("createRpcClient", () => {
 
     it("should use only method-level options when only method options are specified", async () => {
       let capturedInit: RequestInit | undefined;
-      const customFetch = async (
-        _input: RequestInfo | URL,
-        init?: RequestInit,
-      ) => {
+      const customFetch = async (_input: RequestInfo | URL, init?: RequestInit) => {
         capturedInit = init;
 
         return new Response("ok", { status: 200 });
@@ -268,10 +244,7 @@ describe("createRpcClient", () => {
 
     it("should correctly merge client and method options", async () => {
       let capturedInit: RequestInit | undefined;
-      const customFetch = async (
-        _input: RequestInfo | URL,
-        init?: RequestInit,
-      ) => {
+      const customFetch = async (_input: RequestInfo | URL, init?: RequestInit) => {
         capturedInit = init;
 
         return new Response("ok", { status: 200 });
@@ -307,10 +280,7 @@ describe("createRpcClient", () => {
 
     it("should work when init options have no headers", async () => {
       let capturedInit: RequestInit | undefined;
-      const customFetch = async (
-        _input: RequestInfo | URL,
-        init?: RequestInit,
-      ) => {
+      const customFetch = async (_input: RequestInfo | URL, init?: RequestInit) => {
         capturedInit = init;
 
         return new Response("ok", { status: 200 });
@@ -334,10 +304,7 @@ describe("createRpcClient", () => {
 
     it("should merge non-conflicting options from client and method", async () => {
       let capturedInit: RequestInit | undefined;
-      const customFetch = async (
-        _input: RequestInfo | URL,
-        init?: RequestInit,
-      ) => {
+      const customFetch = async (_input: RequestInfo | URL, init?: RequestInit) => {
         capturedInit = init;
 
         return new Response("ok", { status: 200 });
@@ -371,9 +338,7 @@ describe("createRpcClient", () => {
         fetch: errorFetch,
       });
 
-      await expect(client.api.hoge.$delete()).rejects.toThrow(
-        "Network failure",
-      );
+      await expect(client.api.hoge.$delete()).rejects.toThrow("Network failure");
     });
 
     it("should correctly pass request body for POST requests", async () => {
@@ -428,10 +393,7 @@ describe("createRpcClient", () => {
           headers: { "x-client": "client-header" },
         },
       });
-      const response = await client.api.hoge
-        ._foo("test")
-        ._bar("fetch")
-        .$delete();
+      const response = await client.api.hoge._foo("test")._bar("fetch").$delete();
       const json = (await response.json()) as Record<string, string>;
       expect(json["x-client"]).toBe("client-header");
     });
@@ -528,8 +490,7 @@ describe("createRpcClient", () => {
 
   type OptionalCatchAllPath = RpcEndpoint & {
     patterns: {
-      _____parts: RpcEndpoint &
-        Record<ParamsKey, { parts: string[] | undefined }>;
+      _____parts: RpcEndpoint & Record<ParamsKey, { parts: string[] | undefined }>;
     };
   };
 
@@ -544,9 +505,7 @@ describe("createRpcClient", () => {
 
       // calling static path segment as a function
       const hoge = client.hoge as unknown as (value: string) => "";
-      expect(() => hoge("")).toThrow(
-        'Cannot apply a value: "hoge" is not a dynamic segment.',
-      );
+      expect(() => hoge("")).toThrow('Cannot apply a value: "hoge" is not a dynamic segment.');
     });
   });
 
@@ -565,9 +524,7 @@ describe("createRpcClient", () => {
 
   const _post_1 = nextRoute(
     procedure.forRoute(staticRouteContract).handle(async ({ response }) => {
-      return Math.random() > 0.5
-        ? response.json("json")
-        : response.text("text");
+      return Math.random() > 0.5 ? response.json("json") : response.text("text");
     }),
     { method: "POST", onError: defaultProcedureOnError },
   );
@@ -693,10 +650,8 @@ describe("createRpcClient", () => {
       hoge: {
         $post: typeof _post_1;
       } & RpcEndpoint & {
-          _foo: { $get: typeof _get_1 } & RpcEndpoint &
-            Record<ParamsKey, { foo: string }>;
-          _bar: { $get: typeof _get_2 } & RpcEndpoint &
-            Record<ParamsKey, { bar: string }>;
+          _foo: { $get: typeof _get_1 } & RpcEndpoint & Record<ParamsKey, { foo: string }>;
+          _bar: { $get: typeof _get_2 } & RpcEndpoint & Record<ParamsKey, { bar: string }>;
           validation: { $get: typeof _get_3 } & RpcEndpoint;
           onError: { $get: typeof _get_4 } & RpcEndpoint;
         };
@@ -739,9 +694,7 @@ describe("createRpcClient", () => {
       const incloudErrResponse = await client.api.hoge._foo("").$get();
 
       expectTypeOf(incloudErrResponse).toExtend<Response>();
-      type JsonOrTextGetJson = Awaited<
-        ReturnType<(typeof incloudErrResponse)["json"]>
-      >;
+      type JsonOrTextGetJson = Awaited<ReturnType<(typeof incloudErrResponse)["json"]>>;
       void (null as unknown as JsonOrTextGetJson);
 
       if (incloudErrResponse.ok) {
@@ -779,33 +732,25 @@ describe("createRpcClient", () => {
       });
 
       expectTypeOf(validationResponse).toExtend<Response>();
-      type ValidationJson = Awaited<
-        ReturnType<(typeof validationResponse)["json"]>
-      >;
+      type ValidationJson = Awaited<ReturnType<(typeof validationResponse)["json"]>>;
       expectTypeOf<Extract<ValidationJson, { ok: true }>>().toEqualTypeOf<{
         ok: true;
         page: string;
       }>();
-      expectTypeOf<
-        Extract<ValidationJson, { source: "validation" }>
-      >().toEqualTypeOf<{
+      expectTypeOf<Extract<ValidationJson, { source: "validation" }>>().toEqualTypeOf<{
         ok: false;
         source: "validation";
         target: "query";
       }>();
-      expectTypeOf<
-        Extract<ValidationJson, { error: { code: "BAD_REQUEST" } }>
-      >().toEqualTypeOf<RpcErrorEnvelope<"BAD_REQUEST">>();
+      expectTypeOf<Extract<ValidationJson, { error: { code: "BAD_REQUEST" } }>>().toEqualTypeOf<
+        RpcErrorEnvelope<"BAD_REQUEST">
+      >();
 
       const headerClient = createRpcClient<PathStructure>("", {
         fetch: customFetch,
       });
-      const headerDelete = headerClient.api.hoge
-        ._foo("test")
-        ._bar("fetch").$delete;
-      type HeaderEchoJson = Awaited<
-        ReturnType<Awaited<ReturnType<typeof headerDelete>>["json"]>
-      >;
+      const headerDelete = headerClient.api.hoge._foo("test")._bar("fetch").$delete;
+      type HeaderEchoJson = Awaited<ReturnType<Awaited<ReturnType<typeof headerDelete>>["json"]>>;
       void (null as unknown as HeaderEchoJson);
 
       const onErrorResponse = await client.api.hoge.onError.$get();

@@ -1,11 +1,9 @@
-import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+
 import type { ContentType } from "../lib/content-type-types";
 import { normalizeHeaders } from "../lib/headers";
-import type {
-  HttpStatusCode,
-  RedirectionHttpStatusCode,
-} from "../lib/http-status-code-types";
+import type { HttpStatusCode, RedirectionHttpStatusCode } from "../lib/http-status-code-types";
 import { searchParamsToObject } from "../lib/search-params";
 import type { ValidationSchema } from "./route-types";
 import type {
@@ -24,14 +22,9 @@ type ResponseHelperMetadata = {
   payload?: unknown;
 };
 
-const responseHelperMetadataSymbol = Symbol.for(
-  "rpc4next.response.helper.metadata",
-);
+const responseHelperMetadataSymbol = Symbol.for("rpc4next.response.helper.metadata");
 
-const attachResponseHelperMetadata = <
-  TResponse extends TypedNextResponse,
-  TPayload = unknown,
->(
+const attachResponseHelperMetadata = <TResponse extends TypedNextResponse, TPayload = unknown>(
   response: TResponse,
   metadata: ResponseHelperMetadata & { payload?: TPayload },
 ) => {
@@ -45,9 +38,7 @@ const attachResponseHelperMetadata = <
   return response;
 };
 
-export const getResponseHelperMetadata = (
-  value: unknown,
-): ResponseHelperMetadata | undefined => {
+export const getResponseHelperMetadata = (value: unknown): ResponseHelperMetadata | undefined => {
   if (!(value instanceof Response)) {
     return undefined;
   }
@@ -74,11 +65,7 @@ const resolvedHeaders = (
 
   const headers = init.headers ?? normalizeHeaders(init.headersInit);
 
-  const {
-    headers: _headers,
-    headersInit: _headersInit,
-    ...initWithoutHeaders
-  } = init;
+  const { headers: _headers, headersInit: _headersInit, ...initWithoutHeaders } = init;
 
   const resolvedInit = {
     ...initWithoutHeaders,
@@ -88,9 +75,7 @@ const resolvedHeaders = (
   return resolvedInit as TypedResponseInit<HttpStatusCode, ContentType>;
 };
 
-export const createResponseHelpers = <
-  TJson = unknown,
->(): ResponseHelpers<TJson> => ({
+export const createResponseHelpers = <TJson = unknown>(): ResponseHelpers<TJson> => ({
   body: <
     TData extends BodyInit | null,
     TContentType extends ContentType,
@@ -116,10 +101,11 @@ export const createResponseHelpers = <
     init?: TStatus | TypedResponseInit<TStatus, "application/json">,
   ) =>
     attachResponseHelperMetadata(
-      NextResponse.json<TData>(
-        data,
-        resolvedHeaders(init),
-      ) as TypedNextResponse<TData, TStatus, "application/json">,
+      NextResponse.json<TData>(data, resolvedHeaders(init)) as TypedNextResponse<
+        TData,
+        TStatus,
+        "application/json"
+      >,
       {
         kind: "json",
         payload: data,
@@ -151,11 +137,7 @@ export const createResponseHelpers = <
     const resolvedInit = isHttpStatusCode(init) ? init : resolvedHeaders(init);
 
     return attachResponseHelperMetadata(
-      NextResponse.redirect(url, resolvedInit) as TypedNextResponse<
-        undefined,
-        TStatus,
-        ""
-      >,
+      NextResponse.redirect(url, resolvedInit) as TypedNextResponse<undefined, TStatus, "">,
       {
         kind: "redirect",
       },

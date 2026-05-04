@@ -39,11 +39,13 @@ const hasUserContentType = (h: Record<string, string>): boolean => {
 
 /**
  * Build a typed HTTP method invoker.
+ *
  * - Header precedence: default < options.init < methodParam.requestHeaders
  * - Do NOT override user-specified `content-type`.
  * - Merge cookies instead of clobbering.
  * - Never attach a body for GET/HEAD.
- * - Provide basic body-shape inference (json/text/formData/urlencoded) while keeping current types compatible.
+ * - Provide basic body-shape inference (json/text/formData/urlencoded) while keeping current types
+ *   compatible.
  */
 export const httpMethod = (
   key: string,
@@ -73,16 +75,10 @@ export const httpMethod = (
     const defaultInit = defaultOptions.init;
     const innerInit = options?.init;
 
-    const defaultHeaders = normalizeHeaders(
-      defaultInit?.headers ?? defaultInit?.headersInit,
-    );
-    const innerHeaders = normalizeHeaders(
-      innerInit?.headers ?? innerInit?.headersInit,
-    );
+    const defaultHeaders = normalizeHeaders(defaultInit?.headers ?? defaultInit?.headersInit);
+    const innerHeaders = normalizeHeaders(innerInit?.headers ?? innerInit?.headersInit);
     const methodParamHeaders = normalizeHeaders(
-      methodParam?.requestHeaders?.headers as
-        | Record<string, string>
-        | undefined,
+      methodParam?.requestHeaders?.headers as Record<string, string> | undefined,
     );
 
     // Start from low precedence and overlay higher precedence
@@ -99,9 +95,7 @@ export const httpMethod = (
       const cookieFromMap = Object.entries(methodParamCookies)
         .map(([k, v]) => `${k}=${v}`)
         .join("; ");
-      mergedHeaders.cookie = existingCookie
-        ? `${existingCookie}; ${cookieFromMap}`
-        : cookieFromMap;
+      mergedHeaders.cookie = existingCookie ? `${existingCookie}; ${cookieFromMap}` : cookieFromMap;
     }
 
     // --- Body & content-type inference

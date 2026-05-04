@@ -1,9 +1,6 @@
 import { build } from "esbuild";
-import {
-  globEntryPoints,
-  libraryBuildOptions,
-  mergeBuildOptions,
-} from "../build-utils";
+
+import { globEntryPoints, libraryBuildOptions, mergeBuildOptions } from "../build-utils";
 
 const entries = await globEntryPoints([
   "src/index.ts",

@@ -1,19 +1,12 @@
 import { describe, expectTypeOf, it } from "vitest";
-import type {
-  InferSchemaInput,
-  InferSchemaOutput,
-  OutputSchema,
-} from "./schema-inference";
+
+import type { InferSchemaInput, InferSchemaOutput, OutputSchema } from "./schema-inference";
 import type { StandardSchemaV1 } from "./standard-schema";
 
 describe("schema inference", () => {
   it("prefers Standard Schema V1 types when available", () => {
-    type Input = InferSchemaInput<
-      StandardSchemaV1<{ page?: string }, { page: number }>
-    >;
-    type Output = InferSchemaOutput<
-      StandardSchemaV1<{ page?: string }, { page: number }>
-    >;
+    type Input = InferSchemaInput<StandardSchemaV1<{ page?: string }, { page: number }>>;
+    type Output = InferSchemaOutput<StandardSchemaV1<{ page?: string }, { page: number }>>;
 
     expectTypeOf<Input>().toEqualTypeOf<{ page?: string }>();
     expectTypeOf<Output>().toEqualTypeOf<{ page: number }>();

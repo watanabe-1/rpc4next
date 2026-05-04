@@ -9,16 +9,16 @@ checksum:
   enabled: true
   require_checksum: true
   supported_envs:
-  - all
+    - all
 registries:
-- type: standard
-  ref: v4.499.0 # renovate: depName=aquaproj/aqua-registry
+  - type: standard
+    ref: v4.499.0 # renovate: depName=aquaproj/aqua-registry
 
 packages:
-- name: nodejs/node@v25.9.0
-- name: oven-sh/bun@bun-v1.3.13
-- name: rhysd/actionlint@v1.7.12
-- name: reviewdog/reviewdog@v0.21.0
-- name: suzuki-shunsuke/ghalint@v1.5.5
-- name: zizmorcore/zizmor@v1.24.1
-- name: suzuki-shunsuke/pinact@v3.9.0
+  - name: nodejs/node@v25.9.0
+  - name: oven-sh/bun@bun-v1.3.13
+  - name: rhysd/actionlint@v1.7.12
+  - name: reviewdog/reviewdog@v0.21.0
+  - name: suzuki-shunsuke/ghalint@v1.5.5
+  - name: zizmorcore/zizmor@v1.24.1
+  - name: suzuki-shunsuke/pinact@v3.9.0

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { matchPath } from "./match";
 
 describe("matchPath", () => {
@@ -12,9 +13,7 @@ describe("matchPath", () => {
         query: {},
         hash: undefined,
       });
-      expect(
-        matcher("/users/%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF"),
-      ).toEqual({
+      expect(matcher("/users/%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF")).toEqual({
         params: { id: "こんにちは" },
         query: {},
         hash: undefined,
@@ -89,9 +88,7 @@ describe("matchPath", () => {
         query: {},
         hash: undefined,
       });
-      expect(
-        matcher("/blog/%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF/05"),
-      ).toEqual({
+      expect(matcher("/blog/%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF/05")).toEqual({
         params: { slug: ["こんにちは", "05"] },
         query: {},
         hash: undefined,

@@ -1,5 +1,6 @@
 import * as v from "valibot";
 import { describe, expectTypeOf, it } from "vitest";
+
 import type { InferSchemaInput, InferSchemaOutput } from "./schema-inference";
 
 describe("schema inference valibot integration", () => {

@@ -1,16 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  cleanupTempDir,
-  makeTempDir,
-  writeTree,
-} from "../test-helpers/tmp-dir.js";
-import {
-  SUCCESS_INDENT_LEVEL,
-  SUCCESS_PAD_LENGTH,
-  SUCCESS_SEPARATOR,
-} from "./constants.js";
+
+import { cleanupTempDir, makeTempDir, writeTree } from "../test-helpers/tmp-dir.js";
+import { SUCCESS_INDENT_LEVEL, SUCCESS_PAD_LENGTH, SUCCESS_SEPARATOR } from "./constants.js";
 import * as generatePathStructure from "./core/generate-path-structure.js";
 import { ROUTE_CONTRACT_GENERATED_MARKER } from "./core/generate-path-structure.js";
 import { generate } from "./generator.js";
@@ -18,9 +11,9 @@ import { padMessage } from "./logger.js";
 
 describe("generate", () => {
   const logger = {
-    info: vi.fn(),
-    success: vi.fn(),
-    error: vi.fn(),
+    info: vi.fn<(...args: unknown[]) => void>(),
+    success: vi.fn<(...args: unknown[]) => void>(),
+    error: vi.fn<(...args: unknown[]) => void>(),
   };
 
   const baseDir = "test/base";
@@ -53,15 +46,9 @@ describe("generate", () => {
       event: "generate",
     });
 
-    expect(generatePathStructure.generatePathStructure).toHaveBeenCalledWith(
-      outputPath,
-      baseDir,
-    );
+    expect(generatePathStructure.generatePathStructure).toHaveBeenCalledWith(outputPath, baseDir);
 
-    expect(fs.writeFileSync).toHaveBeenCalledWith(
-      outputPath,
-      "generated-type-content",
-    );
+    expect(fs.writeFileSync).toHaveBeenCalledWith(outputPath, "generated-type-content");
     expect(fs.readFileSync).not.toHaveBeenCalled();
 
     const expectedSuccessMessage = padMessage(
@@ -127,10 +114,7 @@ describe("generate", () => {
     });
 
     expect(fs.readFileSync).toHaveBeenCalledWith(outputPath, "utf8");
-    expect(fs.writeFileSync).toHaveBeenCalledWith(
-      outputPath,
-      "generated-type-content",
-    );
+    expect(fs.writeFileSync).toHaveBeenCalledWith(outputPath, "generated-type-content");
 
     const expectedSuccessMessage = padMessage(
       "Path structure type",
@@ -155,10 +139,7 @@ describe("generate", () => {
     });
 
     vi.spyOn(fs, "existsSync").mockImplementation((filePath) => {
-      return (
-        filePath !== outputPath &&
-        filePath !== path.join("dir1", paramsFileName)
-      );
+      return filePath !== outputPath && filePath !== path.join("dir1", paramsFileName);
     });
     vi.spyOn(fs, "readFileSync").mockImplementation((filePath) => {
       if (filePath === path.join("dir2", paramsFileName)) {
@@ -181,10 +162,7 @@ describe("generate", () => {
       logger,
     });
 
-    expect(fs.writeFileSync).toHaveBeenCalledWith(
-      outputPath,
-      "generated-type-content",
-    );
+    expect(fs.writeFileSync).toHaveBeenCalledWith(outputPath, "generated-type-content");
     expect(fs.writeFileSync).toHaveBeenCalledWith(
       path.join("dir1", paramsFileName),
       "params-type-1",
@@ -255,10 +233,7 @@ describe("generate", () => {
       indentLevel: SUCCESS_INDENT_LEVEL,
     });
     expect(fs.writeFileSync).toHaveBeenCalledTimes(1);
-    expect(fs.writeFileSync).toHaveBeenCalledWith(
-      outputPath,
-      "generated-type-content",
-    );
+    expect(fs.writeFileSync).toHaveBeenCalledWith(outputPath, "generated-type-content");
   });
 
   it("removes stale generated params files outside the current scan result", () => {
@@ -349,9 +324,7 @@ describe("generate", () => {
       });
 
       expect(fs.existsSync(manualFilePath)).toBe(true);
-      expect(fs.readFileSync(manualFilePath, "utf8")).toBe(
-        "handwritten-content",
-      );
+      expect(fs.readFileSync(manualFilePath, "utf8")).toBe("handwritten-content");
     } finally {
       cleanupTempDir(tmpDir);
     }

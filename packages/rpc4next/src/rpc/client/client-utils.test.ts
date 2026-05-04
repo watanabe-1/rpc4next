@@ -5,6 +5,7 @@ import {
   OPTIONAL_CATCH_ALL_PREFIX,
 } from "rpc4next-shared";
 import { describe, expect, it } from "vitest";
+
 import {
   deepMerge,
   isCatchAllOrOptional,
