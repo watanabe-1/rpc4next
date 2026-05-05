@@ -6,11 +6,13 @@ import { relativeFromRoot } from "./core/path-utils.js";
 import { debounceOnceRunningWithTrailing } from "./debounce.js";
 import type { Logger } from "./types.js";
 
+export type WatcherDisposer = () => Promise<void>;
+
 export const setupWatcher = (
   baseDir: string,
   onGenerate: () => Promise<void> | void,
   logger: Logger,
-) => {
+): WatcherDisposer => {
   logger.info(`${relativeFromRoot(baseDir)}`, {
     event: "watch",
   });
@@ -66,8 +68,14 @@ export const setupWatcher = (
     }
   });
 
+  let closePromise: Promise<void> | undefined;
+
   const cleanup = () => {
-    watcher
+    // Remove signal listeners so recreated watchers do not stay retained by process.
+    process.off("SIGINT", cleanup);
+    process.off("SIGTERM", cleanup);
+
+    closePromise ??= watcher
       .close()
       .then(() => {
         logger.info("Watcher closed.", { event: "watch" });
@@ -75,8 +83,12 @@ export const setupWatcher = (
       .catch((err) => {
         logger.error(`Failed to close watcher: ${err.message}`);
       });
+
+    return closePromise;
   };
 
   process.on("SIGINT", cleanup);
   process.on("SIGTERM", cleanup);
+
+  return cleanup;
 };

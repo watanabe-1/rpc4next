@@ -20,6 +20,7 @@ type WatchReadyHandler = () => void;
 type WatchHandler = WatchAllHandler | WatchErrorHandler | WatchReadyHandler;
 type FakeWatcher = {
   on: (event: string, cb: WatchHandler) => FakeWatcher;
+  close: () => Promise<void>;
 };
 
 const logger = {
@@ -31,15 +32,35 @@ const logger = {
 const onGenerate = vi.fn<() => void>();
 
 const fakeOn = vi.fn<(event: string, cb: WatchHandler) => FakeWatcher>();
+const fakeClose = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
 const fakeWatcher: FakeWatcher = {
   on: fakeOn,
+  close: fakeClose,
 };
 vi.spyOn(chokidar, "watch").mockReturnValue(fakeWatcher as unknown as FSWatcher);
+
+const signalHandlers = new Map<string | symbol, Set<(...args: unknown[]) => void>>();
+
+vi.spyOn(process, "on").mockImplementation((event, handler) => {
+  const handlers = signalHandlers.get(event) ?? new Set<(...args: unknown[]) => void>();
+  handlers.add(handler as (...args: unknown[]) => void);
+  signalHandlers.set(event, handlers);
+
+  return process;
+});
+
+vi.spyOn(process, "off").mockImplementation((event, handler) => {
+  signalHandlers.get(event)?.delete(handler as (...args: unknown[]) => void);
+
+  return process;
+});
 
 describe("setupWatcher", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     fakeOn.mockReset();
+    fakeClose.mockResolvedValue(undefined);
+    signalHandlers.clear();
   });
 
   it("should log relative path with watch event", () => {
@@ -176,15 +197,6 @@ describe("setupWatcher", () => {
   });
 
   it("should close watcher on SIGINT/SIGTERM", async () => {
-    const handlers: Record<string, () => void | Promise<void>> = {};
-    vi.spyOn(process, "on").mockImplementation((event, handler) => {
-      if (typeof event === "string") {
-        handlers[event] = handler;
-      }
-
-      return process;
-    });
-
     const logger = {
       info: vi.fn<(...args: unknown[]) => void>(),
       success: vi.fn<(...args: unknown[]) => void>(),
@@ -201,14 +213,16 @@ describe("setupWatcher", () => {
     vi.spyOn(chokidar, "watch").mockReturnValueOnce(watcherSuccess as unknown as FSWatcher);
 
     setupWatcher("/base/dir", onGenerate, logger);
-    await handlers.SIGINT?.();
+    await signalHandlers.get("SIGINT")?.values().next().value?.();
 
     expect(mockClose).toHaveBeenCalled();
+    expect(signalHandlers.get("SIGINT")?.size).toBe(0);
+    expect(signalHandlers.get("SIGTERM")?.size).toBe(0);
     expect(logger.info).toHaveBeenCalledWith("Watcher closed.", {
       event: "watch",
     });
 
-    process.removeAllListeners("SIGTERM");
+    signalHandlers.clear();
 
     // On failure
     const mockCloseError = vi.fn<() => Promise<void>>().mockRejectedValue(new Error("close fail"));
@@ -222,12 +236,36 @@ describe("setupWatcher", () => {
     setupWatcher("/base/dir", onGenerate, logger);
 
     const flushPromises = () => new Promise(setImmediate);
-    await handlers.SIGTERM?.();
+    await signalHandlers.get("SIGTERM")?.values().next().value?.();
     // Ensure the async catch() is executed
     await flushPromises();
 
     expect(mockCloseError).toHaveBeenCalled();
+    expect(signalHandlers.get("SIGINT")?.size).toBe(0);
+    expect(signalHandlers.get("SIGTERM")?.size).toBe(0);
     expect(logger.error).toHaveBeenCalledWith("Failed to close watcher: close fail");
+  });
+
+  it("should return an idempotent disposer", async () => {
+    const mockClose = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+    const watcher = {
+      on: vi.fn<(...args: unknown[]) => unknown>(),
+      close: mockClose,
+    };
+
+    vi.spyOn(chokidar, "watch").mockReturnValueOnce(watcher as unknown as FSWatcher);
+
+    const dispose = setupWatcher("/base/dir", onGenerate, logger);
+
+    expect(signalHandlers.get("SIGINT")?.size).toBe(1);
+    expect(signalHandlers.get("SIGTERM")?.size).toBe(1);
+
+    await dispose();
+    await dispose();
+
+    expect(mockClose).toHaveBeenCalledTimes(1);
+    expect(signalHandlers.get("SIGINT")?.size).toBe(0);
+    expect(signalHandlers.get("SIGTERM")?.size).toBe(0);
   });
 
   it("should correctly ignore non-target files and include target files", () => {
