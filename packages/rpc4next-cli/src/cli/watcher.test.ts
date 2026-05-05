@@ -10,6 +10,7 @@ vi.mock("./core/cache.js", () => ({
   clearCntCache: vi.fn<(...args: unknown[]) => unknown>(),
   clearVisitedDirsCacheAbove: vi.fn<(...args: unknown[]) => unknown>(),
   clearScanAppDirCacheAbove: vi.fn<(...args: unknown[]) => unknown>(),
+  clearScanCaches: vi.fn<(...args: unknown[]) => unknown>(),
 }));
 
 vi.spyOn(debounceModule, "debounceOnceRunningWithTrailing").mockImplementation((fn) => fn);
@@ -216,6 +217,7 @@ describe("setupWatcher", () => {
     await signalHandlers.get("SIGINT")?.values().next().value?.();
 
     expect(mockClose).toHaveBeenCalled();
+    expect(cacheModule.clearScanCaches).toHaveBeenCalledTimes(1);
     expect(signalHandlers.get("SIGINT")?.size).toBe(0);
     expect(signalHandlers.get("SIGTERM")?.size).toBe(0);
     expect(logger.info).toHaveBeenCalledWith("Watcher closed.", {
@@ -241,6 +243,7 @@ describe("setupWatcher", () => {
     await flushPromises();
 
     expect(mockCloseError).toHaveBeenCalled();
+    expect(cacheModule.clearScanCaches).toHaveBeenCalledTimes(2);
     expect(signalHandlers.get("SIGINT")?.size).toBe(0);
     expect(signalHandlers.get("SIGTERM")?.size).toBe(0);
     expect(logger.error).toHaveBeenCalledWith("Failed to close watcher: close fail");
@@ -264,6 +267,7 @@ describe("setupWatcher", () => {
     await dispose();
 
     expect(mockClose).toHaveBeenCalledTimes(1);
+    expect(cacheModule.clearScanCaches).toHaveBeenCalledTimes(1);
     expect(signalHandlers.get("SIGINT")?.size).toBe(0);
     expect(signalHandlers.get("SIGTERM")?.size).toBe(0);
   });
