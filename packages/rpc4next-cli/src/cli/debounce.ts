@@ -25,6 +25,9 @@ export const debounceOnceRunningWithTrailing = <T extends (...args: any[]) => Pr
     if (timer) clearTimeout(timer);
 
     timer = setTimeout(() => {
+      // Drop the fired timer so its closed-over args can be released.
+      timer = null;
+
       if (isRunning) {
         pendingArgs = args;
 
