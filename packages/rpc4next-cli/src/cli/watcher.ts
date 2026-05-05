@@ -1,7 +1,11 @@
 import chokidar from "chokidar";
 
 import { END_POINT_FILE_NAMES } from "./constants.js";
-import { clearScanAppDirCacheAbove, clearVisitedDirsCacheAbove } from "./core/cache.js";
+import {
+  clearScanAppDirCacheAbove,
+  clearScanCaches,
+  clearVisitedDirsCacheAbove,
+} from "./core/cache.js";
 import { relativeFromRoot } from "./core/path-utils.js";
 import { debounceOnceRunningWithTrailing } from "./debounce.js";
 import type { Logger } from "./types.js";
@@ -75,14 +79,17 @@ export const setupWatcher = (
     process.off("SIGINT", cleanup);
     process.off("SIGTERM", cleanup);
 
-    closePromise ??= watcher
-      .close()
-      .then(() => {
-        logger.info("Watcher closed.", { event: "watch" });
-      })
-      .catch((err) => {
-        logger.error(`Failed to close watcher: ${err.message}`);
-      });
+    if (!closePromise) {
+      clearScanCaches();
+      closePromise = watcher
+        .close()
+        .then(() => {
+          logger.info("Watcher closed.", { event: "watch" });
+        })
+        .catch((err) => {
+          logger.error(`Failed to close watcher: ${err.message}`);
+        });
+    }
 
     return closePromise;
   };
