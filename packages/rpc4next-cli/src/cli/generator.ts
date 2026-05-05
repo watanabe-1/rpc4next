@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { SUCCESS_INDENT_LEVEL, SUCCESS_PAD_LENGTH, SUCCESS_SEPARATOR } from "./constants.js";
+import { clearScanCaches } from "./core/cache.js";
 import {
   generatePathStructure,
   ROUTE_CONTRACT_GENERATED_MARKER,
@@ -94,71 +95,80 @@ export const generate = ({
   outputPath,
   paramsFileName,
   logger,
+  preserveCache = false,
 }: {
   baseDir: string;
   outputPath: string;
   paramsFileName: string | null;
   logger: Logger;
+  preserveCache?: boolean;
 }) => {
-  logger.info("Generating types...", { event: "generate" });
+  try {
+    logger.info("Generating types...", { event: "generate" });
 
-  const { pathStructure, paramsTypes } = generatePathStructure(outputPath, baseDir);
+    const { pathStructure, paramsTypes } = generatePathStructure(outputPath, baseDir);
 
-  if (writeFileIfChanged(outputPath, pathStructure)) {
-    logger.success(
-      padMessage(
-        "Path structure type",
-        relativeFromRoot(outputPath),
-        SUCCESS_SEPARATOR,
-        SUCCESS_PAD_LENGTH,
-      ),
-      { indentLevel: SUCCESS_INDENT_LEVEL },
-    );
-  } else {
-    logger.info(
-      padMessage(
-        "Unchanged path type",
-        relativeFromRoot(outputPath),
-        SUCCESS_SEPARATOR,
-        SUCCESS_PAD_LENGTH,
-      ),
-      { indentLevel: SUCCESS_INDENT_LEVEL },
-    );
-  }
-
-  if (paramsFileName) {
-    let wroteParamsFile = false;
-    const expectedFilePaths = new Set(
-      paramsTypes.map(({ dirPath }) => path.resolve(path.join(dirPath, paramsFileName))),
-    );
-
-    paramsTypes.forEach(({ paramsType, dirPath }) => {
-      const filePath = path.join(dirPath, paramsFileName);
-      const didWrite = writeFileIfChanged(filePath, paramsType);
-
-      wroteParamsFile = wroteParamsFile || didWrite;
-    });
-
-    cleanupStaleGeneratedParamsFiles({
-      baseDir,
-      paramsFileName,
-      expectedFilePaths,
-    });
-
-    if (wroteParamsFile) {
+    if (writeFileIfChanged(outputPath, pathStructure)) {
       logger.success(
-        padMessage("Params types", paramsFileName, SUCCESS_SEPARATOR, SUCCESS_PAD_LENGTH),
-        {
-          indentLevel: SUCCESS_INDENT_LEVEL,
-        },
+        padMessage(
+          "Path structure type",
+          relativeFromRoot(outputPath),
+          SUCCESS_SEPARATOR,
+          SUCCESS_PAD_LENGTH,
+        ),
+        { indentLevel: SUCCESS_INDENT_LEVEL },
       );
     } else {
       logger.info(
-        padMessage("Unchanged params", paramsFileName, SUCCESS_SEPARATOR, SUCCESS_PAD_LENGTH),
-        {
-          indentLevel: SUCCESS_INDENT_LEVEL,
-        },
+        padMessage(
+          "Unchanged path type",
+          relativeFromRoot(outputPath),
+          SUCCESS_SEPARATOR,
+          SUCCESS_PAD_LENGTH,
+        ),
+        { indentLevel: SUCCESS_INDENT_LEVEL },
       );
+    }
+
+    if (paramsFileName) {
+      let wroteParamsFile = false;
+      const expectedFilePaths = new Set(
+        paramsTypes.map(({ dirPath }) => path.resolve(path.join(dirPath, paramsFileName))),
+      );
+
+      paramsTypes.forEach(({ paramsType, dirPath }) => {
+        const filePath = path.join(dirPath, paramsFileName);
+        const didWrite = writeFileIfChanged(filePath, paramsType);
+
+        wroteParamsFile = wroteParamsFile || didWrite;
+      });
+
+      cleanupStaleGeneratedParamsFiles({
+        baseDir,
+        paramsFileName,
+        expectedFilePaths,
+      });
+
+      if (wroteParamsFile) {
+        logger.success(
+          padMessage("Params types", paramsFileName, SUCCESS_SEPARATOR, SUCCESS_PAD_LENGTH),
+          {
+            indentLevel: SUCCESS_INDENT_LEVEL,
+          },
+        );
+      } else {
+        logger.info(
+          padMessage("Unchanged params", paramsFileName, SUCCESS_SEPARATOR, SUCCESS_PAD_LENGTH),
+          {
+            indentLevel: SUCCESS_INDENT_LEVEL,
+          },
+        );
+      }
+    }
+  } finally {
+    if (!preserveCache) {
+      // Normal generation should not retain scan results between embedded calls.
+      clearScanCaches();
     }
   }
 };

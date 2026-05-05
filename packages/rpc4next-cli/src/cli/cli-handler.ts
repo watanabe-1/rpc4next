@@ -11,6 +11,7 @@ const handleGenerateSafely = (
   outputPath: string,
   paramsFileName: string | null,
   logger: Logger,
+  preserveCache = false,
 ): ExitCode => {
   try {
     generate({
@@ -18,6 +19,7 @@ const handleGenerateSafely = (
       outputPath,
       paramsFileName,
       logger,
+      preserveCache,
     });
 
     return EXIT_SUCCESS;
@@ -53,7 +55,8 @@ export const handleCli = (
     setupWatcher(
       resolvedBaseDir,
       () => {
-        handleGenerateSafely(resolvedBaseDir, resolvedOutputPath, paramsFileName, logger);
+        // Watch mode keeps scan caches warm and invalidates changed paths in the watcher.
+        handleGenerateSafely(resolvedBaseDir, resolvedOutputPath, paramsFileName, logger, true);
       },
       logger,
     );

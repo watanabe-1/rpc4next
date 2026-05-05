@@ -47,6 +47,7 @@ describe("handleCli", () => {
       outputPath: expect.stringContaining("/outputDir"),
       paramsFileName: "params.json",
       logger,
+      preserveCache: false,
     });
   });
 
@@ -68,6 +69,13 @@ describe("handleCli", () => {
     callback();
 
     expect(generatorModule.generate).toHaveBeenCalledTimes(1);
+    expect(generatorModule.generate).toHaveBeenCalledWith({
+      baseDir: expect.stringContaining("/testDir"),
+      outputPath: expect.stringContaining("/outputDir"),
+      paramsFileName: "params.json",
+      logger,
+      preserveCache: true,
+    });
   });
 
   it("should work correctly when options are omitted", () => {
@@ -81,6 +89,7 @@ describe("handleCli", () => {
       outputPath: expect.stringContaining("/outputDir"),
       paramsFileName: null,
       logger,
+      preserveCache: false,
     });
     expect(watcherModule.setupWatcher).not.toHaveBeenCalled();
     expect(logger.error).not.toHaveBeenCalled();

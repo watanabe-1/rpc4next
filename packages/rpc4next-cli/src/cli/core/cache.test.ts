@@ -2,6 +2,7 @@ import path from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import {
+  clearScanCaches,
   clearScanAppDirCacheAbove,
   clearVisitedDirsCacheAbove,
   createScanAppDirCacheKey,
@@ -82,6 +83,31 @@ describe("clearVisitedDirsCacheAbove", () => {
     const originalSize = visitedDirsCache.size;
     clearVisitedDirsCacheAbove(filePath);
     expect(visitedDirsCache.size).toBe(originalSize);
+  });
+});
+
+describe("clearScanCaches", () => {
+  it("removes all scan caches", () => {
+    visitedDirsCache.set("/project", true);
+    scanAppDirCache.set(
+      createScanAppDirCacheKey({
+        output: "/output",
+        input: "/project",
+        indent: "",
+        rootDir: "/project",
+        parentParams: [],
+      }),
+      {
+        pathStructure: "",
+        imports: [],
+        paramsTypes: [],
+      },
+    );
+
+    clearScanCaches();
+
+    expect(visitedDirsCache.size).toBe(0);
+    expect(scanAppDirCache.size).toBe(0);
   });
 });
 

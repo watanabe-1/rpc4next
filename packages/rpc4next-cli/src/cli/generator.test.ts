@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { cleanupTempDir, makeTempDir, writeTree } from "../test-helpers/tmp-dir.js";
 import { SUCCESS_INDENT_LEVEL, SUCCESS_PAD_LENGTH, SUCCESS_SEPARATOR } from "./constants.js";
+import { scanAppDirCache, visitedDirsCache } from "./core/cache.js";
 import * as generatePathStructure from "./core/generate-path-structure.js";
 import { ROUTE_CONTRACT_GENERATED_MARKER } from "./core/generate-path-structure.js";
 import { generate } from "./generator.js";
@@ -23,6 +24,86 @@ describe("generate", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.clearAllMocks();
+    scanAppDirCache.clear();
+    visitedDirsCache.clear();
+  });
+
+  it("clears scan caches after non-watch generation", () => {
+    vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
+      pathStructure: "generated-type-content",
+      paramsTypes: [],
+    });
+    vi.spyOn(fs, "existsSync").mockReturnValue(false);
+    vi.spyOn(fs, "writeFileSync").mockImplementation(() => {});
+
+    visitedDirsCache.set("/cached/app", true);
+    scanAppDirCache.set("cached-scan", {
+      pathStructure: "cached",
+      imports: [],
+      paramsTypes: [],
+    });
+
+    generate({
+      baseDir,
+      outputPath,
+      paramsFileName: null,
+      logger,
+    });
+
+    expect(visitedDirsCache.size).toBe(0);
+    expect(scanAppDirCache.size).toBe(0);
+  });
+
+  it("preserves scan caches during watch generation", () => {
+    vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
+      pathStructure: "generated-type-content",
+      paramsTypes: [],
+    });
+    vi.spyOn(fs, "existsSync").mockReturnValue(false);
+    vi.spyOn(fs, "writeFileSync").mockImplementation(() => {});
+
+    visitedDirsCache.set("/cached/app", true);
+    scanAppDirCache.set("cached-scan", {
+      pathStructure: "cached",
+      imports: [],
+      paramsTypes: [],
+    });
+
+    generate({
+      baseDir,
+      outputPath,
+      paramsFileName: null,
+      logger,
+      preserveCache: true,
+    });
+
+    expect(visitedDirsCache.size).toBe(1);
+    expect(scanAppDirCache.size).toBe(1);
+  });
+
+  it("clears scan caches when non-watch generation throws", () => {
+    vi.spyOn(generatePathStructure, "generatePathStructure").mockImplementation(() => {
+      throw new Error("scan failed");
+    });
+
+    visitedDirsCache.set("/cached/app", true);
+    scanAppDirCache.set("cached-scan", {
+      pathStructure: "cached",
+      imports: [],
+      paramsTypes: [],
+    });
+
+    expect(() =>
+      generate({
+        baseDir,
+        outputPath,
+        paramsFileName: null,
+        logger,
+      }),
+    ).toThrow("scan failed");
+
+    expect(visitedDirsCache.size).toBe(0);
+    expect(scanAppDirCache.size).toBe(0);
   });
 
   it("writes the output file when it does not exist", () => {
