@@ -52,3 +52,9 @@ export const clearVisitedDirsCacheAbove = (targetPath: string): void => {
 export const clearScanAppDirCacheAbove = (targetPath: string): void => {
   clearCacheAbove(scanAppDirCache, targetPath);
 };
+
+// Drop strong references held by module-scoped scan caches after non-watch generation.
+export const clearScanCaches = (): void => {
+  visitedDirsCache.clear();
+  scanAppDirCache.clear();
+};
