@@ -92,7 +92,7 @@ jobs:
 
       - name: Report Coverage
         if: ${{ matrix.os == 'ubuntu-latest' && matrix.node-version == 'aqua' && matrix.next-version == 'from-package' }}
-        uses: davelosert/vitest-coverage-report-action@3c50566c523e04813df28de8f7c48dd97d663f1c # v2.11.2
+        uses: davelosert/vitest-coverage-report-action@02f3c2e641286b7fa308cd3e430783103ce6103b # v2.12.0
         with:
           comment-on: ${{ github.event_name == 'pull_request' && 'pr' || 'commit' }}
 
