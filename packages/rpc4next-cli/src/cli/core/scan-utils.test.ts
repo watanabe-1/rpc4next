@@ -105,6 +105,30 @@ describe("scanEndpointFile", () => {
     expect(result.routes[0]?.type).toBe('{ "$patch": typeof PATCH_2fb9d0ae6e8b8cfc }');
   });
 
+  it("should return a route definition for a type annotated constant function", () => {
+    const { inputFile, outputFile, rootDir } = createPaths();
+    writeTree(rootDir, {
+      "input.ts": "export const GET: RouteHandler = () => ({ data: 'test' });",
+    });
+
+    const result = scanEndpointFile(outputFile, inputFile);
+    expect(result.routes).toHaveLength(1);
+    expect(result.routes[0]?.importName).toBe("GET_84a33c1aab9019d2");
+    expect(result.routes[0]?.type).toBe('{ "$get": typeof GET_84a33c1aab9019d2 }');
+  });
+
+  it("should return a route definition for a function type annotated constant", () => {
+    const { inputFile, outputFile, rootDir } = createPaths();
+    writeTree(rootDir, {
+      "input.ts": "export const POST: (request: Request) => Response = () => new Response();",
+    });
+
+    const result = scanEndpointFile(outputFile, inputFile);
+    expect(result.routes).toHaveLength(1);
+    expect(result.routes[0]?.importName).toBe("POST_8393a35405bb7d7f");
+    expect(result.routes[0]?.type).toBe('{ "$post": typeof POST_8393a35405bb7d7f }');
+  });
+
   it("should return a route definition for a destructured export", () => {
     const { inputFile, outputFile, rootDir } = createPaths();
     writeTree(rootDir, {
@@ -129,6 +153,18 @@ describe("scanEndpointFile", () => {
     expect(result.routes[0]?.type).toBe('{ "$delete": typeof DELETE_bacf7eb8c865f8b9 }');
   });
 
+  it("should return a route definition for an exported binding list", () => {
+    const { inputFile, outputFile, rootDir } = createPaths();
+    writeTree(rootDir, {
+      "input.ts": "const GET = () => ({ data: 'test' }); export { GET };",
+    });
+
+    const result = scanEndpointFile(outputFile, inputFile);
+    expect(result.routes).toHaveLength(1);
+    expect(result.routes[0]?.importName).toBe("GET_84a33c1aab9019d2");
+    expect(result.routes[0]?.type).toBe('{ "$get": typeof GET_84a33c1aab9019d2 }');
+  });
+
   it("should return stable aliases for multiple scans of the same route", () => {
     const { inputFile, outputFile, rootDir } = createPaths();
     writeTree(rootDir, {
@@ -147,6 +183,16 @@ describe("scanEndpointFile", () => {
     const { inputFile, outputFile, rootDir } = createPaths();
     writeTree(rootDir, {
       "input.ts": "export function OTHER() { return { data: 'test' }; }",
+    });
+
+    const result = scanEndpointFile(outputFile, inputFile);
+    expect(result.routes).toEqual([]);
+  });
+
+  it("should skip constants whose names only contain an HTTP method", () => {
+    const { inputFile, outputFile, rootDir } = createPaths();
+    writeTree(rootDir, {
+      "input.ts": "export const METHOD_GET = () => ({ data: 'test' });",
     });
 
     const result = scanEndpointFile(outputFile, inputFile);

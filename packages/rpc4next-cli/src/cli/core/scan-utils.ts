@@ -41,9 +41,15 @@ const findQueryExport = (fileContents: string) => {
 };
 
 const hasRouteExport = (fileContents: string, httpMethod: HttpMethod) => {
-  return new RegExp(
-    `export (async )?(function ${httpMethod} ?\\(|const ${httpMethod} ?=|\\{[^}]*\\b${httpMethod}\\b[^}]*\\} ?=|const \\{[^}]*\\b${httpMethod}\\b[^}]*\\} ?=|\\{[^}]*\\b${httpMethod}\\b[^}]*\\} from)`,
-  ).test(fileContents);
+  const exportPatterns = [
+    `async\\s+function\\s+${httpMethod}\\s*\\(`,
+    `function\\s+${httpMethod}\\s*\\(`,
+    `const\\s+${httpMethod}\\b\\s*(?::(?:[^=]|=>)*?)?=`,
+    `const\\s+\\{[^}]*\\b${httpMethod}\\b[^}]*\\}\\s*=`,
+    `\\{[^}]*\\b${httpMethod}\\b[^}]*\\}(?:\\s+from)?`,
+  ];
+
+  return new RegExp(`export\\s+(?:${exportPatterns.join("|")})`).test(fileContents);
 };
 
 export const scanEndpointFile = (
