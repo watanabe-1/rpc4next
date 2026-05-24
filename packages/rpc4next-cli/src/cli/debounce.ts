@@ -16,6 +16,8 @@ export const debounceOnceRunningWithTrailing = <T extends (...args: any[]) => Pr
     isRunning = true;
     try {
       await func(...args);
+    } catch {
+      // Debounced calls do not expose a promise, so contain async failures here.
     } finally {
       isRunning = false;
 
