@@ -85,4 +85,49 @@ describe("debounceOnceRunningWithTrailing", () => {
 
     vi.useRealTimers();
   });
+
+  it("should cancel a pending timer and release its arguments", async () => {
+    vi.useFakeTimers();
+    const callback = vi.fn<(value: string) => void>();
+    const debounced = debounceOnceRunningWithTrailing(callback, 500);
+
+    debounced("test");
+    debounced.cancel();
+
+    vi.advanceTimersByTime(500);
+    await vi.runAllTicks();
+
+    expect(callback).not.toHaveBeenCalled();
+
+    vi.useRealTimers();
+  });
+
+  it("should cancel pending trailing arguments while callback is running", async () => {
+    vi.useFakeTimers();
+
+    let finish!: () => void;
+    const callback = vi.fn<(value: string) => Promise<void>>(async () => {
+      await new Promise<void>((resolve) => {
+        finish = resolve;
+      });
+    });
+    const debounced = debounceOnceRunningWithTrailing(callback, 300);
+
+    debounced("A");
+    vi.advanceTimersByTime(300);
+    await vi.runAllTicks();
+
+    debounced("B");
+    vi.advanceTimersByTime(300);
+    await vi.runAllTicks();
+
+    debounced.cancel();
+    finish();
+    await vi.runAllTicks();
+
+    expect(callback).toHaveBeenCalledTimes(1);
+    expect(callback).toHaveBeenCalledWith("A");
+
+    vi.useRealTimers();
+  });
 });

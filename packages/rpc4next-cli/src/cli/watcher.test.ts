@@ -13,7 +13,9 @@ vi.mock("./core/cache.js", () => ({
   clearScanCaches: vi.fn<(...args: unknown[]) => unknown>(),
 }));
 
-vi.spyOn(debounceModule, "debounceOnceRunningWithTrailing").mockImplementation((fn) => fn);
+const debounceSpy = vi
+  .spyOn(debounceModule, "debounceOnceRunningWithTrailing")
+  .mockImplementation((fn) => Object.assign(fn, { cancel: vi.fn<() => void>() }));
 
 type WatchAllHandler = (event: string, path: string) => void;
 type WatchErrorHandler = (error: unknown) => void;
@@ -270,6 +272,63 @@ describe("setupWatcher", () => {
     expect(cacheModule.clearScanCaches).toHaveBeenCalledTimes(1);
     expect(signalHandlers.get("SIGINT")?.size).toBe(0);
     expect(signalHandlers.get("SIGTERM")?.size).toBe(0);
+  });
+
+  it.each([
+    ["dispose", async (dispose: () => Promise<void>) => dispose()],
+    [
+      "SIGINT",
+      async () => {
+        await signalHandlers.get("SIGINT")?.values().next().value?.();
+      },
+    ],
+    [
+      "SIGTERM",
+      async () => {
+        await signalHandlers.get("SIGTERM")?.values().next().value?.();
+      },
+    ],
+  ])("should not run scheduled generate after %s cleanup", async (_, cleanup) => {
+    vi.useFakeTimers();
+
+    const cancel = vi.fn<() => void>();
+    debounceSpy.mockImplementationOnce((fn, delay) => {
+      let timer: ReturnType<typeof setTimeout> | null = null;
+      const debounced = Object.assign(
+        () => {
+          if (timer) clearTimeout(timer);
+          timer = setTimeout(fn, delay);
+        },
+        {
+          cancel: () => {
+            cancel();
+            if (timer) {
+              clearTimeout(timer);
+              timer = null;
+            }
+          },
+        },
+      );
+
+      return debounced;
+    });
+
+    const dispose = setupWatcher("/base/dir", onGenerate, logger);
+
+    const readyHandler = fakeOn.mock.calls.find(
+      (call: [string, WatchHandler]) => call[0] === "ready",
+    )?.[1] as WatchReadyHandler | undefined;
+
+    readyHandler?.();
+    await cleanup(dispose);
+
+    vi.advanceTimersByTime(300);
+    await vi.runAllTicks();
+
+    expect(cancel).toHaveBeenCalledTimes(1);
+    expect(onGenerate).not.toHaveBeenCalled();
+
+    vi.useRealTimers();
   });
 
   it("should correctly ignore non-target files and include target files", () => {

@@ -80,6 +80,7 @@ export const setupWatcher = (
     process.off("SIGTERM", cleanup);
 
     if (!closePromise) {
+      debouncedGenerate.cancel();
       clearScanCaches();
       closePromise = watcher
         .close()
