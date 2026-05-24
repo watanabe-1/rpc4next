@@ -1,7 +1,13 @@
+type CancellableDebounced<T extends (...args: any[]) => Promise<void> | void> = ((
+  ...args: Parameters<T>
+) => void) & {
+  cancel: () => void;
+};
+
 export const debounceOnceRunningWithTrailing = <T extends (...args: any[]) => Promise<void> | void>(
   func: T,
   delay: number,
-) => {
+): CancellableDebounced<T> => {
   let timer: ReturnType<typeof setTimeout> | null = null;
   let isRunning = false;
   let pendingArgs: Parameters<T> | null = null;
@@ -21,7 +27,7 @@ export const debounceOnceRunningWithTrailing = <T extends (...args: any[]) => Pr
     }
   };
 
-  return (...args: Parameters<T>) => {
+  const debounced = (...args: Parameters<T>) => {
     if (timer) clearTimeout(timer);
 
     timer = setTimeout(() => {
@@ -37,4 +43,15 @@ export const debounceOnceRunningWithTrailing = <T extends (...args: any[]) => Pr
       execute(...args);
     }, delay);
   };
+
+  debounced.cancel = () => {
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+
+    pendingArgs = null;
+  };
+
+  return debounced;
 };
