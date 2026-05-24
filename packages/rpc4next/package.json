@@ -51,26 +51,6 @@
         "types": "./dist/rpc/server/index.d.ts",
         "default": "./dist/rpc/server/index.js"
       }
-    },
-    "./lib/constants": {
-      "import": {
-        "types": "./dist/rpc/lib/constants.d.ts",
-        "default": "./dist/rpc/lib/constants.js"
-      },
-      "default": {
-        "types": "./dist/rpc/lib/constants.d.ts",
-        "default": "./dist/rpc/lib/constants.js"
-      }
-    },
-    "./lib/types": {
-      "import": {
-        "types": "./dist/rpc/lib/types.d.ts",
-        "default": "./dist/rpc/lib/types.js"
-      },
-      "default": {
-        "types": "./dist/rpc/lib/types.d.ts",
-        "default": "./dist/rpc/lib/types.js"
-      }
     }
   },
   "publishConfig": {
