@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.7.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.6.0...rpc4next-cli-v0.7.0) (2026-06-13)
+
+
+### Features
+
+* generate route contracts and require bound procedure ([#397](https://github.com/watanabe-1/rpc4next/issues/397)) ([6d1eb87](https://github.com/watanabe-1/rpc4next/commit/6d1eb8792311af7a583506444a2c83ff3b76b0d8))
+
+
+### Bug Fixes
+
+* **cli:** Cancel debounced generate on cleanup ([#474](https://github.com/watanabe-1/rpc4next/issues/474)) ([d1fd41a](https://github.com/watanabe-1/rpc4next/commit/d1fd41a18d47425b578dcf4fdee5570dfec93588))
+* **cli:** Clean up watcher signal listeners ([#462](https://github.com/watanabe-1/rpc4next/issues/462)) ([8e12d64](https://github.com/watanabe-1/rpc4next/commit/8e12d641b76fa9ac2f19cda88541c3c57406cbce))
+* **cli:** clear fired debounce timer ([#461](https://github.com/watanabe-1/rpc4next/issues/461)) ([6c2d7f7](https://github.com/watanabe-1/rpc4next/commit/6c2d7f75e6bfd6f63d0e25b550dbe98f24e6a7cf))
+* **cli:** Clear scan caches after non-watch generation ([#463](https://github.com/watanabe-1/rpc4next/issues/463)) ([4e93565](https://github.com/watanabe-1/rpc4next/commit/4e93565430b56a280f1af4ac6f87360363a185b4))
+* **cli:** Clear scan caches on watcher close ([#464](https://github.com/watanabe-1/rpc4next/issues/464)) ([599b9b3](https://github.com/watanabe-1/rpc4next/commit/599b9b3d929d8577b49682fdc605428191e60c87))
+* **cli:** Contain debounce callback rejections ([#476](https://github.com/watanabe-1/rpc4next/issues/476)) ([8863980](https://github.com/watanabe-1/rpc4next/commit/88639806336106884f9a61f1a73ae244531a4fd7))
+* **cli:** Detect typed route exports ([#477](https://github.com/watanabe-1/rpc4next/issues/477)) ([89d1d67](https://github.com/watanabe-1/rpc4next/commit/89d1d67b63dcc5ecd14b9fa18a9c21788ab73645))
+* **cli:** Isolate scan cache by context ([#431](https://github.com/watanabe-1/rpc4next/issues/431)) ([384cece](https://github.com/watanabe-1/rpc4next/commit/384cece9771808586dee9e4107d347aff9e4aafa))
+* **cli:** Normalize route contract pathnames ([#453](https://github.com/watanabe-1/rpc4next/issues/453)) ([31751d8](https://github.com/watanabe-1/rpc4next/commit/31751d8ab71bcdf94c19ba0e88db623ac110c1b0))
+* **cli:** Remove stale generated params files ([#454](https://github.com/watanabe-1/rpc4next/issues/454)) ([7e52f96](https://github.com/watanabe-1/rpc4next/commit/7e52f96e62d30b1871574ba116e1d0b54beab151))
+
 ## [0.6.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.5.0...rpc4next-cli-v0.6.0) (2026-03-15)
 
 ### Features
