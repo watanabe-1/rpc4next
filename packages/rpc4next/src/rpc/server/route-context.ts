@@ -76,7 +76,7 @@ const resolvedHeaders = (
 };
 
 export const createResponseHelpers = <TJson = unknown>(): ResponseHelpers<TJson> => ({
-  body: <
+  body: (<
     TData extends BodyInit | null,
     TContentType extends ContentType,
     TStatus extends HttpStatusCode = 200,
@@ -84,7 +84,7 @@ export const createResponseHelpers = <TJson = unknown>(): ResponseHelpers<TJson>
     data: TData,
     init?: TStatus | TypedResponseInit<TStatus, TContentType>,
   ) =>
-    attachResponseHelperMetadata(
+    attachResponseHelperMetadata<TypedNextResponse<TData, TStatus, TContentType>, TData>(
       new NextResponse<TData>(data, resolvedHeaders(init)) as TypedNextResponse<
         TData,
         TStatus,
@@ -94,7 +94,7 @@ export const createResponseHelpers = <TJson = unknown>(): ResponseHelpers<TJson>
         kind: "body",
         payload: data,
       },
-    ),
+    )) as ResponseHelpers<TJson>["body"],
 
   json: (<TData, TStatus extends HttpStatusCode = 200>(
     data: TData,
