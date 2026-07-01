@@ -73,9 +73,8 @@ jobs:
       - name: Lint
         run: bun run lint
 
-      # Trusted Publishing requires recent npm (OIDC support).
-      - name: Upgrade npm
-        run: npm i -g npm@latest
+      - name: Show npm version
+        run: npm --version
 
       - name: Publish released packages
         env:
