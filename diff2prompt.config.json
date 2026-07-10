@@ -1,4 +1,5 @@
 {
   "promptTemplateFile": "conventional-commit.tpl.md",
-  "exclude": ["bun.lock"]
+  "exclude": ["bun.lock"],
+  "gitignoreFile": ".gitignore"
 }
