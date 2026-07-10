@@ -29,14 +29,14 @@
     "integration:next-app:watch": "bun run --cwd integration/next-app generate:rpc:watch",
     "integration:next-app:e2e": "bun run --cwd integration/next-app e2e",
     "integration:next-app:dev": "bun run --cwd integration/next-app dev",
-    "diff2prompt": "diff2prompt --excludeFile=.gitignore"
+    "diff2prompt": "diff2prompt"
   },
   "devDependencies": {
     "@types/node": "^26.0.1",
     "@vitest/coverage-v8": "^4.1.9",
     "@vitest/ui": "^4.1.9",
     "arktype": "^2.2.1",
-    "diff2prompt": "^0.0.12",
+    "diff2prompt": "^0.0.13",
     "esbuild": "^0.28.1",
     "fast-glob": "^3.3.3",
     "msw": "^2.14.6",

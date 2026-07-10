@@ -9,7 +9,7 @@
         "@vitest/coverage-v8": "^4.1.9",
         "@vitest/ui": "^4.1.9",
         "arktype": "^2.2.1",
-        "diff2prompt": "^0.0.12",
+        "diff2prompt": "^0.0.13",
         "esbuild": "^0.28.1",
         "fast-glob": "^3.3.3",
         "msw": "^2.14.6",
@@ -473,7 +473,7 @@
 
     "detect-libc": ["detect-libc@2.1.2", "", {}, "sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ=="],
 
-    "diff2prompt": ["diff2prompt@0.0.12", "", { "bin": { "diff2prompt": "dist/index.js" } }, "sha512-YESnesdzhKTb93hEUdcseptlgo/PnMg7ESQM2r+ivNET2FP5PvA2jVsmgg3hoHRON0pxzcT87QvHYTOS86zf3Q=="],
+    "diff2prompt": ["diff2prompt@0.0.13", "", { "bin": { "diff2prompt": "dist/index.js" } }, "sha512-27IzBpMJjPeByolkgjgvsLmXK0owwjyMhvB4C+MHM0z+4TJwSw/TMd37PnvottwtbIuORoNU3jhMwDg8cYU1+Q=="],
 
     "emoji-regex": ["emoji-regex@8.0.0", "", {}, "sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A=="],
 
