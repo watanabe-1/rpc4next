@@ -1,4 +1,5 @@
 {
+  "$schema": "node_modules/diff2prompt/dist/schema.json",
   "promptTemplateFile": "conventional-commit.tpl.md",
   "exclude": ["bun.lock"],
   "gitignoreFile": ".gitignore"
