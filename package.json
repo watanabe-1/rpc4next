@@ -33,8 +33,8 @@
   },
   "devDependencies": {
     "@types/node": "^26.1.0",
-    "@vitest/coverage-v8": "^4.1.9",
-    "@vitest/ui": "^4.1.9",
+    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/ui": "^4.1.10",
     "arktype": "^2.2.2",
     "diff2prompt": "^0.0.14",
     "esbuild": "^0.28.1",
@@ -45,7 +45,7 @@
     "oxlint": "^1.72.0",
     "typescript": "^7.0.2",
     "valibot": "^1.4.2",
-    "vitest": "^4.1.9",
+    "vitest": "^4.1.10",
     "zod": "^4.4.3"
   },
   "engines": {
