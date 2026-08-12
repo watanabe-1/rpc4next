@@ -10,11 +10,11 @@ import type { ContentType } from "../lib/content-type-types";
 import type { HttpRequestHeaders } from "../lib/http-request-headers-types";
 import type { HttpStatusCode, SuccessfulHttpStatusCode } from "../lib/http-status-code-types";
 import type { RpcErrorCode, RpcErrorEnvelope, RpcErrorStatus } from "../server/error";
+import type { procedureDefinitionSymbol } from "../server/procedure-definition";
 import type {
   ProcedureInputContract,
   ProcedureOutputContract,
   ProcedureValidationErrorResponseMap,
-  procedureDefinitionSymbol,
   WithProcedureDefinition,
 } from "../server/procedure-types";
 import type { RouteHandlerResponse, RouteResponse, ValidationSchema } from "../server/route-types";

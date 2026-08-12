@@ -7,6 +7,7 @@ import { searchParamsToObject } from "../lib/search-params";
 import { rpcError } from "./error";
 import type { ProcedureOnError } from "./on-error";
 import type { ProcedureMiddleware, ProcedureMiddlewareResult, ProcedureResult } from "./procedure";
+import { attachProcedureDefinition } from "./procedure-definition";
 import {
   executePipeline,
   isProcedureResult,
@@ -14,7 +15,6 @@ import {
   withProcedureMethod,
 } from "./procedure-internals";
 import {
-  attachProcedureDefinition,
   type MergeProcedureDefinition,
   type ProcedureDefinition,
   type ProcedureInputContract,

@@ -1,4 +1,4 @@
-import { getProcedureDefinition } from "./procedure-types";
+import { getProcedureDefinition } from "./procedure-definition";
 import type { ProcedureDefinition, WithProcedureDefinition } from "./procedure-types";
 
 export interface RpcMetaBase {

@@ -4,6 +4,7 @@ import type { HttpMethod } from "rpc4next-shared";
 import type { RpcMeta } from "./meta";
 import type { ProcedureOnErrorResponse } from "./on-error";
 import type { ProcedureResult } from "./procedure";
+import type { procedureDefinitionSymbol } from "./procedure-definition";
 import type { ValidationSchema } from "./route-types";
 import type { StandardSchemaV1, StandardSchemaV1Issue } from "./standard-schema";
 
@@ -120,42 +121,9 @@ export type MergeProcedureDefinition<
   TExtra extends Partial<ProcedureDefinition>,
 > = Omit<TBase, keyof TExtra> & TExtra;
 
-export const procedureDefinitionSymbol = Symbol.for("rpc4next.procedure.definition");
-
 export type WithProcedureDefinition<
   TValue,
   TDefinition extends Partial<ProcedureDefinition> = ProcedureDefinition,
 > = TValue & {
   [procedureDefinitionSymbol]?: TDefinition;
-};
-
-export const attachProcedureDefinition = <
-  TValue extends object,
-  TDefinition extends Partial<ProcedureDefinition>,
->(
-  value: TValue,
-  definition: TDefinition,
-): WithProcedureDefinition<TValue, TDefinition> => {
-  Object.defineProperty(value, procedureDefinitionSymbol, {
-    configurable: true,
-    enumerable: false,
-    value: definition,
-    writable: true,
-  });
-
-  return value as WithProcedureDefinition<TValue, TDefinition>;
-};
-
-export const getProcedureDefinition = <
-  TDefinition extends Partial<ProcedureDefinition> = ProcedureDefinition,
->(
-  value: unknown,
-): TDefinition | undefined => {
-  if (typeof value !== "function" && typeof value !== "object") {
-    return undefined;
-  }
-
-  return (value as WithProcedureDefinition<Record<PropertyKey, unknown>, TDefinition>)[
-    procedureDefinitionSymbol
-  ];
 };

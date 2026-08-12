@@ -9,6 +9,7 @@ import {
   type NextRouteProcedureOptions,
 } from "./next-route";
 import type { ProcedureOnError } from "./on-error";
+import { attachProcedureDefinition } from "./procedure-definition";
 import {
   withProcedureInputContract,
   withProcedureMeta,
@@ -16,7 +17,6 @@ import {
   withProcedureRouteBinding,
 } from "./procedure-internals";
 import {
-  attachProcedureDefinition,
   type EmptyProcedureDefinition,
   type MergeProcedureDefinition,
   type ProcedureDefinition,
