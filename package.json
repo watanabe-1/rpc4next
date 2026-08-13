@@ -23,6 +23,7 @@
     "format:oxfmt:check": "oxfmt --check .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage.enabled true",
+    "test:package": "bun run build && bun scripts/package-smoke-test.ts",
     "test:ui": "vitest --ui --coverage.enabled true",
     "test:watch": "vitest --watch",
     "integration:next-app:generate": "bun run --cwd integration/next-app generate:rpc",

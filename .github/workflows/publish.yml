@@ -73,6 +73,9 @@ jobs:
       - name: Lint
         run: bun run lint
 
+      - name: Package smoke test
+        run: bun scripts/package-smoke-test.ts
+
       - name: Show npm version
         run: npm --version
 
