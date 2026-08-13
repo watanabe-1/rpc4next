@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.7.1...rpc4next-v0.8.0) (2026-08-13)
+
+
+### Features
+
+* **server:** Return method-keyed Next.js route exports ([#517](https://github.com/watanabe-1/rpc4next/issues/517)) ([0c53bfc](https://github.com/watanabe-1/rpc4next/commit/0c53bfc7b8dd50f5f2539efa3228fd2e94b9e4e7))
+
 ## [0.7.1](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.7.0...rpc4next-v0.7.1) (2026-08-13)
 
 ### Bug Fixes
