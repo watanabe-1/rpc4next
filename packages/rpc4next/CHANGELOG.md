@@ -2,10 +2,9 @@
 
 ## [0.7.1](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.7.0...rpc4next-v0.7.1) (2026-08-13)
 
-
 ### Bug Fixes
 
-* **client:** omit Cookie header in browser requests ([#515](https://github.com/watanabe-1/rpc4next/issues/515)) ([f78d97f](https://github.com/watanabe-1/rpc4next/commit/f78d97f27f479fe8f30149d3f18d03e7cb55d141))
+- **client:** omit Cookie header in browser requests ([#515](https://github.com/watanabe-1/rpc4next/issues/515)) ([f78d97f](https://github.com/watanabe-1/rpc4next/commit/f78d97f27f479fe8f30149d3f18d03e7cb55d141))
 
 ## [0.7.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.6.1...rpc4next-v0.7.0) (2026-08-12)
 
