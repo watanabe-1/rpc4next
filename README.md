@@ -224,6 +224,13 @@ const response = await rpc.api["request-meta"].$get({
 });
 ```
 
+`requestHeaders.cookies` is part of the typed input contract. On the server, or
+when you provide a non-browser `fetch`, rpc4next serializes it into the `Cookie`
+header. In the browser, scripts cannot set the `Cookie` header directly, so
+rpc4next omits that synthetic header and lets `fetch` send real browser cookies
+instead. For cross-origin browser calls, pass the appropriate `credentials`
+option, such as `{ init: { credentials: "include" } }`.
+
 ### 5. Generate Typed URLs for Pages
 
 `page.tsx` files are included in the generated path tree, so you can build typed URLs even when there is no RPC method to call.
