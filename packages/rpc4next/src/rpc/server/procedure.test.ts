@@ -4,6 +4,7 @@ import { defaultProcedureOnError } from "./on-error";
 import { defineProcedureMiddleware, procedure } from "./procedure";
 import type { ProcedureRouteContract } from "./procedure-types";
 import type { StandardSchemaV1 } from "./standard-schema";
+import type { ResponseHelpers } from "./types";
 
 describe("procedure builder type definitions", () => {
   const guardedUserRouteContract = {
@@ -290,17 +291,17 @@ describe("procedure builder type definitions", () => {
         const _query: { page: number } = context.query;
         const _request: Request = context.request;
         const _ctx: Record<never, never> = context.ctx;
+        const _response: ResponseHelpers = context.response;
 
         void _query;
         void _request;
         void _ctx;
+        void _response;
 
         // @ts-expect-error params are not available without params(schema)
         void context.params;
         // @ts-expect-error json is not available without json(schema)
         void context.json;
-        // @ts-expect-error response helpers are only available inside handle(...)
-        void context.response;
 
         return undefined;
       })

@@ -1,7 +1,6 @@
 export type { ContentType } from "../lib/content-type-types";
 export type { HttpStatusCode } from "../lib/http-status-code-types";
-export type { RpcErrorCode, RpcErrorEnvelope, RpcErrorInit, RpcErrorStatus } from "./error";
-export { createRpcErrorEnvelope, isRpcError, RpcError, rpcError } from "./error";
+export type { RpcErrorCode, RpcErrorEnvelope, RpcErrorResponseInit, RpcErrorStatus } from "./error";
 export type { InferRouteMeta, RpcMeta, RpcMetaBase } from "./meta";
 export { getRouteMeta } from "./meta";
 export { nextRoute } from "./next-route";

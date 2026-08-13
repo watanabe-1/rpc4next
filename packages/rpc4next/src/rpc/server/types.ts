@@ -8,6 +8,7 @@ import type {
   RedirectionHttpStatusCode,
   SuccessfulHttpStatusCode,
 } from "../lib/http-status-code-types";
+import type { RpcErrorCode, RpcErrorEnvelope, RpcErrorResponseInit, RpcErrorStatus } from "./error";
 import type { ValidationSchema } from "./route-types";
 
 /**
@@ -114,6 +115,15 @@ export interface ResponseHelpers<TJson = unknown> {
     url: string,
     init?: TStatus | TypedResponseInit<TStatus, "">,
   ) => TypedNextResponse<undefined, TStatus, "">;
+
+  error: <TCode extends RpcErrorCode, TDetails = unknown>(
+    code: TCode,
+    init?: RpcErrorResponseInit<TDetails>,
+  ) => TypedNextResponse<
+    RpcErrorEnvelope<TCode, TDetails>,
+    RpcErrorStatus<TCode>,
+    "application/json"
+  >;
 }
 
 export type Params = Record<string, string | string[]>;

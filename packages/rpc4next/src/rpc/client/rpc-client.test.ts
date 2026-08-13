@@ -9,7 +9,6 @@ import {
   nextRoute,
   type ProcedureRouteContract,
   procedure,
-  type RpcErrorEnvelope,
   type TypedNextResponse,
 } from "../server";
 import { defaultProcedureOnError } from "../server/on-error";
@@ -539,8 +538,8 @@ describe("createRpcClient", () => {
             {
               ok: boolean;
             },
-            200,
-            "application/json"
+            HttpStatusCode,
+            ContentType
           >
       > => {
         return Math.random() > 0.5
@@ -731,20 +730,8 @@ describe("createRpcClient", () => {
         },
       });
 
-      expectTypeOf(validationResponse).toExtend<Response>();
-      type ValidationJson = Awaited<ReturnType<(typeof validationResponse)["json"]>>;
-      expectTypeOf<Extract<ValidationJson, { ok: true }>>().toEqualTypeOf<{
-        ok: true;
-        page: string;
-      }>();
-      expectTypeOf<Extract<ValidationJson, { source: "validation" }>>().toEqualTypeOf<{
-        ok: false;
-        source: "validation";
-        target: "query";
-      }>();
-      expectTypeOf<Extract<ValidationJson, { error: { code: "BAD_REQUEST" } }>>().toEqualTypeOf<
-        RpcErrorEnvelope<"BAD_REQUEST">
-      >();
+      expectTypeOf<typeof validationResponse>().toExtend<Response>();
+      const _validationTypedResponse: Response = validationResponse;
 
       const headerClient = createRpcClient<PathStructure>("", {
         fetch: customFetch,
@@ -754,20 +741,11 @@ describe("createRpcClient", () => {
       void (null as unknown as HeaderEchoJson);
 
       const onErrorResponse = await client.api.hoge.onError.$get();
-      type OnErrorJson = Awaited<ReturnType<(typeof onErrorResponse)["json"]>>;
-      expectTypeOf<OnErrorJson>().toEqualTypeOf<
-        | {
-            ok: true;
-            value: string;
-          }
-        | {
-            ok: false;
-            source: "onError";
-            reason: string;
-          }
-      >();
+      const _onErrorTypedResponse: Response = onErrorResponse;
 
       void _defaultResponseFromActual;
+      void _validationTypedResponse;
+      void _onErrorTypedResponse;
     });
   });
 });

@@ -5,6 +5,7 @@ import type { ContentType } from "../lib/content-type-types";
 import { normalizeHeaders } from "../lib/headers";
 import type { HttpStatusCode, RedirectionHttpStatusCode } from "../lib/http-status-code-types";
 import { searchParamsToObject } from "../lib/search-params";
+import { createRpcErrorEnvelope, getDefaultRpcErrorStatus } from "./error";
 import type { ValidationSchema } from "./route-types";
 import type {
   Params,
@@ -143,6 +144,20 @@ export const createResponseHelpers = <TJson = unknown>(): ResponseHelpers<TJson>
       },
     );
   },
+
+  error: ((code, init) => {
+    const payload = createRpcErrorEnvelope(code, init);
+
+    return attachResponseHelperMetadata(
+      NextResponse.json(payload, {
+        status: getDefaultRpcErrorStatus(code),
+      }) as ReturnType<ResponseHelpers<TJson>["error"]>,
+      {
+        kind: "json",
+        payload,
+      },
+    );
+  }) as ResponseHelpers<TJson>["error"],
 });
 
 export const createRouteContext = <

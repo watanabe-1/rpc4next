@@ -116,12 +116,20 @@ This workspace is intended to make scanner and runtime regressions visible in Gi
 
 The main walkthrough in this fixture is now procedure-first. `app/api/procedure-contract/[userId]/route.ts` is the baseline typed route: it binds the generated `routeContract`, declares params/query/output in one builder, and exports `GET` through terminal `export const { GET } = procedure.handle(...).nextRoute({ method: "GET", onError })` sugar. `app/api/procedure-submit/route.ts` extends that path to json/header/cookie input, `app/api/procedure-form-data/route.ts` covers multipart-style input with the same terminal shape, and `app/api/procedure-guarded/[userId]/route.ts` shows the shared-preset case where keeping a standalone `nextRoute(procedure, options)` call remains natural because the procedure value comes from a reusable base.
 
-The procedure fixtures also cover the later design phases that made the procedure path complete enough to recommend by default. `app/api/procedure-invalid-output/route.ts` demonstrates opt-in runtime output enforcement with a Standard Schema output contract. `app/api/procedure-defaults-error/route.ts` shows project-level `procedure.defaults({ onError })` usage, while `app/api/_shared/procedure-defaults.ts` keeps that shared preset explicit. `app/api/procedure-validation-branch/route.ts` shows validator-stage customization through `procedure.query(schema, { onValidationError(...) { ... } })`. `app/api/error-demo/route.ts` keeps the direct standalone `nextRoute(..., { onError })` form for arbitrary thrown errors, and `app/api/_shared/on-error.ts` shows `rpcError(...)` plus generic `Error` mapping in a shared `onError` implementation.
+The procedure fixtures also cover the later design phases that made the procedure path complete enough to recommend by default. `app/api/procedure-invalid-output/route.ts` demonstrates opt-in runtime output enforcement with a Standard Schema output contract. `app/api/procedure-defaults-error/route.ts` shows project-level `procedure.defaults({ onError })` usage, while `app/api/_shared/procedure-defaults.ts` keeps that shared preset explicit. `app/api/procedure-validation-branch/route.ts` shows validator-stage customization through `procedure.query(schema, { onValidationError(...) { ... } })`. `app/api/error-demo/route.ts` keeps the direct standalone `nextRoute(..., { onError })` form for arbitrary thrown errors, and `app/api/_shared/on-error.ts` shows generic `Error` mapping in a shared `onError` implementation.
 
-When a shared handler should contribute its concrete error envelope to client-side
-response inference, define it with `satisfies ProcedureOnError` instead of
-`const onError: ProcedureOnError = ...`. The explicit annotation widens the
-function type and loses the specific `response.json(...)` shape.
+When a handler or shared middleware should contribute a known error to
+client-side response inference, return `response.error(...)`. Those returned
+errors remain part of the generated response union with their concrete status,
+code, and details shape. `app/api/_shared/base-procedure.ts` demonstrates this
+for shared `UNAUTHORIZED` and `FORBIDDEN` branches, and
+`app/api/procedure-guarded/[userId]/route.ts` adds a route-local `FORBIDDEN`
+branch on top.
+
+`onError` is still required, but it is the fallback for unexpected thrown
+exceptions rather than the primary path for known client-visible errors. Input
+validation still contributes a typed `BAD_REQUEST` response, and opt-in runtime
+output validation contributes an `INTERNAL_SERVER_ERROR` response.
 
 The fixtures also include plain Next.js routes written without `procedure`, including a static `NextResponse.json(...)` route, a dynamic route that reads `params` and `nextUrl.searchParams`, and a `Response.json(...)` route. The generated client can still call them as RPC, but their response types are intentionally broader than rpc4next's `TypedNextResponse` helpers.
 

@@ -1,22 +1,8 @@
-import { isRpcError, type ProcedureOnError, procedure } from "rpc4next/server";
+import { type ProcedureOnError, procedure } from "rpc4next/server";
 
 const sharedOnError = ((error, { response }) => {
   if (error instanceof Response) {
     return error;
-  }
-
-  if (isRpcError(error)) {
-    return response.json(
-      {
-        success: false,
-        error: {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-        },
-      },
-      { status: error.status },
-    );
   }
 
   return response.json(

@@ -58,64 +58,26 @@ export interface RpcErrorEnvelope<TCode extends RpcErrorCode = RpcErrorCode, TDe
   };
 }
 
-export interface RpcErrorInit<TCode extends RpcErrorCode = RpcErrorCode, TDetails = unknown> {
+export interface RpcErrorResponseInit<TDetails = unknown> {
   message?: string;
   details?: TDetails;
-  status?: RpcErrorStatus<TCode>;
-  cause?: unknown;
-  code?: TCode;
 }
 
-const getDefaultRpcErrorStatus = <TCode extends RpcErrorCode>(
+export const getDefaultRpcErrorStatus = <TCode extends RpcErrorCode>(
   code: TCode,
 ): RpcErrorStatus<TCode> => {
   return DEFAULT_RPC_ERROR_STATUS[code] as RpcErrorStatus<TCode>;
 };
 
-export class RpcError<TCode extends RpcErrorCode = RpcErrorCode, TDetails = unknown> extends Error {
-  readonly code: TCode;
-  readonly details: TDetails | undefined;
-  readonly status: RpcErrorStatus<TCode>;
-
-  constructor(code: TCode, init: RpcErrorInit<TCode, TDetails> = {}) {
-    super(init.message ?? DEFAULT_RPC_ERROR_MESSAGES[code], {
-      cause: init.cause,
-    });
-
-    this.name = "RpcError";
-    this.code = init.code ?? code;
-    this.details = init.details;
-    this.status = (init.status ?? getDefaultRpcErrorStatus(code)) as RpcErrorStatus<TCode>;
-  }
-
-  toJSON(): RpcErrorEnvelope<TCode, TDetails> {
-    return createRpcErrorEnvelope(this);
-  }
-}
-
-export const rpcError = <TCode extends RpcErrorCode, TDetails = unknown>(
-  code: TCode,
-  init?: RpcErrorInit<TCode, TDetails>,
-) => new RpcError(code, init);
-
-export const isRpcError = (value: unknown): value is RpcError => {
-  return value instanceof RpcError;
-};
-
 export const createRpcErrorEnvelope = <TCode extends RpcErrorCode, TDetails = unknown>(
-  error:
-    | RpcError<TCode, TDetails>
-    | {
-        code: TCode;
-        message: string;
-        details?: TDetails;
-      },
+  code: TCode,
+  init: RpcErrorResponseInit<TDetails> = {},
 ): RpcErrorEnvelope<TCode, TDetails> => {
   return {
     error: {
-      code: error.code,
-      message: error.message,
-      ...(error.details === undefined ? {} : { details: error.details }),
+      code,
+      message: init.message ?? DEFAULT_RPC_ERROR_MESSAGES[code],
+      ...(init.details === undefined ? {} : { details: init.details }),
     },
   };
 };
