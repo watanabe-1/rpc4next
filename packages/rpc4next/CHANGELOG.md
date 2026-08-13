@@ -2,10 +2,9 @@
 
 ## [0.9.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.8.0...rpc4next-v0.9.0) (2026-08-13)
 
-
 ### Features
 
-* **server:** add typed procedure error responses ([#519](https://github.com/watanabe-1/rpc4next/issues/519)) ([515430a](https://github.com/watanabe-1/rpc4next/commit/515430a2c9d20e2701e8b5a6d0edd25b274d17c9))
+- **server:** add typed procedure error responses ([#519](https://github.com/watanabe-1/rpc4next/issues/519)) ([515430a](https://github.com/watanabe-1/rpc4next/commit/515430a2c9d20e2701e8b5a6d0edd25b274d17c9))
 
 ## [0.8.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.7.1...rpc4next-v0.8.0) (2026-08-13)
 
