@@ -16,7 +16,7 @@ const paramsSchema = z.object({
   userId: z.string().min(1),
 });
 
-export const GET = procedure
+export const { GET } = procedure
   .forRoute(routeContract)
   .params(paramsSchema)
   .query(querySchema)

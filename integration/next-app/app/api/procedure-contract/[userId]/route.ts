@@ -12,7 +12,7 @@ const querySchema = z.object({
   includePosts: z.enum(["true", "false"]).optional(),
 });
 
-export const GET = procedure
+export const { GET } = procedure
   .forRoute(routeContract)
   .meta({
     summary: "Procedure contract route",

@@ -8,7 +8,7 @@ const bodySchema = z.object({
   title: z.string().min(1),
 });
 
-export const POST = procedure
+export const { POST } = procedure
   .forRoute(routeContract)
   .json(bodySchema)
   .output({

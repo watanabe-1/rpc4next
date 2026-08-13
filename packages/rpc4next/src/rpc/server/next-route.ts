@@ -306,7 +306,7 @@ export interface NextRouteOptions<
   TMethod extends HttpMethod = HttpMethod,
   TOnError extends ProcedureOnError = ProcedureOnError,
 > {
-  method?: TMethod;
+  method: TMethod;
   validateOutput?: boolean;
   onError: TOnError;
 }
@@ -324,6 +324,15 @@ export type NextRouteProcedureOptions<
   NextRouteMethodConstraint<TProcedure, TMethod> & {
     validateOutput?: TValidateOutput;
   };
+
+export type NextRouteExports<
+  TProcedure extends ProcedureTypeCarrier = ProcedureTypeCarrier,
+  TMethod extends HttpMethod = HttpMethod,
+  TValidateOutput extends boolean = false,
+  TOnError extends ProcedureOnError = ProcedureOnError,
+> = {
+  [TKey in TMethod]: NextRouteHandler<TProcedure, TKey, TValidateOutput, TOnError>;
+};
 
 const parseOutputWithSchema = async (schema: StandardSchemaV1, value: unknown) => {
   const result = await schema["~standard"].validate(value);
@@ -586,13 +595,13 @@ const validateProcedureInputs = async (
 
 export const nextRoute = <
   TProcedure extends ProcedureTypeCarrier,
-  TMethod extends HttpMethod | undefined = undefined,
+  TMethod extends HttpMethod = HttpMethod,
   TValidateOutput extends boolean = false,
   TOnError extends ProcedureOnError = ProcedureOnError,
 >(
   procedure: TProcedure,
   options: NextRouteProcedureOptions<TProcedure, TMethod, TValidateOutput, TOnError>,
-): NextRouteHandler<TProcedure, TMethod, TValidateOutput, TOnError> => {
+): NextRouteExports<TProcedure, TMethod, TValidateOutput, TOnError> => {
   const handler = procedure.handler as (
     context: InferProcedureHandlerContext<TProcedure>,
   ) => InferProcedureHandlerResult<TProcedure> | Promise<InferProcedureHandlerResult<TProcedure>>;
@@ -709,9 +718,7 @@ export const nextRoute = <
     }
   };
 
-  const definitionWithMethod = options.method
-    ? withProcedureMethod(procedure.definition, options.method)
-    : procedure.definition;
+  const definitionWithMethod = withProcedureMethod(procedure.definition, options.method);
 
   const shouldEnableRuntimeOutputValidation =
     options.validateOutput &&
@@ -728,10 +735,7 @@ export const nextRoute = <
       }
     : definitionWithMethod;
 
-  return attachProcedureDefinition(routeHandler, routeDefinition) as NextRouteHandler<
-    TProcedure,
-    TMethod,
-    TValidateOutput,
-    TOnError
-  >;
+  return {
+    [options.method]: attachProcedureDefinition(routeHandler, routeDefinition),
+  } as NextRouteExports<TProcedure, TMethod, TValidateOutput, TOnError>;
 };

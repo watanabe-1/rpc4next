@@ -12,23 +12,29 @@ import type { StandardSchemaV1 } from "./standard-schema";
 
 const nextRoute = <
   TProcedure,
-  TMethod extends HttpMethod | undefined = undefined,
+  TMethod extends HttpMethod = "GET",
   TValidateOutput extends boolean = false,
 >(
   procedureDefinition: TProcedure,
   options?: {
-    method?: Exclude<TMethod, undefined>;
+    method?: TMethod;
     validateOutput?: TValidateOutput;
     onError?: unknown;
   },
 ) => {
+  const method = options?.method ?? ("GET" as TMethod);
   const resolvedOptions =
-    options && "onError" in options ? options : { ...options, onError: defaultProcedureOnError };
+    options && "onError" in options
+      ? { ...options, method }
+      : { ...options, method, onError: defaultProcedureOnError };
 
-  return baseNextRoute<TProcedure & Parameters<typeof baseNextRoute>[0], TMethod, TValidateOutput>(
-    procedureDefinition as never,
-    resolvedOptions as never,
-  );
+  const routes = baseNextRoute<
+    TProcedure & Parameters<typeof baseNextRoute>[0],
+    TMethod,
+    TValidateOutput
+  >(procedureDefinition as never, resolvedOptions as never);
+
+  return routes[method];
 };
 
 describe("nextRoute", () => {
@@ -98,6 +104,27 @@ describe("nextRoute", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it("returns an object keyed by the configured Next.js HTTP method", async () => {
+    const routes = baseNextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .handle(async ({ response }) => response.text("object route")),
+      {
+        method: "GET",
+        onError: defaultProcedureOnError,
+      },
+    );
+
+    expect(Object.keys(routes)).toEqual(["GET"]);
+    expect(routes).not.toHaveProperty("POST");
+
+    const response = await routes.GET(new NextRequest("http://127.0.0.1:3000/api/test"), {
+      params: Promise.resolve({}),
+    });
+
+    await expect(response.text()).resolves.toBe("object route");
   });
 
   it("supports injected procedure validators", async () => {
@@ -451,7 +478,7 @@ describe("nextRoute", () => {
 
   it("supports procedure.handle(...).nextRoute(...) as thin sugar", async () => {
     const onError = vi.fn<typeof defaultProcedureOnError>(defaultProcedureOnError);
-    const route = procedure
+    const { GET: route } = procedure
       .forRoute(staticRouteContract)
       .query(pageSchema)
       .handle(async ({ query }) => ({
@@ -486,7 +513,7 @@ describe("nextRoute", () => {
     const standaloneRoute = nextRoute(standaloneProcedure, {
       method: "GET",
     });
-    const sugarRoute = sugarProcedure.nextRoute({
+    const { GET: sugarRoute } = sugarProcedure.nextRoute({
       method: "GET",
       onError: defaultProcedureOnError,
     });
@@ -505,7 +532,7 @@ describe("nextRoute", () => {
   });
 
   it("applies validateOutput through procedure.nextRoute(...)", async () => {
-    const route = procedure
+    const { GET: route } = procedure
       .forRoute(staticRouteContract)
       .output<typeof outputSchema, unknown>(outputSchema)
       .handle(async () => ({

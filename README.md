@@ -87,7 +87,7 @@ const querySchema = z.object({
   includePosts: z.enum(["true", "false"]).optional(),
 });
 
-export const GET = procedure
+export const { GET } = procedure
   .forRoute(routeContract)
   .meta({ summary: "Get a user", tags: ["users"] })
   .params(paramsSchema)
@@ -114,6 +114,7 @@ export type Query = z.input<typeof querySchema>;
 Notes:
 
 - `procedure.handle(...).nextRoute(...)` is the default recommendation for new typed routes
+- `.nextRoute({ method })` returns an object keyed by the matching Next.js export name, such as `{ GET }` or `{ POST }`
 - generated sibling `route-contract.ts` files are the recommended params source for procedure routes
 - input contracts consume Standard Schema V1-compatible schemas directly
 - route handlers must provide `onError`, either directly on `.nextRoute(...)` / `nextRoute(...)` or via a reusable preset such as `procedure.defaults({ onError })`
@@ -257,7 +258,7 @@ It supports:
 - `meta(...)` for lightweight descriptive annotations and `output(...)`
 - shared presets via reusable builders such as `baseProcedure`
 - validator-stage customization with `onValidationError(...)`
-- adaptation to App Router exports through terminal `procedure.handle(...).nextRoute({ method, onError })`
+- adaptation to App Router exports through terminal `export const { GET } = procedure.handle(...).nextRoute({ method: "GET", onError })`
 - standalone `nextRoute(procedure, { method, onError })` for shared base procedures or reused procedure values
 
 Example:
@@ -267,7 +268,7 @@ import { procedure } from "rpc4next/server";
 import { z } from "zod";
 import { routeContract } from "./route-contract";
 
-export const GET = procedure
+export const { GET } = procedure
   .forRoute(routeContract)
   .params(z.object({ userId: z.string().min(1) }))
   .query(
@@ -330,12 +331,12 @@ const onError = ((error, { response }) => {
 
 const appProcedure = procedure.defaults({ onError });
 
-export const GET = nextRoute(failingProcedure, {
+export const { GET } = nextRoute(failingProcedure, {
   method: "GET",
   onError,
 });
 
-export const POST = appProcedure
+export const { POST } = appProcedure
   .forRoute(routeContract)
   .handle(async () => {
     throw new Error("expected failure");
@@ -429,7 +430,7 @@ Your generated `src/generated/rpc.ts` exports a `PathStructure` type that includ
 2. Run `rpc4next` to regenerate `PathStructure`
 3. Import `PathStructure` into your client
 4. Call routes with `createRpcClient<PathStructure>(...)`
-5. Prefer `procedure` and `nextRoute()` for typed routes; keep plain Next.js handlers when you intentionally want broader response typing
+5. Prefer `procedure` and `nextRoute()` for typed routes, exporting them with `export const { GET } = ...` or the matching HTTP method; keep plain Next.js handlers when you intentionally want broader response typing
 
 ## Repository Layout
 
