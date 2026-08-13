@@ -260,6 +260,7 @@ It supports:
 - direct schema contracts for `params`, `query`, `json`, `formData`, `headers`, and `cookies`
 - `meta(...)` for lightweight descriptive annotations and `output(...)`
 - shared presets via reusable builders such as `baseProcedure`
+- middleware through `.use(fn)`
 - validator-stage customization with `onValidationError(...)`
 - adaptation to App Router exports through terminal `export const { GET } = procedure.handle(...).nextRoute({ method: "GET", onError })`
 - standalone `nextRoute(procedure, { method, onError })` for shared base procedures or reused procedure values
@@ -296,6 +297,76 @@ export const { GET } = procedure
   }))
   .nextRoute({ method: "GET", onError });
 ```
+
+### Middleware
+
+Use `.use(fn)` to add middleware to the current builder. The middleware context
+includes `request`, `ctx`, `response`, and any inputs already declared on the
+builder, such as `params`, `query`, `json`, `formData`, `headers`, and
+`cookies`.
+
+```ts
+const guardedProcedure = procedure
+  .headers(z.object({ "x-demo-user": z.string().min(1) }))
+  .use(({ headers }) => ({
+    ctx: {
+      viewerId: headers["x-demo-user"],
+    },
+  }))
+  .handle(({ ctx }) => ({
+    body: {
+      viewerId: ctx.viewerId,
+    },
+  }));
+```
+
+Share middleware by exporting a base procedure builder with `.use(...)` already
+applied. This keeps `headers`, `query`, `params`, and accumulated `ctx` typed
+without writing `ProcedureMiddlewareContext<...>` by hand.
+
+```ts
+export const guardedBaseProcedure = procedure
+  .headers(
+    z.object({
+      "x-demo-user": z.string().min(1).optional(),
+    }),
+  )
+  .use(({ headers, response }) => {
+    const viewerId = headers["x-demo-user"];
+
+    if (!viewerId) {
+      return response.error("UNAUTHORIZED", {
+        message: "Demo user header required.",
+        details: { reason: "missing_demo_user" as const },
+      });
+    }
+
+    return {
+      ctx: {
+        viewer: { id: viewerId },
+      },
+    };
+  });
+```
+
+Then build route-specific procedures from that shared builder:
+
+```ts
+export const { GET } = guardedBaseProcedure
+  .params(z.object({ userId: z.string().min(1) }))
+  .handle(({ params, ctx }) => ({
+    body: {
+      userId: params.userId,
+      viewerId: ctx.viewer.id,
+    },
+  }))
+  .nextRoute({ method: "GET", onError });
+```
+
+Returning `{ ctx: ... }` from middleware adds that shape to later middleware and
+the final handler. Returning `response.error(...)`, `response.json(...)`, or
+another terminal response short-circuits execution and preserves that response in
+the generated client response union.
 
 ### Error Handling
 

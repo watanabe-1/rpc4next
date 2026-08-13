@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 
 import { defaultProcedureOnError } from "./on-error";
-import { defineProcedureMiddleware, procedure } from "./procedure";
+import { procedure } from "./procedure";
 import type { ProcedureRouteContract } from "./procedure-types";
 import type { StandardSchemaV1 } from "./standard-schema";
 import type { ResponseHelpers } from "./types";
@@ -284,6 +284,71 @@ describe("procedure builder type definitions", () => {
     >();
   });
 
+  it("applies reusable base middleware from the current builder context", () => {
+    const guardedProcedure = procedure
+      .headers(roleHeaderSchema)
+      .use((context) => {
+        const { headers, request, ctx, response } = context;
+        const role: "reader" | "editor" = headers["x-demo-role"] ?? "reader";
+        const _request: Request = request;
+        const _ctx: Record<never, never> = ctx;
+        const _response: ResponseHelpers = response;
+
+        void _request;
+        void _ctx;
+        void _response;
+        // @ts-expect-error query is not available without query(schema)
+        void context.query;
+
+        if (role !== "editor") {
+          return response.error("FORBIDDEN", {
+            message: "Editor role required.",
+            details: { reason: "editor_only" as const },
+          });
+        }
+
+        return {
+          ctx: {
+            viewer: {
+              role,
+            },
+          },
+        };
+      })
+      .use(({ ctx }) => ({
+        ctx: {
+          requestId: `role:${ctx.viewer.role}`,
+        },
+      }))
+      .handle(({ ctx }) => {
+        const _ctx: {
+          viewer: {
+            role: "editor";
+          };
+          requestId: string;
+        } = ctx;
+
+        void _ctx;
+
+        return {
+          status: 204 as const,
+        };
+      });
+
+    expectTypeOf(guardedProcedure.handler).parameters.toExtend<
+      [
+        {
+          ctx: {
+            viewer: {
+              role: "editor";
+            };
+            requestId: string;
+          };
+        },
+      ]
+    >();
+  });
+
   it("limits middleware context to validated inputs only", () => {
     procedure
       .query(parsePage)
@@ -483,8 +548,7 @@ describe("procedure builder type definitions", () => {
   });
 
   it("keeps middleware reuse focused on immutable builder composition", () => {
-    const guardedMiddleware = defineProcedureMiddleware(() => undefined);
-    const guardedBaseProcedure = procedure.use(guardedMiddleware);
+    const guardedBaseProcedure = procedure.use(() => undefined);
 
     const guardedProcedure = guardedBaseProcedure.handle(() => ({
       status: 204 as const,
@@ -494,8 +558,7 @@ describe("procedure builder type definitions", () => {
   });
 
   it("preserves immutable reuse when middleware is shared across procedures", () => {
-    const guardedMiddleware = defineProcedureMiddleware(() => undefined);
-    const baseProcedure = procedure.use(guardedMiddleware);
+    const baseProcedure = procedure.use(() => undefined);
     const publicProcedure = baseProcedure.handle(() => ({
       status: 204 as const,
     }));
