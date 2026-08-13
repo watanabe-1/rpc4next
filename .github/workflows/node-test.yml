@@ -69,6 +69,11 @@ jobs:
         shell: bash
         run: bun run build
 
+      - name: Package smoke test
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.node-version == 'aqua' && matrix.next-version == 'from-package' }}
+        shell: bash
+        run: bun scripts/package-smoke-test.ts
+
       - name: Typecheck
         shell: bash
         run: bun run typecheck
