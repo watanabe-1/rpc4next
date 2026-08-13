@@ -44,10 +44,34 @@ const schema = z.object({
   hoge: z.string(),
 });
 
+const getQuerySchema = z.object({
+  page: z.string(),
+});
+
+const postQuerySchema = z.object({
+  mode: z.enum(["draft", "published"]),
+});
+
 const _post_query = nextRoute(
   procedure
     .forRoute(queryRouteContract)
     .query(schema)
+    .handle(async ({ response }) => response.text("text")),
+  { method: "POST" },
+);
+
+const _get_mixed_query = nextRoute(
+  procedure
+    .forRoute(queryRouteContract)
+    .query(getQuerySchema)
+    .handle(async ({ response }) => response.text("text")),
+  { method: "GET" },
+);
+
+const _post_mixed_query = nextRoute(
+  procedure
+    .forRoute(queryRouteContract)
+    .query(postQuerySchema)
     .handle(async ({ response }) => response.text("text")),
   { method: "POST" },
 );
@@ -63,6 +87,10 @@ type PathStructure = RpcEndpoint & {
   };
   api: {
     query: { $post: typeof _post_query } & RpcEndpoint;
+    mixedQuery: {
+      $get: typeof _get_mixed_query;
+      $post: typeof _post_mixed_query;
+    } & RpcEndpoint;
   };
 };
 
@@ -150,6 +178,27 @@ describe("createRpcHelper type definitions", () => {
             name: string;
             hoge: string;
           };
+          hash?: string;
+        })
+      | null;
+
+    expectTypeOf<typeof _dynamic>().toEqualTypeOf<ExpectedDynamicMatch>();
+  });
+
+  it("should infer mixed method query validator types correctly", async () => {
+    const _dynamic = rpcHelper.api.mixedQuery.$match("/api/mixedQuery?page=1");
+
+    type ExpectedDynamicMatch =
+      | ({
+          params: Record<string, string>;
+        } & {
+          query?:
+            | {
+                page: string;
+              }
+            | {
+                mode: "draft" | "published";
+              };
           hash?: string;
         })
       | null;
