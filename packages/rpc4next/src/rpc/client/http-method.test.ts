@@ -10,14 +10,41 @@ type CapturedInit = RequestInit & {
 
 describe("httpMethod (integration test without excessive mocks)", () => {
   let originalFetch: typeof fetch;
+  let originalDocumentDescriptor: PropertyDescriptor | undefined;
+  let originalWindowDescriptor: PropertyDescriptor | undefined;
 
   beforeEach(() => {
     originalFetch = global.fetch;
+    originalDocumentDescriptor = Object.getOwnPropertyDescriptor(globalThis, "document");
+    originalWindowDescriptor = Object.getOwnPropertyDescriptor(globalThis, "window");
   });
 
   afterEach(() => {
     global.fetch = originalFetch;
+
+    if (originalDocumentDescriptor) {
+      Object.defineProperty(globalThis, "document", originalDocumentDescriptor);
+    } else {
+      Reflect.deleteProperty(globalThis, "document");
+    }
+
+    if (originalWindowDescriptor) {
+      Object.defineProperty(globalThis, "window", originalWindowDescriptor);
+    } else {
+      Reflect.deleteProperty(globalThis, "window");
+    }
   });
+
+  const simulateBrowserRuntime = () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: {},
+    });
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {},
+    });
+  };
 
   it("uses $get with url options (query/hash) and merges init correctly", async () => {
     const key = "$get";
@@ -604,6 +631,40 @@ describe("httpMethod (integration test without excessive mocks)", () => {
 
     expect(calledInit?.headers).toEqual({
       cookie: "sessionId=abc123; theme=dark",
+    });
+  });
+
+  it("omits Cookie headers in browser runtime", async () => {
+    simulateBrowserRuntime();
+
+    const key = "$get";
+    const paths = ["http://example.com", "api", "withCookies"];
+    const params = {};
+    const dynamicKeys: string[] = [];
+
+    let calledInit: CapturedInit | undefined = {};
+    global.fetch = ((_input, _init) => {
+      calledInit = _init as CapturedInit | undefined;
+
+      return Promise.resolve(new Response(null, { status: 200 }));
+    }) as typeof fetch;
+
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, {
+      init: { headers: { Cookie: "default=1", Accept: "application/json" } },
+    });
+
+    await requestFn({
+      requestHeaders: {
+        headers: { "x-test": "ok" },
+        cookies: {
+          sessionId: "abc123",
+        },
+      },
+    });
+
+    expect(calledInit?.headers).toEqual({
+      accept: "application/json",
+      "x-test": "ok",
     });
   });
 

@@ -37,12 +37,21 @@ const hasUserContentType = (h: Record<string, string>): boolean => {
   return Object.keys(h).some((k) => k.toLowerCase() === "content-type");
 };
 
+const isBrowserRuntime = () => typeof window !== "undefined" && typeof document !== "undefined";
+
+const omitCookieHeader = (headers: Record<string, string>) => {
+  const { cookie: _cookie, ...headersWithoutCookie } = headers;
+
+  return headersWithoutCookie;
+};
+
 /**
  * Build a typed HTTP method invoker.
  *
  * - Header precedence: default < options.init < methodParam.requestHeaders
  * - Do NOT override user-specified `content-type`.
- * - Merge cookies instead of clobbering.
+ * - Merge cookies into a Cookie header outside the browser; browsers send real cookies via fetch
+ *   credentials and reject script-authored Cookie headers.
  * - Never attach a body for GET/HEAD.
  * - Provide basic body-shape inference (json/text/formData/urlencoded) while keeping current types
  *   compatible.
@@ -88,15 +97,27 @@ export const httpMethod = (
       ...methodParamHeaders,
     };
 
-    // ---- Cookies: merge (existing cookie header + methodParam cookies map)
-    const existingCookie = mergedHeaders.cookie;
-    const methodParamCookies = methodParam?.requestHeaders?.cookies;
-    if (methodParamCookies && Object.keys(methodParamCookies).length > 0) {
+    const headersWithCookies = (() => {
+      if (isBrowserRuntime()) {
+        return omitCookieHeader(mergedHeaders);
+      }
+
+      // ---- Cookies: merge (existing cookie header + methodParam cookies map)
+      const existingCookie = mergedHeaders.cookie;
+      const methodParamCookies = methodParam?.requestHeaders?.cookies;
+      if (!methodParamCookies || Object.keys(methodParamCookies).length === 0) {
+        return mergedHeaders;
+      }
+
       const cookieFromMap = Object.entries(methodParamCookies)
         .map(([k, v]) => `${k}=${v}`)
         .join("; ");
-      mergedHeaders.cookie = existingCookie ? `${existingCookie}; ${cookieFromMap}` : cookieFromMap;
-    }
+
+      return {
+        ...mergedHeaders,
+        cookie: existingCookie ? `${existingCookie}; ${cookieFromMap}` : cookieFromMap,
+      };
+    })();
 
     // --- Body & content-type inference
     let bodyInit: BodyInit | undefined;
@@ -127,8 +148,8 @@ export const httpMethod = (
     }
 
     // Only set Content-Type when the user hasn't specified one
-    if (!hasUserContentType(mergedHeaders) && bodyInit && inferredContentType) {
-      mergedHeaders["content-type"] = inferredContentType;
+    if (!hasUserContentType(headersWithCookies) && bodyInit && inferredContentType) {
+      headersWithCookies["content-type"] = inferredContentType;
     }
 
     // --- Build final init
@@ -142,8 +163,8 @@ export const httpMethod = (
       delete mergedInit.body;
     }
 
-    if (Object.keys(mergedHeaders).length > 0) {
-      mergedInit.headers = mergedHeaders;
+    if (Object.keys(headersWithCookies).length > 0) {
+      mergedInit.headers = headersWithCookies;
     }
     if (bodyInit !== undefined) {
       mergedInit.body = bodyInit;
