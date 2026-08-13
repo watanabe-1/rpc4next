@@ -6,7 +6,8 @@ import { rpcError } from "./error";
 import { nextRoute as baseNextRoute } from "./next-route";
 import { defaultProcedureOnError } from "./on-error";
 import { defineProcedureMiddleware, procedure } from "./procedure";
-import { getProcedureDefinition, type ProcedureRouteContract } from "./procedure-types";
+import { getProcedureDefinition } from "./procedure-definition";
+import type { ProcedureRouteContract } from "./procedure-types";
 import type { StandardSchemaV1 } from "./standard-schema";
 
 const nextRoute = <

@@ -1,4 +1,4 @@
-import { attachProcedureDefinition, getProcedureDefinition } from "./procedure-types";
+import { attachProcedureDefinition, getProcedureDefinition } from "./procedure-definition";
 import type {
   MergeProcedureDefinition,
   ProcedureDefinition,

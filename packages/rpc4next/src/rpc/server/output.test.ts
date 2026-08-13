@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { describe, expect, it } from "vitest";
 
 import { output, withOutput } from "./output";
-import { getProcedureDefinition } from "./procedure-types";
+import { getProcedureDefinition } from "./procedure-definition";
 import type { StandardSchemaV1 } from "./standard-schema";
 
 describe("output contract helpers", () => {

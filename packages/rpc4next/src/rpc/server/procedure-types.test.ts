@@ -5,12 +5,11 @@ import { describe, expect, expectTypeOf, it } from "vitest";
 import { nextRoute as baseNextRoute } from "./next-route";
 import { defaultProcedureOnError } from "./on-error";
 import { procedure } from "./procedure";
+import { getProcedureDefinition, procedureDefinitionSymbol } from "./procedure-definition";
 import {
-  getProcedureDefinition,
   type ProcedureDefinition,
   type ProcedureInputContract,
   type ProcedureRouteContract,
-  procedureDefinitionSymbol,
 } from "./procedure-types";
 import type { ValidationSchema } from "./route-types";
 import type { StandardSchemaV1 } from "./standard-schema";
