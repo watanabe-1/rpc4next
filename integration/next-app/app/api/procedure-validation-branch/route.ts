@@ -5,7 +5,7 @@ import { z } from "zod";
 import { onError } from "../_shared/on-error";
 import { routeContract } from "./route-contract";
 
-export const GET = procedure
+export const { GET } = procedure
   .forRoute(routeContract)
   .query(
     z.object({

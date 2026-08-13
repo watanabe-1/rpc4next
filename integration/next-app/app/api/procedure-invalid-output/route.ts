@@ -10,7 +10,7 @@ const outputSchema = z.object({
   result: z.string().min(1),
 });
 
-export const GET = procedure
+export const { GET } = procedure
   .forRoute(routeContract)
   .meta({
     summary: "Phase 7 fixture that demonstrates runtime-enforced output validation failures",

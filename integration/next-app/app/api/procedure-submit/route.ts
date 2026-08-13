@@ -4,7 +4,7 @@ import { z } from "zod";
 import { onError } from "../_shared/on-error";
 import { routeContract } from "./route-contract";
 
-export const POST = procedure
+export const { POST } = procedure
   .forRoute(routeContract)
   .headers(
     z.object({

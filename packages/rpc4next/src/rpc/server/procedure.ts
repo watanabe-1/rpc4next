@@ -5,7 +5,7 @@ import type { HttpStatusCode } from "../lib/http-status-code-types";
 import type { RpcMeta } from "./meta";
 import {
   nextRoute as adaptProcedureToNextRoute,
-  type NextRouteHandler,
+  type NextRouteExports,
   type NextRouteProcedureOptions,
 } from "./next-route";
 import type { ProcedureOnError } from "./on-error";
@@ -348,7 +348,7 @@ type ProcedureNextRouteOptions<
     TContext,
     TOutput
   >,
-  TMethod extends HttpMethod | undefined,
+  TMethod extends HttpMethod,
   TValidateOutput extends boolean,
   TDefaults,
   TOnError extends ProcedureOnError,
@@ -392,7 +392,7 @@ export interface Procedure<
   readonly middlewares: readonly ProcedureMiddleware[];
   readonly handler: THandler;
   nextRoute<
-    TMethod extends HttpMethod | undefined = undefined,
+    TMethod extends HttpMethod = HttpMethod,
     TValidateOutput extends boolean = false,
     TOnError extends ProcedureOnError = ExtractProcedureSharedOnError<TDefaults>,
   >(
@@ -406,7 +406,7 @@ export interface Procedure<
       TDefaults,
       TOnError
     >,
-  ): NextRouteHandler<
+  ): NextRouteExports<
     Procedure<TDefinition, TContext, TOutput, THandler, TDefaults>,
     TMethod,
     TValidateOutput,

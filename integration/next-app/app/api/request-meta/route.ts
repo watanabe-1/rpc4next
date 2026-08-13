@@ -12,7 +12,7 @@ const cookiesSchema = z.object({
   session: z.string().min(1),
 });
 
-export const GET = procedure
+export const { GET } = procedure
   .forRoute(routeContract)
   .headers(headersSchema)
   .cookies(cookiesSchema)

@@ -16,23 +16,29 @@ import type { StandardSchemaV1 } from "./standard-schema";
 
 const nextRoute = <
   TProcedure,
-  TMethod extends HttpMethod | undefined = undefined,
+  TMethod extends HttpMethod = "GET",
   TValidateOutput extends boolean = false,
 >(
   procedureDefinition: TProcedure,
   options?: {
-    method?: Exclude<TMethod, undefined>;
+    method?: TMethod;
     validateOutput?: TValidateOutput;
     onError?: unknown;
   },
 ) => {
+  const method = options?.method ?? ("GET" as TMethod);
   const resolvedOptions =
-    options && "onError" in options ? options : { ...options, onError: defaultProcedureOnError };
+    options && "onError" in options
+      ? { ...options, method }
+      : { ...options, method, onError: defaultProcedureOnError };
 
-  return baseNextRoute<TProcedure & Parameters<typeof baseNextRoute>[0], TMethod, TValidateOutput>(
-    procedureDefinition as never,
-    resolvedOptions as never,
-  );
+  const routes = baseNextRoute<
+    TProcedure & Parameters<typeof baseNextRoute>[0],
+    TMethod,
+    TValidateOutput
+  >(procedureDefinition as never, resolvedOptions as never);
+
+  return routes[method];
 };
 
 describe("procedure contract internals", () => {

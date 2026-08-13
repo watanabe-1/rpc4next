@@ -24,12 +24,12 @@ const staticRouteContract = {
   params: {} as Record<never, never>,
 } as ProcedureRouteContract<"/api/none", Record<never, never>>;
 
-const _get_1 = nextRoute(
+const { GET: _get_1 } = nextRoute(
   procedure.forRoute(staticRouteContract).handle(async ({ response }) => response.text("text")),
   { method: "GET", onError: defaultProcedureOnError },
 );
 
-const _post_1 = nextRoute(
+const { POST: _post_1 } = nextRoute(
   procedure
     .forRoute(staticRouteContract)
     .json(schema)
@@ -37,7 +37,7 @@ const _post_1 = nextRoute(
   { method: "POST", onError: defaultProcedureOnError },
 );
 
-const _post_2 = nextRoute(
+const { POST: _post_2 } = nextRoute(
   procedure
     .forRoute(staticRouteContract)
     .headers(schema)
@@ -45,7 +45,7 @@ const _post_2 = nextRoute(
   { method: "POST", onError: defaultProcedureOnError },
 );
 
-const _post_3 = nextRoute(
+const { POST: _post_3 } = nextRoute(
   procedure
     .forRoute(staticRouteContract)
     .cookies(schema)
@@ -53,7 +53,7 @@ const _post_3 = nextRoute(
   { method: "POST", onError: defaultProcedureOnError },
 );
 
-const _post_4 = nextRoute(
+const { POST: _post_4 } = nextRoute(
   procedure
     .forRoute(staticRouteContract)
     .query(schema)
@@ -61,7 +61,7 @@ const _post_4 = nextRoute(
   { method: "POST", onError: defaultProcedureOnError },
 );
 
-const _post_5 = nextRoute(
+const { POST: _post_5 } = nextRoute(
   procedure
     .forRoute(staticRouteContract)
     .query(optionalSchema)
@@ -69,7 +69,7 @@ const _post_5 = nextRoute(
   { method: "POST", onError: defaultProcedureOnError },
 );
 
-const _post_all = nextRoute(
+const { POST: _post_all } = nextRoute(
   procedure
     .forRoute(staticRouteContract)
     .json(schema)

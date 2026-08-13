@@ -6,7 +6,7 @@ const failingProcedure = procedure.forRoute(routeContract).handle(async () => {
   throw new Error("expected integration failure");
 });
 
-export const GET = nextRoute(failingProcedure, {
+export const { GET } = nextRoute(failingProcedure, {
   method: "GET",
   onError: (error) => {
     const message = error instanceof Error ? error.message : "unknown integration error";

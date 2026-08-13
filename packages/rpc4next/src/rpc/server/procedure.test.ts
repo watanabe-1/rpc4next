@@ -507,7 +507,7 @@ describe("procedure builder type definitions", () => {
   });
 
   it("adds nextRoute sugar without changing validated input and output inference", () => {
-    const queryRoute = procedure
+    const { GET: queryRoute } = procedure
       .forRoute(guardedUserRouteContract)
       .params(userIdSchema)
       .query(includeDraftsSchema)
@@ -533,7 +533,7 @@ describe("procedure builder type definitions", () => {
     type QueryRouteResponse = Awaited<ReturnType<typeof queryRoute>>;
     expectTypeOf<QueryRouteResponse>().toExtend<Response>();
 
-    const formDataRoute = procedure
+    const { POST: formDataRoute } = procedure
       .forRoute(guardedUserRouteContract)
       .params(userIdSchema)
       .formData(avatarSchema)
@@ -556,7 +556,7 @@ describe("procedure builder type definitions", () => {
       onError: defaultProcedureOnError,
     });
 
-    const route = appProcedure
+    const { GET: route } = appProcedure
       .forRoute(guardedUserRouteContract)
       .params(userIdSchema)
       .query(includeDraftsSchema)
