@@ -4,7 +4,7 @@ import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 
 import { nextRoute as baseNextRoute } from "./next-route";
 import { defaultProcedureOnError } from "./on-error";
-import { defineProcedureMiddleware, procedure } from "./procedure";
+import { procedure } from "./procedure";
 import { getProcedureDefinition } from "./procedure-definition";
 import type { ProcedureRouteContract } from "./procedure-types";
 import type { StandardSchemaV1 } from "./standard-schema";
@@ -378,19 +378,17 @@ describe("nextRoute", () => {
   });
 
   it("preserves middleware error responses as terminal results", async () => {
-    const guardedMiddleware = defineProcedureMiddleware(({ response }) => {
-      return response.error("UNAUTHORIZED", {
-        message: "middleware-denied",
-        details: {
-          reason: "missing_demo_user" as const,
-        },
-      });
-    });
-
     const route = nextRoute(
       procedure
         .forRoute(staticRouteContract)
-        .use(guardedMiddleware)
+        .use(({ response }) => {
+          return response.error("UNAUTHORIZED", {
+            message: "middleware-denied",
+            details: {
+              reason: "missing_demo_user" as const,
+            },
+          });
+        })
         .handle(async () => ({
           status: 204 as const,
         })),

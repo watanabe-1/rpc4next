@@ -13,7 +13,6 @@ export type {
 export type { OutputContract } from "./output";
 export { output, withOutput } from "./output";
 export type {
-  DeclaredProcedureMiddleware,
   Procedure,
   ProcedureBuilder,
   ProcedureHandler,
@@ -23,7 +22,7 @@ export type {
   ProcedureResponseHelpers,
   ProcedureResult,
 } from "./procedure";
-export { defineProcedureMiddleware, procedure } from "./procedure";
+export { procedure } from "./procedure";
 export type {
   ProcedureInputOptions,
   ProcedureRouteContract,

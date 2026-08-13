@@ -116,6 +116,15 @@ This workspace is intended to make scanner and runtime regressions visible in Gi
 
 The main walkthrough in this fixture is now procedure-first. `app/api/procedure-contract/[userId]/route.ts` is the baseline typed route: it binds the generated `routeContract`, declares params/query/output in one builder, and exports `GET` through terminal `export const { GET } = procedure.handle(...).nextRoute({ method: "GET", onError })` sugar. `app/api/procedure-submit/route.ts` extends that path to json/header/cookie input, `app/api/procedure-form-data/route.ts` covers multipart-style input with the same terminal shape, and `app/api/procedure-guarded/[userId]/route.ts` shows the shared-preset case where keeping a standalone `nextRoute(procedure, options)` call remains natural because the procedure value comes from a reusable base.
 
+Shared procedure middleware should be defined from the builder that declares the
+inputs it needs. `app/api/_shared/base-procedure.ts` uses
+`procedure.headers(schema).use(...)`, so the middleware is applied in the same
+chain and receives typed `headers`, `request`, `ctx`, and `response` without a
+handwritten `ProcedureMiddlewareContext<...>` annotation. The returned
+`{ ctx: ... }` is available to later middleware and handlers. Routes share that
+middleware by importing `guardedBaseProcedure` and continuing the builder chain,
+as shown in `app/api/procedure-guarded/[userId]/route.ts`.
+
 The procedure fixtures also cover the later design phases that made the procedure path complete enough to recommend by default. `app/api/procedure-invalid-output/route.ts` demonstrates opt-in runtime output enforcement with a Standard Schema output contract. `app/api/procedure-defaults-error/route.ts` shows project-level `procedure.defaults({ onError })` usage, while `app/api/_shared/procedure-defaults.ts` keeps that shared preset explicit. `app/api/procedure-validation-branch/route.ts` shows validator-stage customization through `procedure.query(schema, { onValidationError(...) { ... } })`. `app/api/error-demo/route.ts` keeps the direct standalone `nextRoute(..., { onError })` form for arbitrary thrown errors, and `app/api/_shared/on-error.ts` shows generic `Error` mapping in a shared `onError` implementation.
 
 When a handler or shared middleware should contribute a known error to

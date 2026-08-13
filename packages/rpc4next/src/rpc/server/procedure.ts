@@ -9,7 +9,6 @@ import {
   type NextRouteProcedureOptions,
 } from "./next-route";
 import type { ProcedureOnError } from "./on-error";
-import { attachProcedureDefinition } from "./procedure-definition";
 import {
   withProcedureInputContract,
   withProcedureMeta,
@@ -28,7 +27,6 @@ import {
   type ProcedureRouteContract,
   type ProcedureValidationErrorHandlerResult,
   type ProcedureValidationErrorResponseMap,
-  type WithProcedureDefinition,
 } from "./procedure-types";
 import type { ValidationSchema } from "./route-types";
 import type { InferSchemaInput, InferSchemaOutput } from "./schema-inference";
@@ -316,11 +314,6 @@ export type ProcedureMiddleware<
   | Promise<ProcedureMiddlewareResult<TContextExtension>>
   | ProcedureMiddlewareResult<TContextExtension>;
 
-export type DeclaredProcedureMiddleware<
-  TMiddleware extends (...args: never[]) => unknown = ProcedureMiddleware,
-  TDefinition extends Partial<ProcedureDefinition> = Record<never, never>,
-> = WithProcedureDefinition<TMiddleware, TDefinition>;
-
 export type ProcedureHandlerResult<TOutput = unknown> =
   | Response
   | NextResponse
@@ -594,19 +587,6 @@ export interface ProcedureBuilder<
   >;
 }
 
-const createDeclaredProcedureMiddleware = <
-  TMiddleware extends (...args: never[]) => unknown,
-  TDefinition extends Partial<ProcedureDefinition>,
->(
-  middleware: TMiddleware,
-  definition: TDefinition,
-): DeclaredProcedureMiddleware<TMiddleware, TDefinition> => {
-  return attachProcedureDefinition(
-    ((context) => middleware(context)) as TMiddleware,
-    definition,
-  ) as DeclaredProcedureMiddleware<TMiddleware, TDefinition>;
-};
-
 const createProcedureBuilder = <
   TDefinition extends ProcedureDefinition,
   TContext extends object,
@@ -835,7 +815,3 @@ export const procedure = createProcedureBuilder<
   Record<never, never>,
   undefined
 >({});
-
-export const defineProcedureMiddleware = <TMiddleware extends (context: any) => unknown>(
-  middleware: TMiddleware,
-): DeclaredProcedureMiddleware<TMiddleware> => createDeclaredProcedureMiddleware(middleware, {});
