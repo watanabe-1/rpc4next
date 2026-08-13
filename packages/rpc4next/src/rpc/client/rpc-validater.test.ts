@@ -19,6 +19,14 @@ const optionalSchema = z.object({
   hoge: z.string().optional(),
 });
 
+const getQuerySchema = z.object({
+  page: z.string(),
+});
+
+const postQuerySchema = z.object({
+  mode: z.enum(["draft", "published"]),
+});
+
 const staticRouteContract = {
   pathname: "/api/none",
   params: {} as Record<never, never>,
@@ -80,6 +88,22 @@ const { POST: _post_all } = nextRoute(
   { method: "POST", onError: defaultProcedureOnError },
 );
 
+const { GET: _get_mixed_query } = nextRoute(
+  procedure
+    .forRoute(staticRouteContract)
+    .query(getQuerySchema)
+    .handle(async ({ response }) => response.text("text")),
+  { method: "GET", onError: defaultProcedureOnError },
+);
+
+const { POST: _post_mixed_query } = nextRoute(
+  procedure
+    .forRoute(staticRouteContract)
+    .query(postQuerySchema)
+    .handle(async ({ response }) => response.text("text")),
+  { method: "POST", onError: defaultProcedureOnError },
+);
+
 const server = setupServer();
 
 type PathStructure = RpcEndpoint & {
@@ -93,6 +117,10 @@ type PathStructure = RpcEndpoint & {
         query: { $post: typeof _post_4 } & RpcEndpoint;
         optionalQuery: { $post: typeof _post_5 } & RpcEndpoint;
         all: { $post: typeof _post_all } & RpcEndpoint;
+        mixedQuery: {
+          $get: typeof _get_mixed_query;
+          $post: typeof _post_mixed_query;
+        } & RpcEndpoint;
       };
   };
 };
@@ -496,5 +524,76 @@ describe("createHandler type definitions", () => {
     expectTypeOf<
       Parameters<typeof client.api.none.all.$post>
     >().toEqualTypeOf<ExpectedAllParameters>();
+
+    type ExpectedMixedQueryGetParameters = [
+      methodParam: {
+        url: {
+          query: {
+            page: string;
+          };
+          hash?: string;
+        };
+      },
+      option?: RpcClientOptions<never, never>,
+    ];
+
+    expectTypeOf<
+      Parameters<typeof client.api.none.mixedQuery.$get>
+    >().toEqualTypeOf<ExpectedMixedQueryGetParameters>();
+
+    type ExpectedMixedQueryPostParameters = [
+      methodParam: {
+        url: {
+          query: {
+            mode: "draft" | "published";
+          };
+          hash?: string;
+        };
+      },
+      option?: RpcClientOptions<never, never>,
+    ];
+
+    expectTypeOf<
+      Parameters<typeof client.api.none.mixedQuery.$post>
+    >().toEqualTypeOf<ExpectedMixedQueryPostParameters>();
+
+    type ExpectedMixedQueryUrlParameters = [
+      url: {
+        query:
+          | {
+              page: string;
+            }
+          | {
+              mode: "draft" | "published";
+            };
+        hash?: string;
+      },
+    ];
+
+    expectTypeOf<
+      Parameters<typeof client.api.none.mixedQuery.$url>
+    >().toEqualTypeOf<ExpectedMixedQueryUrlParameters>();
+
+    client.api.none.mixedQuery.$url({
+      query: { page: "1" },
+    });
+    client.api.none.mixedQuery.$url({
+      query: { mode: "draft" },
+    });
+    client.api.none.mixedQuery.$get({
+      url: { query: { page: "1" } },
+    });
+    client.api.none.mixedQuery.$post({
+      url: { query: { mode: "published" } },
+    });
+
+    // @ts-expect-error $get must use the GET query schema
+    client.api.none.mixedQuery.$get({ url: { query: { mode: "draft" } } });
+
+    // @ts-expect-error $post must use the POST query schema
+    client.api.none.mixedQuery.$post({ url: { query: { page: "1" } } });
+
+    // @ts-expect-error $url accepts only query schemas declared by route methods
+    client.api.none.mixedQuery.$url({ query: { mode: "archived" } });
   });
 });

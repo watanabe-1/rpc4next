@@ -617,6 +617,10 @@ describe("integration next-app generated RPC type coverage", () => {
       // @ts-expect-error invalid procedure query literal should be rejected
       .$url({ query: { includePosts: "maybe" } });
 
+    client.api["procedure-validation-branch"].$url({
+      query: { page: "1" },
+    });
+
     client.api["procedure-guarded"]._userId("procedure-user").$get({
       requestHeaders: {
         headers: {

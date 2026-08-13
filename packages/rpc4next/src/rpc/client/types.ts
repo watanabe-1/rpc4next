@@ -289,7 +289,12 @@ type PathProxyAsProperty<T> = {
     | null;
 };
 
-type InferQuery<T> = ValidationInputFor<"query", InferHttpMethodValidationSchema<T>>;
+type InferQuery<T> =
+  InferHttpMethodValidationSchema<T> extends infer TValidationSchema
+    ? TValidationSchema extends ValidationSchema
+      ? ValidationInputFor<"query", TValidationSchema>
+      : never
+    : never;
 
 type PathProxyAsFunction<T> = {
   $url: (...args: UrlArgs<T, InferQuery<T>>) => UrlResult<T>;
