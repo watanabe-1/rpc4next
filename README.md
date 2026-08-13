@@ -123,6 +123,9 @@ Notes:
 `procedure` input contracts validate request input and return typed `400` JSON
 errors by default when validation fails. If you need custom branching at the
 validation stage, use `onValidationError(...)` on the relevant input contract.
+For known application errors that clients should branch on, return
+`response.error(...)` from the procedure handler or middleware. Those returned
+error responses are preserved in the generated client response union.
 
 ### 2. Generate `PathStructure`
 
@@ -296,42 +299,52 @@ export const { GET } = procedure
 
 ### Error Handling
 
-`nextRoute()` requires `onError(error, context)`. For project-level reuse, prefer
-`procedure.defaults({ onError })` and export a shared `appProcedure` or
-similar preset from your project.
+Known errors should be returned as responses. Use `response.error(code, init)`
+inside a procedure handler or middleware when the client is expected to branch on
+that error. Because this is a normal return value, rpc4next can preserve the
+exact `code`, HTTP status, and `details` shape in the generated client response
+type.
 
-If you want client-side inference to preserve the concrete response shape returned
-from `onError`, prefer `satisfies ProcedureOnError` over
-`const onError: ProcedureOnError = ...`. A direct type annotation widens the
-return type to the generic `ProcedureOnError` contract, while `satisfies`
-checks the contract without discarding the specific `response.json(...)` /
-`response.text(...)` result type.
+Unexpected failures should still be thrown as normal exceptions. `nextRoute()`
+requires `onError(error, context)` for that fallback path. For project-level
+reuse, prefer `procedure.defaults({ onError })` and export a shared
+`appProcedure` or similar preset from your project.
+
+Input validation adds a typed `BAD_REQUEST` response when validation fails.
+Runtime output validation, when enabled, adds an `INTERNAL_SERVER_ERROR`
+response. Other known error codes are only inferred when your handler or
+middleware returns them.
 
 ```ts
-import { isRpcError, nextRoute, procedure, type ProcedureOnError } from "rpc4next/server";
+import { nextRoute, procedure, type ProcedureOnError } from "rpc4next/server";
 import { routeContract } from "./route-contract";
-
-const failingProcedure = procedure.forRoute(routeContract).handle(async () => {
-  throw new Error("expected failure");
-});
 
 const onError = ((error, { response }) => {
   if (error instanceof Response) {
     return error;
   }
 
-  if (isRpcError(error)) {
-    return response.json(error.toJSON(), { status: error.status });
-  }
-
-  const message = error instanceof Error ? error.message : "unknown integration error";
-
-  return response.text(`handled:${message}`, { status: 500 });
+  return response.error("INTERNAL_SERVER_ERROR", {
+    message: error instanceof Error ? error.message : "unknown integration error",
+  });
 }) satisfies ProcedureOnError;
 
 const appProcedure = procedure.defaults({ onError });
 
-export const { GET } = nextRoute(failingProcedure, {
+const guardedProcedure = procedure.forRoute(routeContract).handle(async ({ response }) => {
+  const allowed = false;
+
+  if (!allowed) {
+    return response.error("FORBIDDEN", {
+      message: "Editor role required.",
+      details: { reason: "editor_only" as const },
+    });
+  }
+
+  return response.json({ ok: true as const });
+});
+
+export const { GET } = nextRoute(guardedProcedure, {
   method: "GET",
   onError,
 });

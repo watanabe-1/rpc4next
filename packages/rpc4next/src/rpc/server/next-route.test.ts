@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
 import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 
-import { rpcError } from "./error";
 import { nextRoute as baseNextRoute } from "./next-route";
 import { defaultProcedureOnError } from "./on-error";
 import { defineProcedureMiddleware, procedure } from "./procedure";
@@ -147,10 +146,10 @@ describe("nextRoute", () => {
     });
   });
 
-  it("serializes thrown RpcError with the default envelope", async () => {
+  it("returns typed procedure errors with the default envelope", async () => {
     const route = nextRoute(
-      procedure.forRoute(staticRouteContract).handle(async () => {
-        throw rpcError("FORBIDDEN", {
+      procedure.forRoute(staticRouteContract).handle(async ({ response }) => {
+        return response.error("FORBIDDEN", {
           message: "blocked",
         });
       }),
@@ -378,9 +377,9 @@ describe("nextRoute", () => {
     expect(handler).not.toHaveBeenCalled();
   });
 
-  it("preserves middleware-thrown RpcError responses through required onError", async () => {
-    const guardedMiddleware = defineProcedureMiddleware(() => {
-      throw rpcError("UNAUTHORIZED", {
+  it("preserves middleware error responses as terminal results", async () => {
+    const guardedMiddleware = defineProcedureMiddleware(({ response }) => {
+      return response.error("UNAUTHORIZED", {
         message: "middleware-denied",
         details: {
           reason: "missing_demo_user" as const,
@@ -555,8 +554,7 @@ describe("nextRoute", () => {
     await expect(response.json()).resolves.toEqual({
       error: {
         code: "INTERNAL_SERVER_ERROR",
-        message: "Procedure output validation failed.",
-        details: [{ message: "ok must be true and slug must be a string" }],
+        message: "Internal server error",
       },
     });
   });

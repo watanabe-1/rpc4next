@@ -117,6 +117,39 @@ type ExpectedProcedureGuardedResponse =
       },
       500,
       "application/json"
+    >
+  | TypedNextResponse<
+      {
+        error: {
+          code: "UNAUTHORIZED";
+          message: string;
+          details?: { reason: "missing_demo_user" };
+        };
+      },
+      401,
+      "application/json"
+    >
+  | TypedNextResponse<
+      {
+        error: {
+          code: "FORBIDDEN";
+          message: string;
+          details?: { reason: "suspended_account" };
+        };
+      },
+      403,
+      "application/json"
+    >
+  | TypedNextResponse<
+      {
+        error: {
+          code: "FORBIDDEN";
+          message: string;
+          details?: { reason: "editor_only" };
+        };
+      },
+      403,
+      "application/json"
     >;
 const _procedureGuardedFromActual: ExpectedProcedureGuardedResponse =
   {} as ProcedureGuardedResponse;

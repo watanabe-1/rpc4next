@@ -1,5 +1,5 @@
-import { defineProcedureMiddleware, procedure, rpcError } from "rpc4next/server";
-import type { ProcedureMiddleware, ProcedureMiddlewareContext } from "rpc4next/server";
+import { defineProcedureMiddleware, procedure } from "rpc4next/server";
+import type { ProcedureMiddlewareContext } from "rpc4next/server";
 import { z } from "zod";
 
 export const guardedProcedureHeadersSchema = z.object({
@@ -7,29 +7,10 @@ export const guardedProcedureHeadersSchema = z.object({
   "x-demo-role": z.enum(["reader", "editor", "suspended"]).optional(),
 });
 
-const guardedProcedureMiddleware = defineProcedureMiddleware<
-  ProcedureMiddleware<
-    {
-      input: {
-        headers: z.input<typeof guardedProcedureHeadersSchema>;
-      };
-      output: {
-        headers: z.output<typeof guardedProcedureHeadersSchema>;
-      };
-    },
-    Record<string, string | string[] | undefined>,
-    Record<never, never>,
-    {
-      viewer: {
-        id: string;
-        role: "reader" | "editor";
-      };
-      requestId: string;
-    }
-  >
->(
+const guardedProcedureMiddleware = defineProcedureMiddleware(
   async ({
     headers,
+    response,
   }: ProcedureMiddlewareContext<{
     input: {
       headers: z.input<typeof guardedProcedureHeadersSchema>;
@@ -41,18 +22,18 @@ const guardedProcedureMiddleware = defineProcedureMiddleware<
     const viewerId = headers["x-demo-user"];
 
     if (!viewerId) {
-      throw rpcError("UNAUTHORIZED", {
+      return response.error("UNAUTHORIZED", {
         message: "Demo user header required.",
-        details: { reason: "missing_demo_user" },
+        details: { reason: "missing_demo_user" as const },
       });
     }
 
     const role = headers["x-demo-role"] ?? "reader";
 
     if (role === "suspended") {
-      throw rpcError("FORBIDDEN", {
+      return response.error("FORBIDDEN", {
         message: "Suspended demo users cannot access guarded procedures.",
-        details: { reason: "suspended_account" },
+        details: { reason: "suspended_account" as const },
       });
     }
 

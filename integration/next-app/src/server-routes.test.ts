@@ -443,7 +443,6 @@ describe("integration next-app server route handlers", () => {
 
     expect(response.status).toBe(403);
     await expect(response.json()).resolves.toEqual({
-      success: false,
       error: {
         code: "FORBIDDEN",
         message: "Procedure defaults formatter denied the request.",

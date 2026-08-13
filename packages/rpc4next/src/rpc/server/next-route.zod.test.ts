@@ -282,7 +282,7 @@ describe("nextRoute zod integration", () => {
     ).toContain(">0");
   });
 
-  it("lets onError shape validation errors when validator-stage customization falls back", async () => {
+  it("returns default validation errors when validator-stage customization falls back", async () => {
     const onError = vi.fn<(error: unknown, context: { response: typeof NextResponse }) => Response>(
       (error: unknown, { response }) => {
         return response.json(
@@ -317,18 +317,23 @@ describe("nextRoute zod integration", () => {
       params: Promise.resolve({}),
     });
 
-    expect(onError).toHaveBeenCalledTimes(1);
-    expect(response.status).toBe(418);
+    expect(onError).not.toHaveBeenCalled();
+    expect(response.status).toBe(400);
     const payload = await response.json();
     expect(payload).toMatchObject({
-      source: "onError",
+      error: {
+        code: "BAD_REQUEST",
+      },
     });
     expect(
       typeof payload === "object" &&
         payload !== null &&
-        "message" in payload &&
-        typeof payload.message === "string"
-        ? payload.message
+        "error" in payload &&
+        typeof payload.error === "object" &&
+        payload.error !== null &&
+        "message" in payload.error &&
+        typeof payload.error.message === "string"
+        ? payload.error.message
         : "",
     ).toContain(">0");
   });
@@ -626,8 +631,7 @@ describe("nextRoute zod integration", () => {
     await expect(response.json()).resolves.toEqual({
       error: {
         code: "INTERNAL_SERVER_ERROR",
-        message: "Procedure output validation failed.",
-        details: expect.any(Array),
+        message: "Internal server error",
       },
     });
   });
@@ -659,8 +663,7 @@ describe("nextRoute zod integration", () => {
     await expect(response.json()).resolves.toEqual({
       error: {
         code: "INTERNAL_SERVER_ERROR",
-        message: "Procedure output validation failed.",
-        details: expect.any(Array),
+        message: "Internal server error",
       },
     });
   });
@@ -809,8 +812,7 @@ describe("nextRoute zod integration", () => {
     await expect(response.json()).resolves.toEqual({
       error: {
         code: "INTERNAL_SERVER_ERROR",
-        message:
-          "Procedure output validation produced a value that cannot be reflected by response.body(...).",
+        message: "Internal server error",
       },
     });
   });

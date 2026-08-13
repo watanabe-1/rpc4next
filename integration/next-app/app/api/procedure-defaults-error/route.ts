@@ -1,4 +1,3 @@
-import { rpcError } from "rpc4next/server";
 import { z } from "zod";
 
 import { appProcedure } from "../_shared/procedure-defaults";
@@ -11,11 +10,11 @@ export const { GET } = appProcedure
       mode: z.enum(["deny"]).optional(),
     }),
   )
-  .handle(async ({ query }) => {
+  .handle(async ({ query, response }) => {
     if (query.mode === "deny") {
-      throw rpcError("FORBIDDEN", {
+      return response.error("FORBIDDEN", {
         message: "Procedure defaults formatter denied the request.",
-        details: { reason: "defaults_formatter" },
+        details: { reason: "defaults_formatter" as const },
       });
     }
 

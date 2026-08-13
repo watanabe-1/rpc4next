@@ -167,8 +167,7 @@ describe("nextRoute valibot integration", () => {
     await expect(response.json()).resolves.toEqual({
       error: {
         code: "INTERNAL_SERVER_ERROR",
-        message: "Procedure output validation failed.",
-        details: expect.any(Array),
+        message: "Internal server error",
       },
     });
   });

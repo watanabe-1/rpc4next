@@ -4,7 +4,6 @@ import type { HttpMethod } from "rpc4next-shared";
 import type { ContentType } from "../lib/content-type-types";
 import type { HttpStatusCode } from "../lib/http-status-code-types";
 import { searchParamsToObject } from "../lib/search-params";
-import { rpcError } from "./error";
 import type { ProcedureOnError } from "./on-error";
 import type { ProcedureMiddleware, ProcedureMiddlewareResult, ProcedureResult } from "./procedure";
 import { attachProcedureDefinition } from "./procedure-definition";
@@ -65,49 +64,79 @@ const formDataToObject = (formData: FormData) => {
 const getContractValue = async (
   request: NextRequest,
   segmentData: { params: Promise<Params> },
+  response: ReturnType<typeof createResponseHelpers>,
   target: ProcedureInputTarget,
 ) => {
   if (target === "params") {
-    return await segmentData.params;
+    return {
+      ok: true as const,
+      value: await segmentData.params,
+    };
   }
 
   if (target === "query") {
-    return searchParamsToObject(request.nextUrl.searchParams);
+    return {
+      ok: true as const,
+      value: searchParamsToObject(request.nextUrl.searchParams),
+    };
   }
 
   if (target === "json") {
     try {
-      return await request.json();
+      return {
+        ok: true as const,
+        value: await request.json(),
+      };
     } catch (error) {
-      throw rpcError("BAD_REQUEST", {
-        message: "Invalid JSON body.",
-        cause: error,
-      });
+      void error;
+
+      return {
+        ok: false as const,
+        response: response.error("BAD_REQUEST", {
+          message: "Invalid JSON body.",
+        }),
+      };
     }
   }
 
   if (target === "formData") {
     try {
-      return formDataToObject(await request.formData());
+      return {
+        ok: true as const,
+        value: formDataToObject(await request.formData()),
+      };
     } catch (error) {
-      throw rpcError("BAD_REQUEST", {
-        message: "Invalid form-data body.",
-        cause: error,
-      });
+      void error;
+
+      return {
+        ok: false as const,
+        response: response.error("BAD_REQUEST", {
+          message: "Invalid form-data body.",
+        }),
+      };
     }
   }
 
   if (target === "headers") {
-    return Object.fromEntries(request.headers.entries());
+    return {
+      ok: true as const,
+      value: Object.fromEntries(request.headers.entries()),
+    };
   }
 
-  return Object.fromEntries(request.cookies.getAll().map((cookie) => [cookie.name, cookie.value]));
+  return {
+    ok: true as const,
+    value: Object.fromEntries(
+      request.cookies.getAll().map((cookie) => [cookie.name, cookie.value]),
+    ),
+  };
 };
 
 type ProcedureTypeCarrier = {
   definition: ProcedureDefinition;
   middlewares: readonly ProcedureMiddleware[];
   handler: (...args: never[]) => unknown;
+  middlewareTerminalResult: unknown;
 };
 
 type InferProcedureDefinition<TProcedure extends ProcedureTypeCarrier> = TProcedure extends {
@@ -223,6 +252,13 @@ type InferProcedureHandlerResult<TProcedure extends ProcedureTypeCarrier> = TPro
   ? Awaited<TResult>
   : never;
 
+type InferProcedureMiddlewareTerminalResult<TProcedure extends ProcedureTypeCarrier> =
+  TProcedure extends {
+    middlewareTerminalResult: infer TResult;
+  }
+    ? TResult
+    : never;
+
 type InferProcedureHandler<TProcedure extends ProcedureTypeCarrier> = TProcedure extends {
   handler: infer THandler;
 }
@@ -278,11 +314,13 @@ type NextRouteResponse<
   IsNever<InferProcedureHandlerResult<TProcedure>> extends true
     ?
         | TypedNextResponse<unknown, HttpStatusCode, ContentType>
+        | NormalizeProcedureHandlerResult<InferProcedureMiddlewareTerminalResult<TProcedure>>
         | InferProcedureOnErrorResponse<TOnError>
         | InferProcedureValidationErrorResponse<TProcedure>
         | InferProcedureOutputValidationErrorResponse<TProcedure, TValidateOutput>
     :
         | NormalizeProcedureHandlerResult<InferProcedureHandlerResult<TProcedure>>
+        | NormalizeProcedureHandlerResult<InferProcedureMiddlewareTerminalResult<TProcedure>>
         | InferProcedureOnErrorResponse<TOnError>
         | InferProcedureValidationErrorResponse<TProcedure>
         | InferProcedureOutputValidationErrorResponse<TProcedure, TValidateOutput>;
@@ -312,11 +350,7 @@ export interface NextRouteOptions<
 }
 
 export type NextRouteProcedureOptions<
-  TProcedure extends {
-    definition: ProcedureDefinition;
-    middlewares: readonly ProcedureMiddleware[];
-    handler: (...args: never[]) => unknown;
-  },
+  TProcedure extends ProcedureTypeCarrier,
   TMethod extends HttpMethod | undefined = undefined,
   TValidateOutput extends boolean = false,
   TOnError extends ProcedureOnError = ProcedureOnError,
@@ -338,10 +372,7 @@ const parseOutputWithSchema = async (schema: StandardSchemaV1, value: unknown) =
   const result = await schema["~standard"].validate(value);
 
   if (result.issues) {
-    throw rpcError("INTERNAL_SERVER_ERROR", {
-      message: "Procedure output validation failed.",
-      details: result.issues,
-    });
+    throw new Error("Procedure output validation failed.");
   }
 
   return result.value;
@@ -405,9 +436,9 @@ const isBodyInitLike = (value: unknown): value is BodyInit | null => {
 };
 
 const getParsedOutputReflectionError = (helper: "body" | "text") => {
-  return rpcError("INTERNAL_SERVER_ERROR", {
-    message: `Procedure output validation produced a value that cannot be reflected by response.${helper}(...).`,
-  });
+  return new Error(
+    `Procedure output validation produced a value that cannot be reflected by response.${helper}(...).`,
+  );
 };
 
 const applyParsedProcedureOutput = (
@@ -489,7 +520,15 @@ const validateProcedureInputs = async (
       };
     }
 
-    const rawValue = await getContractValue(request, segmentData, target);
+    const contractValue = await getContractValue(request, segmentData, response, target);
+    if (!contractValue.ok) {
+      return {
+        ok: false as const,
+        response: contractValue.response,
+      };
+    }
+
+    const rawValue = contractValue.value;
     const result = await schema["~standard"].validate(rawValue);
 
     if (!result.issues) {
@@ -514,10 +553,13 @@ const validateProcedureInputs = async (
       };
     }
 
-    throw rpcError("BAD_REQUEST", {
-      message: getStandardSchemaMessage(result.issues),
-      details: result.issues,
-    });
+    return {
+      ok: false as const,
+      response: response.error("BAD_REQUEST", {
+        message: getStandardSchemaMessage(result.issues),
+        details: result.issues,
+      }),
+    };
   };
 
   const paramsResult = await parseContract(
@@ -540,9 +582,12 @@ const validateProcedureInputs = async (
     request.method === "GET" || request.method === "HEAD"
       ? contracts.json
         ? (() => {
-            throw rpcError("BAD_REQUEST", {
-              message: "JSON input contracts are not supported for GET or HEAD requests.",
-            });
+            return {
+              ok: false as const,
+              response: response.error("BAD_REQUEST", {
+                message: "JSON input contracts are not supported for GET or HEAD requests.",
+              }),
+            };
           })()
         : {
             ok: true as const,
@@ -557,9 +602,12 @@ const validateProcedureInputs = async (
     request.method === "GET" || request.method === "HEAD"
       ? contracts.formData
         ? (() => {
-            throw rpcError("BAD_REQUEST", {
-              message: "FormData input contracts are not supported for GET or HEAD requests.",
-            });
+            return {
+              ok: false as const,
+              response: response.error("BAD_REQUEST", {
+                message: "FormData input contracts are not supported for GET or HEAD requests.",
+              }),
+            };
           })()
         : {
             ok: true as const,
@@ -646,6 +694,7 @@ export const nextRoute = <
         formData,
         headers,
         cookies,
+        response,
         ctx: {} as Record<string, unknown>,
       };
 

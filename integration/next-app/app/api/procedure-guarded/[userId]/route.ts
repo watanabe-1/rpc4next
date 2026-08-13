@@ -1,4 +1,4 @@
-import { nextRoute, rpcError } from "rpc4next/server";
+import { nextRoute } from "rpc4next/server";
 import { z } from "zod";
 
 import { guardedBaseProcedure } from "../../_shared/base-procedure";
@@ -27,14 +27,14 @@ const getGuardedProcedureUser = guardedBaseProcedure
   .params(paramsSchema)
   .query(querySchema)
   .output(outputSchema)
-  .handle(async ({ params, query, ctx }) => {
+  .handle(async ({ params, query, ctx, response }) => {
     const role = ctx.viewer.role;
     const includeDrafts = query.includeDrafts === "true";
 
     if (includeDrafts && role !== "editor") {
-      throw rpcError("FORBIDDEN", {
+      return response.error("FORBIDDEN", {
         message: "Editor role required to include drafts.",
-        details: { reason: "editor_only" },
+        details: { reason: "editor_only" as const },
       });
     }
 
