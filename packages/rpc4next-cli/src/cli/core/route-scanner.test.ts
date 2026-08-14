@@ -906,19 +906,19 @@ describe("route-scanner", () => {
       setupTree({
         testApp: {
           "page.tsx": "export function Page() {};",
-          sub: {
+          child: {
             "index.ts": "export default function Index() {};",
           },
         },
       });
 
       const parentResult1 = scanAppDir(tmpPath("output"), tmpPath("testApp"));
-      const childResult1 = scanAppDir(tmpPath("output"), tmpPath("testApp", "sub"));
+      const childResult1 = scanAppDir(tmpPath("output"), tmpPath("testApp", "child"));
 
-      clearScanAppDirCacheAbove(tmpPath("testApp", "sub"));
+      clearScanAppDirCacheAbove(tmpPath("testApp", "child"));
 
       const parentResult2 = scanAppDir(tmpPath("output"), tmpPath("testApp"));
-      const childResult2 = scanAppDir(tmpPath("output"), tmpPath("testApp", "sub"));
+      const childResult2 = scanAppDir(tmpPath("output"), tmpPath("testApp", "child"));
 
       expect(parentResult1).not.toBe(parentResult2);
       expect(childResult1).not.toBe(childResult2);
@@ -956,27 +956,27 @@ describe("route-scanner", () => {
     it("should generate correct output when the lowest-level file is modified", () => {
       setupTree({
         testApp: {
-          sub: {
+          child: {
             "page.tsx": "export function Page() {};",
           },
         },
       });
       const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(initial.pathStructure).toBe(`{
-  "sub": RpcEndpoint
+  "child": RpcEndpoint
 }`);
 
       resetTree({
         testApp: {
-          sub: {
+          child: {
             "page.tsx": "export function GET() {};",
           },
         },
       });
-      clearScanAppDirCacheAbove(tmpPath("testApp", "sub", "page.tsx"));
+      clearScanAppDirCacheAbove(tmpPath("testApp", "child", "page.tsx"));
       const modified = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(modified.pathStructure).toBe(`{
-  "sub": { "$get": typeof GET_asmocked } & RpcEndpoint
+  "child": { "$get": typeof GET_asmocked } & RpcEndpoint
 }`);
     });
 
@@ -1029,19 +1029,19 @@ describe("route-scanner", () => {
     it("should generate correct output when a folder is added in the lowest-level directory", () => {
       setupTree({
         testApp: {
-          sub: {
+          child: {
             "page.tsx": "export function Page() {};",
           },
         },
       });
       const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(initial.pathStructure).toBe(`{
-  "sub": RpcEndpoint
+  "child": RpcEndpoint
 }`);
 
       resetTree({
         testApp: {
-          sub: {
+          child: {
             "page.tsx": "export function Page() {};",
             newFolder: {
               "page.tsx": "export function NewPage() {};",
@@ -1049,10 +1049,10 @@ describe("route-scanner", () => {
           },
         },
       });
-      clearScanAppDirCacheAbove(tmpPath("testApp", "sub", "newFolder"));
+      clearScanAppDirCacheAbove(tmpPath("testApp", "child", "newFolder"));
       const modified = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(modified.pathStructure).toBe(`{
-  "sub": RpcEndpoint & {
+  "child": RpcEndpoint & {
     "newFolder": RpcEndpoint
   }
 }`);
@@ -1062,7 +1062,7 @@ describe("route-scanner", () => {
       setupTree({
         testApp: {
           mid: {
-            sub: {
+            child: {
               "page.tsx": "export function Page() {};",
             },
           },
@@ -1071,14 +1071,14 @@ describe("route-scanner", () => {
       const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(initial.pathStructure).toBe(`{
   "mid": {
-    "sub": RpcEndpoint
+    "child": RpcEndpoint
   }
 }`);
 
       resetTree({
         testApp: {
           mid: {
-            sub: {
+            child: {
               "page.tsx": "export function Page() {};",
             },
             newFolder: {
@@ -1091,8 +1091,8 @@ describe("route-scanner", () => {
       const modified = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(modified.pathStructure).toBe(`{
   "mid": {
-    "newFolder": RpcEndpoint,
-    "sub": RpcEndpoint
+    "child": RpcEndpoint,
+    "newFolder": RpcEndpoint
   }
 }`);
     });

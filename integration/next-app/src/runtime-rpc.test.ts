@@ -16,6 +16,8 @@ type FetchCall = {
 };
 
 const baseUrl = "http://127.0.0.1:3000";
+const requestInputToString = (input: RequestInfo | URL) =>
+  typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
 
 describe("integration next-app generated PathStructure runtime behavior", () => {
   describe("$url", () => {
@@ -207,7 +209,9 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
 
       expect(response.status).toBe(200);
       expect(calls).toHaveLength(1);
-      expect(String(calls[0]?.input)).toBe(`${baseUrl}/api/users/smoke-user?includePosts=false`);
+      expect(calls[0]?.input ? requestInputToString(calls[0].input) : undefined).toBe(
+        `${baseUrl}/api/users/smoke-user?includePosts=false`,
+      );
       expect(calls[0]?.init?.method).toBe("GET");
     });
 
@@ -230,7 +234,7 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
 
       expect(response.status).toBe(200);
       expect(calls).toHaveLength(1);
-      expect(String(calls[0]?.input)).toBe(
+      expect(calls[0]?.input ? requestInputToString(calls[0].input) : undefined).toBe(
         `${baseUrl}/api/users/user%20with%2Fslash?includePosts=true`,
       );
       expect(calls[0]?.init?.method).toBe("GET");
@@ -255,7 +259,9 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
 
       expect(response.status).toBe(201);
       expect(calls).toHaveLength(1);
-      expect(String(calls[0]?.input)).toBe(`${baseUrl}/api/posts`);
+      expect(calls[0]?.input ? requestInputToString(calls[0].input) : undefined).toBe(
+        `${baseUrl}/api/posts`,
+      );
       expect(calls[0]?.init?.method).toBe("POST");
       expect(calls[0]?.init?.body).toBe('{"title":"runtime test"}');
     });

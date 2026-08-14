@@ -149,19 +149,18 @@ export const runCli = (argv: string[], logger: Logger = createLogger()) => {
     // Match your current behavior:
     // - in non-watch mode: exit with code
     // - in watch mode: do not exit (keep process alive)
-    void (async () => {
-      try {
-        const exitCode = await handleCli(baseDir, outputPath, options, logger);
+    void Promise.resolve(handleCli(baseDir, outputPath, options, logger))
+      .then((exitCode) => {
         if (!options.watch) {
           process.exit(exitCode as number);
         }
-      } catch (error) {
+      })
+      .catch((error: unknown) => {
         logger.error(
           `Unexpected error occurred:${error instanceof Error ? error.message : String(error)}`,
         );
         process.exit(EXIT_FAILURE as number);
-      }
-    })();
+      });
   } catch (error) {
     // parseArgs throws on unknown options in strict mode, etc.
     logger.error(error instanceof Error ? error.message : `Invalid arguments: ${String(error)}`);

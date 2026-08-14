@@ -42,18 +42,20 @@ const fakeWatcher: FakeWatcher = {
 };
 vi.spyOn(chokidar, "watch").mockReturnValue(fakeWatcher as unknown as FSWatcher);
 
-const signalHandlers = new Map<string | symbol, Set<(...args: unknown[]) => void>>();
+type SignalHandler = (...args: unknown[]) => void | Promise<void>;
+
+const signalHandlers = new Map<string | symbol, Set<SignalHandler>>();
 
 vi.spyOn(process, "on").mockImplementation((event, handler) => {
-  const handlers = signalHandlers.get(event) ?? new Set<(...args: unknown[]) => void>();
-  handlers.add(handler as (...args: unknown[]) => void);
+  const handlers = signalHandlers.get(event) ?? new Set<SignalHandler>();
+  handlers.add(handler as SignalHandler);
   signalHandlers.set(event, handlers);
 
   return process;
 });
 
 vi.spyOn(process, "off").mockImplementation((event, handler) => {
-  signalHandlers.get(event)?.delete(handler as (...args: unknown[]) => void);
+  signalHandlers.get(event)?.delete(handler as SignalHandler);
 
   return process;
 });
@@ -323,7 +325,7 @@ describe("setupWatcher", () => {
     await cleanup(dispose);
 
     vi.advanceTimersByTime(300);
-    await vi.runAllTicks();
+    vi.runAllTicks();
 
     expect(cancel).toHaveBeenCalledTimes(1);
     expect(onGenerate).not.toHaveBeenCalled();

@@ -24,7 +24,7 @@ export const debounceOnceRunningWithTrailing = <T extends (...args: any[]) => Pr
       if (pendingArgs) {
         const nextArgs = pendingArgs;
         pendingArgs = null;
-        execute(...nextArgs);
+        void execute(...nextArgs);
       }
     }
   };
@@ -42,7 +42,7 @@ export const debounceOnceRunningWithTrailing = <T extends (...args: any[]) => Pr
         return;
       }
 
-      execute(...args);
+      void execute(...args);
     }, delay);
   };
 

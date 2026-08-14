@@ -18,6 +18,7 @@ class ExitSignal extends Error {
 }
 
 describe("runCli", () => {
+  let processExitSpy: ReturnType<typeof vi.spyOn>;
   const mockLogger = {
     error: vi.fn<(...args: unknown[]) => void>(),
     info: vi.fn<(...args: unknown[]) => void>(),
@@ -28,7 +29,7 @@ describe("runCli", () => {
     vi.clearAllMocks();
     vi.spyOn(loggerModule, "createLogger").mockReturnValue(mockLogger);
     vi.spyOn(configModule, "loadCliConfig").mockReturnValue({});
-    vi.spyOn(process, "exit").mockImplementation((() => undefined) as never);
+    processExitSpy = vi.spyOn(process, "exit").mockImplementation((() => undefined) as never);
   });
 
   afterEach(() => {
@@ -104,7 +105,7 @@ describe("runCli", () => {
     runCli(["node", "cli", "src", "types.ts"]);
     await flushAsync();
 
-    expect(process.exit).toHaveBeenCalledWith(0);
+    expect(processExitSpy).toHaveBeenCalledWith(0);
   });
 
   it("does not call process.exit when --watch is set", async () => {
@@ -114,7 +115,7 @@ describe("runCli", () => {
     await flushAsync();
 
     expect(handleCliSpy).toHaveBeenCalledWith("src", "types.ts", { watch: true }, mockLogger);
-    expect(process.exit).not.toHaveBeenCalled();
+    expect(processExitSpy).not.toHaveBeenCalled();
   });
 
   it("supports short watch flag (-w) for README-like usage", async () => {
@@ -129,7 +130,7 @@ describe("runCli", () => {
       { watch: true },
       mockLogger,
     );
-    expect(process.exit).not.toHaveBeenCalled();
+    expect(processExitSpy).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -239,7 +240,7 @@ describe("runCli", () => {
     expect(handleCliSpy).not.toHaveBeenCalled();
     expect(mockLogger.error).toHaveBeenCalledTimes(1);
     expect(mockLogger.info).toHaveBeenCalledTimes(1);
-    expect(process.exit).toHaveBeenCalledWith(EXIT_FAILURE);
+    expect(processExitSpy).toHaveBeenCalledWith(EXIT_FAILURE);
   });
 
   it("exits with failure when argv is empty", () => {
@@ -269,7 +270,7 @@ describe("runCli", () => {
       { watch: true, paramsFile: true },
       mockLogger,
     );
-    expect(process.exit).not.toHaveBeenCalled();
+    expect(processExitSpy).not.toHaveBeenCalled();
   });
 
   it("logs and exits when handleCli throws Error", async () => {
@@ -279,7 +280,7 @@ describe("runCli", () => {
     await flushAsync();
 
     expect(mockLogger.error).toHaveBeenCalledWith("Unexpected error occurred:Something went wrong");
-    expect(process.exit).toHaveBeenCalledWith(EXIT_FAILURE);
+    expect(processExitSpy).toHaveBeenCalledWith(EXIT_FAILURE);
   });
 
   it("logs and exits when handleCli throws non-Error", async () => {
@@ -289,7 +290,7 @@ describe("runCli", () => {
     await flushAsync();
 
     expect(mockLogger.error).toHaveBeenCalledWith("Unexpected error occurred:plain string error");
-    expect(process.exit).toHaveBeenCalledWith(EXIT_FAILURE);
+    expect(processExitSpy).toHaveBeenCalledWith(EXIT_FAILURE);
   });
 
   it("logs invalid arguments when non-Error is thrown in outer try block", () => {

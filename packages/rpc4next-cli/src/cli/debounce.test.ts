@@ -28,7 +28,7 @@ describe("debounceOnceRunningWithTrailing", () => {
     expect(callback).not.toHaveBeenCalled();
 
     vi.advanceTimersByTime(500);
-    await vi.runAllTicks(); // for async handling
+    vi.runAllTicks(); // for async handling
 
     expect(callback).toHaveBeenCalledTimes(1);
     expect(callback).toHaveBeenCalledWith("test");
@@ -48,7 +48,7 @@ describe("debounceOnceRunningWithTrailing", () => {
     debounced("third");
 
     vi.advanceTimersByTime(300); // final delay passes
-    await vi.runAllTicks();
+    vi.runAllTicks();
 
     expect(callback).toHaveBeenCalledTimes(1);
     expect(callback).toHaveBeenCalledWith("third");
@@ -67,18 +67,18 @@ describe("debounceOnceRunningWithTrailing", () => {
 
     debounced("A");
     vi.advanceTimersByTime(300); // triggers execution of "A"
-    await vi.runAllTicks(); // enters async callback
+    vi.runAllTicks(); // enters async callback
 
     debounced("B"); // should be stored as pending
     debounced("C"); // overwrites B
 
     // still running, so nothing should be triggered yet
     vi.advanceTimersByTime(1000); // callback resolves
-    await vi.runAllTicks();
+    vi.runAllTicks();
 
     // pending "C" should now run
     await vi.advanceTimersByTimeAsync(300); // trigger pending
-    await vi.runAllTicks();
+    vi.runAllTicks();
 
     expect(callback).toHaveBeenCalledTimes(2);
     expect(callback.mock.calls[0][0]).toBe("A");
@@ -94,7 +94,7 @@ describe("debounceOnceRunningWithTrailing", () => {
 
     debounced(); // no arguments
     vi.advanceTimersByTime(400);
-    await vi.runAllTicks();
+    vi.runAllTicks();
 
     expect(callback).toHaveBeenCalledTimes(1);
     expect(callback).toHaveBeenCalledWith();
@@ -111,7 +111,7 @@ describe("debounceOnceRunningWithTrailing", () => {
     debounced.cancel();
 
     vi.advanceTimersByTime(500);
-    await vi.runAllTicks();
+    vi.runAllTicks();
 
     expect(callback).not.toHaveBeenCalled();
 
@@ -131,15 +131,15 @@ describe("debounceOnceRunningWithTrailing", () => {
 
     debounced("A");
     vi.advanceTimersByTime(300);
-    await vi.runAllTicks();
+    vi.runAllTicks();
 
     debounced("B");
     vi.advanceTimersByTime(300);
-    await vi.runAllTicks();
+    vi.runAllTicks();
 
     debounced.cancel();
     finish();
-    await vi.runAllTicks();
+    vi.runAllTicks();
 
     expect(callback).toHaveBeenCalledTimes(1);
     expect(callback).toHaveBeenCalledWith("A");
@@ -156,7 +156,7 @@ describe("debounceOnceRunningWithTrailing", () => {
     try {
       debounced("A");
       await vi.advanceTimersByTimeAsync(100);
-      await vi.runAllTicks();
+      vi.runAllTicks();
       await Promise.resolve();
 
       expect(callback).toHaveBeenCalledTimes(1);
@@ -183,11 +183,11 @@ describe("debounceOnceRunningWithTrailing", () => {
     try {
       debounced("A");
       await vi.advanceTimersByTimeAsync(100);
-      await vi.runAllTicks();
+      vi.runAllTicks();
 
       debounced("B");
       await vi.advanceTimersByTimeAsync(100);
-      await vi.runAllTicks();
+      vi.runAllTicks();
       await Promise.resolve();
 
       expect(callback).toHaveBeenCalledTimes(2);
@@ -220,20 +220,20 @@ describe("debounceOnceRunningWithTrailing", () => {
     try {
       debounced("A");
       await vi.advanceTimersByTimeAsync(100);
-      await vi.runAllTicks();
+      vi.runAllTicks();
 
       debounced("B");
       debounced("C");
       await vi.advanceTimersByTimeAsync(100);
-      await vi.runAllTicks();
+      vi.runAllTicks();
 
       finishFirst();
-      await vi.runAllTicks();
+      vi.runAllTicks();
       await Promise.resolve();
 
       debounced("D");
       await vi.advanceTimersByTimeAsync(100);
-      await vi.runAllTicks();
+      vi.runAllTicks();
       await Promise.resolve();
 
       expect(callback).toHaveBeenCalledTimes(3);

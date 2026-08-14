@@ -66,7 +66,7 @@ describe("handleCli", () => {
 
     const mockedSetupWatcher = vi.mocked(watcherModule.setupWatcher);
     const callback = mockedSetupWatcher.mock.calls[0][1];
-    callback();
+    void callback();
 
     expect(generatorModule.generate).toHaveBeenCalledTimes(1);
     expect(generatorModule.generate).toHaveBeenCalledWith({
@@ -135,7 +135,7 @@ describe("handleCli", () => {
 
     const mockedSetupWatcher = vi.mocked(watcherModule.setupWatcher);
     const callback = mockedSetupWatcher.mock.calls[0][1];
-    callback();
+    void callback();
 
     expect(logger.error).toHaveBeenCalledWith("Failed to generate: watch failure");
   });

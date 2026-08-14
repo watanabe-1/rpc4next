@@ -562,29 +562,29 @@ describe("integration next-app generated RPC type coverage", () => {
       // @ts-expect-error invalid users query literal should be rejected
       .$url({ query: { includePosts: "maybe" } });
 
-    client.api.posts.$post({
+    void client.api.posts.$post({
       body: { json: { title: "ok" } },
     });
 
     // @ts-expect-error post body is required for the generated POST route
-    client.api.posts.$post();
+    void client.api.posts.$post();
 
     // @ts-expect-error post body title must be a string
-    client.api.posts.$post({ body: { json: { title: 123 } } });
+    void client.api.posts.$post({ body: { json: { title: 123 } } });
 
-    client.api["request-meta"].$get({
+    void client.api["request-meta"].$get({
       requestHeaders: {
         headers: { "x-integration-test": "header-ok" },
         cookies: { session: "cookie-ok" },
       },
     });
 
-    client.api["request-meta"].$get({
+    void client.api["request-meta"].$get({
       // @ts-expect-error request-meta requires both validated headers and cookies
       requestHeaders: { headers: { "x-integration-test": "header-ok" } },
     });
 
-    client.api["procedure-submit"].$post({
+    void client.api["procedure-submit"].$post({
       body: { json: { title: "ok" } },
       requestHeaders: {
         headers: { "x-procedure-test": "header-ok" },
@@ -596,18 +596,18 @@ describe("integration next-app generated RPC type coverage", () => {
       query: { includePosts: "false" },
     });
 
-    client.api["procedure-contract"]._userId("procedure-user").$get();
+    void client.api["procedure-contract"]._userId("procedure-user").$get();
 
-    client.api["procedure-contract"]
+    void client.api["procedure-contract"]
       ._userId("procedure-user")
       // @ts-expect-error GET procedure routes must not accept request bodies
       .$get({ body: { json: { title: "invalid" } } });
 
-    client.api["procedure-form-data"].$post({
+    void client.api["procedure-form-data"].$post({
       body: { formData: new FormData() },
     });
 
-    client.api["procedure-form-data"].$post({
+    void client.api["procedure-form-data"].$post({
       // @ts-expect-error procedure-form-data expects multipart formData, not json
       body: { json: { displayName: "invalid" } },
     });
@@ -621,7 +621,7 @@ describe("integration next-app generated RPC type coverage", () => {
       query: { page: "1" },
     });
 
-    client.api["procedure-guarded"]._userId("procedure-user").$get({
+    void client.api["procedure-guarded"]._userId("procedure-user").$get({
       requestHeaders: {
         headers: {
           "x-demo-user": "procedure-user",
@@ -634,7 +634,7 @@ describe("integration next-app generated RPC type coverage", () => {
       query: { includeDrafts: "false" },
     });
 
-    client.api["procedure-guarded"]._userId("procedure-user").$get({
+    void client.api["procedure-guarded"]._userId("procedure-user").$get({
       requestHeaders: {
         headers: {
           "x-demo-user": "procedure-user",

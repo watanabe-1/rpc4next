@@ -336,4 +336,4 @@ export type RpcProxyHandler = (
     dynamicKeys: string[];
     options: RpcClientOptions;
   },
-) => unknown | undefined;
+) => unknown;

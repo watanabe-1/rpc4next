@@ -135,9 +135,7 @@ describe("Standard Schema compatibility", () => {
           value: {
             displayName: normalizedDisplayName,
             avatar: normalizedAvatar,
-            tags:
-              normalizedTags?.map((tag) => (typeof tag === "string" ? tag : String(tag))) ??
-              undefined,
+            tags: normalizedTags?.filter((tag): tag is string => typeof tag === "string"),
           },
         };
       },
