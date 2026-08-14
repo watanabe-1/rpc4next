@@ -139,7 +139,10 @@ render data through `body`; HTTP response helpers and raw `Response` values are
 reserved for route procedures. When a shared preset is page-specific, prefer
 `procedure.defaults({ page: { onError } })` so later middleware and handlers
 receive page helpers such as `page.redirect(...)` and `page.notFound()` instead
-of route response helpers.
+of route response helpers. Those page helpers throw Next.js navigation
+interrupts and do not return at runtime, but examples still use
+`return page.redirect(...)` and `return page.notFound()` to make terminal
+branches explicit for TypeScript and readers.
 `app/patterns/client-page/page.tsx` keeps `.nextPage(...)` on the server-side
 page entry while rendering a `"use client"` component with serializable `data`
 props for browser interactivity.
