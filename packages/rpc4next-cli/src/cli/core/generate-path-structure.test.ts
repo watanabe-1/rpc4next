@@ -24,6 +24,7 @@ vi.mock("./type-utils.js", () => ({
   createImport: vi.fn<(type: string, importPath: string) => string>(
     (type, importPath) => `import type { ${type} } from "${importPath}";`,
   ),
+  createStringLiteral: vi.fn<(value: string) => string>((value) => JSON.stringify(value)),
 }));
 
 describe("generatePathStructure", () => {
@@ -108,5 +109,31 @@ describe("generatePathStructure", () => {
 
     expect(pathStructure).toBe(`${expectedImports}${NEWLINE}${expectedTypeDefinition}`);
     expect(paramsTypes).toStrictEqual([]);
+  });
+
+  it("should escape generated route contract pathnames", () => {
+    tmpDir = makeTempDir();
+
+    scanAppDir.mockReturnValue({
+      pathStructure: TYPE_RPC_ENDPOINT,
+      imports: [],
+      paramsTypes: [
+        {
+          paramsType: "{}",
+          dirPath: path.join(tmpDir, "%22quoted"),
+          pathname: '/"quoted',
+        },
+      ],
+    });
+
+    const { paramsTypes } = generatePathStructure(
+      path.join(tmpDir, "output"),
+      path.join(tmpDir, "base"),
+    );
+
+    expect(paramsTypes[0].paramsType).toContain(
+      'export type RouteContract = ProcedureRouteContract<"/\\"quoted", Params>;',
+    );
+    expect(paramsTypes[0].paramsType).toContain('  pathname: "/\\"quoted",');
   });
 });

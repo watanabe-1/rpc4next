@@ -8,7 +8,7 @@ import { createScanAppDirCacheKey, scanAppDirCache, visitedDirsCache } from "./c
 import { INDENT, NEWLINE, TYPE_KEY_PARAMS, TYPE_RPC_ENDPOINT } from "./constants.js";
 import { toPosixPath } from "./path-utils.js";
 import { scanEndpointFile } from "./scan-utils.js";
-import { createObjectType, createRecodeType } from "./type-utils.js";
+import { createObjectType, createRecodeType, createStringLiteral } from "./type-utils.js";
 
 type ImportObj = {
   statement: string;
@@ -413,7 +413,7 @@ const appendChildDirectory = (
     meta.isDynamic || meta.isCatchAll || meta.isOptionalCatchAll ? keyName : meta.staticKeyName;
 
   accumulator.pathStructures.push(
-    `${context.currentIndent}"${segmentKeyName}": ${childResult.pathStructure}`,
+    `${context.currentIndent}${createStringLiteral(segmentKeyName)}: ${childResult.pathStructure}`,
   );
 };
 

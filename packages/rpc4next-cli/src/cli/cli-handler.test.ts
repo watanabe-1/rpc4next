@@ -51,6 +51,21 @@ describe("handleCli", () => {
     });
   });
 
+  it.each(["../params.ts", "nested/params.ts", "nested\\params.ts", ".", ".."])(
+    "should reject paramsFile path %s",
+    (paramsFile) => {
+      const options: CliOptions = { paramsFile };
+
+      const result = handleCli(baseDir, outputPath, options, logger);
+
+      expect(result).toBe(1);
+      expect(logger.error).toHaveBeenCalledWith(
+        "Error: --params-file must be a filename, not a path.",
+      );
+      expect(generatorModule.generate).not.toHaveBeenCalled();
+    },
+  );
+
   it("should setup watcher when watch option is true", () => {
     const options: CliOptions = { paramsFile: "params.json", watch: true };
 
