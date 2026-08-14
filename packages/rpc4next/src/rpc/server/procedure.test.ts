@@ -229,21 +229,144 @@ describe("procedure builder type definitions", () => {
   });
 
   it("rejects formData after json at compile time", () => {
-    procedure
-      .json(titleSchema)
-      // @ts-expect-error procedure body contracts are mutually exclusive
-      .formData(titleSchema);
+    expect(() => {
+      procedure
+        .json(titleSchema)
+        // @ts-expect-error formData is not available after json(schema)
+        .formData(titleSchema);
+    }).toThrow(
+      "Procedure body contracts are mutually exclusive; use either .json(schema) or .formData(schema), not both.",
+    );
 
     expect(true).toBe(true);
   });
 
   it("rejects json after formData at compile time", () => {
-    procedure
-      .formData(titleSchema)
-      // @ts-expect-error procedure body contracts are mutually exclusive
-      .json(titleSchema);
+    expect(() => {
+      procedure
+        .formData(titleSchema)
+        // @ts-expect-error json is not available after formData(schema)
+        .json(titleSchema);
+    }).toThrow(
+      "Procedure body contracts are mutually exclusive; use either .json(schema) or .formData(schema), not both.",
+    );
 
     expect(true).toBe(true);
+  });
+
+  it("omits once-only input contract methods after they are used", () => {
+    expect(() => {
+      procedure
+        .headers(requestIdHeaderSchema)
+        // @ts-expect-error headers is not available after headers(schema)
+        .headers(roleHeaderSchema);
+    }).toThrow('Procedure input contract for "headers" has already been declared.');
+
+    expect(() => {
+      procedure
+        .json(titleSchema)
+        // @ts-expect-error json is not available after json(schema)
+        .json(titleSchema);
+    }).toThrow('Procedure input contract for "json" has already been declared.');
+
+    expect(() => {
+      procedure
+        .params(userIdSchema)
+        // @ts-expect-error params is not available after params(schema)
+        .params(userIdSchema);
+    }).toThrow('Procedure input contract for "params" has already been declared.');
+
+    expect(() => {
+      procedure
+        .query(parsePage)
+        // @ts-expect-error query is not available after query(schema)
+        .query(parsePage);
+    }).toThrow('Procedure input contract for "query" has already been declared.');
+
+    expect(() => {
+      procedure
+        .cookies(requestIdHeaderSchema)
+        // @ts-expect-error cookies is not available after cookies(schema)
+        .cookies(requestIdHeaderSchema);
+    }).toThrow('Procedure input contract for "cookies" has already been declared.');
+  });
+
+  it("omits other once-only builder methods after they are used", () => {
+    expect(() => {
+      procedure
+        .forRoute(guardedUserRouteContract)
+        // @ts-expect-error forRoute is not available after forRoute(routeContract)
+        .forRoute(guardedUserRouteContract);
+    }).toThrow("Procedure route binding has already been declared.");
+
+    expect(() => {
+      procedure
+        .output({
+          _output: {
+            ok: true as const,
+          },
+        })
+        // @ts-expect-error output is not available after output(schema)
+        .output({
+          _output: {
+            ok: true as const,
+          },
+        });
+    }).toThrow("Procedure output contract has already been declared.");
+
+    const defaultedProcedure = procedure.defaults({
+      onError: defaultProcedureOnError,
+    });
+
+    expect(() => {
+      // @ts-expect-error defaults is not available after defaults({ onError })
+      defaultedProcedure.defaults({
+        onError: defaultProcedureOnError,
+      });
+    }).toThrow("Procedure defaults have already been declared.");
+  });
+
+  it("keeps repeatedly composable builder methods available", () => {
+    const composedProcedure = procedure
+      .meta({
+        summary: "first",
+      })
+      .meta({
+        summary: "second",
+      })
+      .use(() => ({
+        ctx: {
+          first: true as const,
+        },
+      }))
+      .use(({ ctx }) => ({
+        ctx: {
+          second: ctx.first,
+        },
+      }))
+      .handle(({ ctx }) => {
+        const _ctx: {
+          first: true;
+          second: true;
+        } = ctx;
+
+        void _ctx;
+
+        return {
+          status: 204 as const,
+        };
+      });
+
+    expectTypeOf(composedProcedure.handler).parameters.toExtend<
+      [
+        {
+          ctx: {
+            first: true;
+            second: true;
+          };
+        },
+      ]
+    >();
   });
 
   it("widens middleware context across multiple use calls", () => {

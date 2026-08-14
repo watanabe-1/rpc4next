@@ -733,6 +733,14 @@ describe("createRpcClient", () => {
       expectTypeOf<typeof validationResponse>().toExtend<Response>();
       const _validationTypedResponse: Response = validationResponse;
 
+      type ValidationJson = Awaited<ReturnType<(typeof validationResponse)["json"]>>;
+      type ValidationSuccessJson = Extract<ValidationJson, { ok: true }>;
+
+      expectTypeOf<ValidationSuccessJson>().toEqualTypeOf<{
+        ok: true;
+        page: string;
+      }>();
+
       const headerClient = createRpcClient<PathStructure>("", {
         fetch: customFetch,
       });
