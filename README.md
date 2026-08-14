@@ -118,6 +118,7 @@ Notes:
 - generated sibling `route-contract.ts` files are the recommended params source for procedure routes
 - input contracts consume Standard Schema V1-compatible schemas directly
 - route handlers must provide `onError`, either directly on `.nextRoute(...)` / `nextRoute(...)` or via a reusable preset such as `procedure.defaults({ route: { onError } })`
+- route-specific presets expose route response helpers and terminal `.nextRoute(...)`; page-specific presets expose page helpers and terminal `.nextPage(...)`
 - shared presets such as `baseProcedure`, `procedure.defaults({ route: { onError } })`, and validator-stage customization all build on this path
 
 `procedure` input contracts validate request input and return typed `400` JSON
@@ -340,21 +341,47 @@ For pages:
 - `validateOutput: true` parses the body with `.output(schema)` before render
 - raw `Response`, `response.error(...)`, and `{ redirect: ... }` results are rejected for page procedures; use Next.js `redirect()` / `notFound()` by throwing them from page code instead
 
-If a page should have project-level error handling, use a page default:
+If a page should have project-level error handling or shared page middleware,
+use a page default:
 
-```ts
-const appProcedure = procedure.defaults({
+```tsx
+const pageProcedure = procedure.defaults({
   page: {
     onError: (error) => {
       throw error;
     },
   },
 });
+
+export default pageProcedure
+  .forRoute(routeContract)
+  .query(querySchema)
+  .handle(({ page, query }) => {
+    if (query.mode === "redirect") {
+      return page.redirect("/feed");
+    }
+
+    if (query.mode === "not-found") {
+      return page.notFound();
+    }
+
+    return {
+      body: {
+        mode: "render" as const,
+      },
+    };
+  })
+  .nextPage(({ data }) => <div>{data.mode}</div>);
 ```
 
 `nextRoute` remains the HTTP adapter. `nextPage` is the page-render adapter.
-The same `procedure` builder can feed either adapter, but the terminal adapter
-decides which inputs and return values are valid.
+When `procedure.defaults({ route: { onError } })` is used, later middleware and
+handlers receive `response` helpers and the handled procedure exposes
+`.nextRoute(...)`. When `procedure.defaults({ page: { onError } })` is used,
+later middleware and handlers receive `page.redirect(...)` and
+`page.notFound()`, and the handled procedure exposes `.nextPage(...)`.
+The un-defaulted `procedure` builder can still feed either adapter, but the
+terminal adapter decides which inputs and return values are valid.
 
 ### Middleware
 
