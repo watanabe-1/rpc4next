@@ -5,6 +5,7 @@ import { describe, expectTypeOf, it } from "vitest";
 import type { Query as ProcedureContractQuery } from "../app/api/procedure-contract/[userId]/route";
 import type { Query as ProcedureGuardedQuery } from "../app/api/procedure-guarded/[userId]/route";
 import type { Query as UsersQuery } from "../app/api/users/[userId]/route";
+import type { Query as SearchPageQuery } from "../app/patterns/search/page";
 import type { PathStructure } from "./generated/rpc";
 
 const baseUrl = "http://127.0.0.1:3000";
@@ -69,6 +70,15 @@ describe("integration next-app generated RPC type coverage", () => {
       };
     };
     expectTypeOf<ProcedureGuardedUrl>().toEqualTypeOf<ExpectedProcedureGuardedUrl>();
+
+    type SearchPageUrl = (typeof client.patterns.search)["$url"];
+    type ExpectedSearchPageUrl = (url?: { query?: SearchPageQuery; hash?: string }) => {
+      pathname: string;
+      path: string;
+      relativePath: string;
+      params: Record<string, string>;
+    };
+    expectTypeOf<SearchPageUrl>().toEqualTypeOf<ExpectedSearchPageUrl>();
 
     type PostsArg = Parameters<typeof client.api.posts.$post>[0];
     type ExpectedPostsArg = {
@@ -648,5 +658,14 @@ describe("integration next-app generated RPC type coverage", () => {
 
     // @ts-expect-error catch-all segments must be non-empty
     client.patterns["catch-all"].___parts([]);
+
+    client.patterns.search.$url({
+      query: { q: "typed-page-query" },
+    });
+
+    client.patterns.search.$url({
+      // @ts-expect-error page query values should follow the exported page Query type
+      query: { q: 123 },
+    });
   });
 });
