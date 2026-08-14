@@ -340,6 +340,7 @@ For pages:
 - handlers return a `ProcedureResult` body, and `nextPage` passes that body to `render({ data, ctx })`
 - `validateOutput: true` parses the body with `.output(schema)` before render
 - raw `Response`, `response.error(...)`, and `{ redirect: ... }` results are rejected for page procedures; use Next.js `redirect()` / `notFound()` by throwing them from page code instead
+- `page.redirect(...)` and `page.notFound()` do not return at runtime, but prefer `return page.redirect(...)` / `return page.notFound()` so the terminal branch is clear to TypeScript and readers
 
 If a page should have project-level error handling or shared page middleware,
 use a page default:
