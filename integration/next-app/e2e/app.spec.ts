@@ -213,6 +213,18 @@ test.describe("integration next-app e2e", () => {
     await expect(page.getByText("search:playwright")).toBeVisible();
   });
 
+  test("nextPage can render a client component with server data", async ({ page }) => {
+    await page.goto("/patterns/client-page?label=playwright");
+
+    await expect(page.getByText("client-page:playwright")).toBeVisible();
+
+    const countButton = page.getByRole("button", { name: "count:1" });
+    await expect(countButton).toBeVisible();
+
+    await countButton.click();
+    await expect(page.getByRole("button", { name: "count:2" })).toBeVisible();
+  });
+
   test("page procedure defaults expose page navigation helpers", async ({ page }) => {
     await page.goto("/patterns/page-helpers");
     await expect(page.getByText("page-helper:render")).toBeVisible();

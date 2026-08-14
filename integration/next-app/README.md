@@ -140,6 +140,9 @@ reserved for route procedures. When a shared preset is page-specific, prefer
 `procedure.defaults({ page: { onError } })` so later middleware and handlers
 receive page helpers such as `page.redirect(...)` and `page.notFound()` instead
 of route response helpers.
+`app/patterns/client-page/page.tsx` keeps `.nextPage(...)` on the server-side
+page entry while rendering a `"use client"` component with serializable `data`
+props for browser interactivity.
 
 When a handler or shared middleware should contribute a known error to
 client-side response inference, return `response.error(...)`. Those returned
