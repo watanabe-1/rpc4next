@@ -191,6 +191,7 @@ const main = async () => {
 
     installRootDependency(nodeModulesDir, "chokidar");
     installRootDependency(nodeModulesDir, "readdirp");
+    installRootDependency(nodeModulesDir, "server-only");
 
     await runBundlerSmoke(fixtureDir);
     runCliSmoke(fixtureDir, installedPackageDirs.get("rpc4next-cli") ?? "");
