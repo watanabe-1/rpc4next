@@ -40,39 +40,42 @@ const stringifyResponse = async (response: Response) => {
 
 export default function E2eClientPage() {
   const [result, setResult] = useState<ResultState>(initialResult);
+  const runOnClick = (action: () => Promise<void>) => () => {
+    void action();
+  };
 
   return (
     <main>
       <h1>rpc4next browser client e2e</h1>
       <button
         type="button"
-        onClick={async () => {
+        onClick={runOnClick(async () => {
           const response = await client.api.users._userId("browser-user").$get({
             url: { query: { includePosts: "true" } },
           });
           const payload = await stringifyResponse(response);
 
           setResult((current) => ({ ...current, users: payload }));
-        }}
+        })}
       >
         call users
       </button>
       <button
         type="button"
-        onClick={async () => {
+        onClick={runOnClick(async () => {
           const response = await client.api.posts.$post({
             body: { json: { title: "browser-title" } },
           });
           const payload = await stringifyResponse(response);
 
           setResult((current) => ({ ...current, posts: payload }));
-        }}
+        })}
       >
         call posts
       </button>
       <button
         type="button"
-        onClick={async () => {
+        onClick={runOnClick(async () => {
           await cookieStore.set({
             name: "session",
             value: "browser-session",
@@ -88,26 +91,26 @@ export default function E2eClientPage() {
           const payload = await stringifyResponse(response);
 
           setResult((current) => ({ ...current, requestMeta: payload }));
-        }}
+        })}
       >
         call request-meta
       </button>
       <button
         type="button"
-        onClick={async () => {
+        onClick={runOnClick(async () => {
           const response = await client.api.users._userId("browser-user").$get({
             url: { query: { includePosts: "maybe" as unknown as "true" } },
           });
           const payload = await stringifyResponse(response);
 
           setResult((current) => ({ ...current, invalidUsers: payload }));
-        }}
+        })}
       >
         call invalid users
       </button>
       <button
         type="button"
-        onClick={async () => {
+        onClick={runOnClick(async () => {
           const response = await client.api["procedure-guarded"]._userId("browser-user").$get({
             url: { query: { includeDrafts: "true" } },
             requestHeaders: {
@@ -120,13 +123,13 @@ export default function E2eClientPage() {
           const payload = await stringifyResponse(response);
 
           setResult((current) => ({ ...current, procedureGuarded: payload }));
-        }}
+        })}
       >
         call guarded procedure
       </button>
       <button
         type="button"
-        onClick={async () => {
+        onClick={runOnClick(async () => {
           const response = await client.api["procedure-guarded"]._userId("browser-user").$get({
             url: { query: { includeDrafts: "true" } },
             requestHeaders: {
@@ -136,7 +139,7 @@ export default function E2eClientPage() {
           const payload = await stringifyResponse(response);
 
           setResult((current) => ({ ...current, procedureForbidden: payload }));
-        }}
+        })}
       >
         call forbidden procedure
       </button>

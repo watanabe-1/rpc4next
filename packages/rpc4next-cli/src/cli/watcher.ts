@@ -76,8 +76,8 @@ export const setupWatcher = (
 
   const cleanup = () => {
     // Remove signal listeners so recreated watchers do not stay retained by process.
-    process.off("SIGINT", cleanup);
-    process.off("SIGTERM", cleanup);
+    process.off("SIGINT", handleSigint);
+    process.off("SIGTERM", handleSigterm);
 
     if (!closePromise) {
       debouncedGenerate.cancel();
@@ -95,8 +95,15 @@ export const setupWatcher = (
     return closePromise;
   };
 
-  process.on("SIGINT", cleanup);
-  process.on("SIGTERM", cleanup);
+  const handleSigint = () => {
+    void cleanup();
+  };
+  const handleSigterm = () => {
+    void cleanup();
+  };
+
+  process.on("SIGINT", handleSigint);
+  process.on("SIGTERM", handleSigterm);
 
   return cleanup;
 };
