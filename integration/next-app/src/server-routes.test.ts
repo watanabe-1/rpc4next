@@ -314,6 +314,49 @@ describe("integration next-app server route handlers", () => {
     });
   });
 
+  it("rejects an oversized procedure form-data file through schema validation", async () => {
+    const { POST: procedureFormDataPost } = await import("../app/api/procedure-form-data/route");
+    const formData = new FormData();
+    formData.set("displayName", "demo-user");
+    formData.set(
+      "avatar",
+      new File([new Uint8Array(2 * 1024 * 1024 + 1)], "avatar.png", { type: "image/png" }),
+    );
+
+    const response = await procedureFormDataPost(
+      new NextRequest("http://127.0.0.1:3000/api/procedure-form-data", {
+        method: "POST",
+        body: formData,
+      }),
+      { params: Promise.resolve({}) },
+    );
+
+    expect(response.status).toBe(400);
+    const payload = expectValidationErrorPayload(await response.json());
+    expect(payload.error.code).toBe("BAD_REQUEST");
+    expect(payload.error.message).toBe("Avatar file is too large.");
+  });
+
+  it("rejects an unsupported procedure form-data file type through schema validation", async () => {
+    const { POST: procedureFormDataPost } = await import("../app/api/procedure-form-data/route");
+    const formData = new FormData();
+    formData.set("displayName", "demo-user");
+    formData.set("avatar", new File(["avatar-bytes"], "avatar.gif", { type: "image/gif" }));
+
+    const response = await procedureFormDataPost(
+      new NextRequest("http://127.0.0.1:3000/api/procedure-form-data", {
+        method: "POST",
+        body: formData,
+      }),
+      { params: Promise.resolve({}) },
+    );
+
+    expect(response.status).toBe(400);
+    const payload = expectValidationErrorPayload(await response.json());
+    expect(payload.error.code).toBe("BAD_REQUEST");
+    expect(payload.error.message).toBe("Avatar file type is not supported.");
+  });
+
   it("serves a guarded procedure route when the required role is present", async () => {
     const { GET: procedureGuardedGet } =
       await import("../app/api/procedure-guarded/[userId]/route");
