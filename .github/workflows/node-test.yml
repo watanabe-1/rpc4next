@@ -95,6 +95,11 @@ jobs:
             npm run test
           fi
 
+      - name: Client bundle leak test
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.node-version == 'aqua' && matrix.next-version == 'from-package' }}
+        shell: bash
+        run: bun run test:client-bundle
+
       - name: Report Coverage
         if: ${{ matrix.os == 'ubuntu-latest' && matrix.node-version == 'aqua' && matrix.next-version == 'from-package' }}
         uses: davelosert/vitest-coverage-report-action@8b157684c6a6b259b97d45e72b44242865c0f6a5 # v2.12.2
