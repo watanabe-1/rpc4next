@@ -1,4 +1,5 @@
 import { cookies as getCookies, headers as getHeaders } from "next/headers";
+import { notFound, redirect, unstable_rethrow } from "next/navigation";
 import { NextRequest } from "next/server";
 
 import { searchParamsToObject } from "../lib/search-params";
@@ -248,6 +249,11 @@ const createPageRequest = (
   return new NextRequest(url);
 };
 
+const createPageHelpers = () => ({
+  redirect,
+  notFound,
+});
+
 const readHeaders = async () => Object.fromEntries((await getHeaders()).entries());
 
 const readCookies = async () => {
@@ -383,6 +389,7 @@ export const nextPage = <
         json: undefined,
         formData: undefined,
         response: createResponseHelpers(),
+        page: createPageHelpers(),
         ctx: {} as Record<string, unknown>,
       };
 
@@ -426,6 +433,8 @@ export const nextPage = <
         ctx: executionContext.ctx,
       });
     } catch (error) {
+      unstable_rethrow(error);
+
       return onError(error, {
         params,
         searchParams,

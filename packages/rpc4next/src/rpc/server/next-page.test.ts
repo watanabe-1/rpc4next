@@ -270,6 +270,35 @@ describe("nextPage", () => {
     ).resolves.toBe("default-page-error");
   });
 
+  it("rethrows page navigation interrupts before page onError", async () => {
+    const onError = vi.fn<() => string>(() => "swallowed-navigation-interrupt");
+    const page = procedure
+      .defaults({
+        page: {
+          onError,
+        },
+      })
+      .forRoute(pageRouteContract)
+      .params(paramsSchema)
+      .handle(({ page }) => {
+        return page.redirect("/photo/next");
+      })
+      .nextPage(() => "rendered");
+
+    let caught: unknown;
+
+    try {
+      await page({
+        params: Promise.resolve({ id: "photo-1" }),
+      });
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(String((caught as { digest?: unknown } | undefined)?.digest)).toContain("NEXT_REDIRECT");
+    expect(onError).not.toHaveBeenCalled();
+  });
+
   it("keeps page constraints separate from route constraints", () => {
     const unboundProcedure = procedure.handle(() => ({
       status: 204 as const,

@@ -42,6 +42,13 @@ import type { InferSchemaInput, InferSchemaOutput } from "./schema-inference";
 import type { StandardSchemaV1 } from "./standard-schema";
 import type { Params, Query, ResponseHelpers } from "./types";
 
+export type ProcedureAdapterMode = "neutral" | "route" | "page";
+
+export type ProcedurePageHelpers = {
+  redirect: (url: string, type?: "replace" | "push") => never;
+  notFound: () => never;
+};
+
 type ExtractValidationSchema<TDefinition extends ProcedureDefinition> =
   TDefinition extends ProcedureDefinition<infer _THttpMethod, infer TValidationSchema>
     ? TValidationSchema
@@ -72,7 +79,8 @@ type ExtractProcedureMiddlewareContextExtension<TMiddleware> =
     infer _TValidationSchema,
     infer _TBoundParams,
     infer _TContext,
-    infer TContextExtension
+    infer TContextExtension,
+    infer _TMode extends ProcedureAdapterMode
   >
     ? TContextExtension
     : Record<never, never>;
@@ -228,11 +236,13 @@ type MissingBoundRouteParamsError = {
 type ProcedureHandleArgs<
   TDefinition extends ProcedureDefinition,
   TContext extends object,
+  TMode extends ProcedureAdapterMode,
   THandler extends ProcedureHandler<
     ExtractValidationSchema<TDefinition>,
     InferProcedureParams<TDefinition>,
     TContext,
-    ExtractProcedureOutput<TDefinition>
+    ExtractProcedureOutput<TDefinition>,
+    TMode
   >,
 > =
   HasBoundRouteParams<TDefinition> extends true
@@ -249,6 +259,10 @@ export type ProcedureResult<TBody = unknown> = {
 };
 
 export type ProcedureResponseHelpers<TOutput = unknown> = ResponseHelpers<TOutput>;
+
+export type ProcedurePageResult<TBody = unknown> = Omit<ProcedureResult<TBody>, "redirect"> & {
+  redirect?: never;
+};
 
 type ProcedureValidatedContext<
   TValidationSchema extends ValidationSchema,
@@ -289,65 +303,159 @@ export type ProcedureHandlerContext<
   TBoundParams = Params,
   TContext extends object = Record<never, never>,
   TOutput = unknown,
+  TMode extends ProcedureAdapterMode = "neutral",
 > = ProcedureValidatedContext<TValidationSchema, TBoundParams> & {
   request: NextRequest;
   ctx: TContext;
-  response: ProcedureResponseHelpers<TOutput>;
-};
+} & (TMode extends "page"
+    ? {
+        page: ProcedurePageHelpers;
+      }
+    : {
+        response: ProcedureResponseHelpers<TOutput>;
+      });
 
 export type ProcedureMiddlewareContext<
   TValidationSchema extends ValidationSchema = ValidationSchema,
   TBoundParams = Params,
   TContext extends object = Record<never, never>,
+  TMode extends ProcedureAdapterMode = "neutral",
 > = ProcedureValidatedContext<TValidationSchema, TBoundParams> & {
   request: NextRequest;
   ctx: TContext;
-  response: ResponseHelpers;
-};
+} & (TMode extends "page"
+    ? {
+        page: ProcedurePageHelpers;
+      }
+    : {
+        response: ResponseHelpers;
+      });
 
-export type ProcedureMiddlewareResult<TContextExtension extends object = Record<never, never>> =
+type ProcedureRouteTerminalResult = Response | NextResponse | ProcedureResult;
+
+type ProcedurePageMiddlewareResult<TContextExtension extends object = Record<never, never>> =
   | undefined
+  | { ctx: TContextExtension };
+
+export type ProcedureMiddlewareResult<
+  TContextExtension extends object = Record<never, never>,
+  TMode extends ProcedureAdapterMode = "neutral",
+> = TMode extends "page"
+  ? ProcedurePageMiddlewareResult<TContextExtension>
+  : undefined | ProcedureRouteTerminalResult | { ctx: TContextExtension };
+
+export type ProcedureHandlerResult<
+  TOutput = unknown,
+  TMode extends ProcedureAdapterMode = "neutral",
+> = TMode extends "page"
+  ? ProcedurePageResult<TOutput> | Promise<ProcedurePageResult<TOutput>>
+  :
+      | Response
+      | NextResponse
+      | ProcedureResult<TOutput>
+      | Promise<Response | NextResponse | ProcedureResult<TOutput>>;
+
+type ProcedureAnyHandlerResult<TOutput = unknown> =
   | Response
   | NextResponse
-  | ProcedureResult
-  | { ctx: TContextExtension };
+  | ProcedureResult<TOutput>
+  | Promise<Response | NextResponse | ProcedureResult<TOutput>>;
 
 export type ProcedureMiddleware<
   TValidationSchema extends ValidationSchema = ValidationSchema,
   TBoundParams = Params,
   TContext extends object = Record<never, never>,
   TContextExtension extends object = Record<never, never>,
+  TMode extends ProcedureAdapterMode = "neutral",
 > = (
-  context: ProcedureMiddlewareContext<TValidationSchema, TBoundParams, TContext>,
+  context: ProcedureMiddlewareContext<TValidationSchema, TBoundParams, TContext, TMode>,
 ) =>
-  | Promise<ProcedureMiddlewareResult<TContextExtension>>
-  | ProcedureMiddlewareResult<TContextExtension>;
-
-export type ProcedureHandlerResult<TOutput = unknown> =
-  | Response
-  | NextResponse
-  | ProcedureResult<TOutput>
-  | Promise<Response | NextResponse | ProcedureResult<TOutput>>;
+  | Promise<ProcedureMiddlewareResult<TContextExtension, TMode>>
+  | ProcedureMiddlewareResult<TContextExtension, TMode>;
 
 export type ProcedureHandler<
   TValidationSchema extends ValidationSchema = ValidationSchema,
   TBoundParams = Params,
   TContext extends object = Record<never, never>,
   TOutput = unknown,
+  TMode extends ProcedureAdapterMode = "neutral",
 > = (
-  context: ProcedureHandlerContext<TValidationSchema, TBoundParams, TContext, TOutput>,
-) => ProcedureHandlerResult<TOutput>;
+  context: ProcedureHandlerContext<TValidationSchema, TBoundParams, TContext, TOutput, TMode>,
+) => ProcedureHandlerResult<TOutput, TMode>;
 
-export interface Procedure<
+type ProcedureBase<
   TDefinition extends ProcedureDefinition = EmptyProcedureDefinition,
   TContext extends object = Record<never, never>,
   TOutput = ExtractProcedureOutput<TDefinition>,
-  THandler extends ProcedureHandler<
+  THandler extends (...args: never[]) => ProcedureAnyHandlerResult<TOutput> = ProcedureHandler<
     ExtractValidationSchema<TDefinition>,
     InferProcedureParams<TDefinition>,
     TContext,
     TOutput
-  > = ProcedureHandler<
+  >,
+  TMiddlewareTerminalResult = never,
+> = {
+  readonly definition: TDefinition;
+  readonly middlewares: readonly ProcedureMiddleware[];
+  readonly handler: THandler;
+  readonly middlewareTerminalResult: TMiddlewareTerminalResult;
+};
+
+type ProcedureNextRouteMethod<
+  TDefinition extends ProcedureDefinition,
+  TContext extends object,
+  TOutput,
+  THandler extends (...args: never[]) => ProcedureAnyHandlerResult<TOutput>,
+  TDefaults,
+  TMiddlewareTerminalResult,
+> = <
+  TMethod extends HttpMethod = HttpMethod,
+  TValidateOutput extends boolean = false,
+  TOnError extends ProcedureOnError = ExtractProcedureSharedRouteOnError<TDefaults>,
+>(
+  options: ProcedureNextRouteOptions<
+    Procedure<TDefinition, TContext, TOutput, THandler, TDefaults, TMiddlewareTerminalResult>,
+    TMethod,
+    TValidateOutput,
+    TDefaults,
+    TOnError
+  >,
+) => NextRouteExports<
+  Procedure<TDefinition, TContext, TOutput, THandler, TDefaults, TMiddlewareTerminalResult>,
+  TMethod,
+  TValidateOutput,
+  TOnError
+>;
+
+type ProcedureNextPageMethod<
+  TDefinition extends ProcedureDefinition,
+  TContext extends object,
+  TOutput,
+  THandler extends (...args: never[]) => ProcedureAnyHandlerResult<TOutput>,
+  TDefaults,
+  TMiddlewareTerminalResult,
+> = <
+  TResult = unknown,
+  TOnError extends ProcedurePageOnError = ExtractProcedureSharedPageOnError<TDefaults>,
+>(
+  ...args: ProcedureNextPageArgs<
+    Procedure<TDefinition, TContext, TOutput, THandler, TDefaults, TMiddlewareTerminalResult>,
+    TOutput,
+    TContext,
+    TResult,
+    TDefaults,
+    TOnError
+  >
+) => NextPageHandler<
+  Procedure<TDefinition, TContext, TOutput, THandler, TDefaults, TMiddlewareTerminalResult>,
+  TResult | Awaited<ReturnType<TOnError>>
+>;
+
+export type Procedure<
+  TDefinition extends ProcedureDefinition = EmptyProcedureDefinition,
+  TContext extends object = Record<never, never>,
+  TOutput = ExtractProcedureOutput<TDefinition>,
+  THandler extends (...args: never[]) => ProcedureAnyHandlerResult<TOutput> = ProcedureHandler<
     ExtractValidationSchema<TDefinition>,
     InferProcedureParams<TDefinition>,
     TContext,
@@ -355,46 +463,47 @@ export interface Procedure<
   >,
   TDefaults = undefined,
   TMiddlewareTerminalResult = never,
-> {
-  readonly definition: TDefinition;
-  readonly middlewares: readonly ProcedureMiddleware[];
-  readonly handler: THandler;
-  readonly middlewareTerminalResult: TMiddlewareTerminalResult;
-  nextRoute<
-    TMethod extends HttpMethod = HttpMethod,
-    TValidateOutput extends boolean = false,
-    TOnError extends ProcedureOnError = ExtractProcedureSharedRouteOnError<TDefaults>,
-  >(
-    options: ProcedureNextRouteOptions<
-      Procedure<TDefinition, TContext, TOutput, THandler, TDefaults, TMiddlewareTerminalResult>,
-      TMethod,
-      TValidateOutput,
-      TDefaults,
-      TOnError
-    >,
-  ): NextRouteExports<
-    Procedure<TDefinition, TContext, TOutput, THandler, TDefaults, TMiddlewareTerminalResult>,
-    TMethod,
-    TValidateOutput,
-    TOnError
-  >;
-  nextPage<
-    TResult = unknown,
-    TOnError extends ProcedurePageOnError = ExtractProcedureSharedPageOnError<TDefaults>,
-  >(
-    ...args: ProcedureNextPageArgs<
-      Procedure<TDefinition, TContext, TOutput, THandler, TDefaults, TMiddlewareTerminalResult>,
-      TOutput,
-      TContext,
-      TResult,
-      TDefaults,
-      TOnError
-    >
-  ): NextPageHandler<
-    Procedure<TDefinition, TContext, TOutput, THandler, TDefaults, TMiddlewareTerminalResult>,
-    TResult | Awaited<ReturnType<TOnError>>
-  >;
-}
+> = ProcedureBase<TDefinition, TContext, TOutput, THandler, TMiddlewareTerminalResult> &
+  (ExtractProcedureAdapterMode<TDefaults> extends "page"
+    ? {
+        nextPage: ProcedureNextPageMethod<
+          TDefinition,
+          TContext,
+          TOutput,
+          THandler,
+          TDefaults,
+          TMiddlewareTerminalResult
+        >;
+      }
+    : ExtractProcedureAdapterMode<TDefaults> extends "route"
+      ? {
+          nextRoute: ProcedureNextRouteMethod<
+            TDefinition,
+            TContext,
+            TOutput,
+            THandler,
+            TDefaults,
+            TMiddlewareTerminalResult
+          >;
+        }
+      : {
+          nextRoute: ProcedureNextRouteMethod<
+            TDefinition,
+            TContext,
+            TOutput,
+            THandler,
+            TDefaults,
+            TMiddlewareTerminalResult
+          >;
+          nextPage: ProcedureNextPageMethod<
+            TDefinition,
+            TContext,
+            TOutput,
+            THandler,
+            TDefaults,
+            TMiddlewareTerminalResult
+          >;
+        });
 
 type HasProcedureOutput<TDefinition extends ProcedureDefinition> = TDefinition extends {
   output: ProcedureOutputContract;
@@ -409,6 +518,20 @@ type HasProcedureRoute<TDefinition extends ProcedureDefinition> = TDefinition ex
   : false;
 
 type HasProcedureDefaults<TDefaults> = [TDefaults] extends [undefined] ? false : true;
+
+type ExtractProcedureAdapterMode<TDefaults> = TDefaults extends {
+  page: { onError: ProcedurePageOnError };
+}
+  ? TDefaults extends {
+      route: { onError: ProcedureOnError };
+    }
+    ? "neutral"
+    : "page"
+  : TDefaults extends {
+        route: { onError: ProcedureOnError };
+      }
+    ? "route"
+    : "neutral";
 
 type UsedProcedureBuilderMethodKeys<TDefinition extends ProcedureDefinition, TDefaults> =
   | (HasProcedureDefaults<TDefaults> extends true ? "defaults" : never)
@@ -569,7 +692,8 @@ interface ProcedureBuilderMethods<
       ExtractValidationSchema<TDefinition>,
       InferProcedureParams<TDefinition>,
       TContext,
-      object
+      object,
+      ExtractProcedureAdapterMode<TDefaults>
     >,
   >(
     middleware: TMiddleware,
@@ -585,10 +709,16 @@ interface ProcedureBuilderMethods<
       ExtractValidationSchema<TDefinition>,
       InferProcedureParams<TDefinition>,
       TContext,
-      ExtractProcedureOutput<TDefinition>
+      ExtractProcedureOutput<TDefinition>,
+      ExtractProcedureAdapterMode<TDefaults>
     >,
   >(
-    ...args: ProcedureHandleArgs<TDefinition, TContext, THandler>
+    ...args: ProcedureHandleArgs<
+      TDefinition,
+      TContext,
+      ExtractProcedureAdapterMode<TDefaults>,
+      THandler
+    >
   ): Procedure<
     TDefinition,
     TContext,
@@ -795,7 +925,8 @@ const createProcedureBuilder = <
       ExtractValidationSchema<TDefinition>,
       InferProcedureParams<TDefinition>,
       TContext,
-      object
+      object,
+      ExtractProcedureAdapterMode<TDefaults>
     >,
   >(
     middleware: TMiddleware,
@@ -878,31 +1009,31 @@ const createProcedureBuilder = <
         middlewares,
         handler: args[0],
         middlewareTerminalResult: undefined as TMiddlewareTerminalResult,
-        nextRoute: ((options) =>
+        nextRoute: ((options: unknown) =>
           adaptProcedureToNextRoute(
             handledProcedure as never,
             resolveRouteDefaults(options) as never,
-          )) as Procedure<
+          )) as ProcedureNextRouteMethod<
           TDefinition,
           TContext,
           ExtractProcedureOutput<TDefinition>,
           (typeof args)[0],
           TDefaults,
           TMiddlewareTerminalResult
-        >["nextRoute"],
+        >,
         nextPage: ((render: unknown, options: unknown) =>
           adaptProcedureToNextPage(
             handledProcedure as never,
             render as never,
             resolvePageDefaults(options ?? {}) as never,
-          )) as unknown as Procedure<
+          )) as unknown as ProcedureNextPageMethod<
           TDefinition,
           TContext,
           ExtractProcedureOutput<TDefinition>,
           (typeof args)[0],
           TDefaults,
           TMiddlewareTerminalResult
-        >["nextPage"],
+        >,
       } as Procedure<
         TDefinition,
         TContext,
