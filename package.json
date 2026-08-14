@@ -22,6 +22,7 @@
     "format:oxfmt": "oxfmt .",
     "format:oxfmt:check": "oxfmt --check .",
     "test": "vitest run",
+    "test:client-bundle": "RPC4NEXT_RUN_CLIENT_BUNDLE_TEST=1 vitest run integration/next-app/src/client-bundle.test.ts",
     "test:coverage": "vitest run --coverage.enabled true",
     "test:package": "bun run build && bun scripts/package-smoke-test.ts",
     "test:ui": "vitest --ui --coverage.enabled true",
