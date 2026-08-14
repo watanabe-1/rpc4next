@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.10.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.9.1...rpc4next-v0.10.0) (2026-08-14)
+
+### Features
+
+- **cli:** Infer page procedure query types ([#531](https://github.com/watanabe-1/rpc4next/issues/531)) ([a69136e](https://github.com/watanabe-1/rpc4next/commit/a69136eac28dd376700f104f04cd90d43683fca4))
+- **server:** Add page-specific procedure helpers ([#532](https://github.com/watanabe-1/rpc4next/issues/532)) ([1150c36](https://github.com/watanabe-1/rpc4next/commit/1150c36d2b292ee0e7439c4333db425a2134f3a5))
+- **server:** add procedure-backed page adapter ([#529](https://github.com/watanabe-1/rpc4next/issues/529)) ([ed98512](https://github.com/watanabe-1/rpc4next/commit/ed98512f6d68373129a2a26335ee9ccd1689cbf9))
+
+### Bug Fixes
+
+- **server:** Mark server entrypoint as server-only ([#533](https://github.com/watanabe-1/rpc4next/issues/533)) ([0e24eac](https://github.com/watanabe-1/rpc4next/commit/0e24eac8648c8fc1d6f62bf113cd984c27af8aee))
+
 ## [0.9.1](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.9.0...rpc4next-v0.9.1) (2026-08-14)
 
 ### Bug Fixes

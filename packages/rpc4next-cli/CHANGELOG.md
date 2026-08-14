@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.7.0...rpc4next-cli-v0.8.0) (2026-08-14)
+
+### Features
+
+- **cli:** Infer page procedure query types ([#531](https://github.com/watanabe-1/rpc4next/issues/531)) ([a69136e](https://github.com/watanabe-1/rpc4next/commit/a69136eac28dd376700f104f04cd90d43683fca4))
+
 ## [0.7.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.6.0...rpc4next-cli-v0.7.0) (2026-08-12)
 
 ### Features
