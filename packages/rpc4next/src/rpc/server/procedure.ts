@@ -4,11 +4,20 @@ import type { HttpMethod } from "rpc4next-shared";
 import type { HttpStatusCode } from "../lib/http-status-code-types";
 import type { RpcMeta } from "./meta";
 import {
-  nextRoute as adaptProcedureToNextRoute,
-  type NextRouteExports,
-  type NextRouteProcedureOptions,
-} from "./next-route";
+  nextPage as adaptProcedureToNextPage,
+  type NextPageHandler,
+  type ProcedurePageOnError,
+} from "./next-page";
+import { nextRoute as adaptProcedureToNextRoute, type NextRouteExports } from "./next-route";
 import type { ProcedureOnError } from "./on-error";
+import type {
+  ExtractProcedureSharedPageOnError,
+  ExtractProcedureSharedRouteOnError,
+  ProcedureDefaults,
+  ProcedureNextPageArgs,
+  ProcedureNextRouteOptions,
+  ProcedureSharedDefaults,
+} from "./procedure-adapter-types";
 import {
   withProcedureInputContract,
   withProcedureMeta,
@@ -329,49 +338,6 @@ export type ProcedureHandler<
   context: ProcedureHandlerContext<TValidationSchema, TBoundParams, TContext, TOutput>,
 ) => ProcedureHandlerResult<TOutput>;
 
-type ProcedureSharedDefaults<TSharedOnError extends ProcedureOnError = ProcedureOnError> = {
-  onError: TSharedOnError;
-};
-
-type ExtractProcedureSharedOnError<TDefaults> =
-  TDefaults extends ProcedureSharedDefaults<infer TSharedOnError>
-    ? TSharedOnError
-    : ProcedureOnError;
-
-type ProcedureNextRouteOptions<
-  TDefinition extends ProcedureDefinition,
-  TContext extends object,
-  TOutput,
-  THandler extends ProcedureHandler<
-    ExtractValidationSchema<TDefinition>,
-    InferProcedureParams<TDefinition>,
-    TContext,
-    TOutput
-  >,
-  TMethod extends HttpMethod,
-  TValidateOutput extends boolean,
-  TDefaults,
-  TOnError extends ProcedureOnError,
-  TMiddlewareTerminalResult,
-> = TDefaults extends ProcedureSharedDefaults
-  ? Omit<
-      NextRouteProcedureOptions<
-        Procedure<TDefinition, TContext, TOutput, THandler, TDefaults, TMiddlewareTerminalResult>,
-        TMethod,
-        TValidateOutput,
-        TOnError
-      >,
-      "onError"
-    > & {
-      onError?: TOnError;
-    }
-  : NextRouteProcedureOptions<
-      Procedure<TDefinition, TContext, TOutput, THandler, TDefaults, TMiddlewareTerminalResult>,
-      TMethod,
-      TValidateOutput,
-      TOnError
-    >;
-
 export interface Procedure<
   TDefinition extends ProcedureDefinition = EmptyProcedureDefinition,
   TContext extends object = Record<never, never>,
@@ -397,24 +363,36 @@ export interface Procedure<
   nextRoute<
     TMethod extends HttpMethod = HttpMethod,
     TValidateOutput extends boolean = false,
-    TOnError extends ProcedureOnError = ExtractProcedureSharedOnError<TDefaults>,
+    TOnError extends ProcedureOnError = ExtractProcedureSharedRouteOnError<TDefaults>,
   >(
     options: ProcedureNextRouteOptions<
-      TDefinition,
-      TContext,
-      TOutput,
-      THandler,
+      Procedure<TDefinition, TContext, TOutput, THandler, TDefaults, TMiddlewareTerminalResult>,
       TMethod,
       TValidateOutput,
       TDefaults,
-      TOnError,
-      TMiddlewareTerminalResult
+      TOnError
     >,
   ): NextRouteExports<
     Procedure<TDefinition, TContext, TOutput, THandler, TDefaults, TMiddlewareTerminalResult>,
     TMethod,
     TValidateOutput,
     TOnError
+  >;
+  nextPage<
+    TResult = unknown,
+    TOnError extends ProcedurePageOnError = ExtractProcedureSharedPageOnError<TDefaults>,
+  >(
+    ...args: ProcedureNextPageArgs<
+      Procedure<TDefinition, TContext, TOutput, THandler, TDefaults, TMiddlewareTerminalResult>,
+      TOutput,
+      TContext,
+      TResult,
+      TDefaults,
+      TOnError
+    >
+  ): NextPageHandler<
+    Procedure<TDefinition, TContext, TOutput, THandler, TDefaults, TMiddlewareTerminalResult>,
+    TResult | Awaited<ReturnType<TOnError>>
   >;
 }
 
@@ -463,14 +441,9 @@ interface ProcedureBuilderMethods<
   TDefaults = undefined,
   TMiddlewareTerminalResult = never,
 > {
-  defaults<TSharedOnError extends ProcedureOnError>(defaults: {
-    onError: TSharedOnError;
-  }): ProcedureBuilder<
-    TDefinition,
-    TContext,
-    ProcedureSharedDefaults<TSharedOnError>,
-    TMiddlewareTerminalResult
-  >;
+  defaults<TSharedDefaults extends ProcedureDefaults>(
+    defaults: TSharedDefaults,
+  ): ProcedureBuilder<TDefinition, TContext, TSharedDefaults, TMiddlewareTerminalResult>;
 
   meta<TMeta extends RpcMeta>(
     meta: TMeta,
@@ -667,14 +640,9 @@ const createProcedureBuilder = <
     );
   };
 
-  const withDefaults = <TSharedOnError extends ProcedureOnError>(
-    nextDefaults: ProcedureSharedDefaults<TSharedOnError>,
-  ): ProcedureBuilder<
-    TDefinition,
-    TContext,
-    ProcedureSharedDefaults<TSharedOnError>,
-    TMiddlewareTerminalResult
-  > => {
+  const withDefaults = <TSharedDefaults extends ProcedureDefaults>(
+    nextDefaults: TSharedDefaults,
+  ): ProcedureBuilder<TDefinition, TContext, TSharedDefaults, TMiddlewareTerminalResult> => {
     if (defaults !== undefined) {
       throw new Error("Procedure defaults have already been declared.");
     }
@@ -862,6 +830,49 @@ const createProcedureBuilder = <
     output: withOutput,
     use: withMiddleware,
     handle: (...args) => {
+      const resolveRouteDefaults = (options: unknown) => {
+        if (!defaults || typeof defaults !== "object") {
+          return options;
+        }
+
+        const hasOptionOnError =
+          options !== null && typeof options === "object" && "onError" in options;
+
+        if ("route" in defaults && defaults.route) {
+          const routeDefaults = defaults as ProcedureSharedDefaults;
+
+          return {
+            ...(options as object),
+            onError: hasOptionOnError
+              ? (options as { onError: ProcedureOnError }).onError
+              : routeDefaults.route?.onError,
+          };
+        }
+
+        return options;
+      };
+
+      const resolvePageDefaults = (options: unknown) => {
+        if (
+          !defaults ||
+          typeof defaults !== "object" ||
+          !("page" in defaults) ||
+          !(defaults as ProcedureSharedDefaults).page
+        ) {
+          return options;
+        }
+
+        const pageDefaults = defaults as ProcedureSharedDefaults;
+
+        return {
+          ...(options as object),
+          onError:
+            options && typeof options === "object" && "onError" in options
+              ? (options as { onError: ProcedurePageOnError }).onError
+              : pageDefaults.page?.onError,
+        };
+      };
+
       const handledProcedure = {
         definition,
         middlewares,
@@ -870,12 +881,7 @@ const createProcedureBuilder = <
         nextRoute: ((options) =>
           adaptProcedureToNextRoute(
             handledProcedure as never,
-            (defaults && typeof defaults === "object" && defaults !== null && "onError" in defaults
-              ? {
-                  ...options,
-                  onError: options.onError ?? defaults.onError,
-                }
-              : options) as never,
+            resolveRouteDefaults(options) as never,
           )) as Procedure<
           TDefinition,
           TContext,
@@ -884,6 +890,19 @@ const createProcedureBuilder = <
           TDefaults,
           TMiddlewareTerminalResult
         >["nextRoute"],
+        nextPage: ((render: unknown, options: unknown) =>
+          adaptProcedureToNextPage(
+            handledProcedure as never,
+            render as never,
+            resolvePageDefaults(options ?? {}) as never,
+          )) as unknown as Procedure<
+          TDefinition,
+          TContext,
+          ExtractProcedureOutput<TDefinition>,
+          (typeof args)[0],
+          TDefaults,
+          TMiddlewareTerminalResult
+        >["nextPage"],
       } as Procedure<
         TDefinition,
         TContext,

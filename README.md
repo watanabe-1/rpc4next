@@ -117,8 +117,8 @@ Notes:
 - `.nextRoute({ method })` returns an object keyed by the matching Next.js export name, such as `{ GET }` or `{ POST }`
 - generated sibling `route-contract.ts` files are the recommended params source for procedure routes
 - input contracts consume Standard Schema V1-compatible schemas directly
-- route handlers must provide `onError`, either directly on `.nextRoute(...)` / `nextRoute(...)` or via a reusable preset such as `procedure.defaults({ onError })`
-- shared presets such as `baseProcedure`, `procedure.defaults({ onError })`, and validator-stage customization all build on this path
+- route handlers must provide `onError`, either directly on `.nextRoute(...)` / `nextRoute(...)` or via a reusable preset such as `procedure.defaults({ route: { onError } })`
+- shared presets such as `baseProcedure`, `procedure.defaults({ route: { onError } })`, and validator-stage customization all build on this path
 
 `procedure` input contracts validate request input and return typed `400` JSON
 errors by default when validation fails. If you need custom branching at the
@@ -298,6 +298,64 @@ export const { GET } = procedure
   .nextRoute({ method: "GET", onError });
 ```
 
+### `procedure` and `nextPage`
+
+`nextPage` adapts a route-bound procedure to a Next.js App Router `page.tsx`
+default export. It is for validating page props and preparing typed render data,
+not for returning HTTP responses.
+
+```tsx
+// app/photo/[id]/page.tsx
+import { procedure } from "rpc4next/server";
+import { z } from "zod";
+import { routeContract } from "./route-contract";
+
+const paramsSchema = z.object({
+  id: z.string(),
+});
+
+const pageDataSchema = z.object({
+  id: z.string(),
+});
+
+export default procedure
+  .forRoute(routeContract)
+  .params(paramsSchema)
+  .output(pageDataSchema)
+  .handle(({ params }) => ({
+    body: {
+      id: params.id,
+    },
+  }))
+  .nextPage(({ data }) => <div>photo:{data.id}</div>, {
+    validateOutput: true,
+  });
+```
+
+For pages:
+
+- supported input contracts are `params`, `query`, `headers`, and `cookies`
+- `json` and `formData` are rejected because pages do not receive request bodies
+- handlers return a `ProcedureResult` body, and `nextPage` passes that body to `render({ data, ctx })`
+- `validateOutput: true` parses the body with `.output(schema)` before render
+- raw `Response`, `response.error(...)`, and `{ redirect: ... }` results are rejected for page procedures; use Next.js `redirect()` / `notFound()` by throwing them from page code instead
+
+If a page should have project-level error handling, use a page default:
+
+```ts
+const appProcedure = procedure.defaults({
+  page: {
+    onError: (error) => {
+      throw error;
+    },
+  },
+});
+```
+
+`nextRoute` remains the HTTP adapter. `nextPage` is the page-render adapter.
+The same `procedure` builder can feed either adapter, but the terminal adapter
+decides which inputs and return values are valid.
+
 ### Middleware
 
 Use `.use(fn)` to add middleware to the current builder. The middleware context
@@ -378,7 +436,7 @@ type.
 
 Unexpected failures should still be thrown as normal exceptions. `nextRoute()`
 requires `onError(error, context)` for that fallback path. For project-level
-reuse, prefer `procedure.defaults({ onError })` and export a shared
+reuse, prefer `procedure.defaults({ route: { onError } })` and export a shared
 `appProcedure` or similar preset from your project.
 
 Input validation adds a typed `BAD_REQUEST` response when validation fails.
@@ -400,7 +458,11 @@ const onError = ((error, { response }) => {
   });
 }) satisfies ProcedureOnError;
 
-const appProcedure = procedure.defaults({ onError });
+const appProcedure = procedure.defaults({
+  route: {
+    onError,
+  },
+});
 
 const guardedProcedure = procedure.forRoute(routeContract).handle(async ({ response }) => {
   const allowed = false;
@@ -514,7 +576,7 @@ Your generated `src/generated/rpc.ts` exports a `PathStructure` type that includ
 2. Run `rpc4next` to regenerate `PathStructure`
 3. Import `PathStructure` into your client
 4. Call routes with `createRpcClient<PathStructure>(...)`
-5. Prefer `procedure` and `nextRoute()` for typed routes, exporting them with `export const { GET } = ...` or the matching HTTP method; keep plain Next.js handlers when you intentionally want broader response typing
+5. Prefer `procedure` with `nextRoute()` for typed routes and `nextPage()` for typed page render data; keep plain Next.js handlers when you intentionally want broader response typing
 
 ## Repository Layout
 

@@ -3,6 +3,17 @@ export type { HttpStatusCode } from "../lib/http-status-code-types";
 export type { RpcErrorCode, RpcErrorEnvelope, RpcErrorResponseInit, RpcErrorStatus } from "./error";
 export type { InferRouteMeta, RpcMeta, RpcMetaBase } from "./meta";
 export { getRouteMeta } from "./meta";
+export { defaultProcedurePageOnError, nextPage } from "./next-page";
+export type {
+  DefaultProcedurePageOnError,
+  NextPageHandler,
+  NextPageOptions,
+  NextPageProcedureOptions,
+  NextPageProps,
+  NextPageRender,
+  NextPageRenderContext,
+  ProcedurePageOnError,
+} from "./next-page";
 export { nextRoute } from "./next-route";
 export type {
   ProcedureOnError,

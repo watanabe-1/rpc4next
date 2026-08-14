@@ -62,6 +62,16 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
         },
       },
       {
+        name: "page route with typed query",
+        actual: () => client.patterns.search.$url({ query: { q: "runtime" } }),
+        expected: {
+          path: `${baseUrl}/patterns/search?q=runtime`,
+          relativePath: "/patterns/search?q=runtime",
+          pathname: "/patterns/search",
+          params: {},
+        },
+      },
+      {
         name: "nested dynamic page route",
         actual: () => client.photo._id("photo-1").comments._commentId("c-9").$url(),
         expected: {

@@ -98,7 +98,7 @@ const runBundlerSmoke = async (cwd: string) => {
     absWorkingDir: cwd,
     bundle: true,
     entryPoints: [entryPath],
-    external: ["next/server"],
+    external: ["next/headers", "next/server"],
     format: "esm",
     logLevel: "silent",
     outfile: outputPath,

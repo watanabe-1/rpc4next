@@ -314,14 +314,23 @@ describe("procedure builder type definitions", () => {
         });
     }).toThrow("Procedure output contract has already been declared.");
 
-    const defaultedProcedure = procedure.defaults({
+    procedure.defaults({
+      // @ts-expect-error defaults no longer accepts the old flat { onError } shape
       onError: defaultProcedureOnError,
     });
 
-    expect(() => {
-      // @ts-expect-error defaults is not available after defaults({ onError })
-      defaultedProcedure.defaults({
+    const defaultedProcedure = procedure.defaults({
+      route: {
         onError: defaultProcedureOnError,
+      },
+    });
+
+    expect(() => {
+      // @ts-expect-error defaults is not available after defaults({ route: { onError } })
+      defaultedProcedure.defaults({
+        route: {
+          onError: defaultProcedureOnError,
+        },
       });
     }).toThrow("Procedure defaults have already been declared.");
   });
@@ -738,9 +747,11 @@ describe("procedure builder type definitions", () => {
     expectTypeOf<FormDataRouteResponse>().toExtend<Response>();
   });
 
-  it("lets procedure.defaults({ onError }) make terminal nextRoute onError optional", () => {
+  it("lets procedure.defaults({ route: { onError } }) make terminal nextRoute onError optional", () => {
     const appProcedure = procedure.defaults({
-      onError: defaultProcedureOnError,
+      route: {
+        onError: defaultProcedureOnError,
+      },
     });
 
     const { GET: route } = appProcedure
@@ -827,7 +838,9 @@ describe("procedure builder type definitions", () => {
 
   it("keeps route binding and GET body constraints on defaulted procedure.nextRoute", () => {
     const appProcedure = procedure.defaults({
-      onError: defaultProcedureOnError,
+      route: {
+        onError: defaultProcedureOnError,
+      },
     });
 
     const unboundProcedure = appProcedure.handle(() => ({

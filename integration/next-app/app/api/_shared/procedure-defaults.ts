@@ -17,7 +17,9 @@ const sharedOnError = ((error, { response }) => {
 }) satisfies ProcedureOnError;
 
 export const appProcedure = procedure.defaults({
-  onError: sharedOnError,
+  route: {
+    onError: sharedOnError,
+  },
 });
 
 export { procedure };
