@@ -34,6 +34,17 @@ const handleGenerateSafely = (
   }
 };
 
+const isValidParamsFileName = (paramsFileName: string): boolean => {
+  return (
+    paramsFileName !== "." &&
+    paramsFileName !== ".." &&
+    !paramsFileName.includes("/") &&
+    !paramsFileName.includes("\\") &&
+    !path.isAbsolute(paramsFileName) &&
+    path.basename(paramsFileName) === paramsFileName
+  );
+};
+
 export const handleCli = (
   baseDir: string,
   outputPath: string,
@@ -47,6 +58,12 @@ export const handleCli = (
 
   if (options.paramsFile !== undefined && !paramsFileName) {
     logger.error("Error: --params-file requires a filename.");
+
+    return EXIT_FAILURE;
+  }
+
+  if (paramsFileName && !isValidParamsFileName(paramsFileName)) {
+    logger.error("Error: --params-file must be a filename, not a path.");
 
     return EXIT_FAILURE;
   }

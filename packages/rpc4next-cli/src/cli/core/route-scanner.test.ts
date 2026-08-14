@@ -679,6 +679,33 @@ describe("route-scanner", () => {
       ]);
     });
 
+    it("should escape decoded static segment keys in path structure output", () => {
+      setupTree({
+        testApp: {
+          patterns: {
+            "%22quoted": {
+              "page.tsx": "export function Quoted() {};",
+            },
+          },
+        },
+      });
+
+      const { pathStructure, paramsTypes } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+
+      expect(pathStructure).equals(`{
+  "patterns": {
+    "\\"quoted": RpcEndpoint
+  }
+}`);
+      expect(paramsTypes).toStrictEqual([
+        {
+          paramsType: "{}",
+          dirPath: tmpPosixPath("testApp", "patterns", "%22quoted"),
+          pathname: '/patterns/"quoted',
+        },
+      ]);
+    });
+
     it("should skip private directories even if cached as targetable and keep intercepting routes out of path structure", () => {
       setupTree({
         testApp: {

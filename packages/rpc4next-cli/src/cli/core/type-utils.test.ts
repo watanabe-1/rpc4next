@@ -1,7 +1,18 @@
 import { describe, expect, it } from "vitest";
 
 import { STATEMENT_TERMINATOR, TYPE_SEPARATOR } from "./constants.js";
-import { createImport, createObjectType, createRecodeType } from "./type-utils.js";
+import {
+  createImport,
+  createObjectType,
+  createRecodeType,
+  createStringLiteral,
+} from "./type-utils.js";
+
+describe("createStringLiteral", () => {
+  it("should escape strings for TypeScript output", () => {
+    expect(createStringLiteral('a"b\\c')).toBe('"a\\"b\\\\c"');
+  });
+});
 
 describe("createRecodeType", () => {
   it("should create a valid Record type", () => {
@@ -42,6 +53,10 @@ describe("createObjectType", () => {
 
   it("should handle empty fields", () => {
     expect(createObjectType([])).toBe("");
+  });
+
+  it("should escape field names", () => {
+    expect(createObjectType([{ name: 'bad"key', type: "string" }])).toBe('{ "bad\\"key": string }');
   });
 });
 
