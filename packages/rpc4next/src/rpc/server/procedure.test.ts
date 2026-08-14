@@ -780,6 +780,97 @@ describe("procedure builder type definitions", () => {
     expectTypeOf<RouteResponse>().toExtend<Response>();
   });
 
+  it("switches middleware helpers from defaults adapter intent", () => {
+    const routeProcedure = procedure.defaults({
+      route: {
+        onError: defaultProcedureOnError,
+      },
+    });
+
+    routeProcedure.use((context) => {
+      const _response: ResponseHelpers = context.response;
+
+      void _response;
+
+      // @ts-expect-error route procedures should not expose page helpers
+      void context.page;
+
+      return undefined;
+    });
+
+    routeProcedure
+      .handle(() => ({
+        status: 204 as const,
+      }))
+      // @ts-expect-error route defaults should expose nextRoute only
+      .nextPage(() => null);
+
+    const pageProcedure = procedure.defaults({
+      page: {
+        onError: () => null,
+      },
+    });
+
+    pageProcedure.use((context) => {
+      const _page: {
+        redirect: (url: string) => never;
+        notFound: () => never;
+      } = context.page;
+
+      void _page;
+
+      // @ts-expect-error page procedures should not expose response helpers
+      void context.response;
+
+      return undefined;
+    });
+
+    pageProcedure.handle(({ page }) => {
+      const _page: {
+        redirect: (url: string) => never;
+        notFound: () => never;
+      } = page;
+
+      void _page;
+
+      return {
+        body: {
+          ok: true as const,
+        },
+      };
+    });
+
+    pageProcedure.use(
+      // @ts-expect-error page middleware should not return raw Response values
+      () => new Response("page middleware response"),
+    );
+
+    pageProcedure.handle(
+      // @ts-expect-error page handlers should not return raw Response values
+      () => new Response("page handler response"),
+    );
+
+    pageProcedure.handle(() => ({
+      // @ts-expect-error page handlers should use page.redirect(), not ProcedureResult redirects
+      redirect: "/login",
+    }));
+
+    pageProcedure
+      .forRoute(guardedUserRouteContract)
+      .params(userIdSchema)
+      .handle(() => ({
+        body: {
+          ok: true as const,
+        },
+      }))
+      // @ts-expect-error page defaults should expose nextPage only
+      .nextRoute({
+        method: "GET",
+      });
+
+    expect(true).toBe(true);
+  });
+
   it("keeps route binding and GET body constraints on procedure.nextRoute", () => {
     const unboundProcedure = procedure.handle(() => ({
       status: 204 as const,

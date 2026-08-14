@@ -22,6 +22,7 @@ import type { GET as GET_61a9f4b9fd49ccf5 } from "../../app/api/redirect-me/rout
 import type { GET as GET_fbb09db60ba2ae51 } from "../../app/api/request-meta/route";
 import type { Query as Query_96533c19a2b0de99 } from "../../app/api/users/[userId]/route";
 import type { GET as GET_b6e4799d411d6efe } from "../../app/api/users/[userId]/route";
+import type Page_79cdb44a777689a5 from "../../app/patterns/page-helpers/page";
 import type Page_14a3d277b7c2ce94 from "../../app/patterns/search/page";
 
 export type PathStructure = RpcEndpoint & {
@@ -71,6 +72,7 @@ export type PathStructure = RpcEndpoint & {
     "optional-catch-all": {
       "_____parts": RpcEndpoint & Record<ParamsKey, { "parts": string[] | undefined }>
     },
+    "page-helpers": Record<QueryKey, ProcedureQueryInput<typeof Page_79cdb44a777689a5>> & RpcEndpoint,
     "parallel": RpcEndpoint & {
       "views": RpcEndpoint,
       "members": RpcEndpoint

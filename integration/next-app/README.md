@@ -132,11 +132,14 @@ The procedure fixtures also cover the later design phases that made the procedur
 Procedure-backed pages use the same builder but terminate with `.nextPage(...)`
 instead of `.nextRoute(...)`. `app/photo/[id]/page.tsx` demonstrates validated
 `params` and opt-in runtime output validation before render.
-`app/patterns/search/page.tsx` demonstrates typed page `Query` exports flowing
+`app/patterns/search/page.tsx` demonstrates page query input inference flowing
 into generated `$url({ query })` types while the page itself validates
 `searchParams` through `procedure.query(schema)`. Page procedures return
 render data through `body`; HTTP response helpers and raw `Response` values are
-reserved for route procedures.
+reserved for route procedures. When a shared preset is page-specific, prefer
+`procedure.defaults({ page: { onError } })` so later middleware and handlers
+receive page helpers such as `page.redirect(...)` and `page.notFound()` instead
+of route response helpers.
 
 When a handler or shared middleware should contribute a known error to
 client-side response inference, return `response.error(...)`. Those returned

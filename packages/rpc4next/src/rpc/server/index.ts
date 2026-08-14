@@ -25,11 +25,14 @@ export type { OutputContract } from "./output";
 export { output, withOutput } from "./output";
 export type {
   Procedure,
+  ProcedureAdapterMode,
   ProcedureBuilder,
   ProcedureHandler,
   ProcedureHandlerContext,
   ProcedureMiddleware,
   ProcedureMiddlewareContext,
+  ProcedurePageHelpers,
+  ProcedurePageResult,
   ProcedureResponseHelpers,
   ProcedureResult,
 } from "./procedure";

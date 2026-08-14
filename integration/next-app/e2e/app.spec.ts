@@ -212,4 +212,13 @@ test.describe("integration next-app e2e", () => {
 
     await expect(page.getByText("search:playwright")).toBeVisible();
   });
+
+  test("page procedure defaults expose page navigation helpers", async ({ page }) => {
+    await page.goto("/patterns/page-helpers");
+    await expect(page.getByText("page-helper:render")).toBeVisible();
+
+    await page.goto("/patterns/page-helpers?mode=redirect");
+    await expect(page).toHaveURL("/feed");
+    await expect(page.getByText("feed-page")).toBeVisible();
+  });
 });
