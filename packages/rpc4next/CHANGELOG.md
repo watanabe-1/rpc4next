@@ -2,11 +2,10 @@
 
 ## [0.9.1](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.9.0...rpc4next-v0.9.1) (2026-08-14)
 
-
 ### Bug Fixes
 
-* **client:** preserve method-specific query unions ([#521](https://github.com/watanabe-1/rpc4next/issues/521)) ([7678001](https://github.com/watanabe-1/rpc4next/commit/7678001f6f22db910c8a5b7b5634f67de495db56))
-* **server:** enforce once-only procedure builder methods ([#525](https://github.com/watanabe-1/rpc4next/issues/525)) ([c8d6387](https://github.com/watanabe-1/rpc4next/commit/c8d63876b2b2931ae9ccd08cd5f1b67ee759fa55))
+- **client:** preserve method-specific query unions ([#521](https://github.com/watanabe-1/rpc4next/issues/521)) ([7678001](https://github.com/watanabe-1/rpc4next/commit/7678001f6f22db910c8a5b7b5634f67de495db56))
+- **server:** enforce once-only procedure builder methods ([#525](https://github.com/watanabe-1/rpc4next/issues/525)) ([c8d6387](https://github.com/watanabe-1/rpc4next/commit/c8d63876b2b2931ae9ccd08cd5f1b67ee759fa55))
 
 ## [0.9.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.8.0...rpc4next-v0.9.0) (2026-08-13)
 
