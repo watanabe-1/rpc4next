@@ -1,4 +1,4 @@
-import type { RpcEndpoint ,ParamsKey ,QueryKey } from "rpc4next/client";
+import type { RpcEndpoint ,ParamsKey ,QueryKey ,ProcedureQueryInput } from "rpc4next/client";
 import type { GET as GET_1505e5e59b9e28fa } from "../../app/api/client-bundle-leak-sentinel/route";
 import type { GET as GET_1cdff2d46851497f } from "../../app/api/contract-route/route";
 import type { GET as GET_871f64658e86ddce } from "../../app/api/error-demo/route";
@@ -22,7 +22,7 @@ import type { GET as GET_61a9f4b9fd49ccf5 } from "../../app/api/redirect-me/rout
 import type { GET as GET_fbb09db60ba2ae51 } from "../../app/api/request-meta/route";
 import type { Query as Query_96533c19a2b0de99 } from "../../app/api/users/[userId]/route";
 import type { GET as GET_b6e4799d411d6efe } from "../../app/api/users/[userId]/route";
-import type { Query as Query_8b3a2ab8e7deadbd } from "../../app/patterns/search/page";
+import type Page_14a3d277b7c2ce94 from "../../app/patterns/search/page";
 
 export type PathStructure = RpcEndpoint & {
   "api": {
@@ -75,7 +75,7 @@ export type PathStructure = RpcEndpoint & {
       "views": RpcEndpoint,
       "members": RpcEndpoint
     },
-    "search": Record<QueryKey, Query_8b3a2ab8e7deadbd> & RpcEndpoint
+    "search": Record<QueryKey, ProcedureQueryInput<typeof Page_14a3d277b7c2ce94>> & RpcEndpoint
   },
   "photo": {
     "_id": RpcEndpoint & Record<ParamsKey, { "id": string }> & {

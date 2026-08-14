@@ -9,6 +9,9 @@ vi.mock("./type-utils.js", () => ({
   createImport: vi.fn<(type: string, importPath: string, alias: string) => string>(
     (type, importPath, alias) => `import type { ${type} as ${alias} } from '${importPath}';`,
   ),
+  createDefaultImport: vi.fn<(importPath: string, alias: string) => string>(
+    (importPath, alias) => `import type ${alias} from '${importPath}';`,
+  ),
   createRecodeType: vi.fn<(key: string, alias: string) => string>(
     (key, alias) => `Record<${key}, ${alias}>`,
   ),
@@ -75,6 +78,49 @@ describe("scanEndpointFile", () => {
 
     const result = scanEndpointFile(outputFile, inputFile);
     expect(result.query).toBeUndefined();
+  });
+
+  it("should infer query from default-exported page procedures", () => {
+    const { outputFile, rootDir } = createPaths();
+    const inputFile = path.join(rootDir, "app", "search", "page.tsx");
+    writeTree(rootDir, {
+      "app/search/page.tsx": `
+        export default procedure
+          .query(querySchema)
+          .handle(() => ({ body: {} }))
+          .nextPage(() => null);
+      `,
+    });
+
+    const result = scanEndpointFile(outputFile, inputFile);
+
+    expect(result.query?.importName).toBe("Page_51d775b458cca87b");
+    expect(result.query?.importPath).toBe("./app/search/page");
+    expect(result.query?.importStatement).toBe(
+      "import type Page_51d775b458cca87b from './app/search/page';",
+    );
+    expect(result.query?.type).toBe(
+      "Record<QueryKey, ProcedureQueryInput<typeof Page_51d775b458cca87b>>",
+    );
+  });
+
+  it("should prefer an exported query type over default page procedure inference", () => {
+    const { outputFile, rootDir } = createPaths();
+    const inputFile = path.join(rootDir, "app", "search", "page.tsx");
+    writeTree(rootDir, {
+      "app/search/page.tsx": `
+        export type Query = { q?: string };
+        export default procedure
+          .query(querySchema)
+          .handle(() => ({ body: {} }))
+          .nextPage(() => null);
+      `,
+    });
+
+    const result = scanEndpointFile(outputFile, inputFile);
+
+    expect(result.query?.importName).toBe("Query_426664e2544b3fd1");
+    expect(result.query?.type).toBe("Record<QueryKey, Query_426664e2544b3fd1>");
   });
 
   it("should return a route definition for an exported async function", () => {

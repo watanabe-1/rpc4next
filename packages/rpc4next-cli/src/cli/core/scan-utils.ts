@@ -4,9 +4,14 @@ import type { HttpMethod } from "rpc4next-shared";
 
 import { createImportAlias } from "./alias.js";
 import type { ImportAliasName } from "./alias.js";
-import { QUERY_TYPES, TYPE_KEY_QUERY } from "./constants.js";
+import { QUERY_TYPES, TYPE_KEY_QUERY, TYPE_PROCEDURE_QUERY_INPUT } from "./constants.js";
 import { createRelativeImportPath } from "./path-utils.js";
-import { createImport, createObjectType, createRecodeType } from "./type-utils.js";
+import {
+  createDefaultImport,
+  createImport,
+  createObjectType,
+  createRecodeType,
+} from "./type-utils.js";
 
 type ScanDefinition<T extends ImportAliasName> = {
   importName: string;
@@ -15,6 +20,8 @@ type ScanDefinition<T extends ImportAliasName> = {
   type: string;
   exportName: T;
 };
+
+type QueryScanDefinition = ScanDefinition<(typeof QUERY_TYPES)[number] | "Page">;
 
 const buildDefinition = <T extends ImportAliasName>(
   outputFile: string,
@@ -40,6 +47,15 @@ const findQueryExport = (fileContents: string) => {
   );
 };
 
+const hasDefaultPageQueryProcedure = (inputFile: string, fileContents: string) => {
+  return (
+    /[/\\]page\.tsx$/.test(inputFile) &&
+    /\bexport\s+default\b/.test(fileContents) &&
+    /\.query\s*\(/.test(fileContents) &&
+    /\.nextPage\s*\(/.test(fileContents)
+  );
+};
+
 const hasRouteExport = (fileContents: string, httpMethod: HttpMethod) => {
   const exportPatterns = [
     `async\\s+function\\s+${httpMethod}\\s*\\(`,
@@ -56,7 +72,7 @@ export const scanEndpointFile = (
   outputFile: string,
   inputFile: string,
 ): {
-  query?: ScanDefinition<(typeof QUERY_TYPES)[number]>;
+  query?: QueryScanDefinition;
   routes: ScanDefinition<HttpMethod>[];
 } => {
   const fileContents = fs.readFileSync(inputFile, "utf8");
@@ -66,7 +82,23 @@ export const scanEndpointFile = (
     ? buildDefinition(outputFile, inputFile, queryExport, (_, importAlias) =>
         createRecodeType(TYPE_KEY_QUERY, importAlias),
       )
-    : undefined;
+    : hasDefaultPageQueryProcedure(inputFile, fileContents)
+      ? (() => {
+          const relativeImportPath = createRelativeImportPath(outputFile, inputFile);
+          const importAlias = createImportAlias(relativeImportPath, "Page");
+
+          return {
+            importName: importAlias,
+            importPath: relativeImportPath,
+            importStatement: createDefaultImport(relativeImportPath, importAlias),
+            type: createRecodeType(
+              TYPE_KEY_QUERY,
+              `${TYPE_PROCEDURE_QUERY_INPUT}<typeof ${importAlias}>`,
+            ),
+            exportName: "Page" as const,
+          };
+        })()
+      : undefined;
 
   const routes = HTTP_METHODS_EXCLUDE_OPTIONS.filter((method) =>
     hasRouteExport(fileContents, method),
