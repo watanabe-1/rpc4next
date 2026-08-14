@@ -3,10 +3,6 @@ import { z } from "zod";
 
 import { routeContract } from "./route-contract";
 
-export type Query = {
-  q?: string;
-};
-
 const searchQuerySchema = z
   .object({
     q: z.union([z.string(), z.array(z.string())]).optional(),

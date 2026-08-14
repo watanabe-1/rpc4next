@@ -21,3 +21,9 @@ export const createImport = (type: string, path: string, importAlias?: string) =
     ? `import type { ${type} as ${importAlias} } from "${path}"${STATEMENT_TERMINATOR}`
     : `import type { ${type} } from "${path}"${STATEMENT_TERMINATOR}`;
 };
+
+export const createDefaultImport = (path: string, importAlias: string) => {
+  if (!path || !importAlias) return "";
+
+  return `import type ${importAlias} from "${path}"${STATEMENT_TERMINATOR}`;
+};

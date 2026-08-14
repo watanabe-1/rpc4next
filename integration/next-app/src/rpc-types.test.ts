@@ -5,7 +5,6 @@ import { describe, expectTypeOf, it } from "vitest";
 import type { Query as ProcedureContractQuery } from "../app/api/procedure-contract/[userId]/route";
 import type { Query as ProcedureGuardedQuery } from "../app/api/procedure-guarded/[userId]/route";
 import type { Query as UsersQuery } from "../app/api/users/[userId]/route";
-import type { Query as SearchPageQuery } from "../app/patterns/search/page";
 import type { PathStructure } from "./generated/rpc";
 
 const baseUrl = "http://127.0.0.1:3000";
@@ -17,6 +16,10 @@ const client = createRpcClient<PathStructure>(baseUrl, {
       headers: { "content-type": "application/json" },
     }),
 });
+
+type SearchPageQuery = {
+  q?: string | string[] | undefined;
+};
 
 describe("integration next-app generated RPC type coverage", () => {
   it("infers the generated client signatures for query, body, and headers", () => {
@@ -664,7 +667,11 @@ describe("integration next-app generated RPC type coverage", () => {
     });
 
     client.patterns.search.$url({
-      // @ts-expect-error page query values should follow the exported page Query type
+      query: { q: ["typed-page-query"] },
+    });
+
+    client.patterns.search.$url({
+      // @ts-expect-error page query values should follow the inferred page query schema input
       query: { q: 123 },
     });
   });

@@ -296,6 +296,13 @@ type InferQuery<T> =
       : never
     : never;
 
+export type ProcedureQueryInput<T> =
+  ExtractAttachedProcedureDefinition<T> extends {
+    input: ProcedureInputContract<infer TValidationSchema>;
+  }
+    ? ValidationInputFor<"query", TValidationSchema>
+    : never;
+
 type PathProxyAsFunction<T> = {
   $url: (...args: UrlArgs<T, InferQuery<T>>) => UrlResult<T>;
 } & (T extends HttpMethodMapLike ? InferHttpMethods<T> : unknown);
