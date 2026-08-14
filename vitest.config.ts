@@ -25,6 +25,10 @@ export default defineConfig({
         find: /^rpc4next-shared$/,
         replacement: path.resolve(workspaceRoot, "packages/rpc4next-shared/src/index.ts"),
       },
+      {
+        find: /^server-only$/,
+        replacement: path.resolve(workspaceRoot, "vitest.server-only.ts"),
+      },
     ],
   },
   test: {

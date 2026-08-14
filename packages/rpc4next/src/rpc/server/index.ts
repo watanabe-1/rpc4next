@@ -1,3 +1,5 @@
+import "server-only";
+
 export type { ContentType } from "../lib/content-type-types";
 export type { HttpStatusCode } from "../lib/http-status-code-types";
 export type { RpcErrorCode, RpcErrorEnvelope, RpcErrorResponseInit, RpcErrorStatus } from "./error";
