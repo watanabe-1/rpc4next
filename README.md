@@ -218,6 +218,25 @@ const response = await rpc.api.posts.$post({
 });
 ```
 
+For multipart form data, validate field length, file size, file type, and
+repeatable field counts in your schema:
+
+```ts
+const formDataSchema = z.object({
+  displayName: z.string().min(1).max(80),
+  avatar: z
+    .instanceof(File)
+    .refine((file) => file.size <= 2 * 1024 * 1024, "Avatar file is too large.")
+    .refine((file) => ["image/png", "image/jpeg", "image/webp"].includes(file.type)),
+  tags: z.array(z.string().min(1).max(40)).max(10).optional(),
+});
+```
+
+Schema validation runs after the runtime reads and parses the request body. For
+overall JSON or multipart body limits, configure your Next.js runtime, hosting
+platform, reverse proxy, CDN, or middleware to reject oversized requests before
+they reach the route handler.
+
 For request headers and cookies:
 
 ```ts

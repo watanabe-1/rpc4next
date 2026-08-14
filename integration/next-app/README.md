@@ -118,6 +118,13 @@ This workspace is intended to make scanner and runtime regressions visible in Gi
 
 The main walkthrough in this fixture is now procedure-first. `app/api/procedure-contract/[userId]/route.ts` is the baseline typed route: it binds the generated `routeContract`, declares params/query/output in one builder, and exports `GET` through terminal `export const { GET } = procedure.handle(...).nextRoute({ method: "GET", onError })` sugar. `app/api/procedure-submit/route.ts` extends that path to json/header/cookie input, `app/api/procedure-form-data/route.ts` covers multipart-style input with the same terminal shape, and `app/api/procedure-guarded/[userId]/route.ts` shows the shared-preset case where keeping a standalone `nextRoute(procedure, options)` call remains natural because the procedure value comes from a reusable base.
 
+The form-data fixture intentionally validates user-controlled upload fields in
+the schema, including display-name length, file size, file type, tag length, and
+tag count. That schema protects the parsed values passed to the handler.
+Overall request body limits still belong at the Next.js runtime, hosting,
+reverse proxy, CDN, or middleware layer because `request.json()` and
+`request.formData()` parse the body before schema validation runs.
+
 Shared procedure middleware should be defined from the builder that declares the
 inputs it needs. `app/api/_shared/base-procedure.ts` uses
 `procedure.headers(schema).use(...)`, so the middleware is applied in the same

@@ -4,13 +4,23 @@ import { z } from "zod";
 import { onError } from "../_shared/on-error";
 import { routeContract } from "./route-contract";
 
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+const ALLOWED_AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
+
 export const { POST } = procedure
   .forRoute(routeContract)
   .formData(
     z.object({
-      displayName: z.string().min(1),
-      avatar: z.instanceof(File),
-      tags: z.array(z.string()).optional(),
+      displayName: z.string().min(1).max(80),
+      avatar: z
+        .instanceof(File)
+        .refine((file) => file.size <= MAX_AVATAR_BYTES, "Avatar file is too large.")
+        .refine(
+          (file) =>
+            ALLOWED_AVATAR_TYPES.includes(file.type as (typeof ALLOWED_AVATAR_TYPES)[number]),
+          "Avatar file type is not supported.",
+        ),
+      tags: z.array(z.string().min(1).max(40)).max(10).optional(),
     }),
   )
   .output({
