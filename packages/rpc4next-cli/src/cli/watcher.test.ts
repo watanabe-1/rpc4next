@@ -299,7 +299,9 @@ describe("setupWatcher", () => {
       const debounced = Object.assign(
         () => {
           if (timer) clearTimeout(timer);
-          timer = setTimeout(fn, delay);
+          timer = setTimeout(() => {
+            void fn();
+          }, delay);
         },
         {
           cancel: () => {

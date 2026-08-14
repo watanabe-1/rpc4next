@@ -20,7 +20,10 @@
     "rpc4next/comment-spacing": "error",
     "rpc4next/padding-line-before-return": "error",
     "eqeqeq": "error",
+    "typescript/await-thenable": "error",
     "typescript/no-deprecated": "error",
+    "typescript/no-floating-promises": "error",
+    "typescript/no-misused-promises": "error",
     "typescript/no-redundant-type-constituents": "off",
     "no-unused-vars": [
       "error",
