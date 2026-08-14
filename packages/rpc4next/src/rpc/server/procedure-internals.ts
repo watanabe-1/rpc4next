@@ -55,6 +55,10 @@ export const withProcedureRouteBinding = <
     route: ProcedureRouteBinding<TRouteContract["pathname"], TRouteContract["params"]>;
   }
 > => {
+  if (definition.route) {
+    throw new Error("Procedure route binding has already been declared.");
+  }
+
   return {
     ...definition,
     route: {
@@ -78,6 +82,10 @@ export const withProcedureOutput = <TDefinition extends ProcedureDefinition, TOu
     output: ProcedureOutputContract<TOutput>;
   }
 > => {
+  if (definition.output) {
+    throw new Error("Procedure output contract has already been declared.");
+  }
+
   return {
     ...definition,
     output: {
@@ -111,6 +119,19 @@ export const withProcedureInputContract = <
     };
   }
 > => {
+  if (definition.input?.contracts?.[target]) {
+    throw new Error(`Procedure input contract for "${target}" has already been declared.`);
+  }
+
+  if (
+    (target === "json" && definition.input?.contracts?.formData) ||
+    (target === "formData" && definition.input?.contracts?.json)
+  ) {
+    throw new Error(
+      "Procedure body contracts are mutually exclusive; use either .json(schema) or .formData(schema), not both.",
+    );
+  }
+
   return {
     ...definition,
     input: {

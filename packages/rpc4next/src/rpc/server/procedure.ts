@@ -418,7 +418,46 @@ export interface Procedure<
   >;
 }
 
-export interface ProcedureBuilder<
+type HasProcedureOutput<TDefinition extends ProcedureDefinition> = TDefinition extends {
+  output: ProcedureOutputContract;
+}
+  ? true
+  : false;
+
+type HasProcedureRoute<TDefinition extends ProcedureDefinition> = TDefinition extends {
+  route: ProcedureRouteBinding;
+}
+  ? true
+  : false;
+
+type HasProcedureDefaults<TDefaults> = [TDefaults] extends [undefined] ? false : true;
+
+type UsedProcedureBuilderMethodKeys<TDefinition extends ProcedureDefinition, TDefaults> =
+  | (HasProcedureDefaults<TDefaults> extends true ? "defaults" : never)
+  | (HasProcedureRoute<TDefinition> extends true ? "forRoute" : never)
+  | (HasProcedureOutput<TDefinition> extends true ? "output" : never)
+  | (HasProcedureInputContractTarget<TDefinition, "params"> extends true ? "params" : never)
+  | (HasProcedureInputContractTarget<TDefinition, "query"> extends true ? "query" : never)
+  | (HasProcedureInputContractTarget<TDefinition, "headers"> extends true ? "headers" : never)
+  | (HasProcedureInputContractTarget<TDefinition, "cookies"> extends true ? "cookies" : never)
+  | (HasProcedureInputContractTarget<TDefinition, "json"> extends true
+      ? "json" | "formData"
+      : never)
+  | (HasProcedureInputContractTarget<TDefinition, "formData"> extends true
+      ? "json" | "formData"
+      : never);
+
+export type ProcedureBuilder<
+  TDefinition extends ProcedureDefinition = EmptyProcedureDefinition,
+  TContext extends object = Record<never, never>,
+  TDefaults = undefined,
+  TMiddlewareTerminalResult = never,
+> = Omit<
+  ProcedureBuilderMethods<TDefinition, TContext, TDefaults, TMiddlewareTerminalResult>,
+  UsedProcedureBuilderMethodKeys<TDefinition, TDefaults>
+>;
+
+interface ProcedureBuilderMethods<
   TDefinition extends ProcedureDefinition = EmptyProcedureDefinition,
   TContext extends object = Record<never, never>,
   TDefaults = undefined,
@@ -636,6 +675,10 @@ const createProcedureBuilder = <
     ProcedureSharedDefaults<TSharedOnError>,
     TMiddlewareTerminalResult
   > => {
+    if (defaults !== undefined) {
+      throw new Error("Procedure defaults have already been declared.");
+    }
+
     return createProcedureBuilder(definition, middlewares, nextDefaults);
   };
 
@@ -685,6 +728,21 @@ const createProcedureBuilder = <
     return withInputContract("params", schema as TSchema, options);
   };
 
+  const withQuery = <
+    TSchema extends StandardSchemaV1,
+    TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
+  >(
+    schema: TSchema,
+    options?: ProcedureInputOptions<"query", InferSchemaInput<TSchema>, TOnValidationErrorResult>,
+  ): ProcedureBuilder<
+    ExtendProcedureInputDefinition<TDefinition, "query", TSchema, TOnValidationErrorResult>,
+    TContext,
+    TDefaults,
+    TMiddlewareTerminalResult
+  > => {
+    return withInputContract("query", schema as TSchema, options);
+  };
+
   const withJson = <
     TSchema extends StandardSchemaV1,
     TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
@@ -717,6 +775,36 @@ const createProcedureBuilder = <
     TMiddlewareTerminalResult
   > => {
     return withInputContract("formData", schema as TSchema, options);
+  };
+
+  const withHeaders = <
+    TSchema extends StandardSchemaV1,
+    TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
+  >(
+    schema: TSchema,
+    options?: ProcedureInputOptions<"headers", InferSchemaInput<TSchema>, TOnValidationErrorResult>,
+  ): ProcedureBuilder<
+    ExtendProcedureInputDefinition<TDefinition, "headers", TSchema, TOnValidationErrorResult>,
+    TContext,
+    TDefaults,
+    TMiddlewareTerminalResult
+  > => {
+    return withInputContract("headers", schema as TSchema, options);
+  };
+
+  const withCookies = <
+    TSchema extends StandardSchemaV1,
+    TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
+  >(
+    schema: TSchema,
+    options?: ProcedureInputOptions<"cookies", InferSchemaInput<TSchema>, TOnValidationErrorResult>,
+  ): ProcedureBuilder<
+    ExtendProcedureInputDefinition<TDefinition, "cookies", TSchema, TOnValidationErrorResult>,
+    TContext,
+    TDefaults,
+    TMiddlewareTerminalResult
+  > => {
+    return withInputContract("cookies", schema as TSchema, options);
   };
 
   const withOutput = <TSchema, TOutput = InferSchemaOutput<TSchema>>(
@@ -766,11 +854,11 @@ const createProcedureBuilder = <
     meta: withMeta,
     forRoute: withRoute,
     params: withParams,
-    query: (schema, options) => withInputContract("query", schema, options),
+    query: withQuery,
     json: withJson,
     formData: withFormData,
-    headers: (schema, options) => withInputContract("headers", schema, options),
-    cookies: (schema, options) => withInputContract("cookies", schema, options),
+    headers: withHeaders,
+    cookies: withCookies,
     output: withOutput,
     use: withMiddleware,
     handle: (...args) => {
@@ -807,7 +895,12 @@ const createProcedureBuilder = <
 
       return handledProcedure;
     },
-  };
+  } as ProcedureBuilderMethods<
+    TDefinition,
+    TContext,
+    TDefaults,
+    TMiddlewareTerminalResult
+  > as ProcedureBuilder<TDefinition, TContext, TDefaults, TMiddlewareTerminalResult>;
 };
 
 export const procedure = createProcedureBuilder<
