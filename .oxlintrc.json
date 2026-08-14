@@ -13,12 +13,15 @@
   ],
   "jsPlugins": ["./oxlint/rpc4next.mjs"],
   "options": {
-    "reportUnusedDisableDirectives": "error"
+    "reportUnusedDisableDirectives": "error",
+    "typeAware": true
   },
   "rules": {
     "rpc4next/comment-spacing": "error",
     "rpc4next/padding-line-before-return": "error",
     "eqeqeq": "error",
+    "typescript/no-deprecated": "error",
+    "typescript/no-redundant-type-constituents": "off",
     "no-unused-vars": [
       "error",
       {

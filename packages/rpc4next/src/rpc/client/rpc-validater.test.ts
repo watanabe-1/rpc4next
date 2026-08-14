@@ -140,7 +140,7 @@ describe("createRpcClient", () => {
 
           if (!result.success) {
             return HttpResponse.json(
-              { error: "Invalid JSON", issues: result.error.format() },
+              { error: "Invalid JSON", issues: z.treeifyError(result.error) },
               { status: 400 },
             );
           }
@@ -172,7 +172,7 @@ describe("createRpcClient", () => {
         const result = schema.safeParse(headers);
         if (!result.success) {
           return HttpResponse.json(
-            { error: "Invalid headers", issues: result.error.format() },
+            { error: "Invalid headers", issues: z.treeifyError(result.error) },
             { status: 400 },
           );
         }
@@ -203,7 +203,7 @@ describe("createRpcClient", () => {
         const result = schema.safeParse(cookies);
         if (!result.success) {
           return HttpResponse.json(
-            { error: "Invalid cookies", issues: result.error.format() },
+            { error: "Invalid cookies", issues: z.treeifyError(result.error) },
             { status: 400 },
           );
         }
@@ -228,7 +228,7 @@ describe("createRpcClient", () => {
         const result = schema.safeParse(query);
         if (!result.success) {
           return HttpResponse.json(
-            { error: "Invalid query", issues: result.error.format() },
+            { error: "Invalid query", issues: z.treeifyError(result.error) },
             { status: 400 },
           );
         }
@@ -255,7 +255,7 @@ describe("createRpcClient", () => {
         const result = optionalSchema.safeParse(query);
         if (!result.success) {
           return HttpResponse.json(
-            { error: "Invalid query", issues: result.error.format() },
+            { error: "Invalid query", issues: z.treeifyError(result.error) },
             { status: 400 },
           );
         }
@@ -306,10 +306,10 @@ describe("createRpcClient", () => {
             {
               error: "Invalid data",
               issues: {
-                json: jsonResult.success ? undefined : jsonResult.error.format(),
-                headers: headersResult.success ? undefined : headersResult.error.format(),
-                cookies: cookiesResult.success ? undefined : cookiesResult.error.format(),
-                query: queryResult.success ? undefined : queryResult.error.format(),
+                json: jsonResult.success ? undefined : z.treeifyError(jsonResult.error),
+                headers: headersResult.success ? undefined : z.treeifyError(headersResult.error),
+                cookies: cookiesResult.success ? undefined : z.treeifyError(cookiesResult.error),
+                query: queryResult.success ? undefined : z.treeifyError(queryResult.error),
               },
             },
             { status: 400 },
@@ -580,18 +580,18 @@ describe("createHandler type definitions", () => {
     client.api.none.mixedQuery.$url({
       query: { mode: "draft" },
     });
-    client.api.none.mixedQuery.$get({
+    void client.api.none.mixedQuery.$get({
       url: { query: { page: "1" } },
     });
-    client.api.none.mixedQuery.$post({
+    void client.api.none.mixedQuery.$post({
       url: { query: { mode: "published" } },
     });
 
     // @ts-expect-error $get must use the GET query schema
-    client.api.none.mixedQuery.$get({ url: { query: { mode: "draft" } } });
+    void client.api.none.mixedQuery.$get({ url: { query: { mode: "draft" } } });
 
     // @ts-expect-error $post must use the POST query schema
-    client.api.none.mixedQuery.$post({ url: { query: { page: "1" } } });
+    void client.api.none.mixedQuery.$post({ url: { query: { page: "1" } } });
 
     // @ts-expect-error $url accepts only query schemas declared by route methods
     client.api.none.mixedQuery.$url({ query: { mode: "archived" } });

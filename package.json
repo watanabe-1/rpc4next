@@ -45,6 +45,7 @@
     "next": "16.3.0",
     "oxfmt": "^0.62.0",
     "oxlint": "^1.77.0",
+    "oxlint-tsgolint": "7",
     "typescript": "^7.0.2",
     "valibot": "^1.4.2",
     "vitest": "^4.1.10",
