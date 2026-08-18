@@ -136,6 +136,104 @@ describe("nextPage", () => {
     ).resolves.toBe("photo-1:comments:page:photo-1");
   });
 
+  it("renders validated params and query without a page handler", async () => {
+    const page = procedure
+      .forRoute(pageRouteContract)
+      .params(paramsSchema)
+      .query(querySchema)
+      .nextPage(({ params, query }) => `${params.id}:${query.tab}`);
+
+    await expect(
+      page({
+        params: Promise.resolve({ id: "photo-1" }),
+        searchParams: Promise.resolve({ tab: "comments" }),
+      }),
+    ).resolves.toBe("photo-1:comments");
+  });
+
+  it("passes validated params and query alongside handled page data", async () => {
+    const page = procedure
+      .forRoute(pageRouteContract)
+      .params(paramsSchema)
+      .query(querySchema)
+      .handle(({ params, query }) => ({
+        body: {
+          summary: `${params.id}:${query.tab}`,
+        },
+      }))
+      .nextPage(({ data, params, query }) => `${data.summary}:${params.id}:${query.tab}`);
+
+    await expect(
+      page({
+        params: Promise.resolve({ id: "photo-1" }),
+        searchParams: Promise.resolve({ tab: "comments" }),
+      }),
+    ).resolves.toBe("photo-1:comments:photo-1:comments");
+  });
+
+  it("does not render when page input validation fails without a handler", async () => {
+    const onError = vi.fn<() => string>(() => "invalid-page");
+    const render = vi.fn<() => string>(() => "rendered");
+    const page = procedure
+      .forRoute(pageRouteContract)
+      .params(paramsSchema)
+      .query(querySchema)
+      .nextPage(render, {
+        onError,
+      });
+
+    await expect(
+      page({
+        params: Promise.resolve({ id: "photo-1" }),
+        searchParams: Promise.resolve({ tab: "bad" }),
+      }),
+    ).resolves.toBe("invalid-page");
+
+    expect(render).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledTimes(1);
+  });
+
+  it("validates page params and query once for handler and render", async () => {
+    const countingParamsSchema: typeof paramsSchema = {
+      "~standard": {
+        ...paramsSchema["~standard"],
+        validate: vi.fn<(typeof paramsSchema)["~standard"]["validate"]>(
+          paramsSchema["~standard"].validate,
+        ),
+      },
+    };
+    const countingQuerySchema: typeof querySchema = {
+      "~standard": {
+        ...querySchema["~standard"],
+        validate: vi.fn<(typeof querySchema)["~standard"]["validate"]>(
+          querySchema["~standard"].validate,
+        ),
+      },
+    };
+
+    const page = procedure
+      .forRoute(pageRouteContract)
+      .params(countingParamsSchema)
+      .query(countingQuerySchema)
+      .handle(({ params, query }) => ({
+        body: {
+          id: params.id,
+          tab: query.tab,
+        },
+      }))
+      .nextPage(({ data, params, query }) => `${data.id}:${data.tab}:${params.id}:${query.tab}`);
+
+    await expect(
+      page({
+        params: Promise.resolve({ id: "photo-1" }),
+        searchParams: Promise.resolve({ tab: "comments" }),
+      }),
+    ).resolves.toBe("photo-1:comments:photo-1:comments");
+
+    expect(countingParamsSchema["~standard"].validate).toHaveBeenCalledTimes(1);
+    expect(countingQuerySchema["~standard"].validate).toHaveBeenCalledTimes(1);
+  });
+
   it("passes validation errors to page onError", async () => {
     const onError = vi.fn<() => string>(() => "invalid-page");
     const page = procedure

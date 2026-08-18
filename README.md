@@ -356,10 +356,37 @@ For pages:
 
 - supported input contracts are `params`, `query`, `headers`, and `cookies`
 - `json` and `formData` are rejected because pages do not receive request bodies
-- handlers return a `ProcedureResult` body, and `nextPage` passes that body to `render({ data, ctx })`
+- `nextPage` receives validated `params` and `query` directly from the procedure pipeline
+- if the page only needs validated URL input, `.handle()` is optional
+- handlers are still useful for DB reads or render-time data preparation; their `ProcedureResult` body is passed to `nextPage` as `data`
 - `validateOutput: true` parses the body with `.output(schema)` before render
 - raw `Response`, `response.error(...)`, and `{ redirect: ... }` results are rejected for page procedures; use Next.js `redirect()` / `notFound()` by throwing them from page code instead
 - `page.redirect(...)` and `page.notFound()` do not return at runtime, but prefer `return page.redirect(...)` / `return page.notFound()` so the terminal branch is clear to TypeScript and readers
+
+When no page-specific data fetch is needed, render from the validated query or
+params directly:
+
+```tsx
+export default procedure
+  .forRoute(routeContract)
+  .query(querySchema)
+  .nextPage(({ query }) => <Page initialMonth={query.month} />);
+```
+
+When the page needs work before render, return that data from `.handle()`:
+
+```tsx
+export default procedure
+  .forRoute(routeContract)
+  .params(paramsSchema)
+  .query(querySchema)
+  .handle(async ({ params }) => ({
+    body: {
+      user: await getUser(params.id),
+    },
+  }))
+  .nextPage(({ data, params, query }) => <Page user={data.user} id={params.id} tab={query.tab} />);
+```
 
 If a page should have project-level error handling or shared page middleware,
 use a page default:

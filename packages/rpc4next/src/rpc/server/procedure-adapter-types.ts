@@ -4,6 +4,7 @@ import type {
   DefaultProcedurePageOnError,
   NextPageProcedureOptions,
   NextPageRender,
+  NextPageProcedureCarrier,
   ProcedurePageOnError,
 } from "./next-page";
 import type { NextRouteProcedureOptions } from "./next-route";
@@ -11,7 +12,7 @@ import type { ProcedureOnError } from "./on-error";
 import type { ProcedureMiddleware } from "./procedure";
 import type { ProcedureDefinition } from "./procedure-types";
 
-type ProcedureAdapterCarrier = {
+type ProcedureRouteAdapterCarrier = {
   definition: ProcedureDefinition;
   middlewares: readonly ProcedureMiddleware[];
   handler: (...args: never[]) => unknown;
@@ -57,7 +58,7 @@ type HasProcedurePageDefaults<TDefaults> = TDefaults extends {
   : false;
 
 export type ProcedureNextRouteOptions<
-  TProcedure extends ProcedureAdapterCarrier,
+  TProcedure extends ProcedureRouteAdapterCarrier,
   TMethod extends HttpMethod,
   TValidateOutput extends boolean,
   TDefaults,
@@ -70,7 +71,7 @@ export type ProcedureNextRouteOptions<
     : NextRouteProcedureOptions<TProcedure, TMethod, TValidateOutput, TOnError>;
 
 export type ProcedureNextPageOptions<
-  TProcedure extends ProcedureAdapterCarrier,
+  TProcedure extends NextPageProcedureCarrier,
   TDefaults,
   TOnError extends ProcedurePageOnError,
 > =
@@ -81,7 +82,7 @@ export type ProcedureNextPageOptions<
     : NextPageProcedureOptions<TProcedure, TOnError>;
 
 export type ProcedureNextPageArgs<
-  TProcedure extends ProcedureAdapterCarrier,
+  TProcedure extends NextPageProcedureCarrier,
   TData,
   TContext extends object,
   TResult,
@@ -92,7 +93,7 @@ export type ProcedureNextPageArgs<
     ? TConstraint extends { __error__: string }
       ? [render: TConstraint, options?: never]
       : [
-          render: NextPageRender<TData, TContext, TResult>,
+          render: NextPageRender<TProcedure, TData, TContext, TResult>,
           options?: ProcedureNextPageOptions<TProcedure, TDefaults, TOnError>,
         ]
     : never;

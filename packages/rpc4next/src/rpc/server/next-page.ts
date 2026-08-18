@@ -10,10 +10,12 @@ import type {
   MergeProcedureDefinition,
   ProcedureDefinition,
   ProcedureInputContract,
+  ProcedureRouteBinding,
   WithProcedureDefinition,
 } from "./procedure-types";
 import type { ProcedureInputTarget } from "./procedure-types";
 import { createResponseHelpers } from "./route-context";
+import type { ValidationSchema } from "./route-types";
 import {
   isStandardSchemaV1,
   type StandardSchemaV1,
@@ -28,14 +30,40 @@ export type NextPageProps<TParams extends Params = Params> = {
   searchParams?: Promise<PageSearchParams>;
 };
 
-export type NextPageRenderContext<TData = unknown, TContext extends object = object> = {
-  data: TData;
-  ctx: TContext;
-};
+type NextPageValidatedRenderContext<TValidationSchema extends ValidationSchema> =
+  ("params" extends keyof TValidationSchema["output"]
+    ? {
+        params: TValidationSchema["output"]["params"];
+      }
+    : Record<never, never>) &
+    ("query" extends keyof TValidationSchema["output"]
+      ? {
+          query: TValidationSchema["output"]["query"];
+        }
+      : Record<never, never>);
 
-export type NextPageRender<TData = unknown, TContext extends object = object, TResult = unknown> = (
-  context: NextPageRenderContext<TData, TContext>,
-) => TResult | Promise<TResult>;
+type NextPageDataRenderContext<TProcedure extends NextPageProcedureCarrier, TData> =
+  ProcedureHasHandler<TProcedure> extends true
+    ? {
+        data: TData;
+      }
+    : Record<never, never>;
+
+export type NextPageRenderContext<
+  TProcedure extends NextPageProcedureCarrier = HandledNextPageProcedureCarrier,
+  TData = unknown,
+  TContext extends object = object,
+> = NextPageValidatedRenderContext<InferProcedureValidationSchema<TProcedure>> &
+  NextPageDataRenderContext<TProcedure, TData> & {
+    ctx: TContext;
+  };
+
+export type NextPageRender<
+  TProcedure extends NextPageProcedureCarrier = HandledNextPageProcedureCarrier,
+  TData = unknown,
+  TContext extends object = object,
+  TResult = unknown,
+> = (context: NextPageRenderContext<TProcedure, TData, TContext>) => TResult | Promise<TResult>;
 
 export type ProcedurePageOnError<TResult = unknown> = (
   error: unknown,
@@ -51,45 +79,63 @@ export const defaultProcedurePageOnError = ((error) => {
 
 export type DefaultProcedurePageOnError = typeof defaultProcedurePageOnError;
 
-type ProcedureTypeCarrier = {
+export type NextPageProcedureCarrier = {
   definition: ProcedureDefinition;
   middlewares: readonly ProcedureMiddleware[];
-  handler: (...args: never[]) => unknown;
+  handler?: (...args: never[]) => unknown;
   middlewareTerminalResult: unknown;
 };
 
-type InferProcedureDefinition<TProcedure extends ProcedureTypeCarrier> = TProcedure extends {
+type HandledNextPageProcedureCarrier = NextPageProcedureCarrier & {
+  handler: (...args: never[]) => unknown;
+};
+
+type InferProcedureDefinition<TProcedure extends NextPageProcedureCarrier> = TProcedure extends {
   definition: infer TDefinition extends ProcedureDefinition;
 }
   ? TDefinition
   : ProcedureDefinition;
 
-type InferProcedureHandler<TProcedure extends ProcedureTypeCarrier> = TProcedure extends {
+type InferProcedureHandler<TProcedure extends NextPageProcedureCarrier> = TProcedure extends {
   handler: infer THandler;
 }
   ? THandler
   : never;
 
-type InferProcedureHandlerContext<TProcedure extends ProcedureTypeCarrier> =
+type ProcedureHasHandler<TProcedure extends NextPageProcedureCarrier> = TProcedure extends {
+  handler: (...args: never[]) => unknown;
+}
+  ? true
+  : false;
+
+type InferProcedureHandlerContext<TProcedure extends NextPageProcedureCarrier> =
   InferProcedureHandler<TProcedure> extends (context: infer TContext) => unknown ? TContext : never;
 
-type InferProcedureHandlerResult<TProcedure extends ProcedureTypeCarrier> = TProcedure extends {
+type InferProcedureHandlerResult<TProcedure extends NextPageProcedureCarrier> = TProcedure extends {
   handler: (...args: never[]) => infer TResult;
 }
   ? Awaited<TResult>
   : never;
 
-type InferProcedureMiddlewareTerminalResult<TProcedure extends ProcedureTypeCarrier> =
+type InferProcedureValidationSchema<TProcedure extends NextPageProcedureCarrier> =
+  InferProcedureDefinition<TProcedure> extends ProcedureDefinition<
+    infer _THttpMethod,
+    infer TValidationSchema
+  >
+    ? TValidationSchema
+    : ValidationSchema;
+
+type InferProcedureMiddlewareTerminalResult<TProcedure extends NextPageProcedureCarrier> =
   TProcedure extends {
     middlewareTerminalResult: infer TResult;
   }
     ? Awaited<TResult>
     : never;
 
-type InferProcedureData<TProcedure extends ProcedureTypeCarrier> =
+type InferProcedureData<TProcedure extends NextPageProcedureCarrier> =
   InferProcedureHandlerResult<TProcedure> extends ProcedureResult<infer TBody> ? TBody : unknown;
 
-type ProcedureIsRouteBound<TProcedure extends ProcedureTypeCarrier> =
+type ProcedureIsRouteBound<TProcedure extends NextPageProcedureCarrier> =
   InferProcedureDefinition<TProcedure> extends {
     route: infer TRoute;
   }
@@ -98,8 +144,30 @@ type ProcedureIsRouteBound<TProcedure extends ProcedureTypeCarrier> =
       : true
     : false;
 
+type ExtractBoundRouteParams<TProcedure extends NextPageProcedureCarrier> =
+  InferProcedureDefinition<TProcedure> extends {
+    route: ProcedureRouteBinding<string, infer TParams>;
+  }
+    ? TParams
+    : never;
+
+type ProcedureHasBoundRouteParams<TProcedure extends NextPageProcedureCarrier> = [
+  ExtractBoundRouteParams<TProcedure>,
+] extends [never]
+  ? false
+  : keyof ExtractBoundRouteParams<TProcedure> extends never
+    ? false
+    : true;
+
+type ProcedureHasValidatedParams<TProcedure extends NextPageProcedureCarrier> =
+  InferProcedureValidationSchema<TProcedure>["output"] extends {
+    params: unknown;
+  }
+    ? true
+    : false;
+
 type ProcedureHasBodyContract<
-  TProcedure extends ProcedureTypeCarrier,
+  TProcedure extends NextPageProcedureCarrier,
   TTarget extends "json" | "formData",
 > =
   InferProcedureDefinition<TProcedure> extends {
@@ -123,7 +191,7 @@ type PageIncompatibleTerminalResult<TResult> =
   | Extract<Awaited<TResult>, ResponseLike>
   | Extract<Awaited<TResult>, { redirect: string }>;
 
-type ProcedureHasPageIncompatibleTerminalResult<TProcedure extends ProcedureTypeCarrier> = [
+type ProcedureHasPageIncompatibleTerminalResult<TProcedure extends NextPageProcedureCarrier> = [
   PageIncompatibleTerminalResult<
     InferProcedureHandlerResult<TProcedure> | InferProcedureMiddlewareTerminalResult<TProcedure>
   >,
@@ -131,27 +199,36 @@ type ProcedureHasPageIncompatibleTerminalResult<TProcedure extends ProcedureType
   ? false
   : true;
 
-type NextPageProcedureConstraint<TProcedure extends ProcedureTypeCarrier> =
+type NextPageProcedureConstraint<TProcedure extends NextPageProcedureCarrier> =
   ProcedureIsRouteBound<TProcedure> extends false
     ? {
         __error__: "nextPage() only accepts procedures that were bound with forRoute(routeContract).";
       }
-    : ProcedureHasBodyContract<TProcedure, "json"> extends true
-      ? {
-          __error__: "JSON input contracts are not supported for page procedures.";
-        }
-      : ProcedureHasBodyContract<TProcedure, "formData"> extends true
-        ? {
-            __error__: "FormData input contracts are not supported for page procedures.";
+    : ProcedureHasBoundRouteParams<TProcedure> extends true
+      ? ProcedureHasValidatedParams<TProcedure> extends true
+        ? ProcedureNextPageInputConstraint<TProcedure>
+        : {
+            __error__: "Bound page procedures with generated params must call .params(schema) before .nextPage().";
           }
-        : ProcedureHasPageIncompatibleTerminalResult<TProcedure> extends true
-          ? {
-              __error__: "Page procedures cannot return Response values or ProcedureResult redirects. Return a ProcedureResult body, or throw redirect()/notFound().";
-            }
-          : unknown;
+      : ProcedureNextPageInputConstraint<TProcedure>;
+
+type ProcedureNextPageInputConstraint<TProcedure extends NextPageProcedureCarrier> =
+  ProcedureHasBodyContract<TProcedure, "json"> extends true
+    ? {
+        __error__: "JSON input contracts are not supported for page procedures.";
+      }
+    : ProcedureHasBodyContract<TProcedure, "formData"> extends true
+      ? {
+          __error__: "FormData input contracts are not supported for page procedures.";
+        }
+      : ProcedureHasPageIncompatibleTerminalResult<TProcedure> extends true
+        ? {
+            __error__: "Page procedures cannot return Response values or ProcedureResult redirects. Return a ProcedureResult body, or throw redirect()/notFound().";
+          }
+        : unknown;
 
 export type NextPageHandler<
-  TProcedure extends ProcedureTypeCarrier = ProcedureTypeCarrier,
+  TProcedure extends NextPageProcedureCarrier = NextPageProcedureCarrier,
   TResult = unknown,
 > = WithProcedureDefinition<
   (props: NextPageProps) => Promise<TResult>,
@@ -164,12 +241,12 @@ export type NextPageOptions<TOnError extends ProcedurePageOnError = ProcedurePag
 };
 
 export type NextPageProcedureOptions<
-  TProcedure extends ProcedureTypeCarrier,
+  TProcedure extends NextPageProcedureCarrier,
   TOnError extends ProcedurePageOnError = ProcedurePageOnError,
 > = NextPageOptions<TOnError> & NextPageProcedureConstraint<TProcedure>;
 
 type NextPageArgs<
-  TProcedure extends ProcedureTypeCarrier,
+  TProcedure extends NextPageProcedureCarrier,
   TResult,
   TOnError extends ProcedurePageOnError,
 > =
@@ -177,7 +254,7 @@ type NextPageArgs<
     ? TConstraint extends { __error__: string }
       ? [render: TConstraint, options?: never]
       : [
-          render: NextPageRender<InferProcedureData<TProcedure>, object, TResult>,
+          render: NextPageRender<TProcedure, InferProcedureData<TProcedure>, object, TResult>,
           options?: NextPageProcedureOptions<TProcedure, TOnError>,
         ]
     : never;
@@ -343,16 +420,20 @@ const assertPageTerminalResult = (result: Response | ProcedureResult | undefined
 };
 
 export const nextPage = <
-  TProcedure extends ProcedureTypeCarrier,
+  TProcedure extends NextPageProcedureCarrier,
   TResult = unknown,
   TOnError extends ProcedurePageOnError = DefaultProcedurePageOnError,
 >(
   procedure: TProcedure,
   ...[render, options]: NextPageArgs<TProcedure, TResult, TOnError>
 ): NextPageHandler<TProcedure, TResult | Awaited<ReturnType<TOnError>>> => {
-  const handler = procedure.handler as (
-    context: InferProcedureHandlerContext<TProcedure>,
-  ) => InferProcedureHandlerResult<TProcedure> | Promise<InferProcedureHandlerResult<TProcedure>>;
+  const handler = procedure.handler as
+    | ((
+        context: InferProcedureHandlerContext<TProcedure>,
+      ) =>
+        | InferProcedureHandlerResult<TProcedure>
+        | Promise<InferProcedureHandlerResult<TProcedure>>)
+    | undefined;
   const onError = options?.onError ?? defaultProcedurePageOnError;
   const outputSchema = procedure.definition.output?.schema;
 
@@ -402,10 +483,14 @@ export const nextPage = <
           ...(procedure.middlewares as unknown as readonly ((
             context: typeof executionContext,
           ) => ProcedureMiddlewareResult | Promise<ProcedureMiddlewareResult>)[]),
-          (context) =>
-            handler(
-              context as InferProcedureHandlerContext<TProcedure>,
-            ) as InferProcedureHandlerResult<TProcedure>,
+          ...(handler
+            ? [
+                (context: typeof executionContext) =>
+                  handler(
+                    context as InferProcedureHandlerContext<TProcedure>,
+                  ) as InferProcedureHandlerResult<TProcedure>,
+              ]
+            : []),
         ],
         executionContext,
         {
@@ -429,9 +514,11 @@ export const nextPage = <
           : data;
 
       return render({
-        data: renderedData as InferProcedureData<TProcedure>,
+        ...(handler ? { data: renderedData as InferProcedureData<TProcedure> } : {}),
+        params: inputResult.params,
+        query: inputResult.query,
         ctx: executionContext.ctx,
-      });
+      } as NextPageRenderContext<TProcedure, InferProcedureData<TProcedure>>);
     } catch (error) {
       unstable_rethrow(error);
 

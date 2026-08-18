@@ -11,19 +11,7 @@ const searchQuerySchema = z
     q: Array.isArray(q) ? q[0] : q,
   }));
 
-const searchPageOutputSchema = z.object({
-  q: z.string(),
-});
-
 export default procedure
   .forRoute(routeContract)
   .query(searchQuerySchema)
-  .output(searchPageOutputSchema)
-  .handle(({ query }) => ({
-    body: {
-      q: query.q ?? "none",
-    },
-  }))
-  .nextPage(({ data }) => <div>search:{data.q}</div>, {
-    validateOutput: true,
-  });
+  .nextPage(({ query }) => <div>search:{query.q ?? "none"}</div>);
