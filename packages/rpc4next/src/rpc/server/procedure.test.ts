@@ -12,6 +12,11 @@ describe("procedure builder type definitions", () => {
     params: {} as { userId: string },
   } as ProcedureRouteContract<"/api/procedure-guarded/[userId]", { userId: string }>;
 
+  const staticPageRouteContract = {
+    pathname: "/patterns/search",
+    params: {} as Record<never, never>,
+  } as ProcedureRouteContract<"/patterns/search", Record<never, never>>;
+
   const parsePage: StandardSchemaV1<{ page?: string | string[] }, { page: number }> = {
     "~standard": {
       version: 1,
@@ -745,6 +750,73 @@ describe("procedure builder type definitions", () => {
 
     type FormDataRouteResponse = Awaited<ReturnType<typeof formDataRoute>>;
     expectTypeOf<FormDataRouteResponse>().toExtend<Response>();
+  });
+
+  it("exposes validated params and query directly to nextPage renders", () => {
+    procedure
+      .forRoute(guardedUserRouteContract)
+      .params(userIdSchema)
+      .query(parsePage)
+      .nextPage((context) => {
+        const _params: { userId: string } = context.params;
+        const _query: { page: number } = context.query;
+        const _ctx: Record<never, never> = context.ctx;
+
+        void _params;
+        void _query;
+        void _ctx;
+
+        // @ts-expect-error data is only available after handle()
+        void context.data;
+        // @ts-expect-error response helpers are not available in page render context
+        void context.response;
+
+        return null;
+      });
+
+    procedure
+      .forRoute(staticPageRouteContract)
+      .query(parsePage)
+      .nextPage(({ query }) => {
+        const _query: { page: number } = query;
+
+        void _query;
+
+        return null;
+      });
+
+    procedure
+      .forRoute(guardedUserRouteContract)
+      .params(userIdSchema)
+      .query(parsePage)
+      .handle(({ params, query }) => ({
+        body: {
+          userId: params.userId,
+          page: query.page,
+        },
+      }))
+      .nextPage(({ data, params, query }) => {
+        const _data: { userId: string; page: number } = data;
+        const _params: { userId: string } = params;
+        const _query: { page: number } = query;
+
+        void _data;
+        void _params;
+        void _query;
+
+        return null;
+      });
+
+    expect(true).toBe(true);
+  });
+
+  it("requires params before nextPage on bound routes with generated params", () => {
+    procedure
+      .forRoute(guardedUserRouteContract)
+      // @ts-expect-error bound page routes with params must declare params(schema) before nextPage()
+      .nextPage(() => null);
+
+    expect(true).toBe(true);
   });
 
   it("lets procedure.defaults({ route: { onError } }) make terminal nextRoute onError optional", () => {

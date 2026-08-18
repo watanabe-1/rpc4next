@@ -141,8 +141,10 @@ instead of `.nextRoute(...)`. `app/photo/[id]/page.tsx` demonstrates validated
 `params` and opt-in runtime output validation before render.
 `app/patterns/search/page.tsx` demonstrates page query input inference flowing
 into generated `$url({ query })` types while the page itself validates
-`searchParams` through `procedure.query(schema)`. Page procedures return
-render data through `body`; HTTP response helpers and raw `Response` values are
+`searchParams` through `procedure.query(schema)` and renders from the validated
+`query` without a `.handle()` step. Use `.handle()` when a page needs server-side
+data fetching or preparation before render; that returned `body` becomes
+`data` in `.nextPage(...)`. HTTP response helpers and raw `Response` values are
 reserved for route procedures. When a shared preset is page-specific, prefer
 `procedure.defaults({ page: { onError } })` so later middleware and handlers
 receive page helpers such as `page.redirect(...)` and `page.notFound()` instead
