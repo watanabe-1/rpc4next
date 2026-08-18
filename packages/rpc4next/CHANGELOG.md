@@ -2,10 +2,9 @@
 
 ## [0.11.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.10.0...rpc4next-v0.11.0) (2026-08-18)
 
-
 ### Features
 
-* **page:** Render validated inputs without handlers ([#542](https://github.com/watanabe-1/rpc4next/issues/542)) ([1464888](https://github.com/watanabe-1/rpc4next/commit/1464888ae467207affbd39f5e6fe0a2df2d9458a))
+- **page:** Render validated inputs without handlers ([#542](https://github.com/watanabe-1/rpc4next/issues/542)) ([1464888](https://github.com/watanabe-1/rpc4next/commit/1464888ae467207affbd39f5e6fe0a2df2d9458a))
 
 ## [0.10.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.9.1...rpc4next-v0.10.0) (2026-08-14)
 
