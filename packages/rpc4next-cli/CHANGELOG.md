@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.8.0...rpc4next-cli-v0.8.1) (2026-08-18)
+
+
+### Bug Fixes
+
+* **cli:** escape generated literals and validate params file ([#535](https://github.com/watanabe-1/rpc4next/issues/535)) ([ed43cd3](https://github.com/watanabe-1/rpc4next/commit/ed43cd31488b69354493273970b909179478ed91))
+
 ## [0.8.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.7.0...rpc4next-cli-v0.8.0) (2026-08-14)
 
 ### Features
