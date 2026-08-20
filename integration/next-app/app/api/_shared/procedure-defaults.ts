@@ -5,15 +5,9 @@ const sharedOnError = ((error, { response }) => {
     return error;
   }
 
-  return response.json(
-    {
-      success: false,
-      error: {
-        message: error instanceof Error ? error.message : "unknown error",
-      },
-    },
-    { status: 500 },
-  );
+  return response.error("INTERNAL_SERVER_ERROR", {
+    message: error instanceof Error ? error.message : "unknown error",
+  });
 }) satisfies ProcedureOnError;
 
 export const appProcedure = procedure.defaults({
@@ -21,5 +15,3 @@ export const appProcedure = procedure.defaults({
     onError: sharedOnError,
   },
 });
-
-export { procedure };

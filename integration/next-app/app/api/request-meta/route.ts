@@ -1,7 +1,6 @@
-import { procedure } from "rpc4next/server";
 import { z } from "zod";
 
-import { onError } from "../_shared/on-error";
+import { appProcedure } from "../_shared/procedure-defaults";
 import { routeContract } from "./route-contract";
 
 const headersSchema = z.object({
@@ -12,20 +11,18 @@ const cookiesSchema = z.object({
   session: z.string().min(1),
 });
 
-export const { GET } = procedure
+export const { GET } = appProcedure
   .forRoute(routeContract)
   .headers(headersSchema)
   .cookies(cookiesSchema)
-  .output({
-    _output: {
-      header: "" as string,
-      session: "" as string,
-    },
-  })
+  .output<{
+    header: string;
+    session: string;
+  }>()
   .handle(async ({ headers, cookies }) => ({
     body: {
       header: headers["x-integration-test"],
       session: cookies.session,
     },
   }))
-  .nextRoute({ method: "GET", onError });
+  .nextRoute({ method: "GET" });

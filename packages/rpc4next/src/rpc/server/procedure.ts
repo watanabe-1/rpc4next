@@ -714,6 +714,18 @@ interface ProcedureBuilderMethods<
     TMiddlewareTerminalResult
   >;
 
+  output<TOutput>(): ProcedureBuilder<
+    MergeProcedureDefinition<
+      TDefinition,
+      {
+        output: ProcedureOutputContract<TOutput>;
+      }
+    >,
+    TContext,
+    TDefaults,
+    TMiddlewareTerminalResult
+  >;
+
   output<TSchema, TOutput = InferSchemaOutput<TSchema>>(
     schema: TSchema,
   ): ProcedureBuilder<
@@ -954,7 +966,7 @@ const createProcedureBuilder = <
   };
 
   const withOutput = <TSchema, TOutput = InferSchemaOutput<TSchema>>(
-    schema: TSchema,
+    schema?: TSchema,
   ): ProcedureBuilder<
     MergeProcedureDefinition<TDefinition, { output: ProcedureOutputContract<TOutput> }>,
     TContext,

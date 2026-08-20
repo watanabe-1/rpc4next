@@ -233,6 +233,28 @@ describe("procedure builder type definitions", () => {
     expect(true).toBe(true);
   });
 
+  it("types response helpers against type-only output contracts", () => {
+    procedure.output<{ ok: true; count: number }>().handle(({ response }) => {
+      response.json({
+        ok: true,
+        count: 1,
+      });
+
+      response.json({
+        // @ts-expect-error response.json payload should follow the type-only output contract
+        ok: false,
+        count: 1,
+      });
+
+      return response.json({
+        ok: true,
+        count: 1,
+      });
+    });
+
+    expect(true).toBe(true);
+  });
+
   it("rejects formData after json at compile time", () => {
     expect(() => {
       procedure

@@ -1,20 +1,18 @@
-import { procedure, type TypedNextResponse } from "rpc4next/server";
+import type { TypedNextResponse } from "rpc4next/server";
 
-import { onError } from "../_shared/on-error";
+import { appProcedure } from "../_shared/procedure-defaults";
 import { routeContract } from "./route-contract";
 
-export const { GET } = procedure
+export const { GET } = appProcedure
   .forRoute(routeContract)
   .meta({
     summary: "Contract route example",
     tags: ["contract-route"],
   })
-  .output({
-    _output: {
-      ok: true as const,
-      source: "contract-route" as const,
-    },
-  })
+  .output<{
+    ok: true;
+    source: "contract-route";
+  }>()
   .handle(
     async ({
       response,
@@ -33,4 +31,4 @@ export const { GET } = procedure
         source: "contract-route",
       }),
   )
-  .nextRoute({ method: "GET", onError });
+  .nextRoute({ method: "GET" });

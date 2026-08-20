@@ -1,12 +1,7 @@
-import { procedure } from "rpc4next/server";
 import { z } from "zod";
 
-import { onError } from "../../_shared/on-error";
+import { appProcedure } from "../../_shared/procedure-defaults";
 import { routeContract } from "./route-contract";
-
-export type Query = {
-  includePosts?: "true" | "false";
-};
 
 const querySchema = z.object({
   includePosts: z.enum(["true", "false"]).optional(),
@@ -16,17 +11,15 @@ const paramsSchema = z.object({
   userId: z.string().min(1),
 });
 
-export const { GET } = procedure
+export const { GET } = appProcedure
   .forRoute(routeContract)
   .params(paramsSchema)
   .query(querySchema)
-  .output({
-    _output: {
-      ok: true as const,
-      userId: "" as string,
-      includePosts: false as boolean,
-    },
-  })
+  .output<{
+    ok: true;
+    userId: string;
+    includePosts: boolean;
+  }>()
   .handle(async ({ params, query }) => ({
     body: {
       ok: true,
@@ -34,4 +27,4 @@ export const { GET } = procedure
       includePosts: query.includePosts === "true",
     },
   }))
-  .nextRoute({ method: "GET", onError });
+  .nextRoute({ method: "GET" });

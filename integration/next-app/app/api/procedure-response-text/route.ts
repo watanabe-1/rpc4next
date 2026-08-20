@@ -1,10 +1,9 @@
-import { procedure } from "rpc4next/server";
 import { z } from "zod";
 
-import { onError } from "../_shared/on-error";
+import { appProcedure } from "../_shared/procedure-defaults";
 import { routeContract } from "./route-contract";
 
-export const { GET } = procedure
+export const { GET } = appProcedure
   .forRoute(routeContract)
   .query(
     z.object({
@@ -14,5 +13,4 @@ export const { GET } = procedure
   .handle(async ({ query, response }) => response.text(`procedure-response-text:${query.name}`))
   .nextRoute({
     method: "GET",
-    onError,
   });

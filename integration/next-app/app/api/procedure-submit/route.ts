@@ -1,10 +1,9 @@
-import { procedure } from "rpc4next/server";
 import { z } from "zod";
 
-import { onError } from "../_shared/on-error";
+import { appProcedure } from "../_shared/procedure-defaults";
 import { routeContract } from "./route-contract";
 
-export const { POST } = procedure
+export const { POST } = appProcedure
   .forRoute(routeContract)
   .headers(
     z.object({
@@ -21,15 +20,13 @@ export const { POST } = procedure
       title: z.string().min(1),
     }),
   )
-  .output({
-    _output: {
-      ok: true as const,
-      title: "" as string,
-      header: "" as string,
-      session: "" as string,
-      source: "procedure-submit" as const,
-    },
-  })
+  .output<{
+    ok: true;
+    title: string;
+    header: string;
+    session: string;
+    source: "procedure-submit";
+  }>()
   .handle(async ({ json, headers, cookies }) => ({
     status: 201,
     body: {
@@ -40,4 +37,4 @@ export const { POST } = procedure
       source: "procedure-submit",
     },
   }))
-  .nextRoute({ method: "POST", onError });
+  .nextRoute({ method: "POST" });

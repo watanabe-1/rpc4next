@@ -7,11 +7,9 @@ import type { GET as GET_f6b301e60ff73f39 } from "../../app/api/next-native-resp
 import type { GET as GET_de7c3f3aefa104c1 } from "../../app/api/next-native/[itemId]/route";
 import type { GET as GET_ac9bcfb08eed44cd } from "../../app/api/next-native/route";
 import type { POST as POST_90625e305d8eaaef } from "../../app/api/posts/route";
-import type { Query as Query_328fe40401e7f48d } from "../../app/api/procedure-contract/[userId]/route";
 import type { GET as GET_3919bdb64fa44631 } from "../../app/api/procedure-contract/[userId]/route";
 import type { GET as GET_bcc78455031f398c } from "../../app/api/procedure-defaults-error/route";
 import type { POST as POST_abb045cb5ac672e1 } from "../../app/api/procedure-form-data/route";
-import type { Query as Query_a31809be53fb5dc9 } from "../../app/api/procedure-guarded/[userId]/route";
 import type { GET as GET_98a6cb8e2c497f98 } from "../../app/api/procedure-guarded/[userId]/route";
 import type { GET as GET_deded1d327aade95 } from "../../app/api/procedure-invalid-output/route";
 import type { GET as GET_6f931f4b52452942 } from "../../app/api/procedure-response-redirect/route";
@@ -20,7 +18,6 @@ import type { POST as POST_ff7e41c09dae8fb9 } from "../../app/api/procedure-subm
 import type { GET as GET_9e56a535c83ceae0 } from "../../app/api/procedure-validation-branch/route";
 import type { GET as GET_61a9f4b9fd49ccf5 } from "../../app/api/redirect-me/route";
 import type { GET as GET_fbb09db60ba2ae51 } from "../../app/api/request-meta/route";
-import type { Query as Query_96533c19a2b0de99 } from "../../app/api/users/[userId]/route";
 import type { GET as GET_b6e4799d411d6efe } from "../../app/api/users/[userId]/route";
 import type Page_3284828b6f1a8f87 from "../../app/patterns/client-page/page";
 import type Page_79cdb44a777689a5 from "../../app/patterns/page-helpers/page";
@@ -38,12 +35,12 @@ export type PathStructure = RpcEndpoint & {
     "next-native-response": { "$get": typeof GET_f6b301e60ff73f39 } & RpcEndpoint,
     "posts": { "$post": typeof POST_90625e305d8eaaef } & RpcEndpoint,
     "procedure-contract": {
-      "_userId": Record<QueryKey, Query_328fe40401e7f48d> & { "$get": typeof GET_3919bdb64fa44631 } & RpcEndpoint & Record<ParamsKey, { "userId": string }>
+      "_userId": { "$get": typeof GET_3919bdb64fa44631 } & RpcEndpoint & Record<ParamsKey, { "userId": string }>
     },
     "procedure-defaults-error": { "$get": typeof GET_bcc78455031f398c } & RpcEndpoint,
     "procedure-form-data": { "$post": typeof POST_abb045cb5ac672e1 } & RpcEndpoint,
     "procedure-guarded": {
-      "_userId": Record<QueryKey, Query_a31809be53fb5dc9> & { "$get": typeof GET_98a6cb8e2c497f98 } & RpcEndpoint & Record<ParamsKey, { "userId": string }>
+      "_userId": { "$get": typeof GET_98a6cb8e2c497f98 } & RpcEndpoint & Record<ParamsKey, { "userId": string }>
     },
     "procedure-invalid-output": { "$get": typeof GET_deded1d327aade95 } & RpcEndpoint,
     "procedure-response-redirect": { "$get": typeof GET_6f931f4b52452942 } & RpcEndpoint,
@@ -53,7 +50,7 @@ export type PathStructure = RpcEndpoint & {
     "redirect-me": { "$get": typeof GET_61a9f4b9fd49ccf5 } & RpcEndpoint,
     "request-meta": { "$get": typeof GET_fbb09db60ba2ae51 } & RpcEndpoint,
     "users": {
-      "_userId": Record<QueryKey, Query_96533c19a2b0de99> & { "$get": typeof GET_b6e4799d411d6efe } & RpcEndpoint & Record<ParamsKey, { "userId": string }>
+      "_userId": { "$get": typeof GET_b6e4799d411d6efe } & RpcEndpoint & Record<ParamsKey, { "userId": string }>
     }
   },
   "e2e-client": RpcEndpoint,

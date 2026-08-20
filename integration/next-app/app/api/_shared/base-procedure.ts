@@ -1,12 +1,13 @@
-import { procedure } from "rpc4next/server";
 import { z } from "zod";
+
+import { appProcedure } from "./procedure-defaults";
 
 export const guardedProcedureHeadersSchema = z.object({
   "x-demo-user": z.string().min(1).optional(),
   "x-demo-role": z.enum(["reader", "editor", "suspended"]).optional(),
 });
 
-export const guardedBaseProcedure = procedure
+export const guardedBaseProcedure = appProcedure
   .headers(guardedProcedureHeadersSchema)
   .meta({
     summary:
