@@ -1,13 +1,12 @@
-import { procedure } from "rpc4next/server";
 import { z } from "zod";
 
-import { onError } from "../_shared/on-error";
+import { appProcedure } from "../_shared/procedure-defaults";
 import { routeContract } from "./route-contract";
 
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 const ALLOWED_AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
 
-export const { POST } = procedure
+export const { POST } = appProcedure
   .forRoute(routeContract)
   .formData(
     z.object({
@@ -23,15 +22,13 @@ export const { POST } = procedure
       tags: z.array(z.string().min(1).max(40)).max(10).optional(),
     }),
   )
-  .output({
-    _output: {
-      ok: true as const,
-      displayName: "" as string,
-      filename: "" as string,
-      tags: [] as string[],
-      source: "procedure-form-data" as const,
-    },
-  })
+  .output<{
+    ok: true;
+    displayName: string;
+    filename: string;
+    tags: string[];
+    source: "procedure-form-data";
+  }>()
   .handle(async ({ formData }) => ({
     status: 200,
     body: {
@@ -42,4 +39,4 @@ export const { POST } = procedure
       source: "procedure-form-data",
     },
   }))
-  .nextRoute({ method: "POST", onError });
+  .nextRoute({ method: "POST" });

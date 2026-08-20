@@ -75,7 +75,7 @@ export const withProcedureRouteBinding = <
 
 export const withProcedureOutput = <TDefinition extends ProcedureDefinition, TOutput, TSchema>(
   definition: TDefinition,
-  schema: TSchema,
+  schema?: TSchema,
 ): MergeProcedureDefinition<
   TDefinition,
   {

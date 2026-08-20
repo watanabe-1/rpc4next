@@ -1,8 +1,6 @@
-import { nextRoute } from "rpc4next/server";
 import { z } from "zod";
 
 import { guardedBaseProcedure } from "../../_shared/base-procedure";
-import { onError } from "../../_shared/on-error";
 import { routeContract } from "./route-contract";
 
 const paramsSchema = z.object({
@@ -51,10 +49,7 @@ const getGuardedProcedureUser = guardedBaseProcedure
     };
   });
 
-export const { GET } = nextRoute(getGuardedProcedureUser, {
+export const { GET } = getGuardedProcedureUser.nextRoute({
   method: "GET",
-  onError,
   validateOutput: true,
 });
-
-export type Query = z.input<typeof querySchema>;

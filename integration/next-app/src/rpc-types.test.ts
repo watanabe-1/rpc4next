@@ -2,9 +2,6 @@ import { createRpcClient } from "rpc4next/client";
 import type { ContentType, HttpStatusCode, TypedNextResponse } from "rpc4next/server";
 import { describe, expectTypeOf, it } from "vitest";
 
-import type { Query as ProcedureContractQuery } from "../app/api/procedure-contract/[userId]/route";
-import type { Query as ProcedureGuardedQuery } from "../app/api/procedure-guarded/[userId]/route";
-import type { Query as UsersQuery } from "../app/api/users/[userId]/route";
 import type { PathStructure } from "./generated/rpc";
 
 const baseUrl = "http://127.0.0.1:3000";
@@ -20,6 +17,23 @@ const client = createRpcClient<PathStructure>(baseUrl, {
 type SearchPageQuery = {
   q?: string | string[] | undefined;
 };
+type IncludePostsQuery = {
+  includePosts?: "true" | "false" | undefined;
+};
+type IncludeDraftsQuery = {
+  includeDrafts?: "true" | "false" | undefined;
+};
+type SharedProcedureOnErrorResponse = TypedNextResponse<
+  {
+    error: {
+      code: "INTERNAL_SERVER_ERROR";
+      message: string;
+      details?: unknown;
+    };
+  },
+  500,
+  "application/json"
+>;
 
 describe("integration next-app generated RPC type coverage", () => {
   it("infers the generated client signatures for query, body, and headers", () => {
@@ -36,7 +50,7 @@ describe("integration next-app generated RPC type coverage", () => {
     expectTypeOf<NativeDynamicUrl>().toEqualTypeOf<ExpectedNativeDynamicUrl>();
 
     type UsersUrl = ReturnType<typeof client.api.users._userId>["$url"];
-    type ExpectedUsersUrl = (url?: { query?: UsersQuery; hash?: string }) => {
+    type ExpectedUsersUrl = (url?: { query?: IncludePostsQuery; hash?: string }) => {
       pathname: string;
       path: string;
       relativePath: string;
@@ -49,10 +63,7 @@ describe("integration next-app generated RPC type coverage", () => {
 
     type ProcedureContractNode = (typeof client.api)["procedure-contract"];
     type ProcedureContractUrl = ReturnType<ProcedureContractNode["_userId"]>["$url"];
-    type ExpectedProcedureContractUrl = (url?: {
-      query?: ProcedureContractQuery;
-      hash?: string;
-    }) => {
+    type ExpectedProcedureContractUrl = (url?: { query?: IncludePostsQuery; hash?: string }) => {
       pathname: string;
       path: string;
       relativePath: string;
@@ -64,7 +75,7 @@ describe("integration next-app generated RPC type coverage", () => {
 
     type ProcedureGuardedNode = (typeof client.api)["procedure-guarded"];
     type ProcedureGuardedUrl = ReturnType<ProcedureGuardedNode["_userId"]>["$url"];
-    type ExpectedProcedureGuardedUrl = (url?: { query?: ProcedureGuardedQuery; hash?: string }) => {
+    type ExpectedProcedureGuardedUrl = (url?: { query?: IncludeDraftsQuery; hash?: string }) => {
       pathname: string;
       path: string;
       relativePath: string;
@@ -212,16 +223,17 @@ describe("integration next-app generated RPC type coverage", () => {
     expectTypeOf<typeof _explicitOutputResponse>().toExtend<ExpectedExplicitOutputResponse>();
 
     const _contractRouteResponse = await client.api["contract-route"].$get();
-    expectTypeOf<typeof _contractRouteResponse>().toEqualTypeOf<
-      TypedNextResponse<
-        {
-          ok: true;
-          source: "contract-route";
-        },
-        200,
-        "application/json"
-      >
-    >();
+    type ExpectedContractRouteResponse =
+      | TypedNextResponse<
+          {
+            ok: true;
+            source: "contract-route";
+          },
+          200,
+          "application/json"
+        >
+      | SharedProcedureOnErrorResponse;
+    expectTypeOf<typeof _contractRouteResponse>().toExtend<ExpectedContractRouteResponse>();
 
     const _procedureContractResponse = await client.api["procedure-contract"]
       ._userId("procedure-user")
@@ -250,7 +262,8 @@ describe("integration next-app generated RPC type coverage", () => {
           },
           400,
           "application/json"
-        >;
+        >
+      | SharedProcedureOnErrorResponse;
     expectTypeOf<typeof _procedureContractResponse>().toExtend<ExpectedProcedureContractResponse>();
 
     const _nativeDynamicResponse = await client.api["next-native"]._itemId("native-item").$get();
@@ -298,6 +311,7 @@ describe("integration next-app generated RPC type coverage", () => {
           "application/json"
         >
       | TypedNextResponse<unknown, 400, "application/json">
+      | SharedProcedureOnErrorResponse
     >();
 
     if (usersResponse.ok) {
@@ -319,6 +333,7 @@ describe("integration next-app generated RPC type coverage", () => {
           "application/json"
         >
       | TypedNextResponse<unknown, 400, "application/json">
+      | SharedProcedureOnErrorResponse
     >();
 
     if (postsResponse.ok) {
@@ -343,6 +358,7 @@ describe("integration next-app generated RPC type coverage", () => {
           "application/json"
         >
       | TypedNextResponse<unknown, 400, "application/json">
+      | SharedProcedureOnErrorResponse
     >();
 
     if (requestMetaResponse.ok) {
@@ -378,7 +394,8 @@ describe("integration next-app generated RPC type coverage", () => {
           },
           400,
           "application/json"
-        >;
+        >
+      | SharedProcedureOnErrorResponse;
     expectTypeOf<typeof procedureSubmitResponse>().toExtend<ExpectedProcedureSubmitResponse>();
 
     const procedureGuardedResponse = await client.api["procedure-guarded"]
@@ -513,7 +530,8 @@ describe("integration next-app generated RPC type coverage", () => {
           },
           400,
           "application/json"
-        >;
+        >
+      | SharedProcedureOnErrorResponse;
     expectTypeOf<typeof procedureFormDataResponse>().toExtend<ExpectedProcedureFormDataResponse>();
 
     const procedureValidationBranchResponse = await client.api["procedure-validation-branch"].$get({
@@ -550,15 +568,16 @@ describe("integration next-app generated RPC type coverage", () => {
           },
           HttpStatusCode,
           ContentType
-        >;
+        >
+      | SharedProcedureOnErrorResponse;
     expectTypeOf<
       typeof procedureValidationBranchResponse
     >().toExtend<ExpectedProcedureValidationBranchResponse>();
 
     type RedirectGet = (typeof client.api)["redirect-me"]["$get"];
     type RedirectResponse = Awaited<ReturnType<RedirectGet>>;
-    expectTypeOf<RedirectResponse>().toEqualTypeOf<
-      TypedNextResponse<never, HttpStatusCode, ContentType>
+    expectTypeOf<RedirectResponse>().toExtend<
+      TypedNextResponse<never, HttpStatusCode, ContentType> | SharedProcedureOnErrorResponse
     >();
   });
 

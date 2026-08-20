@@ -1,7 +1,6 @@
-import { procedure } from "rpc4next/server";
 import { z } from "zod";
 
-import { onError } from "../_shared/on-error";
+import { appProcedure } from "../_shared/procedure-defaults";
 import { routeContract } from "./route-contract";
 
 const outputSchema = z.object({
@@ -10,7 +9,7 @@ const outputSchema = z.object({
   result: z.string().min(1),
 });
 
-export const { GET } = procedure
+export const { GET } = appProcedure
   .forRoute(routeContract)
   .meta({
     summary: "Phase 7 fixture that demonstrates runtime-enforced output validation failures",
@@ -27,6 +26,5 @@ export const { GET } = procedure
   }))
   .nextRoute({
     method: "GET",
-    onError,
     validateOutput: true,
   });

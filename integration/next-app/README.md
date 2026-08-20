@@ -116,7 +116,7 @@ If a change touches route scanning, generated client shape, params generation, o
 
 This workspace is intended to make scanner and runtime regressions visible in Git. Avoid hand-editing `src/generated/rpc.ts` or `app/**/route-contract.ts` unless the task is specifically about generator output.
 
-The main walkthrough in this fixture is now procedure-first. `app/api/procedure-contract/[userId]/route.ts` is the baseline typed route: it binds the generated `routeContract`, declares params/query/output in one builder, and exports `GET` through terminal `export const { GET } = procedure.handle(...).nextRoute({ method: "GET", onError })` sugar. `app/api/procedure-submit/route.ts` extends that path to json/header/cookie input, `app/api/procedure-form-data/route.ts` covers multipart-style input with the same terminal shape, and `app/api/procedure-guarded/[userId]/route.ts` shows the shared-preset case where keeping a standalone `nextRoute(procedure, options)` call remains natural because the procedure value comes from a reusable base.
+The main walkthrough in this fixture is now procedure-first. `app/api/procedure-contract/[userId]/route.ts` is the baseline typed route: it binds the generated `routeContract`, declares params/query/output in one builder, and exports `GET` through terminal `export const { GET } = appProcedure.handle(...).nextRoute({ method: "GET" })` sugar. `app/api/procedure-submit/route.ts` extends that path to json/header/cookie input, `app/api/procedure-form-data/route.ts` covers multipart-style input with the same terminal shape, and `app/api/procedure-guarded/[userId]/route.ts` shows the shared-preset case where continuing the builder chain with `.nextRoute(...)` remains natural because the procedure value comes from a reusable base.
 
 The form-data fixture intentionally validates user-controlled upload fields in
 the schema, including display-name length, file size, file type, tag length, and
@@ -127,7 +127,7 @@ reverse proxy, CDN, or middleware layer because `request.json()` and
 
 Shared procedure middleware should be defined from the builder that declares the
 inputs it needs. `app/api/_shared/base-procedure.ts` uses
-`procedure.headers(schema).use(...)`, so the middleware is applied in the same
+`appProcedure.headers(schema).use(...)`, so the middleware is applied in the same
 chain and receives typed `headers`, `request`, `ctx`, and `response` without a
 handwritten `ProcedureMiddlewareContext<...>` annotation. The returned
 `{ ctx: ... }` is available to later middleware and handlers. Routes share that
@@ -164,10 +164,11 @@ for shared `UNAUTHORIZED` and `FORBIDDEN` branches, and
 `app/api/procedure-guarded/[userId]/route.ts` adds a route-local `FORBIDDEN`
 branch on top.
 
-`onError` is still required, but it is the fallback for unexpected thrown
-exceptions rather than the primary path for known client-visible errors. Input
-validation still contributes a typed `BAD_REQUEST` response, and opt-in runtime
-output validation contributes an `INTERNAL_SERVER_ERROR` response.
+`onError` is still required for bare route procedures, but this fixture provides
+it through the shared `appProcedure` default. It is the fallback for unexpected
+thrown exceptions rather than the primary path for known client-visible errors.
+Input validation still contributes a typed `BAD_REQUEST` response, and opt-in
+runtime output validation contributes an `INTERNAL_SERVER_ERROR` response.
 
 The fixtures also include plain Next.js routes written without `procedure`, including a static `NextResponse.json(...)` route, a dynamic route that reads `params` and `nextUrl.searchParams`, and a `Response.json(...)` route. The generated client can still call them as RPC, but their response types are intentionally broader than rpc4next's `TypedNextResponse` helpers.
 

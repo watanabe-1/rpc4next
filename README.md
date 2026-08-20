@@ -74,9 +74,30 @@ output, and reusable builder composition explicit. Optional `meta(...)` values
 remain lightweight descriptive annotations rather than a policy system.
 
 ```ts
+// app/api/_shared/procedure-defaults.ts
+import { procedure, type ProcedureOnError } from "rpc4next/server";
+
+const onError = ((error, { response }) => {
+  if (error instanceof Response) {
+    return error;
+  }
+
+  return response.error("INTERNAL_SERVER_ERROR", {
+    message: error instanceof Error ? error.message : "Internal server error",
+  });
+}) satisfies ProcedureOnError;
+
+export const appProcedure = procedure.defaults({
+  route: {
+    onError,
+  },
+});
+```
+
+```ts
 // app/api/users/[userId]/route.ts
-import { procedure } from "rpc4next/server";
 import { z } from "zod";
+import { appProcedure } from "../_shared/procedure-defaults";
 import { routeContract } from "./route-contract";
 
 const paramsSchema = z.object({
@@ -87,18 +108,16 @@ const querySchema = z.object({
   includePosts: z.enum(["true", "false"]).optional(),
 });
 
-export const { GET } = procedure
+export const { GET } = appProcedure
   .forRoute(routeContract)
   .meta({ summary: "Get a user", tags: ["users"] })
   .params(paramsSchema)
   .query(querySchema)
-  .output({
-    _output: {
-      ok: true as const,
-      userId: "" as string,
-      includePosts: false as boolean,
-    },
-  })
+  .output<{
+    ok: true;
+    userId: string;
+    includePosts: boolean;
+  }>()
   .handle(async ({ params, query }) => ({
     status: 200,
     body: {
@@ -107,8 +126,7 @@ export const { GET } = procedure
       includePosts: query.includePosts === "true",
     },
   }))
-  .nextRoute({ method: "GET", onError });
-export type Query = z.input<typeof querySchema>;
+  .nextRoute({ method: "GET" });
 ```
 
 Notes:
@@ -117,7 +135,7 @@ Notes:
 - `.nextRoute({ method })` returns an object keyed by the matching Next.js export name, such as `{ GET }` or `{ POST }`
 - generated sibling `route-contract.ts` files are the recommended params source for procedure routes
 - input contracts consume Standard Schema V1-compatible schemas directly
-- route handlers must provide `onError`, either directly on `.nextRoute(...)` / `nextRoute(...)` or via a reusable preset such as `procedure.defaults({ route: { onError } })`
+- route handlers can receive project-level error handling from a reusable preset such as `procedure.defaults({ route: { onError } })`; bare `procedure` routes still pass `onError` directly to `.nextRoute(...)` / `nextRoute(...)`
 - route-specific presets expose route response helpers and terminal `.nextRoute(...)`; page-specific presets expose page helpers and terminal `.nextPage(...)`
 - shared presets such as `baseProcedure`, `procedure.defaults({ route: { onError } })`, and validator-stage customization all build on this path
 
@@ -282,17 +300,17 @@ It supports:
 - shared presets via reusable builders such as `baseProcedure`
 - middleware through `.use(fn)`
 - validator-stage customization with `onValidationError(...)`
-- adaptation to App Router exports through terminal `export const { GET } = procedure.handle(...).nextRoute({ method: "GET", onError })`
+- adaptation to App Router exports through terminal `export const { GET } = appProcedure.handle(...).nextRoute({ method: "GET" })`
 - standalone `nextRoute(procedure, { method, onError })` for shared base procedures or reused procedure values
 
 Example:
 
 ```ts
-import { procedure } from "rpc4next/server";
 import { z } from "zod";
+import { appProcedure } from "../_shared/procedure-defaults";
 import { routeContract } from "./route-contract";
 
-export const { GET } = procedure
+export const { GET } = appProcedure
   .forRoute(routeContract)
   .params(z.object({ userId: z.string().min(1) }))
   .query(
@@ -300,13 +318,11 @@ export const { GET } = procedure
       includeDrafts: z.enum(["true", "false"]).optional(),
     }),
   )
-  .output({
-    _output: {
-      ok: true as const,
-      userId: "" as string,
-      includeDrafts: false as boolean,
-    },
-  })
+  .output<{
+    ok: true;
+    userId: string;
+    includeDrafts: boolean;
+  }>()
   .handle(async ({ params, query }) => ({
     status: 200,
     body: {
@@ -315,7 +331,7 @@ export const { GET } = procedure
       includeDrafts: query.includeDrafts === "true",
     },
   }))
-  .nextRoute({ method: "GET", onError });
+  .nextRoute({ method: "GET" });
 ```
 
 ### `procedure` and `nextPage`
@@ -457,7 +473,7 @@ applied. This keeps `headers`, `query`, `params`, and accumulated `ctx` typed
 without writing `ProcedureMiddlewareContext<...>` by hand.
 
 ```ts
-export const guardedBaseProcedure = procedure
+export const guardedBaseProcedure = appProcedure
   .headers(
     z.object({
       "x-demo-user": z.string().min(1).optional(),
@@ -492,7 +508,7 @@ export const { GET } = guardedBaseProcedure
       viewerId: ctx.viewer.id,
     },
   }))
-  .nextRoute({ method: "GET", onError });
+  .nextRoute({ method: "GET" });
 ```
 
 Returning `{ ctx: ... }` from middleware adds that shape to later middleware and
