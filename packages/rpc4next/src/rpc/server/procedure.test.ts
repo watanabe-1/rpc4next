@@ -1,10 +1,24 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 
-import { defaultProcedureOnError } from "./on-error";
+import { defaultProcedureOnError, type ProcedureOnError } from "./on-error";
 import { procedure } from "./procedure";
 import type { ProcedureRouteContract } from "./procedure-types";
 import type { StandardSchemaV1 } from "./standard-schema";
 import type { ResponseHelpers, TypedNextResponse } from "./types";
+
+type ExpectFalse<T extends false> = T;
+type ExpectTrue<T extends true> = T;
+type ResponseJson<TResponse> = TResponse extends { json: () => Promise<infer TJson> }
+  ? TJson
+  : never;
+type ResponseStatus<TResponse> = TResponse extends { readonly status: infer TStatus }
+  ? TStatus
+  : never;
+type HasJsonVariant<TResponse, TJson> = [Extract<ResponseJson<TResponse>, TJson>] extends [never]
+  ? false
+  : true;
+type HasStatus<TResponse, TStatus extends number> =
+  TStatus extends ResponseStatus<TResponse> ? true : false;
 
 describe("procedure builder type definitions", () => {
   const guardedUserRouteContract = {
@@ -842,9 +856,23 @@ describe("procedure builder type definitions", () => {
   });
 
   it("lets procedure.defaults({ route: { onError } }) make terminal nextRoute onError optional", () => {
+    const sharedOnError = ((error, { response }) => {
+      if (error instanceof Response) {
+        return error;
+      }
+
+      return response.json(
+        {
+          source: "shared-route-error" as const,
+        },
+        {
+          status: 500,
+        },
+      );
+    }) satisfies typeof defaultProcedureOnError;
     const appProcedure = procedure.defaults({
       route: {
-        onError: defaultProcedureOnError,
+        onError: sharedOnError,
       },
     });
 
@@ -871,6 +899,73 @@ describe("procedure builder type definitions", () => {
       });
 
     type RouteResponse = Awaited<ReturnType<typeof route>>;
+    type _defaultOnErrorResponseIncluded = ExpectTrue<
+      HasJsonVariant<
+        RouteResponse,
+        {
+          source: "shared-route-error";
+        }
+      >
+    >;
+    type _defaultOnErrorStatusIncluded = ExpectTrue<HasStatus<RouteResponse, 500>>;
+    expectTypeOf<RouteResponse>().toExtend<Response>();
+  });
+
+  it("lets route-local onError replace the procedure default onError type", () => {
+    const appProcedure = procedure.defaults({
+      route: {
+        onError: () =>
+          Response.json(
+            {
+              source: "shared-route-error" as const,
+            },
+            {
+              status: 500,
+            },
+          ),
+      },
+    });
+    const localOnError = ((_error, { response }) =>
+      response.json(
+        {
+          source: "local-route-error" as const,
+        },
+        {
+          status: 409,
+        },
+      )) satisfies ProcedureOnError;
+
+    const { GET: route } = appProcedure
+      .forRoute(staticPageRouteContract)
+      .handle(() => ({
+        body: {
+          ok: true as const,
+        },
+      }))
+      .nextRoute({
+        method: "GET",
+        onError: localOnError,
+      });
+
+    type RouteResponse = Awaited<ReturnType<typeof route>>;
+    type _localOnErrorResponseIncluded = ExpectTrue<
+      HasJsonVariant<
+        RouteResponse,
+        {
+          source: "local-route-error";
+        }
+      >
+    >;
+    type _localOnErrorStatusIncluded = ExpectTrue<HasStatus<RouteResponse, 409>>;
+    type _sharedOnErrorResponseExcluded = ExpectFalse<
+      HasJsonVariant<
+        RouteResponse,
+        {
+          source: "shared-route-error";
+        }
+      >
+    >;
+
     expectTypeOf<RouteResponse>().toExtend<Response>();
   });
 

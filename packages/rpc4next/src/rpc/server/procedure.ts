@@ -580,6 +580,9 @@ type HasProcedureRoute<TDefinition extends ProcedureDefinition> = TDefinition ex
   : false;
 
 type HasProcedureDefaults<TDefaults> = [TDefaults] extends [undefined] ? false : true;
+type ProcedureDefaultsArg<TDefaults> = TDefaults extends ProcedureDefaults
+  ? TDefaults
+  : ProcedureDefaults;
 
 type ExtractProcedureAdapterMode<TDefaults> = TDefaults extends {
   page: { onError: ProcedurePageOnError };
@@ -627,8 +630,8 @@ interface ProcedureBuilderMethods<
   TDefaults = undefined,
   TMiddlewareTerminalResult = never,
 > {
-  defaults<TSharedDefaults extends ProcedureDefaults>(
-    defaults: TSharedDefaults,
+  defaults<const TSharedDefaults>(
+    defaults: ProcedureDefaultsArg<TSharedDefaults>,
   ): ProcedureBuilder<TDefinition, TContext, TSharedDefaults, TMiddlewareTerminalResult>;
 
   meta<TMeta extends RpcMeta>(
@@ -852,14 +855,14 @@ const createProcedureBuilder = <
     );
   };
 
-  const withDefaults = <TSharedDefaults extends ProcedureDefaults>(
-    nextDefaults: TSharedDefaults,
+  const withDefaults = <const TSharedDefaults>(
+    nextDefaults: ProcedureDefaultsArg<TSharedDefaults>,
   ): ProcedureBuilder<TDefinition, TContext, TSharedDefaults, TMiddlewareTerminalResult> => {
     if (defaults !== undefined) {
       throw new Error("Procedure defaults have already been declared.");
     }
 
-    return createProcedureBuilder(definition, middlewares, nextDefaults);
+    return createProcedureBuilder(definition, middlewares, nextDefaults as TSharedDefaults);
   };
 
   const withMeta = <TMeta extends RpcMeta>(

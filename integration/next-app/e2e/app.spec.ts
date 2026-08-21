@@ -232,5 +232,11 @@ test.describe("integration next-app e2e", () => {
     await page.goto("/patterns/page-helpers?mode=redirect");
     await expect(page).toHaveURL("/feed");
     await expect(page.getByText("feed-page")).toBeVisible();
+
+    await page.goto("/patterns/page-helpers?mode=error");
+    await expect(page.getByText("page-helper-error")).toBeVisible();
+
+    const notFoundResponse = await page.goto("/patterns/page-helpers?mode=not-found");
+    expect(notFoundResponse?.status()).toBe(404);
   });
 });
