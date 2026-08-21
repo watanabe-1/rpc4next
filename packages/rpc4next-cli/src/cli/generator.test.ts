@@ -4,7 +4,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { cleanupTempDir, makeTempDir, writeTree } from "../test-helpers/tmp-dir.js";
 import { SUCCESS_INDENT_LEVEL, SUCCESS_PAD_LENGTH, SUCCESS_SEPARATOR } from "./constants.js";
-import { scanAppDirCache, visitedDirsCache } from "./core/cache.js";
+import {
+  createGeneratedParamsFilesCacheKey,
+  generatedParamsFilesCache,
+  scanAppDirCache,
+  visitedDirsCache,
+} from "./core/cache.js";
 import * as generatePathStructure from "./core/generate-path-structure.js";
 import { ROUTE_CONTRACT_GENERATED_MARKER } from "./core/generate-path-structure.js";
 import { generate } from "./generator.js";
@@ -26,6 +31,7 @@ describe("generate", () => {
     vi.clearAllMocks();
     scanAppDirCache.clear();
     visitedDirsCache.clear();
+    generatedParamsFilesCache.clear();
   });
 
   it("clears scan caches after non-watch generation", () => {
@@ -81,6 +87,26 @@ describe("generate", () => {
     expect(scanAppDirCache.size).toBe(1);
   });
 
+  it("preserves generated params file cache during watch generation", () => {
+    vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
+      pathStructure: "generated-type-content",
+      paramsTypes: [{ paramsType: "params-type", dirPath: "dir1" }],
+    });
+    vi.spyOn(fs, "existsSync").mockReturnValue(false);
+    vi.spyOn(fs, "writeFileSync").mockImplementation(() => {});
+    vi.spyOn(fs, "readdirSync").mockReturnValue([]);
+
+    generate({
+      baseDir,
+      outputPath,
+      paramsFileName,
+      logger,
+      preserveCache: true,
+    });
+
+    expect(generatedParamsFilesCache.size).toBe(1);
+  });
+
   it("clears scan caches when non-watch generation throws", () => {
     vi.spyOn(generatePathStructure, "generatePathStructure").mockImplementation(() => {
       throw new Error("scan failed");
@@ -104,6 +130,25 @@ describe("generate", () => {
 
     expect(visitedDirsCache.size).toBe(0);
     expect(scanAppDirCache.size).toBe(0);
+  });
+
+  it("clears generated params file cache after non-watch generation", () => {
+    vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
+      pathStructure: "generated-type-content",
+      paramsTypes: [{ paramsType: "params-type", dirPath: "dir1" }],
+    });
+    vi.spyOn(fs, "existsSync").mockReturnValue(false);
+    vi.spyOn(fs, "writeFileSync").mockImplementation(() => {});
+    vi.spyOn(fs, "readdirSync").mockReturnValue([]);
+
+    generate({
+      baseDir,
+      outputPath,
+      paramsFileName,
+      logger,
+    });
+
+    expect(generatedParamsFilesCache.size).toBe(0);
   });
 
   it("writes the output file when it does not exist", () => {
@@ -362,6 +407,126 @@ describe("generate", () => {
         `${ROUTE_CONTRACT_GENERATED_MARKER}\nnew-current`,
       );
       expect(fs.existsSync(staleFilePath)).toBe(false);
+    } finally {
+      cleanupTempDir(tmpDir);
+    }
+  });
+
+  it("uses cached generated params file paths for warm watch cleanup", () => {
+    const tmpDir = makeTempDir();
+    const appDir = path.join(tmpDir, "app");
+    const currentDir = path.join(appDir, "current");
+    const staleDir = path.join(appDir, "stale");
+    const staleFilePath = path.join(staleDir, paramsFileName);
+
+    try {
+      writeTree(tmpDir, {
+        app: {
+          current: {},
+          stale: {},
+        },
+        src: {
+          generated: {},
+        },
+      });
+
+      vi.spyOn(generatePathStructure, "generatePathStructure")
+        .mockReturnValueOnce({
+          pathStructure: "generated-type-content",
+          paramsTypes: [
+            {
+              paramsType: `${ROUTE_CONTRACT_GENERATED_MARKER}\ncurrent`,
+              dirPath: currentDir,
+            },
+            {
+              paramsType: `${ROUTE_CONTRACT_GENERATED_MARKER}\nstale`,
+              dirPath: staleDir,
+            },
+          ],
+        })
+        .mockReturnValueOnce({
+          pathStructure: "generated-type-content",
+          paramsTypes: [
+            {
+              paramsType: `${ROUTE_CONTRACT_GENERATED_MARKER}\ncurrent`,
+              dirPath: currentDir,
+            },
+          ],
+        });
+
+      const output = path.join(tmpDir, "src", "generated", "rpc.ts");
+
+      generate({
+        baseDir: appDir,
+        outputPath: output,
+        paramsFileName,
+        logger,
+        preserveCache: true,
+      });
+
+      const readdirSpy = vi.spyOn(fs, "readdirSync").mockImplementation(() => {
+        throw new Error("unexpected full cleanup scan");
+      });
+
+      generate({
+        baseDir: appDir,
+        outputPath: output,
+        paramsFileName,
+        logger,
+        preserveCache: true,
+      });
+
+      expect(readdirSpy).not.toHaveBeenCalled();
+      expect(fs.existsSync(staleFilePath)).toBe(false);
+    } finally {
+      cleanupTempDir(tmpDir);
+    }
+  });
+
+  it("uses full cleanup scan during non-watch generation even when params cache exists", () => {
+    const tmpDir = makeTempDir();
+    const appDir = path.join(tmpDir, "app");
+    const currentDir = path.join(appDir, "current");
+    const staleDir = path.join(appDir, "stale");
+    const staleFilePath = path.join(staleDir, paramsFileName);
+
+    try {
+      writeTree(tmpDir, {
+        app: {
+          current: {},
+          stale: {
+            [paramsFileName]: `${ROUTE_CONTRACT_GENERATED_MARKER}\nstale`,
+          },
+        },
+        src: {
+          generated: {},
+        },
+      });
+
+      generatedParamsFilesCache.set(
+        createGeneratedParamsFilesCacheKey({ baseDir: appDir, paramsFileName }),
+        new Set(),
+      );
+
+      vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
+        pathStructure: "generated-type-content",
+        paramsTypes: [
+          {
+            paramsType: `${ROUTE_CONTRACT_GENERATED_MARKER}\ncurrent`,
+            dirPath: currentDir,
+          },
+        ],
+      });
+
+      generate({
+        baseDir: appDir,
+        outputPath: path.join(tmpDir, "src", "generated", "rpc.ts"),
+        paramsFileName,
+        logger,
+      });
+
+      expect(fs.existsSync(staleFilePath)).toBe(false);
+      expect(generatedParamsFilesCache.size).toBe(0);
     } finally {
       cleanupTempDir(tmpDir);
     }
