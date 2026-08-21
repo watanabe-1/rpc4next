@@ -11,10 +11,6 @@ const getIssuePath = (path: readonly (PropertyKey | { key: PropertyKey })[] | un
   path?.map((segment) => String(typeof segment === "object" ? segment.key : segment)) ?? [];
 
 const sharedOnError = ((error, { response }) => {
-  if (error instanceof Response) {
-    return error;
-  }
-
   console.error("[rpc4next] Unexpected procedure error", {
     message: getErrorMessage(error),
     error,

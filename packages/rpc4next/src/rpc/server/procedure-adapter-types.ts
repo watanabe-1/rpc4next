@@ -101,14 +101,21 @@ export type ProcedureNextRouteOptions<
           TProcedure,
           TMethod,
           TValidateOutput,
-          TOnError,
+          ExtractProcedureSharedRouteOnError<TDefaults>,
           TOnValidationError
         >,
         "onError" | "onValidationError"
-      > & {
-        onError?: TOnError;
-        onValidationError?: TOnValidationError;
-      }
+      > &
+        (
+          | {
+              onError?: never;
+              onValidationError?: TOnValidationError;
+            }
+          | {
+              onError: TOnError;
+              onValidationError?: TOnValidationError;
+            }
+        )
     : NextRouteProcedureOptions<TProcedure, TMethod, TValidateOutput, TOnError, TOnValidationError>;
 
 export type ProcedureNextPageOptions<

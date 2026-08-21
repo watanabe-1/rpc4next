@@ -4,10 +4,6 @@ const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
 
 export const onError = ((error, { response }) => {
-  if (error instanceof Response) {
-    return error;
-  }
-
   console.error("[rpc4next] Unexpected procedure error", {
     message: getErrorMessage(error),
     error,

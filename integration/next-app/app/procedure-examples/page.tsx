@@ -1,11 +1,45 @@
 import { headers } from "next/headers";
 import { createRpcClient } from "rpc4next/client";
-import type { ContentType, HttpStatusCode, TypedNextResponse } from "rpc4next/server";
+import type {
+  ContentType,
+  HttpStatusCode,
+  ProcedureValidationErrorContext,
+  TypedNextResponse,
+} from "rpc4next/server";
 
 import type { PathStructure } from "@/generated/rpc";
 import type { rpcClient } from "@/lib/rpc-client";
 
 export const dynamic = "force-dynamic";
+
+type SharedProcedureOnErrorResponse = TypedNextResponse<
+  {
+    error: {
+      code: "INTERNAL_SERVER_ERROR";
+      message: string;
+      details?: unknown;
+    };
+  },
+  500,
+  "application/json"
+>;
+type SharedProcedureValidationErrorResponse = TypedNextResponse<
+  {
+    error: {
+      code: "BAD_REQUEST";
+      message: string;
+      details?: {
+        target: ProcedureValidationErrorContext["target"];
+        issues: Array<{
+          message: string;
+          path: string[];
+        }>;
+      };
+    };
+  },
+  400,
+  "application/json"
+>;
 
 const createServerRpcClient = async () => {
   const headerStore = await headers();
@@ -45,7 +79,8 @@ type ExpectedProcedureContractResponse =
       },
       400,
       "application/json"
-    >;
+    >
+  | SharedProcedureOnErrorResponse;
 const _procedureContractFromActual: ExpectedProcedureContractResponse =
   {} as ProcedureContractResponse;
 const _procedureContractFromExpected: ProcedureContractResponse =
@@ -75,7 +110,8 @@ type ExpectedProcedureSubmitResponse =
       },
       400,
       "application/json"
-    >;
+    >
+  | SharedProcedureOnErrorResponse;
 const _procedureSubmitFromActual: ExpectedProcedureSubmitResponse = {} as ProcedureSubmitResponse;
 const _procedureSubmitFromExpected: ProcedureSubmitResponse = {} as ExpectedProcedureSubmitResponse;
 
@@ -189,7 +225,8 @@ type ExpectedProcedureValidationBranchResponse =
       },
       HttpStatusCode,
       ContentType
-    >;
+    >
+  | SharedProcedureOnErrorResponse;
 const _procedureValidationBranchFromActual: ExpectedProcedureValidationBranchResponse =
   {} as ProcedureValidationBranchResponse;
 
@@ -201,7 +238,10 @@ const _nativeResponseFromExpected: NativeResponse = {} as ExpectedNativeResponse
 
 type RedirectGet = (typeof rpcClient.api)["redirect-me"]["$get"];
 type RedirectResponse = Awaited<ReturnType<RedirectGet>>;
-type ExpectedRedirectResponse = TypedNextResponse<never, HttpStatusCode, ContentType>;
+type ExpectedRedirectResponse =
+  | TypedNextResponse<never, HttpStatusCode, ContentType>
+  | SharedProcedureValidationErrorResponse
+  | SharedProcedureOnErrorResponse;
 const _redirectFromActual: ExpectedRedirectResponse = {} as RedirectResponse;
 const _redirectFromExpected: RedirectResponse = {} as ExpectedRedirectResponse;
 
@@ -313,9 +353,10 @@ export default async function ProcedureExamplesPage() {
         message: string;
         details?: unknown;
       };
-    }, 400, "application/json">;`,
+    }, 400, "application/json">
+  | TypedNextResponse<InternalServerErrorBody, 500, "application/json">;`,
       whyItLooksLikeThat:
-        "params/query/output are all declared on one procedure, so the client gets a tight success shape plus the implicit BAD_REQUEST branch.",
+        "params/query/output are all declared on one procedure, so the client gets a tight success shape plus validation and shared default error branches.",
       runtime: await readResponsePreview(procedureContractResponse),
     },
     {
@@ -342,9 +383,10 @@ export default async function ProcedureExamplesPage() {
         message: string;
         details?: unknown;
       };
-    }, 400, "application/json">;`,
+    }, 400, "application/json">
+  | TypedNextResponse<InternalServerErrorBody, 500, "application/json">;`,
       whyItLooksLikeThat:
-        "json/header/cookie contracts become required client inputs, and the declared output keeps the success branch precise at status 201.",
+        "json/header/cookie contracts become required client inputs, and the declared output keeps the success branch precise at status 201 while the shared default error branch remains visible.",
       runtime: await readResponsePreview(procedureSubmitResponse),
     },
     {
@@ -386,7 +428,8 @@ export default async function ProcedureExamplesPage() {
       target: "query";
       issueCount: number;
       receivedPage?: string;
-    }, HttpStatusCode, ContentType>;`,
+    }, HttpStatusCode, ContentType>
+  | TypedNextResponse<InternalServerErrorBody, 500, "application/json">;`,
       whyItLooksLikeThat:
         "This route returns the custom validation branch through raw NextResponse.json(...), so the body shape survives but status/content-type stay broad compared with response.json(...).",
       runtime: await readResponsePreview(procedureValidationBranchResponse),
@@ -410,9 +453,12 @@ export default async function ProcedureExamplesPage() {
       request: `const response = await rpcClient.api["redirect-me"].$get(undefined, {
   init: { redirect: "manual" },
 });`,
-      inferredType: `type Response = TypedNextResponse<undefined, 307, "">;`,
+      inferredType: `type Response =
+  | TypedNextResponse<undefined, 307, "">
+  | TypedNextResponse<BadRequestBody, 400, "application/json">
+  | TypedNextResponse<InternalServerErrorBody, 500, "application/json">;`,
       whyItLooksLikeThat:
-        "response.redirect(...) is a typed helper, so both the route and the generated client keep the exact redirect status instead of widening to a generic response.",
+        "response.redirect(...) is a typed helper, so both the route and the generated client keep the exact redirect status while preserving the shared default error branch.",
       runtime: await readResponsePreview(redirectResponse),
     },
   ];

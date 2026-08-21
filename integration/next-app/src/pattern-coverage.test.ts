@@ -55,7 +55,41 @@ type _escapedUnderscorePreserved = ExpectTrue<HasEscapedUnderscoreUrlSegment>;
 type _malformedEncodedSegmentPreserved = ExpectTrue<HasMalformedEncodedUrlSegment>;
 
 describe("integration next-app generated PathStructure type coverage", () => {
-  it("compiles the expected folder pattern assertions", () => {
+  it("compiles dynamic, catch-all, grouped, and page route assertions", () => {
+    type _ = [
+      _dynamicCategory,
+      _nestedDynamic,
+      _catchAll,
+      _optionalCatchAll,
+      _groupedRoute,
+      _searchRoute,
+      _clientPageRoute,
+      _photoCommentRoute,
+    ];
+
+    expect(true).toBe(true);
+  });
+
+  it("compiles internal Next.js folder exclusion assertions", () => {
+    type _ = [
+      _parallelAnalyticsSlotExcluded,
+      _parallelTeamSlotExcluded,
+      _interceptingModalExcluded,
+      _interceptingDrilldownExcluded,
+      _privateFolderExcluded,
+    ];
+
+    expect(true).toBe(true);
+  });
+
+  it("compiles public route normalization assertions", () => {
+    type _ = [
+      _parallelAnalyticsPageIncluded,
+      _parallelTeamPageIncluded,
+      _escapedUnderscorePreserved,
+      _malformedEncodedSegmentPreserved,
+    ];
+
     expect(true).toBe(true);
   });
 });
