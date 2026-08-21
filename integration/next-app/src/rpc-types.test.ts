@@ -29,6 +29,13 @@ type HasJsonVariant<TResponse, TJson> = [Extract<ResponseJson<TResponse>, TJson>
   : true;
 type HasStatus<TResponse, TStatus extends HttpStatusCode> =
   TStatus extends ResponseStatus<TResponse> ? true : false;
+type HasVariant<TUnion, TVariant> = [Extract<TUnion, TVariant>] extends [never] ? false : true;
+type HasResponseVariant<
+  TResponse,
+  TJson,
+  TStatus extends HttpStatusCode,
+  TContentType extends ContentType = "application/json",
+> = HasVariant<TResponse, TypedNextResponse<TJson, TStatus, TContentType>>;
 type IncludePostsQuery = {
   includePosts?: "true" | "false" | undefined;
 };
@@ -248,12 +255,21 @@ describe("integration next-app generated RPC type coverage", () => {
       | SharedProcedureValidationErrorResponse
       | SharedProcedureOnErrorResponse;
     expectTypeOf<typeof _contractRouteResponse>().toExtend<ExpectedContractRouteResponse>();
-    type _contractRouteKeepsSuccess = ExpectTrue<HasStatus<typeof _contractRouteResponse, 200>>;
+    type _contractRouteKeepsSuccess = ExpectTrue<
+      HasResponseVariant<
+        typeof _contractRouteResponse,
+        {
+          ok: true;
+          source: "contract-route";
+        },
+        200
+      >
+    >;
     type _contractRouteKeepsValidationError = ExpectTrue<
-      HasStatus<typeof _contractRouteResponse, 400>
+      HasVariant<typeof _contractRouteResponse, SharedProcedureValidationErrorResponse>
     >;
     type _contractRouteKeepsDefaultError = ExpectTrue<
-      HasStatus<typeof _contractRouteResponse, 500>
+      HasVariant<typeof _contractRouteResponse, SharedProcedureOnErrorResponse>
     >;
 
     const _procedureContractResponse = await client.api["procedure-contract"]
@@ -287,7 +303,7 @@ describe("integration next-app generated RPC type coverage", () => {
       | SharedProcedureOnErrorResponse;
     expectTypeOf<typeof _procedureContractResponse>().toExtend<ExpectedProcedureContractResponse>();
     type _procedureContractKeepsSuccess = ExpectTrue<
-      HasJsonVariant<
+      HasResponseVariant<
         typeof _procedureContractResponse,
         {
           ok: true;
@@ -295,14 +311,15 @@ describe("integration next-app generated RPC type coverage", () => {
           includePosts: boolean;
           source: "procedure-contract";
           requestId: string;
-        }
+        },
+        200
       >
     >;
     type _procedureContractKeepsValidationError = ExpectTrue<
-      HasStatus<typeof _procedureContractResponse, 400>
+      HasVariant<typeof _procedureContractResponse, SharedProcedureValidationErrorResponse>
     >;
     type _procedureContractKeepsDefaultError = ExpectTrue<
-      HasStatus<typeof _procedureContractResponse, 500>
+      HasVariant<typeof _procedureContractResponse, SharedProcedureOnErrorResponse>
     >;
 
     const _nativeDynamicResponse = await client.api["next-native"]._itemId("native-item").$get();
@@ -352,8 +369,12 @@ describe("integration next-app generated RPC type coverage", () => {
       | TypedNextResponse<unknown, 400, "application/json">
       | SharedProcedureOnErrorResponse
     >();
-    type _usersResponseKeepsValidationError = ExpectTrue<HasStatus<typeof usersResponse, 400>>;
-    type _usersResponseKeepsDefaultError = ExpectTrue<HasStatus<typeof usersResponse, 500>>;
+    type _usersResponseKeepsValidationError = ExpectTrue<
+      HasVariant<typeof usersResponse, SharedProcedureValidationErrorResponse>
+    >;
+    type _usersResponseKeepsDefaultError = ExpectTrue<
+      HasVariant<typeof usersResponse, SharedProcedureOnErrorResponse>
+    >;
 
     if (usersResponse.ok) {
       const _usersOkResponse: UsersSuccessResponse = usersResponse;
@@ -376,8 +397,12 @@ describe("integration next-app generated RPC type coverage", () => {
       | TypedNextResponse<unknown, 400, "application/json">
       | SharedProcedureOnErrorResponse
     >();
-    type _postsResponseKeepsValidationError = ExpectTrue<HasStatus<typeof postsResponse, 400>>;
-    type _postsResponseKeepsDefaultError = ExpectTrue<HasStatus<typeof postsResponse, 500>>;
+    type _postsResponseKeepsValidationError = ExpectTrue<
+      HasVariant<typeof postsResponse, SharedProcedureValidationErrorResponse>
+    >;
+    type _postsResponseKeepsDefaultError = ExpectTrue<
+      HasVariant<typeof postsResponse, SharedProcedureOnErrorResponse>
+    >;
 
     if (postsResponse.ok) {
       const _postsOkResponse: PostsSuccessResponse = postsResponse;
@@ -404,10 +429,10 @@ describe("integration next-app generated RPC type coverage", () => {
       | SharedProcedureOnErrorResponse
     >();
     type _requestMetaResponseKeepsValidationError = ExpectTrue<
-      HasStatus<typeof requestMetaResponse, 400>
+      HasVariant<typeof requestMetaResponse, SharedProcedureValidationErrorResponse>
     >;
     type _requestMetaResponseKeepsDefaultError = ExpectTrue<
-      HasStatus<typeof requestMetaResponse, 500>
+      HasVariant<typeof requestMetaResponse, SharedProcedureOnErrorResponse>
     >;
 
     if (requestMetaResponse.ok) {
@@ -446,12 +471,24 @@ describe("integration next-app generated RPC type coverage", () => {
         >
       | SharedProcedureOnErrorResponse;
     expectTypeOf<typeof procedureSubmitResponse>().toExtend<ExpectedProcedureSubmitResponse>();
-    type _procedureSubmitKeepsSuccess = ExpectTrue<HasStatus<typeof procedureSubmitResponse, 201>>;
+    type _procedureSubmitKeepsSuccess = ExpectTrue<
+      HasResponseVariant<
+        typeof procedureSubmitResponse,
+        {
+          ok: true;
+          title: string;
+          header: string;
+          session: string;
+          source: "procedure-submit";
+        },
+        201
+      >
+    >;
     type _procedureSubmitKeepsValidationError = ExpectTrue<
-      HasStatus<typeof procedureSubmitResponse, 400>
+      HasVariant<typeof procedureSubmitResponse, SharedProcedureValidationErrorResponse>
     >;
     type _procedureSubmitKeepsDefaultError = ExpectTrue<
-      HasStatus<typeof procedureSubmitResponse, 500>
+      HasVariant<typeof procedureSubmitResponse, SharedProcedureOnErrorResponse>
     >;
 
     const procedureGuardedResponse = await client.api["procedure-guarded"]
@@ -535,13 +572,24 @@ describe("integration next-app generated RPC type coverage", () => {
         >;
     expectTypeOf<typeof procedureGuardedResponse>().toExtend<ExpectedProcedureGuardedResponse>();
     type _procedureGuardedKeepsSuccess = ExpectTrue<
-      HasStatus<typeof procedureGuardedResponse, 200>
+      HasResponseVariant<
+        typeof procedureGuardedResponse,
+        {
+          ok: true;
+          userId: string;
+          includeDrafts: boolean;
+          role: "reader" | "editor";
+          source: "procedure-guarded";
+          requestId: string;
+        },
+        200
+      >
     >;
     type _procedureGuardedKeepsValidationError = ExpectTrue<
       HasStatus<typeof procedureGuardedResponse, 400>
     >;
     type _procedureGuardedKeepsUnauthorized = ExpectTrue<
-      HasJsonVariant<
+      HasResponseVariant<
         typeof procedureGuardedResponse,
         {
           error: {
@@ -549,11 +597,12 @@ describe("integration next-app generated RPC type coverage", () => {
             message: string;
             details?: { reason: "missing_demo_user" };
           };
-        }
+        },
+        401
       >
     >;
     type _procedureGuardedKeepsSuspendedForbidden = ExpectTrue<
-      HasJsonVariant<
+      HasResponseVariant<
         typeof procedureGuardedResponse,
         {
           error: {
@@ -561,11 +610,12 @@ describe("integration next-app generated RPC type coverage", () => {
             message: string;
             details?: { reason: "suspended_account" };
           };
-        }
+        },
+        403
       >
     >;
     type _procedureGuardedKeepsEditorForbidden = ExpectTrue<
-      HasJsonVariant<
+      HasResponseVariant<
         typeof procedureGuardedResponse,
         {
           error: {
@@ -573,7 +623,8 @@ describe("integration next-app generated RPC type coverage", () => {
             message: string;
             details?: { reason: "editor_only" };
           };
-        }
+        },
+        403
       >
     >;
 
@@ -604,13 +655,21 @@ describe("integration next-app generated RPC type coverage", () => {
       typeof procedureInvalidOutputResponse
     >().toExtend<ExpectedProcedureInvalidOutputResponse>();
     type _procedureInvalidOutputKeepsSuccess = ExpectTrue<
-      HasStatus<typeof procedureInvalidOutputResponse, 200>
+      HasResponseVariant<
+        typeof procedureInvalidOutputResponse,
+        {
+          ok: true;
+          source: "procedure-invalid-output";
+          result: string;
+        },
+        200
+      >
     >;
     type _procedureInvalidOutputKeepsValidationError = ExpectTrue<
-      HasStatus<typeof procedureInvalidOutputResponse, 400>
+      HasVariant<typeof procedureInvalidOutputResponse, SharedProcedureValidationErrorResponse>
     >;
     type _procedureInvalidOutputKeepsOutputValidationError = ExpectTrue<
-      HasStatus<typeof procedureInvalidOutputResponse, 500>
+      HasVariant<typeof procedureInvalidOutputResponse, SharedProcedureOnErrorResponse>
     >;
 
     const procedureFormDataResponse = await client.api["procedure-form-data"].$post({
@@ -642,13 +701,23 @@ describe("integration next-app generated RPC type coverage", () => {
       | SharedProcedureOnErrorResponse;
     expectTypeOf<typeof procedureFormDataResponse>().toExtend<ExpectedProcedureFormDataResponse>();
     type _procedureFormDataKeepsSuccess = ExpectTrue<
-      HasStatus<typeof procedureFormDataResponse, 200>
+      HasResponseVariant<
+        typeof procedureFormDataResponse,
+        {
+          ok: true;
+          displayName: string;
+          filename: string;
+          tags: string[];
+          source: "procedure-form-data";
+        },
+        200
+      >
     >;
     type _procedureFormDataKeepsValidationError = ExpectTrue<
-      HasStatus<typeof procedureFormDataResponse, 400>
+      HasVariant<typeof procedureFormDataResponse, SharedProcedureValidationErrorResponse>
     >;
     type _procedureFormDataKeepsDefaultError = ExpectTrue<
-      HasStatus<typeof procedureFormDataResponse, 500>
+      HasVariant<typeof procedureFormDataResponse, SharedProcedureOnErrorResponse>
     >;
 
     const procedureValidationBranchResponse = await client.api["procedure-validation-branch"].$get({
@@ -711,8 +780,12 @@ describe("integration next-app generated RPC type coverage", () => {
 
     type RedirectGet = (typeof client.api)["redirect-me"]["$get"];
     type RedirectResponse = Awaited<ReturnType<RedirectGet>>;
-    type _redirectResponseKeepsRedirect = ExpectTrue<HasStatus<RedirectResponse, 307>>;
-    type _redirectResponseKeepsDefaultError = ExpectTrue<HasStatus<RedirectResponse, 500>>;
+    type _redirectResponseKeepsRedirect = ExpectTrue<
+      HasResponseVariant<RedirectResponse, undefined, 307, "">
+    >;
+    type _redirectResponseKeepsDefaultError = ExpectTrue<
+      HasVariant<RedirectResponse, SharedProcedureOnErrorResponse>
+    >;
   });
 
   it("rejects invalid generated RPC inputs at compile time", () => {
