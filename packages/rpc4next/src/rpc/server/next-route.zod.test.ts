@@ -428,41 +428,37 @@ describe("nextRoute zod integration", () => {
     ).toContain(">0");
   });
 
-  it("rejects JSON contracts on GET and HEAD requests", async () => {
-    const route = nextRoute(
-      procedure
-        .forRoute(staticRouteContract)
-        .json(z.object({ title: z.string() }))
-        .handle(async ({ json }) => ({
-          body: json,
-        })),
-    );
+  it.each(["GET", "HEAD"] as const)(
+    "rejects JSON contracts on %s requests at runtime",
+    async (method) => {
+      const route = nextRoute(
+        procedure
+          .forRoute(staticRouteContract)
+          .json(z.object({ title: z.string() }))
+          .handle(async ({ json }) => ({
+            body: json,
+          })),
+        { method },
+      );
 
-    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
-      params: Promise.resolve({}),
-    });
+      const response = await route(
+        new NextRequest("http://127.0.0.1:3000/api", {
+          method,
+        }),
+        {
+          params: Promise.resolve({}),
+        },
+      );
 
-    expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({
-      error: {
-        code: "BAD_REQUEST",
-        message: "JSON input contracts are not supported for GET or HEAD requests.",
-      },
-    });
-  });
-
-  it("rejects GET procedure definitions with JSON contracts at compile time", () => {
-    const invalidProcedure = procedure
-      .forRoute(staticRouteContract)
-      .json(z.object({ title: z.string() }))
-      .handle(async ({ json }) => ({
-        body: json,
-      }));
-
-    nextRoute(invalidProcedure, { method: "GET" });
-
-    expect(true).toBe(true);
-  });
+      expect(response.status).toBe(400);
+      await expect(response.json()).resolves.toEqual({
+        error: {
+          code: "BAD_REQUEST",
+          message: "JSON input contracts are not supported for GET or HEAD requests.",
+        },
+      });
+    },
+  );
 
   it("normalizes multipart form-data into validator-friendly input", async () => {
     const route = nextRoute(
@@ -549,49 +545,41 @@ describe("nextRoute zod integration", () => {
     });
   });
 
-  it("rejects GET procedure definitions with formData contracts at compile time", () => {
-    const invalidProcedure = procedure
-      .forRoute(staticRouteContract)
-      .formData(
-        z.object({
-          displayName: z.string(),
+  it.each(["GET", "HEAD"] as const)(
+    "rejects formData contracts on %s requests at runtime",
+    async (method) => {
+      const route = nextRoute(
+        procedure
+          .forRoute(staticRouteContract)
+          .formData(
+            z.object({
+              displayName: z.string(),
+            }),
+          )
+          .handle(async ({ formData }) => ({
+            body: formData,
+          })),
+        { method },
+      );
+
+      const response = await route(
+        new NextRequest("http://127.0.0.1:3000/api", {
+          method,
         }),
-      )
-      .handle(async ({ formData }) => ({
-        body: formData,
-      }));
+        {
+          params: Promise.resolve({}),
+        },
+      );
 
-    nextRoute(invalidProcedure, { method: "GET" });
-
-    expect(true).toBe(true);
-  });
-
-  it("rejects formData contracts on GET and HEAD requests", async () => {
-    const route = nextRoute(
-      procedure
-        .forRoute(staticRouteContract)
-        .formData(
-          z.object({
-            displayName: z.string(),
-          }),
-        )
-        .handle(async ({ formData }) => ({
-          body: formData,
-        })),
-    );
-
-    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
-      params: Promise.resolve({}),
-    });
-
-    expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({
-      error: {
-        code: "BAD_REQUEST",
-        message: "FormData input contracts are not supported for GET or HEAD requests.",
-      },
-    });
-  });
+      expect(response.status).toBe(400);
+      await expect(response.json()).resolves.toEqual({
+        error: {
+          code: "BAD_REQUEST",
+          message: "FormData input contracts are not supported for GET or HEAD requests.",
+        },
+      });
+    },
+  );
 
   it("supports narrow response helpers inside procedure handlers", async () => {
     const route = nextRoute(
