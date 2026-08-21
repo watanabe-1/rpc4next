@@ -33,7 +33,7 @@ import {
   type StandardSchemaV1,
   type StandardSchemaV1Issue,
 } from "./standard-schema";
-import type { Params, TypedNextResponse } from "./types";
+import type { Params, Query, ResponseHelpers, TypedNextResponse } from "./types";
 
 const getStandardSchemaMessage = (issues: readonly StandardSchemaV1Issue[]) => {
   return issues[0]?.message ?? "Validation failed.";
@@ -56,7 +56,11 @@ const formDataToObject = (formData: FormData) => {
       continue;
     }
 
-    normalized[key] = Array.isArray(existing) ? [...existing, value] : [existing, value];
+    if (Array.isArray(existing)) {
+      existing.push(value);
+    } else {
+      normalized[key] = [existing, value];
+    }
   }
 
   return normalized;
@@ -138,6 +142,18 @@ type ProcedureTypeCarrier = {
   middlewares: readonly ProcedureMiddleware[];
   handler: (...args: never[]) => unknown;
   middlewareTerminalResult: unknown;
+};
+
+type ProcedureRouteExecutionContext<TOutput = unknown> = {
+  request: NextRequest;
+  params: unknown;
+  query: Query | undefined;
+  json: unknown;
+  formData: unknown;
+  headers: Record<string, string> | undefined;
+  cookies: Record<string, string> | undefined;
+  response: ResponseHelpers<TOutput>;
+  ctx: Record<string, unknown>;
 };
 
 type InferProcedureDefinition<TProcedure extends ProcedureTypeCarrier> = TProcedure extends {
@@ -530,12 +546,11 @@ const validateProcedureInputs = async (
   const parseContract = async <TTarget extends ProcedureInputTarget>(
     target: TTarget,
     schema: StandardSchemaV1 | undefined,
-    fallback: () => Promise<unknown>,
   ) => {
     if (!schema) {
       return {
         ok: true as const,
-        value: await fallback(),
+        value: undefined,
       };
     }
 
@@ -582,18 +597,12 @@ const validateProcedureInputs = async (
     };
   };
 
-  const paramsResult = await parseContract(
-    "params",
-    contracts.params,
-    async () => segmentData.params,
-  );
+  const paramsResult = await parseContract("params", contracts.params);
   if (!paramsResult.ok) {
     return paramsResult;
   }
 
-  const queryResult = await parseContract("query", contracts.query, async () =>
-    searchParamsToObject(request.nextUrl.searchParams),
-  );
+  const queryResult = await parseContract("query", contracts.query);
   if (!queryResult.ok) {
     return queryResult;
   }
@@ -613,7 +622,7 @@ const validateProcedureInputs = async (
             ok: true as const,
             value: undefined,
           }
-      : await parseContract("json", contracts.json, async () => undefined);
+      : await parseContract("json", contracts.json);
   if (!jsonResult.ok) {
     return jsonResult;
   }
@@ -633,17 +642,17 @@ const validateProcedureInputs = async (
             ok: true as const,
             value: undefined,
           }
-      : await parseContract("formData", contracts.formData, async () => undefined);
+      : await parseContract("formData", contracts.formData);
   if (!formDataResult.ok) {
     return formDataResult;
   }
 
-  const headersResult = await parseContract("headers", contracts.headers, async () => undefined);
+  const headersResult = await parseContract("headers", contracts.headers);
   if (!headersResult.ok) {
     return headersResult;
   }
 
-  const cookiesResult = await parseContract("cookies", contracts.cookies, async () => undefined);
+  const cookiesResult = await parseContract("cookies", contracts.cookies);
   if (!cookiesResult.ok) {
     return cookiesResult;
   }
@@ -681,6 +690,15 @@ export const nextRoute = <
     context: InferProcedureHandlerContext<TProcedure>,
   ) => InferProcedureHandlerResult<TProcedure> | Promise<InferProcedureHandlerResult<TProcedure>>;
   const outputSchema = procedure.definition.output?.schema;
+  const pipelineSteps = [
+    ...(procedure.middlewares as readonly ((
+      context: ProcedureRouteExecutionContext<InferProcedureDeclaredOutput<TProcedure>>,
+    ) => ProcedureMiddlewareResult | Promise<ProcedureMiddlewareResult>)[]),
+    (context: ProcedureRouteExecutionContext<InferProcedureDeclaredOutput<TProcedure>>) =>
+      handler(context as InferProcedureHandlerContext<TProcedure>) as
+        | InferProcedureHandlerResult<TProcedure>
+        | Promise<InferProcedureHandlerResult<TProcedure>>,
+  ] as const;
 
   if (options.validateOutput && outputSchema !== undefined && !isStandardSchemaV1(outputSchema)) {
     throw new Error(
@@ -693,7 +711,6 @@ export const nextRoute = <
     segmentData: { params: Promise<Params> },
   ): Promise<NextRouteResponse<TProcedure, TValidateOutput, TOnError, TOnValidationError>> => {
     const routeContext = createRouteContext(request, segmentData);
-    const errorResponse = createResponseHelpers();
     const response = createResponseHelpers<InferProcedureDeclaredOutput<TProcedure>>();
 
     try {
@@ -715,47 +732,36 @@ export const nextRoute = <
 
       const { params, query, json, formData, headers, cookies } = inputResult.values;
 
-      const executionContext = {
+      const executionContext: ProcedureRouteExecutionContext<
+        InferProcedureDeclaredOutput<TProcedure>
+      > = {
         request,
         params,
-        query,
+        query: query as Query | undefined,
         json,
         formData,
-        headers,
-        cookies,
+        headers: headers as Record<string, string> | undefined,
+        cookies: cookies as Record<string, string> | undefined,
         response,
         ctx: {} as Record<string, unknown>,
       };
 
       const result = await executePipeline<
-        typeof executionContext,
+        ProcedureRouteExecutionContext<InferProcedureDeclaredOutput<TProcedure>>,
         ProcedureMiddlewareResult | InferProcedureHandlerResult<TProcedure>,
         Response | NextResponse | ProcedureResult
-      >(
-        [
-          ...(procedure.middlewares as readonly ((
-            context: typeof executionContext,
-          ) => ProcedureMiddlewareResult | Promise<ProcedureMiddlewareResult>)[]),
-          (context) =>
-            handler({
-              ...context,
-              response,
-            } as InferProcedureHandlerContext<TProcedure>) as InferProcedureHandlerResult<TProcedure>,
-        ],
-        executionContext,
-        {
-          isTerminal: (value): value is Response | NextResponse | ProcedureResult =>
-            value instanceof Response || isProcedureResult(value),
-          applyResult: (context, value) => {
-            if (value && typeof value === "object" && "ctx" in value) {
-              context.ctx = {
-                ...context.ctx,
-                ...(value.ctx as Record<string, unknown>),
-              };
-            }
-          },
+      >(pipelineSteps, executionContext, {
+        isTerminal: (value): value is Response | NextResponse | ProcedureResult =>
+          value instanceof Response || isProcedureResult(value),
+        applyResult: (context, value) => {
+          if (value && typeof value === "object" && "ctx" in value) {
+            context.ctx = {
+              ...context.ctx,
+              ...(value.ctx as Record<string, unknown>),
+            };
+          }
         },
-      );
+      });
 
       const outputValidationValue =
         options.validateOutput && outputSchema !== undefined
@@ -782,6 +788,7 @@ export const nextRoute = <
         TOnValidationError
       >;
     } catch (error) {
+      const errorResponse = createResponseHelpers();
       const handled = await options.onError(error, {
         request,
         params: await segmentData.params,
