@@ -6,11 +6,12 @@ import type {
   NextPageRender,
   NextPageProcedureCarrier,
   ProcedurePageOnError,
+  ProcedurePageOnValidationError,
 } from "./next-page";
 import type { NextRouteProcedureOptions } from "./next-route";
 import type { ProcedureOnError } from "./on-error";
 import type { ProcedureMiddleware } from "./procedure";
-import type { ProcedureDefinition } from "./procedure-types";
+import type { ProcedureDefinition, ProcedureValidationErrorHandler } from "./procedure-types";
 
 type ProcedureRouteAdapterCarrier = {
   definition: ProcedureDefinition;
@@ -22,16 +23,25 @@ type ProcedureRouteAdapterCarrier = {
 export type ProcedureSharedDefaults<
   TRouteOnError extends ProcedureOnError = ProcedureOnError,
   TPageOnError extends ProcedurePageOnError = ProcedurePageOnError,
+  TRouteOnValidationError extends ProcedureValidationErrorHandler | undefined = undefined,
+  TPageOnValidationError extends ProcedurePageOnValidationError | undefined = undefined,
 > = {
   route?: {
     onError: TRouteOnError;
+    onValidationError?: TRouteOnValidationError;
   };
   page?: {
     onError: TPageOnError;
+    onValidationError?: TPageOnValidationError;
   };
 };
 
-export type ProcedureDefaults = ProcedureSharedDefaults<ProcedureOnError, ProcedurePageOnError>;
+export type ProcedureDefaults = ProcedureSharedDefaults<
+  ProcedureOnError,
+  ProcedurePageOnError,
+  ProcedureValidationErrorHandler | undefined,
+  ProcedurePageOnValidationError | undefined
+>;
 
 export type ExtractProcedureSharedRouteOnError<TDefaults> = TDefaults extends {
   route: { onError: infer TSharedOnError extends ProcedureOnError };
@@ -39,11 +49,31 @@ export type ExtractProcedureSharedRouteOnError<TDefaults> = TDefaults extends {
   ? TSharedOnError
   : ProcedureOnError;
 
+export type ExtractProcedureSharedRouteOnValidationError<TDefaults> = TDefaults extends {
+  route: {
+    onValidationError?: infer TSharedOnValidationError extends
+      | ProcedureValidationErrorHandler
+      | undefined;
+  };
+}
+  ? TSharedOnValidationError
+  : undefined;
+
 export type ExtractProcedureSharedPageOnError<TDefaults> = TDefaults extends {
   page: { onError: infer TSharedOnError extends ProcedurePageOnError };
 }
   ? TSharedOnError
   : DefaultProcedurePageOnError;
+
+export type ExtractProcedureSharedPageOnValidationError<TDefaults> = TDefaults extends {
+  page: {
+    onValidationError?: infer TSharedOnValidationError extends
+      | ProcedurePageOnValidationError
+      | undefined;
+  };
+}
+  ? TSharedOnValidationError
+  : undefined;
 
 type HasProcedureRouteDefaults<TDefaults> = TDefaults extends {
   route: { onError: ProcedureOnError };
@@ -63,23 +93,39 @@ export type ProcedureNextRouteOptions<
   TValidateOutput extends boolean,
   TDefaults,
   TOnError extends ProcedureOnError,
+  TOnValidationError extends ProcedureValidationErrorHandler | undefined,
 > =
   HasProcedureRouteDefaults<TDefaults> extends true
-    ? Omit<NextRouteProcedureOptions<TProcedure, TMethod, TValidateOutput, TOnError>, "onError"> & {
+    ? Omit<
+        NextRouteProcedureOptions<
+          TProcedure,
+          TMethod,
+          TValidateOutput,
+          TOnError,
+          TOnValidationError
+        >,
+        "onError" | "onValidationError"
+      > & {
         onError?: TOnError;
+        onValidationError?: TOnValidationError;
       }
-    : NextRouteProcedureOptions<TProcedure, TMethod, TValidateOutput, TOnError>;
+    : NextRouteProcedureOptions<TProcedure, TMethod, TValidateOutput, TOnError, TOnValidationError>;
 
 export type ProcedureNextPageOptions<
   TProcedure extends NextPageProcedureCarrier,
   TDefaults,
   TOnError extends ProcedurePageOnError,
+  TOnValidationError extends ProcedurePageOnValidationError | undefined,
 > =
   HasProcedurePageDefaults<TDefaults> extends true
-    ? Omit<NextPageProcedureOptions<TProcedure, TOnError>, "onError"> & {
+    ? Omit<
+        NextPageProcedureOptions<TProcedure, TOnError, TOnValidationError>,
+        "onError" | "onValidationError"
+      > & {
         onError?: TOnError;
+        onValidationError?: TOnValidationError;
       }
-    : NextPageProcedureOptions<TProcedure, TOnError>;
+    : NextPageProcedureOptions<TProcedure, TOnError, TOnValidationError>;
 
 export type ProcedureNextPageArgs<
   TProcedure extends NextPageProcedureCarrier,
@@ -88,12 +134,13 @@ export type ProcedureNextPageArgs<
   TResult,
   TDefaults,
   TOnError extends ProcedurePageOnError,
+  TOnValidationError extends ProcedurePageOnValidationError | undefined,
 > =
-  NextPageProcedureOptions<TProcedure, TOnError> extends infer TConstraint
+  NextPageProcedureOptions<TProcedure, TOnError, TOnValidationError> extends infer TConstraint
     ? TConstraint extends { __error__: string }
       ? [render: TConstraint, options?: never]
       : [
           render: NextPageRender<TProcedure, TData, TContext, TResult>,
-          options?: ProcedureNextPageOptions<TProcedure, TDefaults, TOnError>,
+          options?: ProcedureNextPageOptions<TProcedure, TDefaults, TOnError, TOnValidationError>,
         ]
     : never;

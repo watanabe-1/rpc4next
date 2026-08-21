@@ -29,6 +29,12 @@ export type ProcedureValidationErrorHandlerResult =
   | NextResponse
   | ProcedureResult;
 
+export type ProcedureValidationErrorHandler<
+  TTarget extends ProcedureInputTarget = ProcedureInputTarget,
+  TValue = unknown,
+  TResult extends ProcedureValidationErrorHandlerResult = ProcedureValidationErrorHandlerResult,
+> = (context: ProcedureValidationErrorContext<TTarget, TValue>) => TResult | Promise<TResult>;
+
 export type ProcedureValidationErrorRouteResponse = Exclude<
   ProcedureValidationErrorHandlerResult,
   undefined
@@ -46,9 +52,7 @@ export interface ProcedureInputOptions<
   TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult =
     ProcedureValidationErrorHandlerResult,
 > {
-  onValidationError?: (
-    context: ProcedureValidationErrorContext<TTarget, TValue>,
-  ) => TOnValidationErrorResult | Promise<TOnValidationErrorResult>;
+  onValidationError?: ProcedureValidationErrorHandler<TTarget, TValue, TOnValidationErrorResult>;
 }
 
 export type ProcedureInputOptionMap = Partial<Record<ProcedureInputTarget, ProcedureInputOptions>>;

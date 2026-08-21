@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 
-import { nextPage as baseNextPage } from "./next-page";
+import { nextPage as baseNextPage, type ProcedurePageOnValidationError } from "./next-page";
 import { procedure } from "./procedure";
 import type { ProcedureRouteContract } from "./procedure-types";
 import type { StandardSchemaV1 } from "./standard-schema";
@@ -191,6 +191,66 @@ describe("nextPage", () => {
 
     expect(render).not.toHaveBeenCalled();
     expect(onError).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses page validation error handling from procedure defaults", async () => {
+    const onValidationError = (({ issues, target }) => ({
+      source: "shared-page-validation" as const,
+      target,
+      messages: issues.map((issue) => issue.message),
+    })) satisfies ProcedurePageOnValidationError;
+    const appProcedure = procedure.defaults({
+      page: {
+        onError: () => "page-error",
+        onValidationError,
+      },
+    });
+    const render = vi.fn<() => string>(() => "rendered");
+
+    const page = appProcedure
+      .forRoute(pageRouteContract)
+      .params(paramsSchema)
+      .query(querySchema)
+      .nextPage(render);
+
+    await expect(
+      page({
+        params: Promise.resolve({ id: "photo-1" }),
+        searchParams: Promise.resolve({ tab: "bad" }),
+      }),
+    ).resolves.toEqual({
+      source: "shared-page-validation",
+      target: "query",
+      messages: ["invalid tab"],
+    });
+
+    expect(render).not.toHaveBeenCalled();
+  });
+
+  it("lets page-local validation error handling override procedure defaults", async () => {
+    const onValidationError = (({ target }) =>
+      `local-${target}-validation`) satisfies ProcedurePageOnValidationError;
+    const appProcedure = procedure.defaults({
+      page: {
+        onError: () => "page-error",
+        onValidationError: () => "shared-page-validation",
+      },
+    });
+
+    const page = appProcedure
+      .forRoute(pageRouteContract)
+      .params(paramsSchema)
+      .query(querySchema)
+      .nextPage(() => "rendered", {
+        onValidationError,
+      });
+
+    await expect(
+      page({
+        params: Promise.resolve({ id: "photo-1" }),
+        searchParams: Promise.resolve({ tab: "bad" }),
+      }),
+    ).resolves.toBe("local-query-validation");
   });
 
   it("validates page params and query once for handler and render", async () => {

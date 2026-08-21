@@ -17,6 +17,7 @@ import {
   type MergeProcedureDefinition,
   type ProcedureDefinition,
   type ProcedureInputContract,
+  type ProcedureValidationErrorHandler,
   type ProcedureValidationErrorHandlerResult,
   type ProcedureValidationErrorResponseMap,
   type WithProcedureDefinition,
@@ -199,7 +200,6 @@ type ProcedureErrorResponse<TCode extends "BAD_REQUEST" | "INTERNAL_SERVER_ERROR
           error: {
             code: "BAD_REQUEST";
             message: string;
-            details?: unknown;
           };
         },
         400,
@@ -210,7 +210,6 @@ type ProcedureErrorResponse<TCode extends "BAD_REQUEST" | "INTERNAL_SERVER_ERROR
           error: {
             code: "INTERNAL_SERVER_ERROR";
             message: string;
-            details?: unknown;
           };
         },
         500,
@@ -245,6 +244,11 @@ type InferProcedureOutputValidationErrorResponse<
     ? ProcedureErrorResponse<"INTERNAL_SERVER_ERROR">
     : never
   : never;
+
+type InferProcedureSharedValidationErrorResponse<TOnValidationError> =
+  TOnValidationError extends ProcedureValidationErrorHandler
+    ? NormalizeProcedureHandlerResult<Exclude<Awaited<ReturnType<TOnValidationError>>, undefined>>
+    : never;
 
 type InferProcedureHandlerResult<TProcedure extends ProcedureTypeCarrier> = TProcedure extends {
   handler: (...args: never[]) => infer TResult;
@@ -310,6 +314,7 @@ type NextRouteResponse<
   TProcedure extends ProcedureTypeCarrier,
   TValidateOutput extends boolean = false,
   TOnError extends ProcedureOnError = ProcedureOnError,
+  TOnValidationError extends ProcedureValidationErrorHandler | undefined = undefined,
 > =
   IsNever<InferProcedureHandlerResult<TProcedure>> extends true
     ?
@@ -317,12 +322,14 @@ type NextRouteResponse<
         | NormalizeProcedureHandlerResult<InferProcedureMiddlewareTerminalResult<TProcedure>>
         | InferProcedureOnErrorResponse<TOnError>
         | InferProcedureValidationErrorResponse<TProcedure>
+        | InferProcedureSharedValidationErrorResponse<TOnValidationError>
         | InferProcedureOutputValidationErrorResponse<TProcedure, TValidateOutput>
     :
         | NormalizeProcedureHandlerResult<InferProcedureHandlerResult<TProcedure>>
         | NormalizeProcedureHandlerResult<InferProcedureMiddlewareTerminalResult<TProcedure>>
         | InferProcedureOnErrorResponse<TOnError>
         | InferProcedureValidationErrorResponse<TProcedure>
+        | InferProcedureSharedValidationErrorResponse<TOnValidationError>
         | InferProcedureOutputValidationErrorResponse<TProcedure, TValidateOutput>;
 
 export type NextRouteHandler<
@@ -330,11 +337,12 @@ export type NextRouteHandler<
   TMethod extends HttpMethod | undefined = undefined,
   TValidateOutput extends boolean = false,
   TOnError extends ProcedureOnError = ProcedureOnError,
+  TOnValidationError extends ProcedureValidationErrorHandler | undefined = undefined,
 > = WithProcedureDefinition<
   (
     request: NextRequest,
     segmentData: { params: Promise<Params> },
-  ) => Promise<NextRouteResponse<TProcedure, TValidateOutput, TOnError>>,
+  ) => Promise<NextRouteResponse<TProcedure, TValidateOutput, TOnError, TOnValidationError>>,
   TMethod extends HttpMethod
     ? MergeProcedureDefinition<InferProcedureDefinition<TProcedure>, { method: TMethod }>
     : InferProcedureDefinition<TProcedure>
@@ -343,10 +351,12 @@ export type NextRouteHandler<
 export interface NextRouteOptions<
   TMethod extends HttpMethod = HttpMethod,
   TOnError extends ProcedureOnError = ProcedureOnError,
+  TOnValidationError extends ProcedureValidationErrorHandler | undefined = undefined,
 > {
   method: TMethod;
   validateOutput?: boolean;
   onError: TOnError;
+  onValidationError?: TOnValidationError;
 }
 
 export type NextRouteProcedureOptions<
@@ -354,7 +364,8 @@ export type NextRouteProcedureOptions<
   TMethod extends HttpMethod | undefined = undefined,
   TValidateOutput extends boolean = false,
   TOnError extends ProcedureOnError = ProcedureOnError,
-> = NextRouteOptions<Exclude<TMethod, undefined>, TOnError> &
+  TOnValidationError extends ProcedureValidationErrorHandler | undefined = undefined,
+> = NextRouteOptions<Exclude<TMethod, undefined>, TOnError, TOnValidationError> &
   NextRouteMethodConstraint<TProcedure, TMethod> & {
     validateOutput?: TValidateOutput;
   };
@@ -364,8 +375,15 @@ export type NextRouteExports<
   TMethod extends HttpMethod = HttpMethod,
   TValidateOutput extends boolean = false,
   TOnError extends ProcedureOnError = ProcedureOnError,
+  TOnValidationError extends ProcedureValidationErrorHandler | undefined = undefined,
 > = {
-  [TKey in TMethod]: NextRouteHandler<TProcedure, TKey, TValidateOutput, TOnError>;
+  [TKey in TMethod]: NextRouteHandler<
+    TProcedure,
+    TKey,
+    TValidateOutput,
+    TOnError,
+    TOnValidationError
+  >;
 };
 
 const parseOutputWithSchema = async (schema: StandardSchemaV1, value: unknown) => {
@@ -494,6 +512,7 @@ const validateProcedureInputs = async (
   segmentData: { params: Promise<Params> },
   response: ReturnType<typeof createRouteContext>,
   procedureDefinition: ProcedureDefinition,
+  sharedOnValidationError: ProcedureValidationErrorHandler | undefined,
 ) => {
   const contracts = procedureDefinition.input?.contracts ?? {};
   const inputOptions = procedureDefinition.input?.options ?? {};
@@ -538,13 +557,15 @@ const validateProcedureInputs = async (
       };
     }
 
-    const hookResult = await inputOptions[target]?.onValidationError?.({
-      target,
-      value: rawValue,
-      issues: result.issues,
-      request,
-      response,
-    });
+    const hookResult = await (inputOptions[target]?.onValidationError ?? sharedOnValidationError)?.(
+      {
+        target,
+        value: rawValue,
+        issues: result.issues,
+        request,
+        response,
+      },
+    );
 
     if (isValidationTerminalResult(hookResult)) {
       return {
@@ -557,7 +578,6 @@ const validateProcedureInputs = async (
       ok: false as const,
       response: response.error("BAD_REQUEST", {
         message: getStandardSchemaMessage(result.issues),
-        details: result.issues,
       }),
     };
   };
@@ -646,10 +666,17 @@ export const nextRoute = <
   TMethod extends HttpMethod = HttpMethod,
   TValidateOutput extends boolean = false,
   TOnError extends ProcedureOnError = ProcedureOnError,
+  TOnValidationError extends ProcedureValidationErrorHandler | undefined = undefined,
 >(
   procedure: TProcedure,
-  options: NextRouteProcedureOptions<TProcedure, TMethod, TValidateOutput, TOnError>,
-): NextRouteExports<TProcedure, TMethod, TValidateOutput, TOnError> => {
+  options: NextRouteProcedureOptions<
+    TProcedure,
+    TMethod,
+    TValidateOutput,
+    TOnError,
+    TOnValidationError
+  >,
+): NextRouteExports<TProcedure, TMethod, TValidateOutput, TOnError, TOnValidationError> => {
   const handler = procedure.handler as (
     context: InferProcedureHandlerContext<TProcedure>,
   ) => InferProcedureHandlerResult<TProcedure> | Promise<InferProcedureHandlerResult<TProcedure>>;
@@ -664,7 +691,7 @@ export const nextRoute = <
   const routeHandler = async (
     request: NextRequest,
     segmentData: { params: Promise<Params> },
-  ): Promise<NextRouteResponse<TProcedure, TValidateOutput, TOnError>> => {
+  ): Promise<NextRouteResponse<TProcedure, TValidateOutput, TOnError, TOnValidationError>> => {
     const routeContext = createRouteContext(request, segmentData);
     const errorResponse = createResponseHelpers();
     const response = createResponseHelpers<InferProcedureDeclaredOutput<TProcedure>>();
@@ -675,12 +702,14 @@ export const nextRoute = <
         segmentData,
         routeContext,
         procedure.definition,
+        options.onValidationError,
       );
       if (!inputResult.ok) {
         return normalizeProcedureResult(routeContext, inputResult.response) as NextRouteResponse<
           TProcedure,
           TValidateOutput,
-          TOnError
+          TOnError,
+          TOnValidationError
         >;
       }
 
@@ -749,7 +778,8 @@ export const nextRoute = <
       return normalizeProcedureResult(routeContext, normalizedResult) as NextRouteResponse<
         TProcedure,
         TValidateOutput,
-        TOnError
+        TOnError,
+        TOnValidationError
       >;
     } catch (error) {
       const handled = await options.onError(error, {
@@ -762,7 +792,8 @@ export const nextRoute = <
       return normalizeProcedureResult(routeContext, handled) as NextRouteResponse<
         TProcedure,
         TValidateOutput,
-        TOnError
+        TOnError,
+        TOnValidationError
       >;
     }
   };
@@ -786,5 +817,5 @@ export const nextRoute = <
 
   return {
     [options.method]: attachProcedureDefinition(routeHandler, routeDefinition),
-  } as NextRouteExports<TProcedure, TMethod, TValidateOutput, TOnError>;
+  } as NextRouteExports<TProcedure, TMethod, TValidateOutput, TOnError, TOnValidationError>;
 };

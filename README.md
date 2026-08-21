@@ -263,6 +263,34 @@ overall JSON or multipart body limits, configure your Next.js runtime, hosting
 platform, reverse proxy, CDN, or middleware to reject oversized requests before
 they reach the route handler.
 
+Default validation error responses include the `BAD_REQUEST` code and message,
+but do not expose raw schema issues in `details`. If your app needs shared
+validation details, configure `procedure.defaults({ route: { onValidationError }
+})` and explicitly choose a sanitized shape. A route-local
+`onValidationError(...)` on a specific input contract can still override that
+shared default for custom branches.
+
+```ts
+export const appProcedure = procedure.defaults({
+  route: {
+    onError,
+    onValidationError: ({ issues, response, target }) =>
+      response.error("BAD_REQUEST", {
+        message: "Validation failed.",
+        details: {
+          target,
+          issues: issues.map(({ message, path }) => ({ message, path })),
+        },
+      }),
+  },
+});
+```
+
+For page procedures, validation failures do not produce JSON error envelopes.
+They flow through page rendering instead. Use
+`procedure.defaults({ page: { onValidationError } })` when you want shared
+validation UI for pages, or keep using `page.onError` for the generic fallback.
+
 For request headers and cookies:
 
 ```ts

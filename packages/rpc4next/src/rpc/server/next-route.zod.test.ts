@@ -267,9 +267,9 @@ describe("nextRoute zod integration", () => {
     expect(payload).toMatchObject({
       error: {
         code: "BAD_REQUEST",
-        details: expect.any(Array),
       },
     });
+    expect(payload.error).not.toHaveProperty("details");
     expect(
       typeof payload === "object" &&
         payload !== null &&
@@ -280,6 +280,96 @@ describe("nextRoute zod integration", () => {
         ? payload.error.message
         : "",
     ).toContain(">0");
+  });
+
+  it("uses shared validation error handling from procedure defaults", async () => {
+    const appProcedure = procedure.defaults({
+      route: {
+        onError: defaultProcedureOnError,
+        onValidationError: ({ issues, response, target }) =>
+          response.error("BAD_REQUEST", {
+            message: "Shared validation failed.",
+            details: {
+              target,
+              issues: issues.map(({ message, path }) => ({ message, path })),
+            },
+          }),
+      },
+    });
+
+    const { GET: route } = appProcedure
+      .forRoute(staticRouteContract)
+      .query(
+        z.object({
+          page: z.coerce.number().int().positive(),
+        }),
+      )
+      .handle(async ({ query }) => ({
+        body: query,
+      }))
+      .nextRoute({
+        method: "GET",
+      });
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api/test?page=0"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: {
+        code: "BAD_REQUEST",
+        message: "Shared validation failed.",
+        details: {
+          target: "query",
+          issues: [
+            {
+              message: expect.stringContaining(">0"),
+              path: ["page"],
+            },
+          ],
+        },
+      },
+    });
+  });
+
+  it("lets route-local validation error handling override procedure defaults", async () => {
+    const appProcedure = procedure.defaults({
+      route: {
+        onError: defaultProcedureOnError,
+        onValidationError: ({ response }) =>
+          response.text("shared-validation", {
+            status: 409,
+          }),
+      },
+    });
+
+    const { GET: route } = appProcedure
+      .forRoute(staticRouteContract)
+      .query(
+        z.object({
+          page: z.coerce.number().int().positive(),
+        }),
+        {
+          onValidationError: ({ response }) =>
+            response.text("local-validation", {
+              status: 422,
+            }),
+        },
+      )
+      .handle(async ({ query }) => ({
+        body: query,
+      }))
+      .nextRoute({
+        method: "GET",
+      });
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api/test?page=0"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(422);
+    await expect(response.text()).resolves.toBe("local-validation");
   });
 
   it("returns default validation errors when validator-stage customization falls back", async () => {

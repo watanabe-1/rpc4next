@@ -15,6 +15,8 @@ export type {
   NextPageRender,
   NextPageRenderContext,
   ProcedurePageOnError,
+  ProcedurePageOnValidationError,
+  ProcedurePageOnValidationErrorContext,
 } from "./next-page";
 export { nextRoute } from "./next-route";
 export type {
@@ -43,6 +45,7 @@ export type {
   ProcedureInputOptions,
   ProcedureRouteContract,
   ProcedureValidationErrorContext,
+  ProcedureValidationErrorHandler,
   ProcedureValidationErrorHandlerResult,
 } from "./procedure-types";
 export type { StandardSchemaV1, StandardSchemaV1Issue } from "./standard-schema";
