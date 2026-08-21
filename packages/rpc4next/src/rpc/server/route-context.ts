@@ -169,10 +169,15 @@ export const createRouteContext = <
   segmentData: { params: Promise<TParams> },
 ): RouteContext<TParams, TQuery, TValidationSchema> => {
   const responseHelpers = createResponseHelpers();
+  let query: TQuery | undefined;
 
   return {
     req: Object.assign(req, {
-      query: () => searchParamsToObject<TQuery>(req.nextUrl.searchParams),
+      query: () => {
+        query ??= searchParamsToObject<TQuery>(req.nextUrl.searchParams);
+
+        return query;
+      },
       params: () => segmentData.params,
     }),
     ...responseHelpers,

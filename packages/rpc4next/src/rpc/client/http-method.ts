@@ -79,6 +79,9 @@ export const httpMethod = (
   dynamicKeys: string[],
   defaultOptions: RpcClientOptions,
 ) => {
+  const method = key.replace(/^\$/, "").toUpperCase();
+  const buildUrl = createUrl(paths, params, dynamicKeys);
+
   return async (
     methodParam?: {
       url?: UrlOptions;
@@ -87,11 +90,8 @@ export const httpMethod = (
     },
     options?: RpcClientOptions,
   ) => {
-    // Resolve method (e.g. "$get" -> "GET")
-    const method = key.replace(/^\$/, "").toUpperCase();
-
     // Build URL (path + query from url options)
-    const urlObj = createUrl(paths, params, dynamicKeys)(methodParam?.url);
+    const urlObj = buildUrl(methodParam?.url);
 
     // Select fetch implementation
     const customFetch = options?.fetch ?? defaultOptions.fetch ?? fetch;

@@ -539,10 +539,6 @@ const validateProcedureInputs = async (
     );
   }
 
-  if (Object.values(contracts).some((contract) => !isStandardSchemaV1(contract))) {
-    throw new Error("Procedure input contracts must implement Standard Schema V1.");
-  }
-
   const parseContract = async <TTarget extends ProcedureInputTarget>(
     target: TTarget,
     schema: StandardSchemaV1 | undefined,
@@ -704,6 +700,16 @@ export const nextRoute = <
     throw new Error(
       "Procedure output contracts must implement Standard Schema V1 when validateOutput is enabled.",
     );
+  }
+
+  const inputContracts = procedure.definition.input?.contracts ?? {};
+  if (inputContracts.json && inputContracts.formData) {
+    throw new Error(
+      "Procedure body contracts are mutually exclusive; use either .json(schema) or .formData(schema), not both.",
+    );
+  }
+  if (Object.values(inputContracts).some((contract) => !isStandardSchemaV1(contract))) {
+    throw new Error("Procedure input contracts must implement Standard Schema V1.");
   }
 
   const routeHandler = async (
