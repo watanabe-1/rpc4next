@@ -309,7 +309,67 @@ rpc4next omits that synthetic header and lets `fetch` send real browser cookies
 instead. For cross-origin browser calls, pass the appropriate `credentials`
 option, such as `{ init: { credentials: "include" } }`.
 
-### 5. Generate Typed URLs for Pages
+### 5. Unwrap Typed Responses
+
+Client methods still return typed `Response` objects, so existing
+`response.ok`, `response.status`, and `response.json()` narrowing continues to
+work:
+
+```ts
+const response = await rpc.api.users._userId("123").$get({
+  url: { query: { includePosts: "true" } },
+});
+
+if (!response.ok) {
+  const errorBody = await response.json();
+  throw new Error(JSON.stringify(errorBody));
+}
+
+const body = await response.json();
+```
+
+When application code only needs the parsed success body, use `parseResponse`
+from `rpc4next/client`. It returns the payload from the `ok: true` response
+branch and throws `RpcResponseError` for non-2xx responses.
+
+```ts
+import { parseResponse, RpcResponseError } from "rpc4next/client";
+
+try {
+  const body = await parseResponse(
+    rpc.api.users._userId("123").$get({
+      url: { query: { includePosts: "true" } },
+    }),
+  );
+
+  console.log(body);
+} catch (error) {
+  if (error instanceof RpcResponseError) {
+    console.log(error.status);
+    console.log(error.statusText);
+    console.log(error.code);
+    console.log(error.payload);
+    console.log(error.response);
+  }
+}
+```
+
+`RpcResponseError.code` is populated when the response body is an rpc4next error
+envelope returned by `response.error(...)`:
+
+```ts
+return response.error("FORBIDDEN", {
+  message: "Editor role required.",
+  details: { reason: "editor_only" as const },
+});
+```
+
+Non-JSON error bodies are also handled safely. `parseResponse` parses JSON when
+possible, falls back to text for non-JSON responses, and still throws
+`RpcResponseError` with `status`, `statusText`, and `response` if the body is
+empty or cannot be read.
+
+### 6. Generate Typed URLs for Pages
 
 `page.tsx` files are included in the generated path tree, so you can build typed URLs even when there is no RPC method to call.
 

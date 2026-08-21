@@ -1,5 +1,7 @@
 import {
   createRpcClient,
+  type ErrorResponseCode,
+  type ErrorResponsePayload,
   parseResponse,
   RpcResponseError,
   type SuccessfulResponsePayload,
@@ -333,6 +335,33 @@ describe("integration next-app generated RPC type coverage", () => {
     }>();
     const _procedureContractPayload = await parseResponse(_procedureContractResponse);
     expectTypeOf<typeof _procedureContractPayload>().toEqualTypeOf<ProcedureContractPayload>();
+    const _procedureDefaultsErrorResponse = await client.api["procedure-defaults-error"].$get({
+      url: { query: { mode: "deny" } },
+    });
+    type ProcedureDefaultsErrorPayload = ErrorResponsePayload<
+      typeof _procedureDefaultsErrorResponse
+    >;
+    type ProcedureDefaultsErrorCode = ErrorResponseCode<typeof _procedureDefaultsErrorResponse>;
+    expectTypeOf<ProcedureDefaultsErrorCode>().toEqualTypeOf<
+      "BAD_REQUEST" | "FORBIDDEN" | "INTERNAL_SERVER_ERROR"
+    >();
+    type ProcedureDefaultsForbiddenPayload = Extract<
+      ProcedureDefaultsErrorPayload,
+      {
+        error: {
+          code: "FORBIDDEN";
+        };
+      }
+    >;
+    expectTypeOf<ProcedureDefaultsForbiddenPayload>().toExtend<{
+      error: {
+        code: "FORBIDDEN";
+        message: string;
+        details?: {
+          reason: "defaults_formatter";
+        };
+      };
+    }>();
     type _procedureContractKeepsSuccess = ExpectTrue<
       HasResponseVariant<
         typeof _procedureContractResponse,
@@ -853,6 +882,22 @@ describe("integration next-app generated RPC type coverage", () => {
       "error",
     );
     expectTypeOf<typeof _responseError.payload>().toEqualTypeOf<string>();
+    const _typedResponseError = new RpcResponseError(
+      new Response(JSON.stringify({ error: { code: "FORBIDDEN", message: "Forbidden" } }), {
+        status: 403,
+        statusText: "Forbidden",
+      }),
+      {
+        error: {
+          code: "FORBIDDEN" as const,
+          message: "Forbidden",
+          details: {
+            reason: "defaults_formatter" as const,
+          },
+        },
+      },
+    );
+    expectTypeOf<typeof _typedResponseError.code>().toEqualTypeOf<"FORBIDDEN" | undefined>();
   });
 
   it("rejects invalid generated RPC inputs at compile time", () => {
