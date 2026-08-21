@@ -21,6 +21,20 @@ describe("createUrl", () => {
     expect(result.pathname).toBe("/user/[id]/profile");
   });
 
+  it("does not mutate path segments and keeps repeated builder calls stable", () => {
+    const paths = ["https://example.com", "user", "_id", "profile"];
+    const urlGenerator = createUrl(paths, { _id: "123" }, ["_id"]);
+
+    expect(urlGenerator().relativePath).toBe("/user/123/profile");
+    expect(urlGenerator({ query: { page: "2" } })).toEqual({
+      path: "https://example.com/user/123/profile?page=2",
+      relativePath: "/user/123/profile?page=2",
+      pathname: "/user/[id]/profile",
+      params: { id: "123" },
+    });
+    expect(paths).toEqual(["https://example.com", "user", "_id", "profile"]);
+  });
+
   it("appends only a hash when provided", () => {
     const result = createUrl(
       ["https://example.com", "docs"],

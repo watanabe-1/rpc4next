@@ -22,9 +22,9 @@ import type { DynamicPathProxyAsProperty } from "./types";
  * @template T - The type defining the RPC endpoint structure.
  * @returns An object that provides dynamic RPC helper methods for the defined endpoints.
  */
-export const createRpcHelper = makeCreateRpc((key, { paths, dynamicKeys }) => {
+export const createRpcHelper = makeCreateRpc((key, context) => {
   if (key === "$match") {
-    return matchPath([...paths], dynamicKeys);
+    return matchPath(context.paths, context.dynamicKeys);
   }
 
   return undefined;

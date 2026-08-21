@@ -30,15 +30,21 @@ import type { PathParamsInput, UrlOptions, UrlResult } from "./types";
  */
 const buildUrlSuffix = (url?: UrlOptions) => {
   if (!url) return "";
-  const searchParams = new URLSearchParams();
+  const queryInput = url.query as Record<string, string | string[] | undefined> | undefined;
+  let searchParams: URLSearchParams | undefined;
 
-  if (url.query) {
-    for (const [key, value] of Object.entries(
-      url.query as Record<string, string | string[] | undefined>,
-    )) {
+  if (queryInput) {
+    for (const key in queryInput) {
+      if (!Object.hasOwn(queryInput, key)) {
+        continue;
+      }
+
+      const value = queryInput[key];
       if (value === undefined) {
         continue;
       }
+
+      searchParams ??= new URLSearchParams();
 
       if (Array.isArray(value)) {
         for (const item of value) {
@@ -52,7 +58,7 @@ const buildUrlSuffix = (url?: UrlOptions) => {
     }
   }
 
-  const query = searchParams.size > 0 ? `?${searchParams.toString()}` : "";
+  const query = searchParams ? `?${searchParams.toString()}` : "";
   const hash = url.hash ? `#${url.hash}` : "";
 
   return query + hash;
@@ -168,39 +174,52 @@ const getPathnameSegment = (segment: string) => {
  * @returns A builder function that accepts URL options and returns a `UrlResult`.
  */
 export const createUrl = (paths: string[], params: PathParamsInput, dynamicKeys: string[]) => {
-  const baseUrl = paths.shift();
-  const basePath = buildPathFromSegments(
-    paths.map((segment) => (dynamicKeys.includes(segment) ? segment : safeDecodeSegment(segment))),
-  );
+  const baseUrl = paths[0];
+  const routeSegments: string[] = [];
+  const pathnameSegments: string[] = [];
 
-  const dynamicPath = dynamicKeys.reduce((acc, key) => {
-    const param = params[key];
+  for (let index = 1; index < paths.length; index++) {
+    const segment = paths[index];
+    pathnameSegments.push(getPathnameSegment(segment));
+
+    if (!dynamicKeys.includes(segment)) {
+      routeSegments.push(safeDecodeSegment(segment));
+
+      continue;
+    }
+
+    const param = params[segment];
+    if (param === undefined) {
+      continue;
+    }
 
     if (Array.isArray(param)) {
-      return acc.replace(`/${key}`, `/${param.map(encodeURIComponent).join("/")}`);
+      for (const item of param) {
+        routeSegments.push(encodeURIComponent(item));
+      }
+
+      continue;
     }
 
-    if (param === undefined) {
-      return acc.replace(`/${key}`, "");
-    }
+    routeSegments.push(encodeURIComponent(param));
+  }
 
-    return acc.replace(`/${key}`, `/${encodeURIComponent(param)}`);
-  }, basePath);
+  const dynamicPath = buildPathFromSegments(routeSegments);
+  const pathname = buildPathFromSegments(pathnameSegments);
+  const cleanedParams: PathParamsInput = {};
+  for (const key in params) {
+    const cleanedKey = key.replace(/^_+/, "");
+    cleanedParams[cleanedKey] = params[key];
+  }
+  const basePath = baseUrl ? baseUrl.replace(/\/$/, "") : undefined;
 
   return (url?: UrlOptions) => {
     const relativePath = `${dynamicPath}${buildUrlSuffix(url)}`;
-    const pathname = buildPathFromSegments(paths.map(getPathnameSegment));
-
-    const cleanedParams: PathParamsInput = {};
-    for (const key in params) {
-      const cleanedKey = key.replace(/^_+/, "");
-      cleanedParams[cleanedKey] = params[key];
-    }
 
     return {
       pathname,
       params: cleanedParams,
-      path: baseUrl ? `${baseUrl.replace(/\/$/, "")}${relativePath}` : relativePath,
+      path: basePath ? `${basePath}${relativePath}` : relativePath,
       relativePath,
     } as UrlResult;
   };

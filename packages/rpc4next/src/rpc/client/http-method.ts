@@ -91,7 +91,7 @@ export const httpMethod = (
     const method = key.replace(/^\$/, "").toUpperCase();
 
     // Build URL (path + query from url options)
-    const urlObj = createUrl([...paths], params, dynamicKeys)(methodParam?.url);
+    const urlObj = createUrl(paths, params, dynamicKeys)(methodParam?.url);
 
     // Select fetch implementation
     const customFetch = options?.fetch ?? defaultOptions.fetch ?? fetch;
