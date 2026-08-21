@@ -5,6 +5,7 @@ import type { scanAppDir } from "./route-scanner.js";
 // Caches
 export const visitedDirsCache = new Map<string, boolean>();
 export const scanAppDirCache = new Map<string, ReturnType<typeof scanAppDir>>();
+export const generatedParamsFilesCache = new Map<string, Set<string>>();
 
 const normalizeCachePath = (targetPath: string): string => {
   return path.resolve(targetPath).replace(/\\/g, "/");
@@ -23,6 +24,18 @@ export const createScanAppDirCacheKey = (
     }),
   ].join(SCAN_APP_DIR_CACHE_KEY_SEPARATOR);
 };
+
+export const createGeneratedParamsFilesCacheKey = ({
+  baseDir,
+  paramsFileName,
+}: {
+  baseDir: string;
+  paramsFileName: string;
+}): string =>
+  JSON.stringify({
+    baseDir: normalizeCachePath(baseDir),
+    paramsFileName,
+  });
 
 const getCachePath = (cache: Map<string, unknown>, key: string): string => {
   if (cache === scanAppDirCache) {
@@ -57,4 +70,5 @@ export const clearScanAppDirCacheAbove = (targetPath: string): void => {
 export const clearScanCaches = (): void => {
   visitedDirsCache.clear();
   scanAppDirCache.clear();
+  generatedParamsFilesCache.clear();
 };

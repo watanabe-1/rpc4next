@@ -2,7 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { SUCCESS_INDENT_LEVEL, SUCCESS_PAD_LENGTH, SUCCESS_SEPARATOR } from "./constants.js";
-import { clearScanCaches } from "./core/cache.js";
+import {
+  clearScanCaches,
+  createGeneratedParamsFilesCacheKey,
+  generatedParamsFilesCache,
+} from "./core/cache.js";
 import {
   generatePathStructure,
   ROUTE_CONTRACT_GENERATED_MARKER,
@@ -64,12 +68,16 @@ const cleanupStaleGeneratedParamsFiles = ({
   baseDir,
   paramsFileName,
   expectedFilePaths,
+  candidateFilePaths,
 }: {
   baseDir: string;
   paramsFileName: string;
   expectedFilePaths: Set<string>;
+  candidateFilePaths?: Iterable<string>;
 }) => {
-  for (const filePath of listGeneratedCandidateFiles(baseDir, paramsFileName)) {
+  const candidates = candidateFilePaths ?? listGeneratedCandidateFiles(baseDir, paramsFileName);
+
+  for (const filePath of candidates) {
     const resolvedFilePath = path.resolve(filePath);
 
     if (expectedFilePaths.has(resolvedFilePath)) {
@@ -77,6 +85,10 @@ const cleanupStaleGeneratedParamsFiles = ({
     }
 
     if (!isWithinBaseDir(resolvedFilePath, baseDir)) {
+      continue;
+    }
+
+    if (!fs.existsSync(resolvedFilePath)) {
       continue;
     }
 
@@ -135,6 +147,8 @@ export const generate = ({
       const expectedFilePaths = new Set(
         paramsTypes.map(({ dirPath }) => path.resolve(path.join(dirPath, paramsFileName))),
       );
+      const cacheKey = createGeneratedParamsFilesCacheKey({ baseDir, paramsFileName });
+      const previousFilePaths = preserveCache ? generatedParamsFilesCache.get(cacheKey) : undefined;
 
       paramsTypes.forEach(({ paramsType, dirPath }) => {
         const filePath = path.join(dirPath, paramsFileName);
@@ -147,7 +161,10 @@ export const generate = ({
         baseDir,
         paramsFileName,
         expectedFilePaths,
+        candidateFilePaths: previousFilePaths,
       });
+
+      generatedParamsFilesCache.set(cacheKey, expectedFilePaths);
 
       if (wroteParamsFile) {
         logger.success(
