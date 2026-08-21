@@ -376,10 +376,6 @@ const parseContract = async <TTarget extends ProcedureInputTarget>(
     };
   }
 
-  if (!isStandardSchemaV1(schema)) {
-    throw new Error("Procedure input contracts must implement Standard Schema V1.");
-  }
-
   const result = await schema["~standard"].validate(rawValue);
 
   if (!result.issues) {
@@ -408,7 +404,8 @@ const parseContract = async <TTarget extends ProcedureInputTarget>(
 };
 
 const validateProcedureInputs = async (
-  props: NextPageProps,
+  params: Params,
+  query: Query,
   procedureDefinition: ProcedureDefinition,
   onValidationError: ProcedurePageOnValidationError | undefined,
 ) => {
@@ -418,8 +415,6 @@ const validateProcedureInputs = async (
     throw new Error("Page procedures do not support json or formData input contracts.");
   }
 
-  const params = await props.params;
-  const query = normalizeSearchParams(await props.searchParams);
   const headers = contracts.headers ? await readHeaders() : undefined;
   const cookies = contracts.cookies ? await readCookies() : undefined;
 
@@ -517,6 +512,11 @@ export const nextPage = <
     );
   }
 
+  const inputContracts = procedure.definition.input?.contracts ?? {};
+  if (Object.values(inputContracts).some((schema) => !isStandardSchemaV1(schema))) {
+    throw new Error("Procedure input contracts must implement Standard Schema V1.");
+  }
+
   const pageHandler = async (
     props: NextPageProps,
   ): Promise<
@@ -531,11 +531,8 @@ export const nextPage = <
 
     try {
       const inputResult = await validateProcedureInputs(
-        {
-          ...props,
-          params: Promise.resolve(params),
-          searchParams: Promise.resolve(searchParams),
-        },
+        params,
+        searchParams,
         procedure.definition,
         onValidationError,
       );
