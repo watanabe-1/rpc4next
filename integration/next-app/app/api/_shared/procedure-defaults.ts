@@ -33,9 +33,15 @@ const sharedOnValidationError = (({ issues, response, target }) =>
     },
   })) satisfies ProcedureValidationErrorHandler;
 
-export const appProcedure = procedure.defaults({
+export const appRouteProcedure = procedure.defaults({
   route: {
     onError: sharedOnError,
     onValidationError: sharedOnValidationError,
+  },
+});
+
+export const appPageProcedure = procedure.defaults({
+  page: {
+    onError: () => "page-helper-error",
   },
 });

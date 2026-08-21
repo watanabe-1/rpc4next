@@ -16,8 +16,11 @@ const outputSchema = z.object({
   userId: z.string().min(1),
   includeDrafts: z.boolean(),
   role: z.enum(["reader", "editor"]),
+  organizationId: z.string().min(1),
+  plan: z.enum(["pro", "enterprise"]),
   source: z.literal("procedure-guarded"),
   requestId: z.string().min(1),
+  traceId: z.string().min(1),
 });
 
 const getGuardedProcedureUser = guardedBaseProcedure
@@ -43,8 +46,11 @@ const getGuardedProcedureUser = guardedBaseProcedure
         userId: params.userId,
         includeDrafts,
         role,
+        organizationId: ctx.organization.id,
+        plan: ctx.organization.plan,
         source: "procedure-guarded",
         requestId: ctx.requestId,
+        traceId: ctx.traceId,
       },
     };
   });

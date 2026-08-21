@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { appProcedure } from "../_shared/procedure-defaults";
+import { appRouteProcedure } from "../_shared/procedure-defaults";
 import { routeContract } from "./route-contract";
 
 const outputSchema = z.object({
@@ -9,7 +9,7 @@ const outputSchema = z.object({
   result: z.string().min(1),
 });
 
-export const { GET } = appProcedure
+export const { GET } = appRouteProcedure
   .forRoute(routeContract)
   .meta({
     summary: "Phase 7 fixture that demonstrates runtime-enforced output validation failures",

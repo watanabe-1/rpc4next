@@ -1,6 +1,6 @@
-import { procedure } from "rpc4next/server";
 import { z } from "zod";
 
+import { appPageProcedure } from "../../api/_shared/procedure-defaults";
 import { routeContract } from "./route-contract";
 
 const pageHelperQuerySchema = z.object({
@@ -11,13 +11,7 @@ const pageHelperOutputSchema = z.object({
   mode: z.literal("render"),
 });
 
-const pageProcedure = procedure.defaults({
-  page: {
-    onError: () => <div>page-helper-error</div>,
-  },
-});
-
-export default pageProcedure
+export default appPageProcedure
   .forRoute(routeContract)
   .query(pageHelperQuerySchema)
   .output(pageHelperOutputSchema)

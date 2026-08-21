@@ -117,6 +117,7 @@ export default function E2eClientPage() {
               headers: {
                 "x-demo-user": "browser-user",
                 "x-demo-role": "editor",
+                "x-trace-id": "trace-browser",
               },
             },
           });

@@ -1,13 +1,13 @@
 import { z } from "zod";
 
-import { appProcedure } from "../_shared/procedure-defaults";
+import { appRouteProcedure } from "../_shared/procedure-defaults";
 import { routeContract } from "./route-contract";
 
 const bodySchema = z.object({
   title: z.string().min(1),
 });
 
-export const { POST } = appProcedure
+export const { POST } = appRouteProcedure
   .forRoute(routeContract)
   .json(bodySchema)
   .output<{

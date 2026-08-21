@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { appProcedure } from "../../_shared/procedure-defaults";
+import { appRouteProcedure } from "../../_shared/procedure-defaults";
 import { routeContract } from "./route-contract";
 
 const paramsSchema = z.object({
@@ -11,7 +11,7 @@ const querySchema = z.object({
   includePosts: z.enum(["true", "false"]).optional(),
 });
 
-export const { GET } = appProcedure
+export const { GET } = appRouteProcedure
   .forRoute(routeContract)
   .meta({
     summary: "Procedure contract route",

@@ -126,8 +126,11 @@ type ExpectedProcedureGuardedResponse =
         userId: string;
         includeDrafts: boolean;
         role: "reader" | "editor";
+        organizationId: string;
+        plan: "pro" | "enterprise";
         source: "procedure-guarded";
         requestId: string;
+        traceId: string;
       },
       200,
       "application/json"
@@ -182,6 +185,17 @@ type ExpectedProcedureGuardedResponse =
           code: "FORBIDDEN";
           message: string;
           details?: { reason: "editor_only" };
+        };
+      },
+      403,
+      "application/json"
+    >
+  | TypedNextResponse<
+      {
+        error: {
+          code: "FORBIDDEN";
+          message: string;
+          details?: { reason: "plan_upgrade_required" };
         };
       },
       403,

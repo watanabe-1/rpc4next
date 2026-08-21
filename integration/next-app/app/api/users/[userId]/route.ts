@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { appProcedure } from "../../_shared/procedure-defaults";
+import { appRouteProcedure } from "../../_shared/procedure-defaults";
 import { routeContract } from "./route-contract";
 
 const querySchema = z.object({
@@ -11,7 +11,7 @@ const paramsSchema = z.object({
   userId: z.string().min(1),
 });
 
-export const { GET } = appProcedure
+export const { GET } = appRouteProcedure
   .forRoute(routeContract)
   .params(paramsSchema)
   .query(querySchema)

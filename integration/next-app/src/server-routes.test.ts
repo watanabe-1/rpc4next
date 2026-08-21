@@ -403,6 +403,7 @@ describe("integration next-app server route handlers", () => {
           headers: {
             "x-demo-user": "procedure-user",
             "x-demo-role": "editor",
+            "x-trace-id": "trace-server-test",
           },
         },
       ),
@@ -415,8 +416,36 @@ describe("integration next-app server route handlers", () => {
       userId: "procedure-user",
       includeDrafts: true,
       role: "editor",
+      organizationId: "demo-org",
+      plan: "pro",
       source: "procedure-guarded",
       requestId: "guarded:procedure-user",
+      traceId: "trace-server-test",
+    });
+  });
+
+  it("returns a typed FORBIDDEN envelope from the shared plan gate", async () => {
+    const { GET: procedureGuardedGet } =
+      await import("../app/api/procedure-guarded/[userId]/route");
+    const response = await procedureGuardedGet(
+      new NextRequest("http://127.0.0.1:3000/api/procedure-guarded/procedure-user", {
+        headers: {
+          "x-demo-user": "procedure-user",
+          "x-demo-plan": "free",
+        },
+      }),
+      { params: Promise.resolve({ userId: "procedure-user" }) },
+    );
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: "FORBIDDEN",
+        message: "A paid demo plan is required for guarded procedures.",
+        details: {
+          reason: "plan_upgrade_required",
+        },
+      },
     });
   });
 

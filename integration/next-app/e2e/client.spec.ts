@@ -70,8 +70,11 @@ test.describe("integration next-app rpc4next browser client e2e", () => {
           userId: "browser-user",
           includeDrafts: true,
           role: "editor",
+          organizationId: "demo-org",
+          plan: "pro",
           source: "procedure-guarded",
           requestId: "guarded:browser-user",
+          traceId: "trace-browser",
         },
       }),
     );
