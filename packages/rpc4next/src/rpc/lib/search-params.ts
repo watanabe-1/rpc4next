@@ -37,12 +37,14 @@ export const searchParamsToObject = <T extends Record<string, string | string[] 
   const params: Record<string, string | string[]> = {};
 
   searchParams.forEach((value, key) => {
-    if (key in params) {
-      params[key] = Array.isArray(params[key])
-        ? [...(params[key] as string[]), value]
-        : [params[key] as string, value];
-    } else {
+    const existing = params[key];
+
+    if (existing === undefined) {
       params[key] = value;
+    } else if (Array.isArray(existing)) {
+      existing.push(value);
+    } else {
+      params[key] = [existing, value];
     }
   });
 

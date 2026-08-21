@@ -126,6 +126,27 @@ describe("nextRoute", () => {
     await expect(response.text()).resolves.toBe("object route");
   });
 
+  it("does not resolve params when no params contract is declared", async () => {
+    const readParams = vi.fn<() => void>();
+    const route = nextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .handle(async ({ response }) => response.text("no params")),
+    );
+    const segmentData = {
+      get params() {
+        readParams();
+
+        return Promise.resolve({});
+      },
+    } as { params: Promise<EmptyParams> };
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api/test"), segmentData);
+
+    expect(readParams).not.toHaveBeenCalled();
+    await expect(response.text()).resolves.toBe("no params");
+  });
+
   it("supports injected procedure validators", async () => {
     const route = nextRoute(
       procedure
