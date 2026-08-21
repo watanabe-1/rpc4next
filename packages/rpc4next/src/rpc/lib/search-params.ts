@@ -34,7 +34,7 @@
 export const searchParamsToObject = <T extends Record<string, string | string[] | undefined>>(
   searchParams: URLSearchParams,
 ): T => {
-  const params: Record<string, string | string[]> = {};
+  const params: Record<string, string | string[]> = Object.create(null);
 
   searchParams.forEach((value, key) => {
     const existing = params[key];

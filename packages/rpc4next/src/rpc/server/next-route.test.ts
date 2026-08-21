@@ -310,6 +310,61 @@ describe("nextRoute", () => {
     });
   });
 
+  it("keeps prototype-like formData keys as data properties", async () => {
+    const route = nextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .formData({
+          "~standard": {
+            version: 1,
+            vendor: "rpc4next-test",
+            validate: (value) => {
+              if (
+                typeof value === "object" &&
+                value !== null &&
+                Object.getPrototypeOf(value) === null
+              ) {
+                return {
+                  value: {
+                    proto: (value as Record<string, string>).__proto__,
+                    constructor: (value as Record<string, string>).constructor,
+                  },
+                };
+              }
+
+              return {
+                issues: [{ message: "expected a null-prototype formData object" }],
+              };
+            },
+          },
+        })
+        .handle(async ({ formData }) => ({
+          body: formData,
+        })),
+      { method: "POST" },
+    );
+
+    const body = new FormData();
+    body.append("__proto__", "polluted");
+    body.append("constructor", "value");
+
+    const response = await route(
+      new NextRequest("http://127.0.0.1:3000/api", {
+        method: "POST",
+        body,
+      }),
+      {
+        params: Promise.resolve({}),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      proto: "polluted",
+      constructor: "value",
+    });
+  });
+
   it("preserves raw Response escape hatches", async () => {
     const route = nextRoute(
       procedure.forRoute(staticRouteContract).handle(async () => {

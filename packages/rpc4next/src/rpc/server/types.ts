@@ -111,6 +111,10 @@ export interface ResponseHelpers<TJson = unknown> {
     init?: TStatus | TypedResponseInit<TStatus, "text/plain">,
   ) => TypedNextResponse<TData, TStatus, "text/plain">;
 
+  /**
+   * Passed through to NextResponse.redirect. Validate user-controlled values before passing
+   * absolute URLs here; use relative URLs when redirecting inside the same app.
+   */
   redirect: <TStatus extends RedirectionHttpStatusCode = 307>(
     url: string,
     init?: TStatus | TypedResponseInit<TStatus, "">,
