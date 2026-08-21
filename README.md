@@ -77,13 +77,21 @@ remain lightweight descriptive annotations rather than a policy system.
 // app/api/_shared/procedure-defaults.ts
 import { procedure, type ProcedureOnError } from "rpc4next/server";
 
+const getErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
+
 const onError = ((error, { response }) => {
   if (error instanceof Response) {
     return error;
   }
 
+  console.error("[rpc4next] Unexpected procedure error", {
+    message: getErrorMessage(error),
+    error,
+  });
+
   return response.error("INTERNAL_SERVER_ERROR", {
-    message: error instanceof Error ? error.message : "Internal server error",
+    message: "Internal server error",
   });
 }) satisfies ProcedureOnError;
 
@@ -538,13 +546,21 @@ middleware returns them.
 import { nextRoute, procedure, type ProcedureOnError } from "rpc4next/server";
 import { routeContract } from "./route-contract";
 
+const getErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
+
 const onError = ((error, { response }) => {
   if (error instanceof Response) {
     return error;
   }
 
+  console.error("[rpc4next] Unexpected procedure error", {
+    message: getErrorMessage(error),
+    error,
+  });
+
   return response.error("INTERNAL_SERVER_ERROR", {
-    message: error instanceof Error ? error.message : "unknown integration error",
+    message: "Internal server error",
   });
 }) satisfies ProcedureOnError;
 

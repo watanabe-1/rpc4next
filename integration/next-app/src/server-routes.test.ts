@@ -471,7 +471,7 @@ describe("integration next-app server route handlers", () => {
     await expect(response.json()).resolves.toMatchObject({
       error: {
         code: "INTERNAL_SERVER_ERROR",
-        message: "Procedure output validation failed.",
+        message: "Internal server error",
       },
     });
   });
