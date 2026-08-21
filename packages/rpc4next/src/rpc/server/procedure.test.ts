@@ -1,5 +1,7 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 
+import type { ContentType } from "../lib/content-type-types";
+import type { HttpStatusCode } from "../lib/http-status-code-types";
 import { defaultProcedureOnError, type ProcedureOnError } from "./on-error";
 import { procedure } from "./procedure";
 import type { ProcedureRouteContract } from "./procedure-types";
@@ -19,6 +21,13 @@ type HasJsonVariant<TResponse, TJson> = [Extract<ResponseJson<TResponse>, TJson>
   : true;
 type HasStatus<TResponse, TStatus extends number> =
   TStatus extends ResponseStatus<TResponse> ? true : false;
+type HasVariant<TUnion, TVariant> = [Extract<TUnion, TVariant>] extends [never] ? false : true;
+type HasResponseVariant<
+  TResponse,
+  TJson,
+  TStatus extends HttpStatusCode,
+  TContentType extends ContentType = "application/json",
+> = HasVariant<TResponse, TypedNextResponse<TJson, TStatus, TContentType>>;
 
 describe("procedure builder type definitions", () => {
   const guardedUserRouteContract = {
@@ -949,14 +958,14 @@ describe("procedure builder type definitions", () => {
 
     type RouteResponse = Awaited<ReturnType<typeof route>>;
     type _localOnErrorResponseIncluded = ExpectTrue<
-      HasJsonVariant<
+      HasResponseVariant<
         RouteResponse,
         {
           source: "local-route-error";
-        }
+        },
+        409
       >
     >;
-    type _localOnErrorStatusIncluded = ExpectTrue<HasStatus<RouteResponse, 409>>;
     type _sharedOnErrorResponseExcluded = ExpectFalse<
       HasJsonVariant<
         RouteResponse,
@@ -1003,6 +1012,15 @@ describe("procedure builder type definitions", () => {
       422,
       "application/json"
     >;
+    type _sharedValidationResponseIncluded = ExpectTrue<
+      HasJsonVariant<
+        RouteResponse,
+        {
+          source: "shared-validation";
+        }
+      >
+    >;
+    type _sharedValidationStatusIncluded = ExpectTrue<HasStatus<RouteResponse, 422>>;
     expectTypeOf<RouteResponse>().toExtend<Response | SharedValidationResponse>();
   });
 
@@ -1022,6 +1040,11 @@ describe("procedure builder type definitions", () => {
       .nextPage(() => "rendered" as const);
 
     type PageResult = Awaited<ReturnType<typeof page>>;
+    type _renderResultIncluded = ExpectTrue<HasVariant<PageResult, "rendered">>;
+    type _pageErrorResultIncluded = ExpectTrue<HasVariant<PageResult, "page-error">>;
+    type _pageValidationResultIncluded = ExpectTrue<
+      HasVariant<PageResult, { source: "shared-page-validation" }>
+    >;
     expectTypeOf<PageResult>().toExtend<
       "rendered" | "page-error" | { source: "shared-page-validation" }
     >();
