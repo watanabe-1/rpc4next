@@ -351,12 +351,26 @@ const createPageHelpers = () => ({
   notFound,
 });
 
-const readHeaders = async () => Object.fromEntries((await getHeaders()).entries());
+const entriesToNullPrototypeObject = <TValue>(
+  entries: Iterable<readonly [string, TValue]>,
+): Record<string, TValue> => {
+  const result: Record<string, TValue> = Object.create(null);
+
+  for (const [key, value] of entries) {
+    result[key] = value;
+  }
+
+  return result;
+};
+
+const readHeaders = async () => entriesToNullPrototypeObject((await getHeaders()).entries());
 
 const readCookies = async () => {
   const cookieStore = await getCookies();
 
-  return Object.fromEntries(cookieStore.getAll().map((cookie) => [cookie.name, cookie.value]));
+  return entriesToNullPrototypeObject(
+    cookieStore.getAll().map((cookie) => [cookie.name, cookie.value] as const),
+  );
 };
 
 const parseContract = async <TTarget extends ProcedureInputTarget>(

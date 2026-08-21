@@ -113,4 +113,16 @@ describe("deepMerge", () => {
 
     expect(result).toEqual({ own: "take-me" });
   });
+
+  it("should keep prototype-like keys as data properties", () => {
+    const source = Object.create(null) as Record<string, unknown>;
+    source.__proto__ = "polluted";
+    source["constructor"] = "value";
+
+    const result = deepMerge({}, source);
+
+    expect(Object.getPrototypeOf(result)).toBeNull();
+    expect(result.__proto__).toBe("polluted");
+    expect(result.constructor).toBe("value");
+  });
 });

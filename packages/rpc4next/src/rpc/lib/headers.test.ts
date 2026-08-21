@@ -7,6 +7,17 @@ describe("normalizeHeaders", () => {
     expect(normalizeHeaders()).toEqual({});
   });
 
+  it("should return a null-prototype object", () => {
+    const result = normalizeHeaders([
+      ["__proto__", "polluted"],
+      ["Constructor", "value"],
+    ]);
+
+    expect(Object.getPrototypeOf(result)).toBeNull();
+    expect(result.__proto__).toBe("polluted");
+    expect(result.constructor).toBe("value");
+  });
+
   it("should normalize Headers instance", () => {
     const headers = new Headers();
     headers.append("X-Test", "value");

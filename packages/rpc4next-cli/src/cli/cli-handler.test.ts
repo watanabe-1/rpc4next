@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -76,6 +77,35 @@ describe("handleCli", () => {
       "Error: outputPath must be inside the current working directory.",
     );
     expect(generatorModule.generate).not.toHaveBeenCalled();
+  });
+
+  it("should reject outputPath that resolves outside cwd through a symlink", () => {
+    const options: CliOptions = {};
+    const symlinkOutputPath = path.resolve(process.cwd(), "linked-output", "rpc.ts");
+    const outsideOutputPath = path.resolve(process.cwd(), "..", "outside-app", "rpc.ts");
+    const existsSpy = vi.spyOn(fs, "existsSync").mockReturnValue(true);
+    const realpathSpy = vi.spyOn(fs.realpathSync, "native").mockImplementation((filePath) => {
+      const resolvedPath = path.resolve(String(filePath));
+
+      if (resolvedPath === symlinkOutputPath) {
+        return outsideOutputPath;
+      }
+
+      return resolvedPath;
+    });
+
+    try {
+      const result = handleCli(baseDir, symlinkOutputPath, options, logger);
+
+      expect(result).toBe(1);
+      expect(logger.error).toHaveBeenCalledWith(
+        "Error: outputPath must be inside the current working directory.",
+      );
+      expect(generatorModule.generate).not.toHaveBeenCalled();
+    } finally {
+      existsSpy.mockRestore();
+      realpathSpy.mockRestore();
+    }
   });
 
   it.each(["../params.ts", "nested/params.ts", "nested\\params.ts", ".", ".."])(
