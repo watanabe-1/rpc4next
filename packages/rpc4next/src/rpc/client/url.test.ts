@@ -48,6 +48,21 @@ describe("createUrl", () => {
     expect(result.path).toBe("https://example.com/docs#section1");
   });
 
+  it("encodes hash characters that would otherwise change URL structure", () => {
+    const result = createUrl(
+      ["https://example.com", "docs"],
+      {},
+      [],
+    )({
+      hash: "日本語 section#1?tab=api",
+    });
+
+    expect(result.relativePath).toBe("/docs#%E6%97%A5%E6%9C%AC%E8%AA%9E%20section%231%3Ftab%3Dapi");
+    expect(result.path).toBe(
+      "https://example.com/docs#%E6%97%A5%E6%9C%AC%E8%AA%9E%20section%231%3Ftab%3Dapi",
+    );
+  });
+
   it("appends query parameters and hash when both are provided", () => {
     const result = createUrl(
       ["https://example.com", "search"],
@@ -220,6 +235,27 @@ describe("createUrl", () => {
     expect(result.relativePath).toBe("/patterns/_escaped");
     expect(result.path).toBe("https://example.com/patterns/_escaped");
     expect(result.pathname).toBe("/patterns/_escaped");
+  });
+
+  it("does not decode an encoded slash in a static segment into a path separator", () => {
+    const result = createUrl(["https://example.com", "patterns", "%2F"], {}, [])();
+
+    expect(result.relativePath).toBe("/patterns/%2F");
+    expect(result.path).toBe("https://example.com/patterns/%2F");
+  });
+
+  it("does not decode an encoded question mark in a static segment into a query marker", () => {
+    const result = createUrl(["https://example.com", "patterns", "%3F"], {}, [])();
+
+    expect(result.relativePath).toBe("/patterns/%3F");
+    expect(result.path).toBe("https://example.com/patterns/%3F");
+  });
+
+  it("does not decode an encoded hash in a static segment into a fragment marker", () => {
+    const result = createUrl(["https://example.com", "patterns", "%23"], {}, [])();
+
+    expect(result.relativePath).toBe("/patterns/%23");
+    expect(result.path).toBe("https://example.com/patterns/%23");
   });
 
   it("keeps malformed encoded static segments as raw values", () => {

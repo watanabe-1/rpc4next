@@ -59,7 +59,7 @@ const buildUrlSuffix = (url?: UrlOptions) => {
   }
 
   const query = searchParams ? `?${searchParams.toString()}` : "";
-  const hash = url.hash ? `#${url.hash}` : "";
+  const hash = url.hash ? `#${encodeURIComponent(url.hash)}` : "";
 
   return query + hash;
 };
@@ -111,6 +111,13 @@ const safeDecodeSegment = (value: string) => {
     return value;
   }
 };
+
+const decodeUnreservedPathSegment = (value: string) =>
+  value.replace(/%[0-9A-Fa-f]{2}/g, (encoded) => {
+    const char = String.fromCharCode(Number.parseInt(encoded.slice(1), 16));
+
+    return /[A-Za-z0-9\-._~]/.test(char) ? char : encoded;
+  });
 
 const buildPathFromSegments = (segments: string[]) => {
   const joined = segments.join("/");
@@ -183,7 +190,7 @@ export const createUrl = (paths: string[], params: PathParamsInput, dynamicKeys:
     pathnameSegments.push(getPathnameSegment(segment));
 
     if (!dynamicKeys.includes(segment)) {
-      routeSegments.push(safeDecodeSegment(segment));
+      routeSegments.push(decodeUnreservedPathSegment(segment));
 
       continue;
     }
