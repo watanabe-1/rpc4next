@@ -45,6 +45,22 @@ const omitCookieHeader = (headers: Record<string, string>) => {
   return headersWithoutCookie;
 };
 
+const cookieNamePattern = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
+const cookieValuePattern = /^[\u0021\u0023-\u002B\u002D-\u003A\u003C-\u005B\u005D-\u007E]*$/;
+
+const serializeCookiePair = ([name, rawValue]: [string, unknown]) => {
+  const value = String(rawValue);
+
+  if (!cookieNamePattern.test(name)) {
+    throw new TypeError(`Invalid cookie name: ${name}`);
+  }
+  if (!cookieValuePattern.test(value)) {
+    throw new TypeError(`Invalid cookie value for "${name}".`);
+  }
+
+  return `${name}=${value}`;
+};
+
 /**
  * Build a typed HTTP method invoker.
  *
@@ -109,9 +125,7 @@ export const httpMethod = (
         return mergedHeaders;
       }
 
-      const cookieFromMap = Object.entries(methodParamCookies)
-        .map(([k, v]) => `${k}=${v}`)
-        .join("; ");
+      const cookieFromMap = Object.entries(methodParamCookies).map(serializeCookiePair).join("; ");
 
       return {
         ...mergedHeaders,

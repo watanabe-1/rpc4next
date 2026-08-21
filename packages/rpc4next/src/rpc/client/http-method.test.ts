@@ -634,6 +634,44 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     });
   });
 
+  it("rejects cookie map entries that cannot be safely serialized", async () => {
+    const key = "$get";
+    const paths = ["http://example.com", "api", "withCookies"];
+    const params = {};
+    const dynamicKeys: string[] = [];
+
+    let fetchCalled = false;
+    global.fetch = ((_input, _init) => {
+      fetchCalled = true;
+
+      return Promise.resolve(new Response(null, { status: 200 }));
+    }) as typeof fetch;
+
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, { init: {} });
+
+    await expect(
+      requestFn({
+        requestHeaders: {
+          cookies: {
+            sessionId: "abc123; injected=true",
+          },
+          headers: undefined,
+        },
+      }),
+    ).rejects.toThrow('Invalid cookie value for "sessionId".');
+    await expect(
+      requestFn({
+        requestHeaders: {
+          cookies: {
+            "bad name": "abc123",
+          },
+          headers: undefined,
+        },
+      }),
+    ).rejects.toThrow("Invalid cookie name: bad name");
+    expect(fetchCalled).toBe(false);
+  });
+
   it("omits Cookie headers in browser runtime", async () => {
     simulateBrowserRuntime();
 
