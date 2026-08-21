@@ -55,8 +55,8 @@ export default appPageProcedure.forRoute(routeContract).nextPage(async () => {
   let errorPayload: unknown;
   try {
     await parseResponse(
-      serverRpcClient.api["procedure-validation-branch"].$get({
-        url: { query: { page: "0" } },
+      serverRpcClient.api["procedure-defaults-error"].$get({
+        url: { query: { mode: "deny" } },
       }),
     );
   } catch (error) {
@@ -67,6 +67,7 @@ export default appPageProcedure.forRoute(routeContract).nextPage(async () => {
     errorPayload = {
       status: error.status,
       statusText: error.statusText,
+      code: error.code,
       payload: error.payload,
     };
   }
@@ -109,16 +110,17 @@ const body = await response.json();`,
     },
     {
       title: "Typed error payload",
-      route: "/api/procedure-validation-branch",
+      route: "/api/procedure-defaults-error",
       code: `try {
   await parseResponse(
-    rpc.api["procedure-validation-branch"].$get({
-      url: { query: { page: "0" } },
+    rpc.api["procedure-defaults-error"].$get({
+      url: { query: { mode: "deny" } },
     }),
   );
 } catch (error) {
   if (error instanceof RpcResponseError) {
     console.log(error.status);
+    console.log(error.code);
     console.log(error.payload);
   }
 }`,

@@ -1,4 +1,5 @@
 import type { ContentType } from "../lib/content-type-types";
+import type { RpcErrorEnvelope } from "../server/error";
 import type { TypedNextResponse } from "../server/types";
 
 type BodyParserResponseLike<TJsonPayload = unknown> = {
@@ -15,6 +16,7 @@ type BodyParserResponseLike<TJsonPayload = unknown> = {
 };
 
 type SuccessfulResponse<TResponse> = Extract<TResponse, { readonly ok: true }>;
+type ErrorResponse<TResponse> = Extract<TResponse, { readonly ok: false }>;
 
 type JsonContentType = "application/json" | `${string}+json`;
 type TextContentType = `text/${string}`;
@@ -48,12 +50,41 @@ export type SuccessfulResponsePayload<TResponse> = [
 
 export type SuccessfulJsonPayload<TResponse> = SuccessfulResponsePayload<TResponse>;
 
+export type ErrorResponsePayload<TResponse> = [ErrorResponse<Awaited<TResponse>>] extends [never]
+  ? never
+  : ParsedPayload<ErrorResponse<Awaited<TResponse>>>;
+
+export type ErrorResponseCode<TResponse> =
+  ErrorResponsePayload<TResponse> extends RpcErrorEnvelope<infer TCode, any> ? TCode : never;
+
+type RpcErrorCodeFromPayload<TPayload> =
+  TPayload extends RpcErrorEnvelope<infer TCode, any> ? TCode : string;
+
+const getRpcErrorCode = <TPayload>(
+  payload: TPayload,
+): RpcErrorCodeFromPayload<TPayload> | undefined => {
+  if (
+    typeof payload !== "object" ||
+    payload === null ||
+    !("error" in payload) ||
+    typeof payload.error !== "object" ||
+    payload.error === null ||
+    !("code" in payload.error) ||
+    typeof payload.error.code !== "string"
+  ) {
+    return undefined;
+  }
+
+  return payload.error.code as RpcErrorCodeFromPayload<TPayload>;
+};
+
 export class RpcResponseError<
   TPayload = unknown,
   TResponse extends BodyParserResponseLike = BodyParserResponseLike,
 > extends Error {
   readonly status: number;
   readonly statusText: string;
+  readonly code?: RpcErrorCodeFromPayload<TPayload>;
   readonly payload: TPayload;
   readonly response: TResponse;
 
@@ -64,6 +95,7 @@ export class RpcResponseError<
     this.name = "RpcResponseError";
     this.status = response.status;
     this.statusText = response.statusText;
+    this.code = getRpcErrorCode(payload);
     this.payload = payload;
     this.response = response;
   }

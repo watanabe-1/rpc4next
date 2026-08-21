@@ -2,6 +2,8 @@ import { describe, expect, expectTypeOf, it } from "vitest";
 
 import type { TypedNextResponse } from "../server";
 import {
+  type ErrorResponseCode,
+  type ErrorResponsePayload,
   parseResponse,
   RpcResponseError,
   type SuccessfulJsonPayload,
@@ -53,6 +55,7 @@ describe("parseResponse", () => {
     const response = Response.json(
       {
         error: {
+          code: "BAD_REQUEST",
           message: "invalid",
         },
       },
@@ -62,8 +65,10 @@ describe("parseResponse", () => {
     await expect(parseResponse(response)).rejects.toMatchObject({
       status: 400,
       statusText: "Bad Request",
+      code: "BAD_REQUEST",
       payload: {
         error: {
+          code: "BAD_REQUEST",
           message: "invalid",
         },
       },
@@ -160,6 +165,58 @@ describe("parseResponse", () => {
       value: string;
     }>();
     expect(payload).toEqual({ ok: true, value: "typed" });
+  });
+
+  it("infers error payloads and codes from unsuccessful response union members", () => {
+    type ResponseUnion =
+      | TypedNextResponse<{ ok: true }, 200, "application/json">
+      | TypedNextResponse<
+          {
+            error: {
+              code: "NOT_FOUND";
+              message: string;
+              details: {
+                entryId: string;
+              };
+            };
+          },
+          404,
+          "application/json"
+        >
+      | TypedNextResponse<
+          {
+            error: {
+              code: "CONFLICT";
+              message: string;
+            };
+          },
+          409,
+          "application/json"
+        >;
+
+    type Payload = ErrorResponsePayload<ResponseUnion>;
+    type Code = ErrorResponseCode<ResponseUnion>;
+    type Error = RpcResponseError<Payload>;
+
+    expectTypeOf<Code>().toEqualTypeOf<"NOT_FOUND" | "CONFLICT">();
+    expectTypeOf<Error["code"]>().toEqualTypeOf<"NOT_FOUND" | "CONFLICT" | undefined>();
+    expectTypeOf<Payload>().toEqualTypeOf<
+      | {
+          error: {
+            code: "NOT_FOUND";
+            message: string;
+            details: {
+              entryId: string;
+            };
+          };
+        }
+      | {
+          error: {
+            code: "CONFLICT";
+            message: string;
+          };
+        }
+    >();
   });
 
   it("infers text payloads from successful text response union members", async () => {
