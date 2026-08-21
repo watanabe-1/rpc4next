@@ -31,6 +31,16 @@
         "default": "./dist/rpc/client/index.js"
       }
     },
+    "./client/helper": {
+      "import": {
+        "types": "./dist/rpc/client/rpc-helper.d.ts",
+        "default": "./dist/rpc/client/rpc-helper.js"
+      },
+      "default": {
+        "types": "./dist/rpc/client/rpc-helper.d.ts",
+        "default": "./dist/rpc/client/rpc-helper.js"
+      }
+    },
     "./server": {
       "import": {
         "types": "./dist/rpc/server/index.d.ts",

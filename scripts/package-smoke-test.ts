@@ -82,10 +82,12 @@ const runBundlerSmoke = async (cwd: string) => {
     entryPath,
     [
       'import { createRpcClient } from "rpc4next/client";',
+      'import { createRpcHelper } from "rpc4next/client/helper";',
       'import { nextRoute, procedure } from "rpc4next/server";',
       'import { HTTP_METHODS } from "rpc4next-shared";',
       "",
       'if (typeof createRpcClient !== "function") throw new Error("missing client export");',
+      'if (typeof createRpcHelper !== "function") throw new Error("missing client helper export");',
       'if (typeof nextRoute !== "function") throw new Error("missing server export");',
       'if (typeof procedure !== "object") throw new Error("missing procedure export");',
       'if (!Array.isArray(HTTP_METHODS)) throw new Error("missing shared export");',
