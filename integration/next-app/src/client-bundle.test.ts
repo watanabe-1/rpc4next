@@ -9,6 +9,7 @@ const execFileAsync = promisify(execFile);
 const workspaceRoot = path.resolve(import.meta.dirname, "..");
 const clientStaticDir = path.join(workspaceRoot, ".next", "static");
 const routeSourceLeakSentinel = "rpc4next-client-bundle-route-source-leak-sentinel";
+const helperOnlyBundleSentinels = ["$match", "http://dummy", "(?:/(.*))?"] as const;
 const shouldRunClientBundleTest = process.env.RPC4NEXT_RUN_CLIENT_BUNDLE_TEST === "1";
 
 const collectJavaScriptFiles = async (dir: string): Promise<string[]> => {
@@ -46,6 +47,31 @@ describe.skipIf(!shouldRunClientBundleTest)("client production bundle", () => {
         const source = await fs.readFile(file, "utf8");
 
         if (source.includes(routeSourceLeakSentinel)) {
+          leakedFiles.push(path.relative(workspaceRoot, file));
+        }
+      }),
+    );
+
+    expect(leakedFiles).toStrictEqual([]);
+  }, 180_000);
+
+  it("does not include rpc helper path matching code when only the rpc client is used", async () => {
+    await execFileAsync("bun", ["run", "build"], {
+      cwd: workspaceRoot,
+      env: process.env,
+      maxBuffer: 1024 * 1024 * 20,
+    });
+
+    const clientFiles = await collectJavaScriptFiles(clientStaticDir);
+    expect(clientFiles.length).toBeGreaterThan(0);
+
+    const leakedFiles: string[] = [];
+
+    await Promise.all(
+      clientFiles.map(async (file) => {
+        const source = await fs.readFile(file, "utf8");
+
+        if (helperOnlyBundleSentinels.every((sentinel) => source.includes(sentinel))) {
           leakedFiles.push(path.relative(workspaceRoot, file));
         }
       }),
