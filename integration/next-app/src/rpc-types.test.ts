@@ -1,4 +1,9 @@
-import { createRpcClient } from "rpc4next/client";
+import {
+  createRpcClient,
+  parseResponse,
+  RpcResponseError,
+  type SuccessfulResponsePayload,
+} from "rpc4next/client";
 import type { ContentType, HttpStatusCode, TypedNextResponse } from "rpc4next/server";
 import { describe, expectTypeOf, it } from "vitest";
 
@@ -318,6 +323,16 @@ describe("integration next-app generated RPC type coverage", () => {
         >
       | SharedProcedureOnErrorResponse;
     expectTypeOf<typeof _procedureContractResponse>().toExtend<ExpectedProcedureContractResponse>();
+    type ProcedureContractPayload = SuccessfulResponsePayload<typeof _procedureContractResponse>;
+    expectTypeOf<ProcedureContractPayload>().toEqualTypeOf<{
+      ok: true;
+      userId: string;
+      includePosts: boolean;
+      source: "procedure-contract";
+      requestId: string;
+    }>();
+    const _procedureContractPayload = await parseResponse(_procedureContractResponse);
+    expectTypeOf<typeof _procedureContractPayload>().toEqualTypeOf<ProcedureContractPayload>();
     type _procedureContractKeepsSuccess = ExpectTrue<
       HasResponseVariant<
         typeof _procedureContractResponse,
@@ -832,6 +847,12 @@ describe("integration next-app generated RPC type coverage", () => {
     type _redirectResponseKeepsDefaultError = ExpectTrue<
       HasVariant<RedirectResponse, SharedProcedureOnErrorResponse>
     >;
+
+    const _responseError = new RpcResponseError(
+      new Response("error", { status: 500, statusText: "Internal Server Error" }),
+      "error",
+    );
+    expectTypeOf<typeof _responseError.payload>().toEqualTypeOf<string>();
   });
 
   it("rejects invalid generated RPC inputs at compile time", () => {

@@ -5,6 +5,7 @@ export default function HomePage() {
     ._userId("demo-user")
     .$url({ query: { includePosts: "true" } });
   const procedureExamplesUrl = "/procedure-examples";
+  const responseUnwrapUrl = "/response-unwrap";
 
   return (
     <main>
@@ -13,6 +14,9 @@ export default function HomePage() {
       <code>{userUrl.relativePath}</code>
       <p>
         The procedure-first walkthrough lives at <code>{procedureExamplesUrl}</code>.
+      </p>
+      <p>
+        The response unwrap examples live at <code>{responseUnwrapUrl}</code>.
       </p>
     </main>
   );

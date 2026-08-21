@@ -88,5 +88,6 @@ export type PathStructure = RpcEndpoint & {
       }
     }
   },
-  "procedure-examples": RpcEndpoint
+  "procedure-examples": RpcEndpoint,
+  "response-unwrap": RpcEndpoint
 };

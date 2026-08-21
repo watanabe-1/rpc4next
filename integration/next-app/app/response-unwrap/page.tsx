@@ -1,0 +1,150 @@
+import { headers } from "next/headers";
+import { createRpcClient, parseResponse, RpcResponseError } from "rpc4next/client";
+
+import { appPageProcedure } from "../api/_shared/procedure-defaults";
+import { routeContract } from "./route-contract";
+import type { PathStructure } from "@/generated/rpc";
+
+export const dynamic = "force-dynamic";
+
+type ExampleResult = {
+  title: string;
+  route: string;
+  code: string;
+  result: string;
+};
+
+const createServerRpcClient = async () => {
+  const headerStore = await headers();
+  const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host");
+  const protocol = headerStore.get("x-forwarded-proto") ?? "http";
+
+  if (!host) {
+    throw new Error("Expected host header for response-unwrap page.");
+  }
+
+  return createRpcClient<PathStructure>(`${protocol}://${host}`);
+};
+
+const formatPayload = (payload: unknown) => JSON.stringify(payload, null, 2);
+
+export default appPageProcedure.forRoute(routeContract).nextPage(async () => {
+  const serverRpcClient = await createServerRpcClient();
+
+  const manualResponse = await serverRpcClient.api["procedure-contract"]._userId("demo-user").$get({
+    url: { query: { includePosts: "true" } },
+  });
+  const manualPayload = manualResponse.ok
+    ? await manualResponse.json()
+    : await manualResponse.json().then((payload) => {
+        throw new Error(JSON.stringify(payload));
+      });
+
+  const unwrappedPayload = await parseResponse(
+    serverRpcClient.api["procedure-contract"]._userId("demo-user").$get({
+      url: { query: { includePosts: "true" } },
+    }),
+  );
+
+  const textPayload = await parseResponse(
+    serverRpcClient.api["procedure-response-text"].$get({
+      url: { query: { name: "demo-user" } },
+    }),
+  );
+
+  let errorPayload: unknown;
+  try {
+    await parseResponse(
+      serverRpcClient.api["procedure-validation-branch"].$get({
+        url: { query: { page: "0" } },
+      }),
+    );
+  } catch (error) {
+    if (!(error instanceof RpcResponseError)) {
+      throw error;
+    }
+
+    errorPayload = {
+      status: error.status,
+      statusText: error.statusText,
+      payload: error.payload,
+    };
+  }
+
+  const examples: ExampleResult[] = [
+    {
+      title: "Manual Response handling",
+      route: "/api/procedure-contract/[userId]",
+      code: `const response = await rpc.api["procedure-contract"]
+  ._userId("demo-user")
+  .$get({ url: { query: { includePosts: "true" } } });
+
+if (!response.ok) {
+  const error = await response.json();
+  throw new Error(JSON.stringify(error));
+}
+
+const body = await response.json();`,
+      result: formatPayload(manualPayload),
+    },
+    {
+      title: "parseResponse success unwrap",
+      route: "/api/procedure-contract/[userId]",
+      code: `const body = await parseResponse(
+  rpc.api["procedure-contract"]
+    ._userId("demo-user")
+    .$get({ url: { query: { includePosts: "true" } } }),
+);`,
+      result: formatPayload(unwrappedPayload),
+    },
+    {
+      title: "Content-Type based text parsing",
+      route: "/api/procedure-response-text",
+      code: `const body = await parseResponse(
+  rpc.api["procedure-response-text"].$get({
+    url: { query: { name: "demo-user" } },
+  }),
+);`,
+      result: formatPayload(textPayload),
+    },
+    {
+      title: "Typed error payload",
+      route: "/api/procedure-validation-branch",
+      code: `try {
+  await parseResponse(
+    rpc.api["procedure-validation-branch"].$get({
+      url: { query: { page: "0" } },
+    }),
+  );
+} catch (error) {
+  if (error instanceof RpcResponseError) {
+    console.log(error.status);
+    console.log(error.payload);
+  }
+}`,
+      result: formatPayload(errorPayload),
+    },
+  ];
+
+  return (
+    <main>
+      <h1>Response unwrap examples</h1>
+      <p>
+        This page compares low-level typed Response handling with <code>parseResponse</code> for
+        application code that only needs the parsed success payload.
+      </p>
+      {examples.map((example) => (
+        <section key={example.title}>
+          <h2>{example.title}</h2>
+          <p>
+            Route: <code>{example.route}</code>
+          </p>
+          <h3>Code</h3>
+          <pre>{example.code}</pre>
+          <h3>Runtime result</h3>
+          <pre>{example.result}</pre>
+        </section>
+      ))}
+    </main>
+  );
+});
