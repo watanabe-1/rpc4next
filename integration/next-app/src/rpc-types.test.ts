@@ -34,6 +34,7 @@ type SharedProcedureOnErrorResponse = TypedNextResponse<
   500,
   "application/json"
 >;
+type SharedProcedureValidationErrorResponse = TypedNextResponse<unknown, 400, "application/json">;
 
 describe("integration next-app generated RPC type coverage", () => {
   it("infers the generated client signatures for query, body, and headers", () => {
@@ -232,6 +233,7 @@ describe("integration next-app generated RPC type coverage", () => {
           200,
           "application/json"
         >
+      | SharedProcedureValidationErrorResponse
       | SharedProcedureOnErrorResponse;
     expectTypeOf<typeof _contractRouteResponse>().toExtend<ExpectedContractRouteResponse>();
 
@@ -500,7 +502,8 @@ describe("integration next-app generated RPC type coverage", () => {
           },
           500,
           "application/json"
-        >;
+        >
+      | SharedProcedureValidationErrorResponse;
     expectTypeOf<
       typeof procedureInvalidOutputResponse
     >().toExtend<ExpectedProcedureInvalidOutputResponse>();

@@ -7,12 +7,15 @@ import {
   nextPage as adaptProcedureToNextPage,
   type NextPageHandler,
   type ProcedurePageOnError,
+  type ProcedurePageOnValidationError,
 } from "./next-page";
 import { nextRoute as adaptProcedureToNextRoute, type NextRouteExports } from "./next-route";
 import type { ProcedureOnError } from "./on-error";
 import type {
   ExtractProcedureSharedPageOnError,
+  ExtractProcedureSharedPageOnValidationError,
   ExtractProcedureSharedRouteOnError,
+  ExtractProcedureSharedRouteOnValidationError,
   ProcedureDefaults,
   ProcedureNextPageArgs,
   ProcedureNextRouteOptions,
@@ -35,6 +38,7 @@ import {
   type ProcedureRouteBinding,
   type ProcedureRouteContract,
   type ProcedureValidationErrorHandlerResult,
+  type ProcedureValidationErrorHandler,
   type ProcedureValidationErrorResponseMap,
 } from "./procedure-types";
 import type { ValidationSchema } from "./route-types";
@@ -412,19 +416,23 @@ type ProcedureNextRouteMethod<
   TMethod extends HttpMethod = HttpMethod,
   TValidateOutput extends boolean = false,
   TOnError extends ProcedureOnError = ExtractProcedureSharedRouteOnError<TDefaults>,
+  TOnValidationError extends ProcedureValidationErrorHandler | undefined =
+    ExtractProcedureSharedRouteOnValidationError<TDefaults>,
 >(
   options: ProcedureNextRouteOptions<
     Procedure<TDefinition, TContext, TOutput, THandler, TDefaults, TMiddlewareTerminalResult>,
     TMethod,
     TValidateOutput,
     TDefaults,
-    TOnError
+    TOnError,
+    TOnValidationError
   >,
 ) => NextRouteExports<
   Procedure<TDefinition, TContext, TOutput, THandler, TDefaults, TMiddlewareTerminalResult>,
   TMethod,
   TValidateOutput,
-  TOnError
+  TOnError,
+  TOnValidationError
 >;
 
 type ExtractProcedureHandlerData<THandler, TFallback> = THandler extends (
@@ -445,6 +453,8 @@ type ProcedureNextPageMethod<
 > = <
   TResult = unknown,
   TOnError extends ProcedurePageOnError = ExtractProcedureSharedPageOnError<TDefaults>,
+  TOnValidationError extends ProcedurePageOnValidationError | undefined =
+    ExtractProcedureSharedPageOnValidationError<TDefaults>,
 >(
   ...args: ProcedureNextPageArgs<
     Procedure<TDefinition, TContext, TOutput, THandler, TDefaults, TMiddlewareTerminalResult>,
@@ -452,11 +462,16 @@ type ProcedureNextPageMethod<
     TContext,
     TResult,
     TDefaults,
-    TOnError
+    TOnError,
+    TOnValidationError
   >
 ) => NextPageHandler<
   Procedure<TDefinition, TContext, TOutput, THandler, TDefaults, TMiddlewareTerminalResult>,
-  TResult | Awaited<ReturnType<TOnError>>
+  | TResult
+  | Awaited<ReturnType<TOnError>>
+  | (TOnValidationError extends ProcedurePageOnValidationError
+      ? Awaited<ReturnType<TOnValidationError>>
+      : never)
 >;
 
 type ProcedureBuilderNextPageCarrier<
@@ -477,6 +492,8 @@ type ProcedureBuilderNextPageMethod<
 > = <
   TResult = unknown,
   TOnError extends ProcedurePageOnError = ExtractProcedureSharedPageOnError<TDefaults>,
+  TOnValidationError extends ProcedurePageOnValidationError | undefined =
+    ExtractProcedureSharedPageOnValidationError<TDefaults>,
 >(
   ...args: ProcedureNextPageArgs<
     ProcedureBuilderNextPageCarrier<TDefinition, TMiddlewareTerminalResult>,
@@ -484,11 +501,16 @@ type ProcedureBuilderNextPageMethod<
     TContext,
     TResult,
     TDefaults,
-    TOnError
+    TOnError,
+    TOnValidationError
   >
 ) => NextPageHandler<
   ProcedureBuilderNextPageCarrier<TDefinition, TMiddlewareTerminalResult>,
-  TResult | Awaited<ReturnType<TOnError>>
+  | TResult
+  | Awaited<ReturnType<TOnError>>
+  | (TOnValidationError extends ProcedurePageOnValidationError
+      ? Awaited<ReturnType<TOnValidationError>>
+      : never)
 >;
 
 export type Procedure<
@@ -1015,6 +1037,8 @@ const createProcedureBuilder = <
 
     const hasOptionOnError =
       options !== null && typeof options === "object" && "onError" in options;
+    const hasOptionOnValidationError =
+      options !== null && typeof options === "object" && "onValidationError" in options;
 
     if ("route" in defaults && defaults.route) {
       const routeDefaults = defaults as ProcedureSharedDefaults;
@@ -1024,6 +1048,9 @@ const createProcedureBuilder = <
         onError: hasOptionOnError
           ? (options as { onError: ProcedureOnError }).onError
           : routeDefaults.route?.onError,
+        onValidationError: hasOptionOnValidationError
+          ? (options as { onValidationError: ProcedureValidationErrorHandler }).onValidationError
+          : routeDefaults.route?.onValidationError,
       };
     }
 
@@ -1041,6 +1068,8 @@ const createProcedureBuilder = <
     }
 
     const pageDefaults = defaults as ProcedureSharedDefaults;
+    const hasOptionOnValidationError =
+      options && typeof options === "object" && "onValidationError" in options;
 
     return {
       ...(options as object),
@@ -1048,6 +1077,9 @@ const createProcedureBuilder = <
         options && typeof options === "object" && "onError" in options
           ? (options as { onError: ProcedurePageOnError }).onError
           : pageDefaults.page?.onError,
+      onValidationError: hasOptionOnValidationError
+        ? (options as { onValidationError: ProcedurePageOnValidationError }).onValidationError
+        : pageDefaults.page?.onValidationError,
     };
   };
 

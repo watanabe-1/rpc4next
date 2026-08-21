@@ -79,6 +79,20 @@ export const defaultProcedurePageOnError = ((error) => {
 
 export type DefaultProcedurePageOnError = typeof defaultProcedurePageOnError;
 
+export type ProcedurePageOnValidationErrorContext<
+  TTarget extends ProcedureInputTarget = ProcedureInputTarget,
+> = {
+  target: TTarget;
+  value: unknown;
+  issues: readonly StandardSchemaV1Issue[];
+  params: Params;
+  searchParams: Query;
+};
+
+export type ProcedurePageOnValidationError<TResult = unknown> = (
+  context: ProcedurePageOnValidationErrorContext,
+) => TResult | Promise<TResult>;
+
 export type NextPageProcedureCarrier = {
   definition: ProcedureDefinition;
   middlewares: readonly ProcedureMiddleware[];
@@ -235,27 +249,33 @@ export type NextPageHandler<
   MergeProcedureDefinition<InferProcedureDefinition<TProcedure>, { method: never }>
 >;
 
-export type NextPageOptions<TOnError extends ProcedurePageOnError = ProcedurePageOnError> = {
+export type NextPageOptions<
+  TOnError extends ProcedurePageOnError = ProcedurePageOnError,
+  TOnValidationError extends ProcedurePageOnValidationError | undefined = undefined,
+> = {
   onError?: TOnError;
+  onValidationError?: TOnValidationError;
   validateOutput?: boolean;
 };
 
 export type NextPageProcedureOptions<
   TProcedure extends NextPageProcedureCarrier,
   TOnError extends ProcedurePageOnError = ProcedurePageOnError,
-> = NextPageOptions<TOnError> & NextPageProcedureConstraint<TProcedure>;
+  TOnValidationError extends ProcedurePageOnValidationError | undefined = undefined,
+> = NextPageOptions<TOnError, TOnValidationError> & NextPageProcedureConstraint<TProcedure>;
 
 type NextPageArgs<
   TProcedure extends NextPageProcedureCarrier,
   TResult,
   TOnError extends ProcedurePageOnError,
+  TOnValidationError extends ProcedurePageOnValidationError | undefined,
 > =
   NextPageProcedureConstraint<TProcedure> extends infer TConstraint
     ? TConstraint extends { __error__: string }
       ? [render: TConstraint, options?: never]
       : [
           render: NextPageRender<TProcedure, InferProcedureData<TProcedure>, object, TResult>,
-          options?: NextPageProcedureOptions<TProcedure, TOnError>,
+          options?: NextPageProcedureOptions<TProcedure, TOnError, TOnValidationError>,
         ]
     : never;
 
@@ -343,6 +363,11 @@ const parseContract = async <TTarget extends ProcedureInputTarget>(
   target: TTarget,
   schema: StandardSchemaV1 | undefined,
   rawValue: unknown,
+  context: {
+    onValidationError: ProcedurePageOnValidationError | undefined;
+    params: Params;
+    searchParams: Query;
+  },
 ) => {
   if (!schema) {
     return {
@@ -364,12 +389,28 @@ const parseContract = async <TTarget extends ProcedureInputTarget>(
     };
   }
 
+  const handled = await context.onValidationError?.({
+    target,
+    value: rawValue,
+    issues: result.issues,
+    params: context.params,
+    searchParams: context.searchParams,
+  });
+
+  if (handled !== undefined) {
+    return {
+      ok: false as const,
+      result: handled,
+    };
+  }
+
   throw new Error(getStandardSchemaMessage(result.issues));
 };
 
 const validateProcedureInputs = async (
   props: NextPageProps,
   procedureDefinition: ProcedureDefinition,
+  onValidationError: ProcedurePageOnValidationError | undefined,
 ) => {
   const contracts = procedureDefinition.input?.contracts ?? {};
 
@@ -382,12 +423,36 @@ const validateProcedureInputs = async (
   const headers = contracts.headers ? await readHeaders() : undefined;
   const cookies = contracts.cookies ? await readCookies() : undefined;
 
-  const paramsResult = await parseContract("params", contracts.params, params);
-  const queryResult = await parseContract("query", contracts.query, query);
-  const headersResult = await parseContract("headers", contracts.headers, headers);
-  const cookiesResult = await parseContract("cookies", contracts.cookies, cookies);
+  const validationContext = {
+    onValidationError,
+    params,
+    searchParams: query,
+  };
+
+  const paramsResult = await parseContract("params", contracts.params, params, validationContext);
+  if (!paramsResult.ok) return paramsResult;
+
+  const queryResult = await parseContract("query", contracts.query, query, validationContext);
+  if (!queryResult.ok) return queryResult;
+
+  const headersResult = await parseContract(
+    "headers",
+    contracts.headers,
+    headers,
+    validationContext,
+  );
+  if (!headersResult.ok) return headersResult;
+
+  const cookiesResult = await parseContract(
+    "cookies",
+    contracts.cookies,
+    cookies,
+    validationContext,
+  );
+  if (!cookiesResult.ok) return cookiesResult;
 
   return {
+    ok: true as const,
     params: paramsResult.value,
     query: queryResult.value,
     headers: headersResult.value,
@@ -423,10 +488,18 @@ export const nextPage = <
   TProcedure extends NextPageProcedureCarrier,
   TResult = unknown,
   TOnError extends ProcedurePageOnError = DefaultProcedurePageOnError,
+  TOnValidationError extends ProcedurePageOnValidationError | undefined = undefined,
 >(
   procedure: TProcedure,
-  ...[render, options]: NextPageArgs<TProcedure, TResult, TOnError>
-): NextPageHandler<TProcedure, TResult | Awaited<ReturnType<TOnError>>> => {
+  ...[render, options]: NextPageArgs<TProcedure, TResult, TOnError, TOnValidationError>
+): NextPageHandler<
+  TProcedure,
+  | TResult
+  | Awaited<ReturnType<TOnError>>
+  | (TOnValidationError extends ProcedurePageOnValidationError
+      ? Awaited<ReturnType<TOnValidationError>>
+      : never)
+> => {
   const handler = procedure.handler as
     | ((
         context: InferProcedureHandlerContext<TProcedure>,
@@ -435,6 +508,7 @@ export const nextPage = <
         | Promise<InferProcedureHandlerResult<TProcedure>>)
     | undefined;
   const onError = options?.onError ?? defaultProcedurePageOnError;
+  const onValidationError = options?.onValidationError;
   const outputSchema = procedure.definition.output?.schema;
 
   if (options?.validateOutput && outputSchema !== undefined && !isStandardSchemaV1(outputSchema)) {
@@ -445,7 +519,13 @@ export const nextPage = <
 
   const pageHandler = async (
     props: NextPageProps,
-  ): Promise<TResult | Awaited<ReturnType<TOnError>>> => {
+  ): Promise<
+    | TResult
+    | Awaited<ReturnType<TOnError>>
+    | (TOnValidationError extends ProcedurePageOnValidationError
+        ? Awaited<ReturnType<TOnValidationError>>
+        : never)
+  > => {
     const params = await props.params;
     const searchParams = normalizeSearchParams(await props.searchParams);
 
@@ -457,7 +537,13 @@ export const nextPage = <
           searchParams: Promise.resolve(searchParams),
         },
         procedure.definition,
+        onValidationError,
       );
+      if (!inputResult.ok) {
+        return inputResult.result as TOnValidationError extends ProcedurePageOnValidationError
+          ? Awaited<ReturnType<TOnValidationError>>
+          : never;
+      }
       const request = createPageRequest(
         procedure.definition.route?.pathname,
         inputResult.params as Params,
@@ -531,6 +617,10 @@ export const nextPage = <
 
   return attachProcedureDefinition(pageHandler, procedure.definition) as NextPageHandler<
     TProcedure,
-    TResult | Awaited<ReturnType<TOnError>>
+    | TResult
+    | Awaited<ReturnType<TOnError>>
+    | (TOnValidationError extends ProcedurePageOnValidationError
+        ? Awaited<ReturnType<TOnValidationError>>
+        : never)
   >;
 };

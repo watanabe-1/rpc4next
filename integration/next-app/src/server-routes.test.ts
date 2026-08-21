@@ -199,6 +199,15 @@ describe("integration next-app server route handlers", () => {
     expect(errorPayload.error.code).toBe("BAD_REQUEST");
     expect(errorPayload.error.message).toContain("true");
     expect(errorPayload.error.message).toContain("false");
+    expect(errorPayload.error.details).toEqual({
+      target: "query",
+      issues: [
+        {
+          message: expect.stringContaining("true"),
+          path: ["includePosts"],
+        },
+      ],
+    });
   });
 
   it("serves the posts route through the real POST handler", async () => {
@@ -242,6 +251,15 @@ describe("integration next-app server route handlers", () => {
     const errorPayload = expectValidationErrorPayload(payload);
     expect(errorPayload.error.code).toBe("BAD_REQUEST");
     expect(errorPayload.error.message).toContain(">=1");
+    expect(errorPayload.error.details).toEqual({
+      target: "json",
+      issues: [
+        {
+          message: expect.stringContaining(">=1"),
+          path: ["title"],
+        },
+      ],
+    });
   });
 
   it("reads validated headers and cookies through the real GET handler chain", async () => {
@@ -335,6 +353,15 @@ describe("integration next-app server route handlers", () => {
     const payload = expectValidationErrorPayload(await response.json());
     expect(payload.error.code).toBe("BAD_REQUEST");
     expect(payload.error.message).toBe("Avatar file is too large.");
+    expect(payload.error.details).toEqual({
+      target: "formData",
+      issues: [
+        {
+          message: "Avatar file is too large.",
+          path: ["avatar"],
+        },
+      ],
+    });
   });
 
   it("rejects an unsupported procedure form-data file type through schema validation", async () => {
@@ -355,6 +382,15 @@ describe("integration next-app server route handlers", () => {
     const payload = expectValidationErrorPayload(await response.json());
     expect(payload.error.code).toBe("BAD_REQUEST");
     expect(payload.error.message).toBe("Avatar file type is not supported.");
+    expect(payload.error.details).toEqual({
+      target: "formData",
+      issues: [
+        {
+          message: "Avatar file type is not supported.",
+          path: ["avatar"],
+        },
+      ],
+    });
   });
 
   it("serves a guarded procedure route when the required role is present", async () => {
@@ -508,6 +544,14 @@ describe("integration next-app server route handlers", () => {
     const payload = await response.json();
     const errorPayload = expectValidationErrorPayload(payload);
     expect(errorPayload.error.code).toBe("BAD_REQUEST");
+    expect(errorPayload.error.details).toMatchObject({
+      target: "headers",
+      issues: [
+        {
+          path: ["x-integration-test"],
+        },
+      ],
+    });
   });
 
   it("returns redirect responses from integration routes", async () => {

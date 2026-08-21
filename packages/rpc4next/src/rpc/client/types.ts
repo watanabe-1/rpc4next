@@ -9,7 +9,7 @@ import type {
 import type { ContentType } from "../lib/content-type-types";
 import type { HttpRequestHeaders } from "../lib/http-request-headers-types";
 import type { HttpStatusCode, SuccessfulHttpStatusCode } from "../lib/http-status-code-types";
-import type { RpcErrorCode, RpcErrorEnvelope, RpcErrorStatus } from "../server/error";
+import type { RpcErrorCode, RpcErrorStatus } from "../server/error";
 import type { procedureDefinitionSymbol } from "../server/procedure-definition";
 import type {
   ProcedureInputContract,
@@ -187,11 +187,17 @@ type InferProcedureOutput<T> =
     ? TOutput
     : never;
 
-type ProcedureErrorResponse<
-  TCode extends RpcErrorCode = RpcErrorCode,
-  TDetails = unknown,
-> = TCode extends RpcErrorCode
-  ? TypedNextResponse<RpcErrorEnvelope<TCode, TDetails>, RpcErrorStatus<TCode>, "application/json">
+type ProcedureErrorResponse<TCode extends RpcErrorCode = RpcErrorCode> = TCode extends RpcErrorCode
+  ? TypedNextResponse<
+      {
+        error: {
+          code: TCode;
+          message: string;
+        };
+      },
+      RpcErrorStatus<TCode>,
+      "application/json"
+    >
   : never;
 
 type ResolveStatus<TStatus, TDefault extends HttpStatusCode> = TStatus extends HttpStatusCode

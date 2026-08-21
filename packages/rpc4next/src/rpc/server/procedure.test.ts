@@ -4,7 +4,7 @@ import { defaultProcedureOnError } from "./on-error";
 import { procedure } from "./procedure";
 import type { ProcedureRouteContract } from "./procedure-types";
 import type { StandardSchemaV1 } from "./standard-schema";
-import type { ResponseHelpers } from "./types";
+import type { ResponseHelpers, TypedNextResponse } from "./types";
 
 describe("procedure builder type definitions", () => {
   const guardedUserRouteContract = {
@@ -872,6 +872,64 @@ describe("procedure builder type definitions", () => {
 
     type RouteResponse = Awaited<ReturnType<typeof route>>;
     expectTypeOf<RouteResponse>().toExtend<Response>();
+  });
+
+  it("infers procedure default validation error responses for nextRoute", () => {
+    const appProcedure = procedure.defaults({
+      route: {
+        onError: defaultProcedureOnError,
+        onValidationError: ({ response }) =>
+          response.json(
+            {
+              source: "shared-validation" as const,
+            },
+            {
+              status: 422,
+            },
+          ),
+      },
+    });
+
+    const { GET: route } = appProcedure
+      .forRoute(staticPageRouteContract)
+      .query(parsePage)
+      .handle(async ({ query }) => ({
+        body: query,
+      }))
+      .nextRoute({
+        method: "GET",
+      });
+
+    type RouteResponse = Awaited<ReturnType<typeof route>>;
+    type SharedValidationResponse = TypedNextResponse<
+      {
+        source: "shared-validation";
+      },
+      422,
+      "application/json"
+    >;
+    expectTypeOf<RouteResponse>().toExtend<Response | SharedValidationResponse>();
+  });
+
+  it("infers procedure default page validation error results for nextPage", () => {
+    const appProcedure = procedure.defaults({
+      page: {
+        onError: () => "page-error" as const,
+        onValidationError: () => ({
+          source: "shared-page-validation" as const,
+        }),
+      },
+    });
+
+    const page = appProcedure
+      .forRoute(staticPageRouteContract)
+      .query(parsePage)
+      .nextPage(() => "rendered" as const);
+
+    type PageResult = Awaited<ReturnType<typeof page>>;
+    expectTypeOf<PageResult>().toExtend<
+      "rendered" | "page-error" | { source: "shared-page-validation" }
+    >();
   });
 
   it("switches middleware helpers from defaults adapter intent", () => {
