@@ -1,3 +1,4 @@
+import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { handleCli } from "./cli-handler.js";
@@ -49,6 +50,32 @@ describe("handleCli", () => {
       logger,
       preserveCache: false,
     });
+  });
+
+  it("should reject baseDir outside the current working directory", () => {
+    const options: CliOptions = {};
+    const outsideBaseDir = path.resolve(process.cwd(), "..", "outside-app");
+
+    const result = handleCli(outsideBaseDir, outputPath, options, logger);
+
+    expect(result).toBe(1);
+    expect(logger.error).toHaveBeenCalledWith(
+      "Error: baseDir must be inside the current working directory.",
+    );
+    expect(generatorModule.generate).not.toHaveBeenCalled();
+  });
+
+  it("should reject outputPath outside the current working directory", () => {
+    const options: CliOptions = {};
+    const outsideOutputPath = path.resolve(process.cwd(), "..", "rpc.ts");
+
+    const result = handleCli(baseDir, outsideOutputPath, options, logger);
+
+    expect(result).toBe(1);
+    expect(logger.error).toHaveBeenCalledWith(
+      "Error: outputPath must be inside the current working directory.",
+    );
+    expect(generatorModule.generate).not.toHaveBeenCalled();
   });
 
   it.each(["../params.ts", "nested/params.ts", "nested\\params.ts", ".", ".."])(

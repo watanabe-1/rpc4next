@@ -46,7 +46,7 @@ const isValidationTerminalResult = (
 };
 
 const formDataToObject = (formData: FormData) => {
-  const normalized: Record<string, FormDataEntryValue | FormDataEntryValue[]> = {};
+  const normalized: Record<string, FormDataEntryValue | FormDataEntryValue[]> = Object.create(null);
 
   for (const [key, value] of formData.entries()) {
     const existing = normalized[key];

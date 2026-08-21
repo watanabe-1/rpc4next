@@ -45,16 +45,37 @@ const isValidParamsFileName = (paramsFileName: string): boolean => {
   );
 };
 
+const isWithinCwd = (resolvedPath: string): boolean => {
+  const cwd = path.resolve(process.cwd());
+  const relativePath = path.relative(cwd, resolvedPath);
+
+  return relativePath === "" || (!relativePath.startsWith("..") && !path.isAbsolute(relativePath));
+};
+
 export const handleCli = (
   baseDir: string,
   outputPath: string,
   options: CliOptions,
   logger: Logger,
 ): ExitCode => {
-  const resolvedBaseDir = toPosixPath(path.resolve(baseDir));
-  const resolvedOutputPath = toPosixPath(path.resolve(outputPath));
+  const resolvedBaseDirNative = path.resolve(baseDir);
+  const resolvedOutputPathNative = path.resolve(outputPath);
+  const resolvedBaseDir = toPosixPath(resolvedBaseDirNative);
+  const resolvedOutputPath = toPosixPath(resolvedOutputPathNative);
 
   const paramsFileName = typeof options.paramsFile === "string" ? options.paramsFile : null;
+
+  if (!isWithinCwd(resolvedBaseDirNative)) {
+    logger.error("Error: baseDir must be inside the current working directory.");
+
+    return EXIT_FAILURE;
+  }
+
+  if (!isWithinCwd(resolvedOutputPathNative)) {
+    logger.error("Error: outputPath must be inside the current working directory.");
+
+    return EXIT_FAILURE;
+  }
 
   if (options.paramsFile !== undefined && !paramsFileName) {
     logger.error("Error: --params-file requires a filename.");

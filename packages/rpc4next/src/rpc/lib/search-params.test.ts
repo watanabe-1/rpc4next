@@ -27,4 +27,14 @@ describe("searchParamsToObject", () => {
     const params = new URLSearchParams("");
     expect(searchParamsToObject(params)).toEqual({});
   });
+
+  it("should keep prototype-like query keys as data properties", () => {
+    const result = searchParamsToObject(
+      new URLSearchParams("__proto__=polluted&constructor=value"),
+    );
+
+    expect(Object.getPrototypeOf(result)).toBeNull();
+    expect(result.__proto__).toBe("polluted");
+    expect(result.constructor).toBe("value");
+  });
 });
