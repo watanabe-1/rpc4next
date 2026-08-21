@@ -83,9 +83,13 @@ const createProxy = <T>(
 
       // Note: we keep the dynamic placeholder in `paths`.
       // The `handler` should substitute using `params`.
+      const nextParams: PathParamsInput = Object.assign(Object.create(null), state.params, {
+        [lastKey ?? lastPath]: value,
+      });
+
       return createProxy(handler, options, {
         ...state,
-        params: { ...state.params, [lastKey ?? lastPath]: value },
+        params: nextParams,
       });
     },
 
@@ -132,7 +136,7 @@ export const makeCreateRpc =
       parent: undefined,
       segment: base,
       dynamicKey: undefined,
-      params: {},
+      params: Object.create(null),
       paths: undefined,
       dynamicKeys: undefined,
     });

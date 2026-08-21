@@ -276,4 +276,16 @@ describe("createUrl", () => {
     expect(result.path).toBe("https://example.com/");
     expect(result.pathname).toBe("/");
   });
+
+  it("keeps prototype-like params as data properties", () => {
+    const urlGenerator = createUrl(
+      ["https://example.com", "items", "_constructor"],
+      { _constructor: "value" },
+      ["_constructor"],
+    );
+    const result = urlGenerator();
+
+    expect(Object.getPrototypeOf(result.params)).toBeNull();
+    expect(result.params.constructor).toBe("value");
+  });
 });

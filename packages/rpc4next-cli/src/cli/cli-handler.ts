@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 
 import { EXIT_FAILURE, EXIT_SUCCESS } from "./constants.js";
@@ -46,10 +47,33 @@ const isValidParamsFileName = (paramsFileName: string): boolean => {
 };
 
 const isWithinCwd = (resolvedPath: string): boolean => {
-  const cwd = path.resolve(process.cwd());
-  const relativePath = path.relative(cwd, resolvedPath);
+  const cwd = getRealPathForContainment(path.resolve(process.cwd()));
+  const targetPath = getRealPathForContainment(resolvedPath);
+  const relativePath = path.relative(cwd, targetPath);
 
   return relativePath === "" || (!relativePath.startsWith("..") && !path.isAbsolute(relativePath));
+};
+
+const getRealPathForContainment = (resolvedPath: string): string => {
+  if (fs.existsSync(resolvedPath)) {
+    return fs.realpathSync.native(resolvedPath);
+  }
+
+  const segments: string[] = [];
+  let currentPath = resolvedPath;
+
+  while (!fs.existsSync(currentPath)) {
+    const parentPath = path.dirname(currentPath);
+
+    if (parentPath === currentPath) {
+      return resolvedPath;
+    }
+
+    segments.unshift(path.basename(currentPath));
+    currentPath = parentPath;
+  }
+
+  return path.resolve(fs.realpathSync.native(currentPath), ...segments);
 };
 
 export const handleCli = (

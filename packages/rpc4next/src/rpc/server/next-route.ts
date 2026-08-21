@@ -66,6 +66,18 @@ const formDataToObject = (formData: FormData) => {
   return normalized;
 };
 
+const entriesToNullPrototypeObject = <TValue>(
+  entries: Iterable<readonly [string, TValue]>,
+): Record<string, TValue> => {
+  const result: Record<string, TValue> = Object.create(null);
+
+  for (const [key, value] of entries) {
+    result[key] = value;
+  }
+
+  return result;
+};
+
 const getContractValue = async (
   request: NextRequest,
   segmentData: { params: Promise<Params> },
@@ -125,14 +137,14 @@ const getContractValue = async (
   if (target === "headers") {
     return {
       ok: true as const,
-      value: Object.fromEntries(request.headers.entries()),
+      value: entriesToNullPrototypeObject(request.headers.entries()),
     };
   }
 
   return {
     ok: true as const,
-    value: Object.fromEntries(
-      request.cookies.getAll().map((cookie) => [cookie.name, cookie.value]),
+    value: entriesToNullPrototypeObject(
+      request.cookies.getAll().map((cookie) => [cookie.name, cookie.value] as const),
     ),
   };
 };

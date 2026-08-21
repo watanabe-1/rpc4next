@@ -27,9 +27,10 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> => {
 };
 
 export const deepMerge = <T extends object, U extends object>(target: T, source: U): T & U => {
-  const result: Record<string, unknown> = {
-    ...(target as Record<string, unknown>),
-  };
+  const result: Record<string, unknown> = Object.assign(
+    Object.create(null),
+    target as Record<string, unknown>,
+  );
 
   for (const key in source) {
     if (Object.hasOwn(source, key)) {

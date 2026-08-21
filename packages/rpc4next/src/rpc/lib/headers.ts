@@ -31,7 +31,7 @@
  *   strings.
  */
 export const normalizeHeaders = (headers?: HeadersInit): Record<string, string> => {
-  const result: Record<string, string> = {};
+  const result: Record<string, string> = Object.create(null);
   if (!headers) return result;
   if (headers instanceof Headers) {
     headers.forEach((value, key) => {

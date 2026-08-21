@@ -213,7 +213,7 @@ export const createUrl = (paths: string[], params: PathParamsInput, dynamicKeys:
 
   const dynamicPath = buildPathFromSegments(routeSegments);
   const pathname = buildPathFromSegments(pathnameSegments);
-  const cleanedParams: PathParamsInput = {};
+  const cleanedParams: PathParamsInput = Object.create(null);
   for (const key in params) {
     const cleanedKey = key.replace(/^_+/, "");
     cleanedParams[cleanedKey] = params[key];
