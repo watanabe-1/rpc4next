@@ -81,6 +81,9 @@ export const httpMethod = (
 ) => {
   const method = key.replace(/^\$/, "").toUpperCase();
   const buildUrl = createUrl(paths, params, dynamicKeys);
+  const defaultInit = defaultOptions.init;
+  const defaultInitWithoutHeaders = stripHeaders(defaultInit);
+  const defaultHeaders = normalizeHeaders(defaultInit?.headers ?? defaultInit?.headersInit);
 
   return async (
     methodParam?: {
@@ -97,10 +100,8 @@ export const httpMethod = (
     const customFetch = options?.fetch ?? defaultOptions.fetch ?? fetch;
 
     // --- Merge headers (default < options.init < methodParam.requestHeaders)
-    const defaultInit = defaultOptions.init;
     const innerInit = options?.init;
 
-    const defaultHeaders = normalizeHeaders(defaultInit?.headers ?? defaultInit?.headersInit);
     const innerHeaders = normalizeHeaders(innerInit?.headers ?? innerInit?.headersInit);
     const methodParamHeaders = normalizeHeaders(
       methodParam?.requestHeaders?.headers as Record<string, string> | undefined,
@@ -168,7 +169,7 @@ export const httpMethod = (
 
     // --- Build final init
     const mergedInit: TypedRequestInit = deepMerge(
-      stripHeaders(defaultInit),
+      defaultInitWithoutHeaders,
       stripHeaders(innerInit),
     );
     mergedInit.method = method;
