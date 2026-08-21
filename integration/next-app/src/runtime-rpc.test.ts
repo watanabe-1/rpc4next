@@ -62,13 +62,37 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
         },
       },
       {
-        name: "page route with typed query",
+        name: "procedure page route with typed query",
         actual: () => client.patterns.search.$url({ query: { q: "runtime" } }),
         expected: {
           path: `${baseUrl}/patterns/search?q=runtime`,
           relativePath: "/patterns/search?q=runtime",
           pathname: "/patterns/search",
           params: {},
+        },
+      },
+      {
+        name: "native page route with exported query type",
+        actual: () =>
+          client.patterns["native-query"].$url({ query: { term: "runtime", page: "2" } }),
+        expected: {
+          path: `${baseUrl}/patterns/native-query?term=runtime&page=2`,
+          relativePath: "/patterns/native-query?term=runtime&page=2",
+          pathname: "/patterns/native-query",
+          params: {},
+        },
+      },
+      {
+        name: "native API route with params and exported query type",
+        actual: () =>
+          client.api["next-native"]._itemId("native-item").$url({
+            query: { filter: "recent" },
+          }),
+        expected: {
+          path: `${baseUrl}/api/next-native/native-item?filter=recent`,
+          relativePath: "/api/next-native/native-item?filter=recent",
+          pathname: "/api/next-native/[itemId]",
+          params: { itemId: "native-item" },
         },
       },
       {

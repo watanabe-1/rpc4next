@@ -69,6 +69,7 @@ test.describe("integration next-app e2e", () => {
       headers: {
         "x-demo-user": "e2e-user",
         "x-demo-role": "editor",
+        "x-trace-id": "trace-e2e",
       },
     });
 
@@ -78,8 +79,11 @@ test.describe("integration next-app e2e", () => {
       userId: "e2e-user",
       includeDrafts: true,
       role: "editor",
+      organizationId: "demo-org",
+      plan: "pro",
       source: "procedure-guarded",
       requestId: "guarded:e2e-user",
+      traceId: "trace-e2e",
     });
 
     const forbiddenResponse = await request.get(
@@ -207,10 +211,16 @@ test.describe("integration next-app e2e", () => {
     await expect(page.getByText("analytics-default")).toBeVisible();
   });
 
-  test("page routes read promised searchParams", async ({ page }) => {
+  test("procedure page routes read validated searchParams", async ({ page }) => {
     await page.goto("/patterns/search?q=playwright");
 
     await expect(page.getByText("search:playwright")).toBeVisible();
+  });
+
+  test("native page routes read exported query searchParams", async ({ page }) => {
+    await page.goto("/patterns/native-query?term=playwright&page=2");
+
+    await expect(page.getByText("native-query:playwright:2")).toBeVisible();
   });
 
   test("nextPage can render a client component with server data", async ({ page }) => {

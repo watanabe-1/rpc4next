@@ -1,6 +1,6 @@
-import { procedure } from "rpc4next/server";
 import { z } from "zod";
 
+import { appPageProcedure } from "../../api/_shared/procedure-defaults";
 import { routeContract } from "./route-contract";
 
 const photoParamsSchema = z.object({
@@ -11,7 +11,7 @@ const photoPageOutputSchema = z.object({
   id: z.string(),
 });
 
-export default procedure
+export default appPageProcedure
   .forRoute(routeContract)
   .params(photoParamsSchema)
   .output(photoPageOutputSchema)

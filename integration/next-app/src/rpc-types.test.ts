@@ -17,6 +17,13 @@ const client = createRpcClient<PathStructure>(baseUrl, {
 type SearchPageQuery = {
   q?: string | string[] | undefined;
 };
+type NativePageQuery = {
+  term?: string | string[] | undefined;
+  page?: string | undefined;
+};
+type NativeRouteQuery = {
+  filter?: string | undefined;
+};
 type ExpectTrue<T extends true> = T;
 type ResponseJson<TResponse> = TResponse extends { json: () => Promise<infer TJson> }
   ? TJson
@@ -59,7 +66,7 @@ describe("integration next-app generated RPC type coverage", () => {
   it("infers the generated client signatures for query, body, and headers", () => {
     type NativeDynamicBuilder = (typeof client.api)["next-native"]["_itemId"];
     type NativeDynamicUrl = ReturnType<NativeDynamicBuilder>["$url"];
-    type ExpectedNativeDynamicUrl = (url?: { hash?: string }) => {
+    type ExpectedNativeDynamicUrl = (url?: { query?: NativeRouteQuery; hash?: string }) => {
       pathname: string;
       path: string;
       relativePath: string;
@@ -113,6 +120,15 @@ describe("integration next-app generated RPC type coverage", () => {
       params: Record<string, string>;
     };
     expectTypeOf<SearchPageUrl>().toEqualTypeOf<ExpectedSearchPageUrl>();
+
+    type NativeQueryPageUrl = (typeof client.patterns)["native-query"]["$url"];
+    type ExpectedNativeQueryPageUrl = (url?: { query?: NativePageQuery; hash?: string }) => {
+      pathname: string;
+      path: string;
+      relativePath: string;
+      params: Record<string, string>;
+    };
+    expectTypeOf<NativeQueryPageUrl>().toEqualTypeOf<ExpectedNativeQueryPageUrl>();
 
     type PostsArg = Parameters<typeof client.api.posts.$post>[0];
     type ExpectedPostsArg = {
@@ -509,8 +525,11 @@ describe("integration next-app generated RPC type coverage", () => {
             userId: string;
             includeDrafts: boolean;
             role: "reader" | "editor";
+            organizationId: string;
+            plan: "pro" | "enterprise";
             source: "procedure-guarded";
             requestId: string;
+            traceId: string;
           },
           200,
           "application/json"
@@ -569,6 +588,17 @@ describe("integration next-app generated RPC type coverage", () => {
           },
           403,
           "application/json"
+        >
+      | TypedNextResponse<
+          {
+            error: {
+              code: "FORBIDDEN";
+              message: string;
+              details?: { reason: "plan_upgrade_required" };
+            };
+          },
+          403,
+          "application/json"
         >;
     expectTypeOf<typeof procedureGuardedResponse>().toExtend<ExpectedProcedureGuardedResponse>();
     type _procedureGuardedKeepsSuccess = ExpectTrue<
@@ -579,8 +609,11 @@ describe("integration next-app generated RPC type coverage", () => {
           userId: string;
           includeDrafts: boolean;
           role: "reader" | "editor";
+          organizationId: string;
+          plan: "pro" | "enterprise";
           source: "procedure-guarded";
           requestId: string;
+          traceId: string;
         },
         200
       >
@@ -622,6 +655,19 @@ describe("integration next-app generated RPC type coverage", () => {
             code: "FORBIDDEN";
             message: string;
             details?: { reason: "editor_only" };
+          };
+        },
+        403
+      >
+    >;
+    type _procedureGuardedKeepsPlanForbidden = ExpectTrue<
+      HasResponseVariant<
+        typeof procedureGuardedResponse,
+        {
+          error: {
+            code: "FORBIDDEN";
+            message: string;
+            details?: { reason: "plan_upgrade_required" };
           };
         },
         403
@@ -796,6 +842,15 @@ describe("integration next-app generated RPC type coverage", () => {
       query: { includePosts: "false" },
     });
 
+    client.api["next-native"]._itemId("native-item").$url({
+      query: { filter: "recent" },
+    });
+
+    client.api["next-native"]._itemId("native-item").$url({
+      // @ts-expect-error native route query should follow its exported Query type
+      query: { filter: 123 },
+    });
+
     client.api.users
       ._userId("demo-user")
       // @ts-expect-error invalid users query literal should be rejected
@@ -899,6 +954,19 @@ describe("integration next-app generated RPC type coverage", () => {
     client.patterns.search.$url({
       // @ts-expect-error page query values should follow the inferred page query schema input
       query: { q: 123 },
+    });
+
+    client.patterns["native-query"].$url({
+      query: { term: "typed-native-page-query", page: "2" },
+    });
+
+    client.patterns["native-query"].$url({
+      query: { term: ["typed-native-page-query"] },
+    });
+
+    client.patterns["native-query"].$url({
+      // @ts-expect-error native page query should follow its exported Query type
+      query: { page: 2 },
     });
   });
 });

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { appProcedure } from "../_shared/procedure-defaults";
+import { appRouteProcedure } from "../_shared/procedure-defaults";
 import { routeContract } from "./route-contract";
 
 const headersSchema = z.object({
@@ -11,7 +11,7 @@ const cookiesSchema = z.object({
   session: z.string().min(1),
 });
 
-export const { GET } = appProcedure
+export const { GET } = appRouteProcedure
   .forRoute(routeContract)
   .headers(headersSchema)
   .cookies(cookiesSchema)

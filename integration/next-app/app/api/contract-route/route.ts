@@ -1,9 +1,9 @@
 import type { TypedNextResponse } from "rpc4next/server";
 
-import { appProcedure } from "../_shared/procedure-defaults";
+import { appRouteProcedure } from "../_shared/procedure-defaults";
 import { routeContract } from "./route-contract";
 
-export const { GET } = appProcedure
+export const { GET } = appRouteProcedure
   .forRoute(routeContract)
   .meta({
     summary: "Contract route example",

@@ -1,6 +1,6 @@
-import { procedure } from "rpc4next/server";
 import { z } from "zod";
 
+import { appPageProcedure } from "../../api/_shared/procedure-defaults";
 import { routeContract } from "./route-contract";
 
 const searchQuerySchema = z
@@ -11,7 +11,7 @@ const searchQuerySchema = z
     q: Array.isArray(q) ? q[0] : q,
   }));
 
-export default procedure
+export default appPageProcedure
   .forRoute(routeContract)
   .query(searchQuerySchema)
   .nextPage(({ query }) => <div>search:{query.q ?? "none"}</div>);

@@ -33,12 +33,13 @@ Use these files as entry points, depending on what you want to understand:
 
 - Recommended typed procedure route via `.handle(...).nextRoute(...)`: `app/api/procedure-contract/[userId]/route.ts`
 - Shared guarded procedure preset: `app/api/procedure-guarded/[userId]/route.ts`
-- Shared procedure preset definition: `app/api/_shared/base-procedure.ts`
+- Shared procedure preset definitions: `app/api/_shared/procedure-defaults.ts` and `app/api/_shared/base-procedure.ts`
 - Procedure json/header/cookie input: `app/api/procedure-submit/route.ts`
 - Procedure form-data input via `.handle(...).nextRoute(...)` sugar: `app/api/procedure-form-data/route.ts`
 - Procedure runtime output validation: `app/api/procedure-invalid-output/route.ts`
 - Procedure validator-stage customization: `app/api/procedure-validation-branch/route.ts`
-- Project-level procedure defaults via `procedure.defaults({ route: { onError } })`: `app/api/procedure-defaults-error/route.ts`
+- Project-level route procedure defaults via `appRouteProcedure`: `app/api/procedure-defaults-error/route.ts`
+- Project-level page procedure defaults via `appPageProcedure`: `app/patterns/page-helpers/page.tsx`
 - Procedure-backed page with params and runtime output validation: `app/photo/[id]/page.tsx`
 - Procedure-backed page with typed search params: `app/patterns/search/page.tsx`
 - Procedure-first walkthrough page: `app/procedure-examples/page.tsx`
@@ -50,8 +51,9 @@ Use these files as entry points, depending on what you want to understand:
 - Procedure headers/cookies route: `app/api/request-meta/route.ts`
 - Plain Next.js handler with `NextResponse.json(...)`: `app/api/next-native/[itemId]/route.ts`
 - Plain Next.js handler with `Response.json(...)`: `app/api/next-native-response/route.ts`
+- Plain Next.js page with exported query typing: `app/patterns/native-query/page.tsx`
 - Procedure redirect helper route: `app/api/redirect-me/route.ts`
-- Direct standalone `nextRoute(..., { onError })` route: `app/api/error-demo/route.ts`
+- Route-local procedure error handler override: `app/api/error-demo/route.ts`
 - Page-path typing examples: `app/photo/[id]/page.tsx` and `app/feed/page.tsx`
 - App Router folder-pattern coverage: `app/patterns/**`
 
@@ -116,7 +118,7 @@ If a change touches route scanning, generated client shape, params generation, o
 
 This workspace is intended to make scanner and runtime regressions visible in Git. Avoid hand-editing `src/generated/rpc.ts` or `app/**/route-contract.ts` unless the task is specifically about generator output.
 
-The main walkthrough in this fixture is now procedure-first. `app/api/procedure-contract/[userId]/route.ts` is the baseline typed route: it binds the generated `routeContract`, declares params/query/output in one builder, and exports `GET` through terminal `export const { GET } = appProcedure.handle(...).nextRoute({ method: "GET" })` sugar. `app/api/procedure-submit/route.ts` extends that path to json/header/cookie input, `app/api/procedure-form-data/route.ts` covers multipart-style input with the same terminal shape, and `app/api/procedure-guarded/[userId]/route.ts` shows the shared-preset case where continuing the builder chain with `.nextRoute(...)` remains natural because the procedure value comes from a reusable base.
+The main walkthrough in this fixture is now procedure-first. `app/api/procedure-contract/[userId]/route.ts` is the baseline typed route: it binds the generated `routeContract`, declares params/query/output in one builder, and exports `GET` through terminal `export const { GET } = appRouteProcedure.handle(...).nextRoute({ method: "GET" })` sugar. `app/api/procedure-submit/route.ts` extends that path to json/header/cookie input, `app/api/procedure-form-data/route.ts` covers multipart-style input with the same terminal shape, and `app/api/procedure-guarded/[userId]/route.ts` shows the shared-preset case where continuing the builder chain with `.nextRoute(...)` remains natural because the procedure value comes from a reusable base.
 
 The form-data fixture intentionally validates user-controlled upload fields in
 the schema, including display-name length, file size, file type, tag length, and
@@ -127,16 +129,29 @@ reverse proxy, CDN, or middleware layer because `request.json()` and
 
 Shared procedure middleware should be defined from the builder that declares the
 inputs it needs. `app/api/_shared/base-procedure.ts` uses
-`appProcedure.headers(schema).use(...)`, so the middleware is applied in the same
+`appRouteProcedure.headers(schema).use(...)`, so the middleware is applied in the same
 chain and receives typed `headers`, `request`, `ctx`, and `response` without a
 handwritten `ProcedureMiddlewareContext<...>` annotation. The returned
 `{ ctx: ... }` is available to later middleware and handlers. Routes share that
 middleware by importing `guardedBaseProcedure` and continuing the builder chain,
 as shown in `app/api/procedure-guarded/[userId]/route.ts`.
 
-The procedure fixtures also cover the later design phases that made the procedure path complete enough to recommend by default. `app/api/procedure-invalid-output/route.ts` demonstrates opt-in runtime output enforcement with a Standard Schema output contract. `app/api/procedure-defaults-error/route.ts` shows project-level `procedure.defaults({ route: { onError } })` usage, while `app/api/_shared/procedure-defaults.ts` keeps that shared preset explicit. `app/api/procedure-validation-branch/route.ts` shows validator-stage customization through `procedure.query(schema, { onValidationError(...) { ... } })`. `app/api/error-demo/route.ts` keeps the direct standalone `nextRoute(..., { onError })` form for arbitrary thrown errors, and `app/api/_shared/on-error.ts` shows generic `Error` mapping in a shared `onError` implementation.
+This shared procedure pattern is intentionally positioned as the place for
+route-local but reusable checks that should not be forgotten, such as assigning a
+trace ID, writing structured logs, verifying a viewer, resolving an organization
+or tenant, enforcing a plan gate, loading account state, checking role
+permissions, or preparing request context before API integration or database
+access. Next.js Proxy is still useful for broad, optimistic checks and redirects
+before a request reaches the route, but it is not the right place for slow data
+fetching or complete authorization. The guarded procedure fixture demonstrates
+the complementary layer: every route that starts from `guardedBaseProcedure`
+gets the same trace logging, validated auth headers, typed
+`UNAUTHORIZED`/`FORBIDDEN` responses, and `ctx.viewer`/`ctx.organization`/
+`ctx.traceId` before its handler can reach protected data.
 
-Procedure-backed pages use the same builder but terminate with `.nextPage(...)`
+The procedure fixtures also cover the later design phases that made the procedure path complete enough to recommend by default. `app/api/procedure-invalid-output/route.ts` demonstrates opt-in runtime output enforcement with a Standard Schema output contract. `app/api/procedure-defaults-error/route.ts` shows project-level `procedure.defaults({ route: { onError } })` usage through `appRouteProcedure`, while `app/api/_shared/procedure-defaults.ts` keeps the route and page presets explicit. `app/api/procedure-validation-branch/route.ts` shows validator-stage customization through `procedure.query(schema, { onValidationError(...) { ... } })`. `app/api/error-demo/route.ts` shows a route-local `onError` override on top of the shared route preset, and `app/api/_shared/on-error.ts` shows generic `Error` mapping in a shared `onError` implementation.
+
+Procedure-backed pages use `appPageProcedure` and terminate with `.nextPage(...)`
 instead of `.nextRoute(...)`. `app/photo/[id]/page.tsx` demonstrates validated
 `params` and opt-in runtime output validation before render.
 `app/patterns/search/page.tsx` demonstrates page query input inference flowing
@@ -165,12 +180,18 @@ for shared `UNAUTHORIZED` and `FORBIDDEN` branches, and
 branch on top.
 
 `onError` is still required for bare route procedures, but this fixture provides
-it through the shared `appProcedure` default. It is the fallback for unexpected
+it through the shared `appRouteProcedure` default. It is the fallback for unexpected
 thrown exceptions rather than the primary path for known client-visible errors.
 Input validation still contributes a typed `BAD_REQUEST` response, and opt-in
 runtime output validation contributes an `INTERNAL_SERVER_ERROR` response.
 
-The fixtures also include plain Next.js routes written without `procedure`, including a static `NextResponse.json(...)` route, a dynamic route that reads `params` and `nextUrl.searchParams`, and a `Response.json(...)` route. The generated client can still call them as RPC, but their response types are intentionally broader than rpc4next's `TypedNextResponse` helpers.
+The fixtures also include plain Next.js entries written without `procedure`.
+`app/api/next-native/[itemId]/route.ts` is the native route-handler fixture for
+generated params plus an exported `Query` type. `app/patterns/native-query/page.tsx`
+is the native page fixture for exported `Query` plus promised `searchParams`.
+The generated client can still target those routes and pages, but native route
+response types are intentionally broader than rpc4next's `TypedNextResponse`
+helpers.
 
 `bun run generate:rpc:watch` keeps `src/generated/rpc.ts` and `app/**/route-contract.ts` in sync while route files under `app/**` change.
 

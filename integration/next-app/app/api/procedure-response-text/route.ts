@@ -1,9 +1,9 @@
 import { z } from "zod";
 
-import { appProcedure } from "../_shared/procedure-defaults";
+import { appRouteProcedure } from "../_shared/procedure-defaults";
 import { routeContract } from "./route-contract";
 
-export const { GET } = appProcedure
+export const { GET } = appRouteProcedure
   .forRoute(routeContract)
   .query(
     z.object({

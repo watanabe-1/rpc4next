@@ -1,12 +1,12 @@
 import { z } from "zod";
 
-import { appProcedure } from "../_shared/procedure-defaults";
+import { appRouteProcedure } from "../_shared/procedure-defaults";
 import { routeContract } from "./route-contract";
 
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 const ALLOWED_AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
 
-export const { POST } = appProcedure
+export const { POST } = appRouteProcedure
   .forRoute(routeContract)
   .formData(
     z.object({

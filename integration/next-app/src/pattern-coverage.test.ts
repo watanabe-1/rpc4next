@@ -20,6 +20,7 @@ type HasCatchAll = HasPath<PathStructure, ["patterns", "catch-all", "___parts"]>
 type HasOptionalCatchAll = HasPath<PathStructure, ["patterns", "optional-catch-all", "_____parts"]>;
 type HasGroupedRoute = HasPath<PathStructure, ["patterns", "reports"]>;
 type HasSearchRoute = HasPath<PathStructure, ["patterns", "search"]>;
+type HasNativeQueryRoute = HasPath<PathStructure, ["patterns", "native-query"]>;
 type HasClientPageRoute = HasPath<PathStructure, ["patterns", "client-page"]>;
 type HasParallelAnalyticsSlot = HasPath<PathStructure, ["patterns", "parallel", "@analytics"]>;
 type HasParallelTeamSlot = HasPath<PathStructure, ["patterns", "parallel", "@team"]>;
@@ -38,6 +39,7 @@ type _catchAll = ExpectTrue<HasCatchAll>;
 type _optionalCatchAll = ExpectTrue<HasOptionalCatchAll>;
 type _groupedRoute = ExpectTrue<HasGroupedRoute>;
 type _searchRoute = ExpectTrue<HasSearchRoute>;
+type _nativeQueryRoute = ExpectTrue<HasNativeQueryRoute>;
 type _clientPageRoute = ExpectTrue<HasClientPageRoute>;
 type _photoCommentRoute = ExpectTrue<HasPhotoCommentRoute>;
 type _parallelAnalyticsSlotExcluded = ExpectFalse<HasParallelAnalyticsSlot>;
@@ -63,6 +65,7 @@ describe("integration next-app generated PathStructure type coverage", () => {
       _optionalCatchAll,
       _groupedRoute,
       _searchRoute,
+      _nativeQueryRoute,
       _clientPageRoute,
       _photoCommentRoute,
     ];

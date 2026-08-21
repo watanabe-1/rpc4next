@@ -20,6 +20,7 @@ const fixturePaths = [
   "app/patterns/parallel/@analytics/views/page.tsx",
   "app/patterns/parallel/@team/members/page.tsx",
   "app/patterns/search/page.tsx",
+  "app/patterns/native-query/page.tsx",
   "app/patterns/_private/ignored/page.tsx",
   "app/patterns/%5Fescaped/page.tsx",
   "app/patterns/%E3%81%ZZ/page.tsx",
