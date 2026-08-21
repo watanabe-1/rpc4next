@@ -37,12 +37,12 @@ import { createUrl } from "./url";
  * @returns An object that enables you to dynamically build client URLs and execute HTTP requests
  *   (such as GET, POST, DELETE, etc.) with full type support.
  */
-export const createRpcClient = makeCreateRpc((key, { paths, params, dynamicKeys, options }) => {
+export const createRpcClient = makeCreateRpc((key, context) => {
   if (key === "$url") {
-    return createUrl([...paths], params, dynamicKeys);
+    return createUrl(context.paths, context.params, context.dynamicKeys);
   }
   if (isHttpMethod(key)) {
-    return httpMethod(key, [...paths], params, dynamicKeys, options);
+    return httpMethod(key, context.paths, context.params, context.dynamicKeys, context.options);
   }
 
   return undefined;

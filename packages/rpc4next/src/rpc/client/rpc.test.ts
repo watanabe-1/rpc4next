@@ -124,12 +124,11 @@ describe("chaining, dynamic params, and handler short-circuit", () => {
     }).toThrow('Cannot apply a value: "/" is not a dynamic segment.');
   });
 
-  describe("coverage: nullish fallback branch when lastPath becomes undefined", () => {
-    // Expose a mutator via handler that empties the *same* paths array the proxy closes over.
+  describe("handler context arrays", () => {
+    // Expose a mutator via handler that empties a materialized paths array.
     const handler: RpcProxyHandler = (key, ctx) => {
       if (key === "__mutatePathsToEmpty") {
         return () => {
-          // Make lastPath === undefined -> triggers `${lastPath ?? ""}` fallback
           (ctx.paths as unknown as string[]).length = 0;
         };
       }
@@ -144,14 +143,13 @@ describe("chaining, dynamic params, and handler short-circuit", () => {
       __mutatePathsToEmpty: () => void;
     };
 
-    it("falls back to empty string when lastPath is undefined", () => {
+    it("does not use materialized paths arrays for apply validation", () => {
       const api = create<ChainWithMutator>("/", {});
-      // Mutate internal state so paths becomes [], hence lastPath === undefined
       api.__mutatePathsToEmpty();
 
       expect(() => {
         (api as unknown as (v: string) => void)("x");
-      }).toThrow('Cannot apply a value: "" is not a dynamic segment.');
+      }).toThrow('Cannot apply a value: "/" is not a dynamic segment.');
     });
   });
 });
