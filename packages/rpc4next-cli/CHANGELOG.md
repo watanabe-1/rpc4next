@@ -2,11 +2,10 @@
 
 ## [0.8.2](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.8.1...rpc4next-cli-v0.8.2) (2026-08-21)
 
-
 ### Bug Fixes
 
-* **security:** harden object and path handling ([#562](https://github.com/watanabe-1/rpc4next/issues/562)) ([a4f6914](https://github.com/watanabe-1/rpc4next/commit/a4f6914808b452f2fe862d843f378c1c448e3187))
-* **security:** harden untrusted input handling ([#561](https://github.com/watanabe-1/rpc4next/issues/561)) ([4a7eaad](https://github.com/watanabe-1/rpc4next/commit/4a7eaad4fa61a2d1cb4b3ce06c35e446c82febb3))
+- **security:** harden object and path handling ([#562](https://github.com/watanabe-1/rpc4next/issues/562)) ([a4f6914](https://github.com/watanabe-1/rpc4next/commit/a4f6914808b452f2fe862d843f378c1c448e3187))
+- **security:** harden untrusted input handling ([#561](https://github.com/watanabe-1/rpc4next/issues/561)) ([4a7eaad](https://github.com/watanabe-1/rpc4next/commit/4a7eaad4fa61a2d1cb4b3ce06c35e446c82febb3))
 
 ## [0.8.1](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.8.0...rpc4next-cli-v0.8.1) (2026-08-18)
 
