@@ -21,10 +21,13 @@ type ErrorResponse<TResponse> = Extract<TResponse, { readonly ok: false }>;
 type JsonContentType = "application/json" | `${string}+json`;
 type TextContentType = `text/${string}`;
 type FormDataContentType = "multipart/form-data" | "application/x-www-form-urlencoded";
+type NoBodyStatus = 101 | 204 | 205 | 304;
 
 type ParsedPayload<TResponse> =
-  TResponse extends TypedNextResponse<infer TData, any, infer TContentType>
-    ? ParsedPayloadByContentType<TData, TContentType>
+  TResponse extends TypedNextResponse<infer TData, infer TStatus, infer TContentType>
+    ? TStatus extends NoBodyStatus
+      ? undefined
+      : ParsedPayloadByContentType<TData, TContentType>
     : TResponse extends { json: () => Promise<infer TPayload> }
       ? TPayload
       : never;
@@ -117,6 +120,10 @@ const isFormDataContentType = (contentType: string) => {
   return mediaType === "multipart/form-data" || mediaType === "application/x-www-form-urlencoded";
 };
 
+const isNoBodyStatus = (status: number) => {
+  return status === 101 || status === 204 || status === 205 || status === 304;
+};
+
 const readText = async (response: BodyParserResponseLike): Promise<string | undefined> => {
   try {
     const body = await response.text();
@@ -138,6 +145,10 @@ const readJson = async (response: BodyParserResponseLike): Promise<unknown> => {
 };
 
 const parsePayload = async (response: BodyParserResponseLike): Promise<unknown> => {
+  if (isNoBodyStatus(response.status)) {
+    return undefined;
+  }
+
   const contentType = response.headers.get("content-type") ?? "";
 
   if (isJsonContentType(contentType)) {
