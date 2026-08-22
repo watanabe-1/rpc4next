@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.13.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.12.0...rpc4next-v0.13.0) (2026-08-22)
+
+
+### Features
+
+* **client:** add file response unwrapping ([#570](https://github.com/watanabe-1/rpc4next/issues/570)) ([be59572](https://github.com/watanabe-1/rpc4next/commit/be59572852279d2c3285c249a552f0a8a0e2008a))
+* **client:** detect generated schema version mismatches ([#572](https://github.com/watanabe-1/rpc4next/issues/572)) ([6f78003](https://github.com/watanabe-1/rpc4next/commit/6f78003935be09af8b83a918e75c6bc2d2d3c0a8))
+
+
+### Bug Fixes
+
+* **client:** handle no-body response statuses ([#567](https://github.com/watanabe-1/rpc4next/issues/567)) ([bc7ff25](https://github.com/watanabe-1/rpc4next/commit/bc7ff25a4f2757f8a27c725b84e4341e784fe619))
+* **client:** parse XML and YAML responses as text ([#569](https://github.com/watanabe-1/rpc4next/issues/569)) ([16a0701](https://github.com/watanabe-1/rpc4next/commit/16a07010c79def99eda1faf2b9dfd286dcb27a6a))
+
 ## [0.12.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.11.0...rpc4next-v0.12.0) (2026-08-21)
 
 ### Features
