@@ -25,6 +25,13 @@ type TextContentType = `text/${string}` | XmlContentType | YamlContentType;
 type FormDataContentType = "multipart/form-data" | "application/x-www-form-urlencoded";
 type NoBodyStatus = 101 | 204 | 205 | 304;
 
+export type RpcFilePayload<TResponse = unknown> = {
+  readonly blob: Blob;
+  readonly filename: string | undefined;
+  readonly contentType: string;
+  readonly response: TResponse;
+};
+
 type ParsedPayload<TResponse> =
   TResponse extends TypedNextResponse<infer TData, infer TStatus, infer TContentType>
     ? TStatus extends NoBodyStatus
@@ -155,6 +162,29 @@ const readJson = async (response: BodyParserResponseLike): Promise<unknown> => {
   }
 };
 
+const parseContentDispositionFilename = (contentDisposition: string | null) => {
+  if (!contentDisposition) {
+    return undefined;
+  }
+
+  const filenameStarMatch = /(?:^|;)\s*filename\*\s*=\s*([^;]+)/i.exec(contentDisposition);
+  if (filenameStarMatch?.[1]) {
+    const value = filenameStarMatch[1].trim().replace(/^"|"$/g, "");
+    const encodedFilename = value.includes("''") ? value.split("''", 2)[1] : value;
+
+    try {
+      return decodeURIComponent(encodedFilename);
+    } catch {
+      return encodedFilename;
+    }
+  }
+
+  const filenameMatch = /(?:^|;)\s*filename\s*=\s*("[^"]*"|[^;]+)/i.exec(contentDisposition);
+  const filename = filenameMatch?.[1]?.trim();
+
+  return filename?.replace(/^"|"$/g, "");
+};
+
 const parsePayload = async (response: BodyParserResponseLike): Promise<unknown> => {
   if (isNoBodyStatus(response.status)) {
     return undefined;
@@ -202,8 +232,26 @@ const parseResponse = async <TResponse extends BodyParserResponseLike>(
   return payload as SuccessfulResponsePayload<TResponse>;
 };
 
+const parseFileResponse = async <TResponse extends BodyParserResponseLike>(
+  responseOrPromise: TResponse | Promise<TResponse>,
+): Promise<RpcFilePayload<TResponse>> => {
+  const response = await responseOrPromise;
+
+  if (!response.ok) {
+    throw new RpcResponseError(response, await parsePayload(response));
+  }
+
+  return {
+    blob: await response.blob(),
+    filename: parseContentDispositionFilename(response.headers.get("content-disposition")),
+    contentType: response.headers.get("content-type") ?? "",
+    response,
+  };
+};
+
 export type RpcResponsePromise<TResponse> = Promise<TResponse> & {
   unwrap: () => Promise<SuccessfulResponsePayload<TResponse>>;
+  unwrapFile: () => Promise<RpcFilePayload<TResponse>>;
 };
 
 export const createRpcResponsePromise = <TResponse extends BodyParserResponseLike>(
@@ -214,6 +262,10 @@ export const createRpcResponsePromise = <TResponse extends BodyParserResponseLik
   void Object.defineProperty(rpcResponsePromise, "unwrap", {
     configurable: true,
     value: () => parseResponse(rpcResponsePromise),
+  });
+  void Object.defineProperty(rpcResponsePromise, "unwrapFile", {
+    configurable: true,
+    value: () => parseFileResponse(rpcResponsePromise),
   });
 
   return rpcResponsePromise;

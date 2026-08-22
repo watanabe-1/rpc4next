@@ -148,6 +148,15 @@ test.describe("integration next-app e2e", () => {
     await expect(response.text()).resolves.toBe("procedure-response-text:playwright");
   });
 
+  test("response unwrap page renders file download metadata", async ({ page }) => {
+    await page.goto("/response-unwrap");
+
+    await expect(page.getByRole("heading", { name: "File download unwrap" })).toBeVisible();
+    await expect(page.getByText('"filename": "users.csv"')).toBeVisible();
+    await expect(page.getByText('"contentType": "text/csv"')).toBeVisible();
+    await expect(page.getByText('"text": "id,name\\n1,Ada"')).toBeVisible();
+  });
+
   test("procedure response.redirect helper route returns a redirect", async ({ request }) => {
     const response = await request.get("/api/procedure-response-redirect", {
       maxRedirects: 0,

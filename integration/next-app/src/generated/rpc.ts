@@ -10,6 +10,7 @@ import type { GET as GET_ac9bcfb08eed44cd } from "../../app/api/next-native/rout
 import type { POST as POST_90625e305d8eaaef } from "../../app/api/posts/route";
 import type { GET as GET_3919bdb64fa44631 } from "../../app/api/procedure-contract/[userId]/route";
 import type { GET as GET_bcc78455031f398c } from "../../app/api/procedure-defaults-error/route";
+import type { GET as GET_87bbb1cbdcfc4091 } from "../../app/api/procedure-file-download/route";
 import type { POST as POST_abb045cb5ac672e1 } from "../../app/api/procedure-form-data/route";
 import type { GET as GET_98a6cb8e2c497f98 } from "../../app/api/procedure-guarded/[userId]/route";
 import type { GET as GET_deded1d327aade95 } from "../../app/api/procedure-invalid-output/route";
@@ -40,6 +41,7 @@ export type PathStructure = RpcEndpoint & {
       "_userId": { "$get": typeof GET_3919bdb64fa44631 } & RpcEndpoint & Record<ParamsKey, { "userId": string }>
     },
     "procedure-defaults-error": { "$get": typeof GET_bcc78455031f398c } & RpcEndpoint,
+    "procedure-file-download": { "$get": typeof GET_87bbb1cbdcfc4091 } & RpcEndpoint,
     "procedure-form-data": { "$post": typeof POST_abb045cb5ac672e1 } & RpcEndpoint,
     "procedure-guarded": {
       "_userId": { "$get": typeof GET_98a6cb8e2c497f98 } & RpcEndpoint & Record<ParamsKey, { "userId": string }>

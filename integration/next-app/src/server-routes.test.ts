@@ -142,6 +142,20 @@ describe("integration next-app server route handlers", () => {
     await expect(response.text()).resolves.toBe("procedure-response-text:server-test");
   });
 
+  it("serves a procedure-based file download route", async () => {
+    const { GET: procedureFileDownloadGet } =
+      await import("../app/api/procedure-file-download/route");
+    const response = await procedureFileDownloadGet(
+      new NextRequest("http://127.0.0.1:3000/api/procedure-file-download"),
+      { params: Promise.resolve({}) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/csv");
+    expect(response.headers.get("content-disposition")).toBe(`attachment; filename="users.csv"`);
+    await expect(response.text()).resolves.toBe("id,name\n1,Ada");
+  });
+
   it("serves a procedure-based route using response.redirect(...)", async () => {
     const { GET: procedureResponseRedirectGet } =
       await import("../app/api/procedure-response-redirect/route");

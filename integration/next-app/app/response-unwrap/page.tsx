@@ -53,6 +53,8 @@ export default appPageProcedure.forRoute(routeContract).nextPage(async () => {
     })
     .unwrap();
 
+  const filePayload = await serverRpcClient.api["procedure-file-download"].$get().unwrapFile();
+
   let errorPayload: unknown;
   try {
     await serverRpcClient.api["procedure-defaults-error"]
@@ -107,6 +109,22 @@ const body = await response.json();`,
   })
   .unwrap();`,
       result: formatPayload(textPayload),
+    },
+    {
+      title: "File download unwrap",
+      route: "/api/procedure-file-download",
+      code: `const file = await rpc.api["procedure-file-download"]
+  .$get()
+  .unwrapFile();
+
+console.log(file.blob);
+console.log(file.filename);
+console.log(file.contentType);`,
+      result: formatPayload({
+        filename: filePayload.filename,
+        contentType: filePayload.contentType,
+        text: await filePayload.blob.text(),
+      }),
     },
     {
       title: "Typed error payload",
