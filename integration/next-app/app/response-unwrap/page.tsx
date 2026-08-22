@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { createRpcClient, parseResponse, RpcResponseError } from "rpc4next/client";
+import { createRpcClient, RpcResponseError } from "rpc4next/client";
 
 import { appPageProcedure } from "../api/_shared/procedure-defaults";
 import { routeContract } from "./route-contract";
@@ -40,25 +40,26 @@ export default appPageProcedure.forRoute(routeContract).nextPage(async () => {
         throw new Error(JSON.stringify(payload));
       });
 
-  const unwrappedPayload = await parseResponse(
-    serverRpcClient.api["procedure-contract"]._userId("demo-user").$get({
+  const unwrappedPayload = await serverRpcClient.api["procedure-contract"]
+    ._userId("demo-user")
+    .$get({
       url: { query: { includePosts: "true" } },
-    }),
-  );
+    })
+    .unwrap();
 
-  const textPayload = await parseResponse(
-    serverRpcClient.api["procedure-response-text"].$get({
+  const textPayload = await serverRpcClient.api["procedure-response-text"]
+    .$get({
       url: { query: { name: "demo-user" } },
-    }),
-  );
+    })
+    .unwrap();
 
   let errorPayload: unknown;
   try {
-    await parseResponse(
-      serverRpcClient.api["procedure-defaults-error"].$get({
+    await serverRpcClient.api["procedure-defaults-error"]
+      .$get({
         url: { query: { mode: "deny" } },
-      }),
-    );
+      })
+      .unwrap();
   } catch (error) {
     if (!(error instanceof RpcResponseError)) {
       throw error;
@@ -89,34 +90,33 @@ const body = await response.json();`,
       result: formatPayload(manualPayload),
     },
     {
-      title: "parseResponse success unwrap",
+      title: "Response promise unwrap",
       route: "/api/procedure-contract/[userId]",
-      code: `const body = await parseResponse(
-  rpc.api["procedure-contract"]
-    ._userId("demo-user")
-    .$get({ url: { query: { includePosts: "true" } } }),
-);`,
+      code: `const body = await rpc.api["procedure-contract"]
+  ._userId("demo-user")
+  .$get({ url: { query: { includePosts: "true" } } })
+  .unwrap();`,
       result: formatPayload(unwrappedPayload),
     },
     {
       title: "Content-Type based text parsing",
       route: "/api/procedure-response-text",
-      code: `const body = await parseResponse(
-  rpc.api["procedure-response-text"].$get({
+      code: `const body = await rpc.api["procedure-response-text"]
+  .$get({
     url: { query: { name: "demo-user" } },
-  }),
-);`,
+  })
+  .unwrap();`,
       result: formatPayload(textPayload),
     },
     {
       title: "Typed error payload",
       route: "/api/procedure-defaults-error",
       code: `try {
-  await parseResponse(
-    rpc.api["procedure-defaults-error"].$get({
+  await rpc.api["procedure-defaults-error"]
+    .$get({
       url: { query: { mode: "deny" } },
-    }),
-  );
+    })
+    .unwrap();
 } catch (error) {
   if (error instanceof RpcResponseError) {
     console.log(error.status);
@@ -132,7 +132,7 @@ const body = await response.json();`,
     <main>
       <h1>Response unwrap examples</h1>
       <p>
-        This page compares low-level typed Response handling with <code>parseResponse</code> for
+        This page compares low-level typed Response handling with <code>unwrap()</code> for
         application code that only needs the parsed success payload.
       </p>
       {examples.map((example) => (

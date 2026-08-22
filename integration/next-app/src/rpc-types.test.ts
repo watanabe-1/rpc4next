@@ -2,7 +2,6 @@ import {
   createRpcClient,
   type ErrorResponseCode,
   type ErrorResponsePayload,
-  parseResponse,
   RpcResponseError,
   type SuccessfulResponsePayload,
 } from "rpc4next/client";
@@ -333,8 +332,15 @@ describe("integration next-app generated RPC type coverage", () => {
       source: "procedure-contract";
       requestId: string;
     }>();
-    const _procedureContractPayload = await parseResponse(_procedureContractResponse);
-    expectTypeOf<typeof _procedureContractPayload>().toEqualTypeOf<ProcedureContractPayload>();
+    const _procedureContractPayloadFromUnwrap = await client.api["procedure-contract"]
+      ._userId("procedure-user")
+      .$get({
+        url: { query: { includePosts: "true" } },
+      })
+      .unwrap();
+    expectTypeOf<
+      typeof _procedureContractPayloadFromUnwrap
+    >().toEqualTypeOf<ProcedureContractPayload>();
     const _procedureDefaultsErrorResponse = await client.api["procedure-defaults-error"].$get({
       url: { query: { mode: "deny" } },
     });
