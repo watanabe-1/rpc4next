@@ -180,6 +180,14 @@ for shared `UNAUTHORIZED` and `FORBIDDEN` branches, and
 `app/api/procedure-guarded/[userId]/route.ts` adds a route-local `FORBIDDEN`
 branch on top.
 
+`app/response-unwrap/page.tsx` demonstrates the client side of that contract.
+Expected application errors are handled through typed `Response` branches with
+`response.ok`, while `unwrap()` remains the convenience path for code that only
+needs the parsed success payload and can send non-2xx responses through
+`RpcResponseError`. For compile-time assertions around generated error unions,
+see the `ErrorResponsePayload` and `ErrorResponseCode` coverage in
+`src/rpc-types.test.ts`.
+
 `onError` is still required for bare route procedures, but this fixture provides
 it through the shared `appRouteProcedure` default. It is the fallback for unexpected
 thrown exceptions rather than the primary path for known client-visible errors.

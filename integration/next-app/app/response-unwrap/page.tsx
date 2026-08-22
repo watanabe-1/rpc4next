@@ -34,11 +34,17 @@ export default appPageProcedure.forRoute(routeContract).nextPage(async () => {
   const manualResponse = await serverRpcClient.api["procedure-contract"]._userId("demo-user").$get({
     url: { query: { includePosts: "true" } },
   });
-  const manualPayload = manualResponse.ok
-    ? await manualResponse.json()
-    : await manualResponse.json().then((payload) => {
-        throw new Error(JSON.stringify(payload));
-      });
+  const manualPayload = await manualResponse.json();
+
+  const expectedErrorResponse = await serverRpcClient.api["procedure-defaults-error"].$get({
+    url: { query: { mode: "deny" } },
+  });
+  const expectedErrorPayload = expectedErrorResponse.ok
+    ? await expectedErrorResponse.json()
+    : {
+        status: expectedErrorResponse.status,
+        payload: await expectedErrorResponse.json(),
+      };
 
   const unwrappedPayload = await serverRpcClient.api["procedure-contract"]
     ._userId("demo-user")
@@ -77,7 +83,7 @@ export default appPageProcedure.forRoute(routeContract).nextPage(async () => {
 
   const examples: ExampleResult[] = [
     {
-      title: "Manual Response handling",
+      title: "Typed Response success handling",
       route: "/api/procedure-contract/[userId]",
       code: `const response = await rpc.api["procedure-contract"]
   ._userId("demo-user")
@@ -85,11 +91,34 @@ export default appPageProcedure.forRoute(routeContract).nextPage(async () => {
 
 if (!response.ok) {
   const error = await response.json();
-  throw new Error(JSON.stringify(error));
+  // Branch on expected application errors here.
+  return;
 }
 
 const body = await response.json();`,
       result: formatPayload(manualPayload),
+    },
+    {
+      title: "Typed Response expected error handling",
+      route: "/api/procedure-defaults-error",
+      code: `const response = await rpc.api["procedure-defaults-error"]
+  .$get({
+    url: { query: { mode: "deny" } },
+  });
+
+if (!response.ok) {
+  const error = await response.json();
+
+  switch (error.error.code) {
+    case "BAD_REQUEST":
+    case "FORBIDDEN":
+    case "INTERNAL_SERVER_ERROR":
+      console.log(response.status);
+      console.log(error.error.message);
+      return;
+  }
+}`,
+      result: formatPayload(expectedErrorPayload),
     },
     {
       title: "Response promise unwrap",
@@ -127,7 +156,7 @@ console.log(file.contentType);`,
       }),
     },
     {
-      title: "Typed error payload",
+      title: "Unwrap error fallback",
       route: "/api/procedure-defaults-error",
       code: `try {
   await rpc.api["procedure-defaults-error"]
@@ -150,8 +179,8 @@ console.log(file.contentType);`,
     <main>
       <h1>Response unwrap examples</h1>
       <p>
-        This page compares low-level typed Response handling with <code>unwrap()</code> for
-        application code that only needs the parsed success payload.
+        This page compares typed Response handling for expected application errors with{" "}
+        <code>unwrap()</code> for code that only needs the parsed success payload.
       </p>
       {examples.map((example) => (
         <section key={example.title}>
