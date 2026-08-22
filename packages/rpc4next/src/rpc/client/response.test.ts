@@ -41,6 +41,28 @@ describe("response promise unwrap", () => {
     await expect(unwrapResponse(response)).resolves.toBe("plain text");
   });
 
+  it("parses successful XML and YAML application responses as text", async () => {
+    await expect(
+      unwrapResponse(
+        new Response("<ok>true</ok>", {
+          headers: {
+            "content-type": "application/problem+xml; charset=utf-8",
+          },
+        }),
+      ),
+    ).resolves.toBe("<ok>true</ok>");
+
+    await expect(
+      unwrapResponse(
+        new Response("ok: true", {
+          headers: {
+            "content-type": "application/x-yaml",
+          },
+        }),
+      ),
+    ).resolves.toBe("ok: true");
+  });
+
   it("parses successful non-text responses as blobs", async () => {
     const response = new Response("binary", {
       headers: {
@@ -271,6 +293,33 @@ describe("response promise unwrap", () => {
 
     expectTypeOf(payload).toEqualTypeOf<"accepted">();
     expect(payload).toBe("accepted");
+  });
+
+  it("infers text payloads from XML and YAML application content types", async () => {
+    type ResponseUnion =
+      | TypedNextResponse<"<ok>true</ok>", 200, "application/xml">
+      | TypedNextResponse<{ error: string }, 400, "application/json">;
+
+    type Payload = SuccessfulResponsePayload<ResponseUnion>;
+
+    expectTypeOf<Payload>().toEqualTypeOf<"<ok>true</ok>">();
+
+    const response = Promise.resolve(
+      new Response("<ok>true</ok>", {
+        status: 200,
+        headers: {
+          "content-type": "application/xml",
+        },
+      }) as ResponseUnion,
+    );
+    const payload = await createRpcResponsePromise(response).unwrap();
+
+    expectTypeOf(payload).toEqualTypeOf<"<ok>true</ok>">();
+    expect(payload).toBe("<ok>true</ok>");
+
+    expectTypeOf<
+      SuccessfulResponsePayload<TypedNextResponse<{ ok: true }, 200, "application/custom+yaml">>
+    >().toEqualTypeOf<string>();
   });
 
   it("infers undefined payloads from no-body response statuses", async () => {

@@ -19,7 +19,9 @@ type SuccessfulResponse<TResponse> = Extract<TResponse, { readonly ok: true }>;
 type ErrorResponse<TResponse> = Extract<TResponse, { readonly ok: false }>;
 
 type JsonContentType = "application/json" | `${string}+json`;
-type TextContentType = `text/${string}`;
+type XmlContentType = "application/xml" | `application/${string}+xml`;
+type YamlContentType = "application/yaml" | "application/x-yaml" | `application/${string}+yaml`;
+type TextContentType = `text/${string}` | XmlContentType | YamlContentType;
 type FormDataContentType = "multipart/form-data" | "application/x-www-form-urlencoded";
 type NoBodyStatus = 101 | 204 | 205 | 304;
 
@@ -111,7 +113,16 @@ const isJsonContentType = (contentType: string) => {
 };
 
 const isTextContentType = (contentType: string) => {
-  return contentType.trim().toLowerCase().startsWith("text/");
+  const mediaType = contentType.split(";", 1)[0]?.trim().toLowerCase() ?? "";
+
+  return (
+    mediaType.startsWith("text/") ||
+    mediaType === "application/xml" ||
+    (mediaType.startsWith("application/") && mediaType.endsWith("+xml")) ||
+    mediaType === "application/yaml" ||
+    mediaType === "application/x-yaml" ||
+    (mediaType.startsWith("application/") && mediaType.endsWith("+yaml"))
+  );
 };
 
 const isFormDataContentType = (contentType: string) => {
