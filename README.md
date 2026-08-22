@@ -376,9 +376,6 @@ try {
 }
 ```
 
-The standalone `parseResponse` helper is also exported from `rpc4next/client`
-when you already have a response or response promise to parse.
-
 `RpcResponseError.code` is populated when the response body is an rpc4next error
 envelope returned by `response.error(...)`:
 
@@ -389,8 +386,8 @@ return response.error("FORBIDDEN", {
 });
 ```
 
-Non-JSON error bodies are also handled safely. `unwrap()` and `parseResponse`
-parse JSON when possible, fall back to text for non-JSON responses, and still throw
+Non-JSON error bodies are also handled safely. `unwrap()` parses JSON when
+possible, falls back to text for non-JSON responses, and still throws
 `RpcResponseError` with `status`, `statusText`, and `response` if the body is
 empty or cannot be read.
 

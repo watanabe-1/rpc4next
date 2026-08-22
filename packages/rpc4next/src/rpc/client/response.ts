@@ -167,7 +167,7 @@ const parsePayload = async (response: BodyParserResponseLike): Promise<unknown> 
   }
 };
 
-export const parseResponse = async <TResponse extends BodyParserResponseLike>(
+const parseResponse = async <TResponse extends BodyParserResponseLike>(
   responseOrPromise: TResponse | Promise<TResponse>,
 ): Promise<SuccessfulResponsePayload<TResponse>> => {
   const response = await responseOrPromise;

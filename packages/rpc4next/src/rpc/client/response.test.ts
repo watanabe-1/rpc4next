@@ -2,19 +2,22 @@ import { describe, expect, expectTypeOf, it } from "vitest";
 
 import type { TypedNextResponse } from "../server";
 import {
+  createRpcResponsePromise,
   type ErrorResponseCode,
   type ErrorResponsePayload,
-  parseResponse,
   RpcResponseError,
   type SuccessfulJsonPayload,
   type SuccessfulResponsePayload,
 } from "./response";
 
-describe("parseResponse", () => {
+const unwrapResponse = <TResponse extends Response>(response: TResponse | Promise<TResponse>) =>
+  createRpcResponsePromise(Promise.resolve(response)).unwrap();
+
+describe("response promise unwrap", () => {
   it("parses successful JSON responses", async () => {
     const response = Response.json({ ok: true, value: "success" });
 
-    await expect(parseResponse(response)).resolves.toEqual({
+    await expect(unwrapResponse(response)).resolves.toEqual({
       ok: true,
       value: "success",
     });
@@ -23,7 +26,7 @@ describe("parseResponse", () => {
   it("accepts a response promise", async () => {
     const response = Promise.resolve(Response.json({ value: "promised" }));
 
-    await expect(parseResponse(response)).resolves.toEqual({
+    await expect(unwrapResponse(response)).resolves.toEqual({
       value: "promised",
     });
   });
@@ -35,7 +38,7 @@ describe("parseResponse", () => {
       },
     });
 
-    await expect(parseResponse(response)).resolves.toBe("plain text");
+    await expect(unwrapResponse(response)).resolves.toBe("plain text");
   });
 
   it("parses successful non-text responses as blobs", async () => {
@@ -45,7 +48,7 @@ describe("parseResponse", () => {
       },
     });
 
-    const payload = await parseResponse(response);
+    const payload = await unwrapResponse(response);
 
     expect(payload).toBeInstanceOf(Blob);
     await expect((payload as Blob).text()).resolves.toBe("binary");
@@ -62,7 +65,7 @@ describe("parseResponse", () => {
       { status: 400, statusText: "Bad Request" },
     );
 
-    await expect(parseResponse(response)).rejects.toMatchObject({
+    await expect(unwrapResponse(response)).rejects.toMatchObject({
       status: 400,
       statusText: "Bad Request",
       code: "BAD_REQUEST",
@@ -76,7 +79,7 @@ describe("parseResponse", () => {
     });
 
     await expect(
-      parseResponse(Response.json({ error: true }, { status: 500 })),
+      unwrapResponse(Response.json({ error: true }, { status: 500 })),
     ).rejects.toBeInstanceOf(RpcResponseError);
   });
 
@@ -86,7 +89,7 @@ describe("parseResponse", () => {
       statusText: "Bad Gateway",
     });
 
-    const error = await parseResponse(response).catch((caught: unknown) => caught);
+    const error = await unwrapResponse(response).catch((caught: unknown) => caught);
 
     expect(error).toBeInstanceOf(RpcResponseError);
     expect((error as RpcResponseError).status).toBe(502);
@@ -96,7 +99,7 @@ describe("parseResponse", () => {
   });
 
   it("handles empty or unreadable error bodies", async () => {
-    await expect(parseResponse(new Response(null, { status: 404 }))).rejects.toMatchObject({
+    await expect(unwrapResponse(new Response(null, { status: 404 }))).rejects.toMatchObject({
       status: 404,
       payload: undefined,
     });
@@ -117,7 +120,9 @@ describe("parseResponse", () => {
       },
     };
 
-    await expect(parseResponse(unreadableResponse)).rejects.toMatchObject({
+    await expect(
+      createRpcResponsePromise(Promise.resolve(unreadableResponse)).unwrap(),
+    ).rejects.toMatchObject({
       status: 503,
       statusText: "Service Unavailable",
       payload: undefined,
@@ -158,7 +163,7 @@ describe("parseResponse", () => {
     }>();
 
     const response = Promise.resolve(Response.json({ ok: true, value: "typed" }) as ResponseUnion);
-    const payload = await parseResponse(response);
+    const payload = await createRpcResponsePromise(response).unwrap();
 
     expectTypeOf(payload).toEqualTypeOf<{
       ok: true;
@@ -236,7 +241,7 @@ describe("parseResponse", () => {
         },
       }) as ResponseUnion,
     );
-    const payload = await parseResponse(response);
+    const payload = await createRpcResponsePromise(response).unwrap();
 
     expectTypeOf(payload).toEqualTypeOf<"accepted">();
     expect(payload).toBe("accepted");
