@@ -54,6 +54,17 @@ describe("response promise unwrap", () => {
     await expect((payload as Blob).text()).resolves.toBe("binary");
   });
 
+  it("returns undefined for successful no-body statuses", async () => {
+    const response = new Response(null, {
+      status: 204,
+      headers: {
+        "content-type": "application/octet-stream",
+      },
+    });
+
+    await expect(unwrapResponse(response)).resolves.toBeUndefined();
+  });
+
   it("throws RpcResponseError with a parsed JSON payload for error responses", async () => {
     const response = Response.json(
       {
@@ -96,6 +107,21 @@ describe("response promise unwrap", () => {
     expect((error as RpcResponseError).statusText).toBe("Bad Gateway");
     expect((error as RpcResponseError).payload).toBe("not json");
     expect((error as RpcResponseError).response).toBe(response);
+  });
+
+  it("throws RpcResponseError with undefined payload for no-body error statuses", async () => {
+    const response = new Response(null, {
+      status: 304,
+      headers: {
+        "content-type": "application/json",
+      },
+    });
+
+    await expect(unwrapResponse(response)).rejects.toMatchObject({
+      status: 304,
+      payload: undefined,
+      response,
+    });
   });
 
   it("handles empty or unreadable error bodies", async () => {
@@ -245,5 +271,21 @@ describe("response promise unwrap", () => {
 
     expectTypeOf(payload).toEqualTypeOf<"accepted">();
     expect(payload).toBe("accepted");
+  });
+
+  it("infers undefined payloads from no-body response statuses", async () => {
+    type ResponseUnion =
+      | TypedNextResponse<{ ignored: true }, 204, "application/json">
+      | TypedNextResponse<{ error: string }, 400, "application/json">;
+
+    type Payload = SuccessfulResponsePayload<ResponseUnion>;
+
+    expectTypeOf<Payload>().toEqualTypeOf<undefined>();
+
+    const response = Promise.resolve(new Response(null, { status: 204 }) as ResponseUnion);
+    const payload = await createRpcResponsePromise(response).unwrap();
+
+    expectTypeOf(payload).toEqualTypeOf<undefined>();
+    expect(payload).toBeUndefined();
   });
 });
