@@ -6,6 +6,8 @@ export const STATEMENT_TERMINATOR = ";";
 export const TYPE_SEPARATOR = ";";
 
 export const TYPE_RPC_ENDPOINT = "RpcEndpoint";
+export const TYPE_RPC_GENERATED_PATH_STRUCTURE = "RpcGeneratedPathStructure";
+export const RPC4NEXT_GENERATED_SCHEMA_VERSION = 1;
 export const TYPE_KEY_QUERY = "QueryKey";
 export const TYPE_KEY_PARAMS = "ParamsKey";
 export const TYPE_PROCEDURE_QUERY_INPUT = "ProcedureQueryInput";

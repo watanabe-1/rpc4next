@@ -1,8 +1,10 @@
 import {
   NEWLINE,
+  RPC4NEXT_GENERATED_SCHEMA_VERSION,
   RPC4NEXT_CLIENT_IMPORT_PATH,
   STATEMENT_TERMINATOR,
   TYPE_KEYS,
+  TYPE_RPC_GENERATED_PATH_STRUCTURE,
 } from "./constants.js";
 import { scanAppDir } from "./route-scanner.js";
 import { createImport, createStringLiteral } from "./type-utils.js";
@@ -12,7 +14,7 @@ export const ROUTE_CONTRACT_GENERATED_MARKER =
 
 export const generatePathStructure = (outputPath: string, baseDir: string) => {
   const { pathStructure, imports, paramsTypes } = scanAppDir(outputPath, baseDir);
-  const pathStructureType = `export type PathStructure = ${pathStructure}${STATEMENT_TERMINATOR}`;
+  const pathStructureType = `export type PathStructure = ${TYPE_RPC_GENERATED_PATH_STRUCTURE}<${pathStructure}, ${RPC4NEXT_GENERATED_SCHEMA_VERSION}>${STATEMENT_TERMINATOR}`;
 
   const importsStr = imports.length
     ? `${imports
@@ -21,7 +23,10 @@ export const generatePathStructure = (outputPath: string, baseDir: string) => {
         .join(NEWLINE)}`
     : "";
 
-  const keyTypes = TYPE_KEYS.filter((type) => pathStructure.includes(type));
+  const keyTypes = [
+    TYPE_RPC_GENERATED_PATH_STRUCTURE,
+    ...TYPE_KEYS.filter((type) => pathStructure.includes(type)),
+  ];
   const keyTypesImportStr = createImport(keyTypes.join(" ,"), RPC4NEXT_CLIENT_IMPORT_PATH);
   const dirParamsTypes = paramsTypes.map(({ paramsType, dirPath, pathname }) => {
     const params = [

@@ -1,4 +1,4 @@
-import type { RpcEndpoint ,ParamsKey ,QueryKey ,ProcedureQueryInput } from "rpc4next/client";
+import type { RpcGeneratedPathStructure ,RpcEndpoint ,ParamsKey ,QueryKey ,ProcedureQueryInput } from "rpc4next/client";
 import type { GET as GET_1505e5e59b9e28fa } from "../../app/api/client-bundle-leak-sentinel/route";
 import type { GET as GET_1cdff2d46851497f } from "../../app/api/contract-route/route";
 import type { GET as GET_871f64658e86ddce } from "../../app/api/error-demo/route";
@@ -26,7 +26,7 @@ import type { Query as Query_56a6df9ad49eb575 } from "../../app/patterns/native-
 import type Page_79cdb44a777689a5 from "../../app/patterns/page-helpers/page";
 import type Page_14a3d277b7c2ce94 from "../../app/patterns/search/page";
 
-export type PathStructure = RpcEndpoint & {
+export type PathStructure = RpcGeneratedPathStructure<RpcEndpoint & {
   "api": {
     "client-bundle-leak-sentinel": { "$get": typeof GET_1505e5e59b9e28fa } & RpcEndpoint,
     "contract-route": { "$get": typeof GET_1cdff2d46851497f } & RpcEndpoint,
@@ -92,4 +92,4 @@ export type PathStructure = RpcEndpoint & {
   },
   "procedure-examples": RpcEndpoint,
   "response-unwrap": RpcEndpoint
-};
+}, 1>;

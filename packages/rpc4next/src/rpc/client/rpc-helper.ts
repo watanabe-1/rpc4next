@@ -1,6 +1,6 @@
 import { matchPath } from "./match";
 import { makeCreateRpc } from "./rpc";
-import type { DynamicPathProxyAsProperty } from "./types";
+import type { DynamicPathProxyAsProperty, RpcGeneratedPathStructure } from "./types";
 
 /**
  * Creates an RPC helper proxy for dynamic path matching based on a given endpoint structure.
@@ -28,4 +28,4 @@ export const createRpcHelper = makeCreateRpc((key, context) => {
   }
 
   return undefined;
-}) as <T extends object>() => DynamicPathProxyAsProperty<T>;
+}) as <T extends RpcGeneratedPathStructure>() => DynamicPathProxyAsProperty<T>;

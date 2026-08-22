@@ -1,7 +1,11 @@
 import { isHttpMethod } from "./client-utils";
 import { httpMethod } from "./http-method";
 import { makeCreateRpc } from "./rpc";
-import type { DynamicPathProxyAsFunction, RpcClientOptions } from "./types";
+import type {
+  DynamicPathProxyAsFunction,
+  RpcClientOptions,
+  RpcGeneratedPathStructure,
+} from "./types";
 import { createUrl } from "./url";
 
 /**
@@ -46,7 +50,7 @@ export const createRpcClient = makeCreateRpc((key, context) => {
   }
 
   return undefined;
-}) as <T extends object>(
+}) as <T extends RpcGeneratedPathStructure>(
   baseUrl: string,
   options?: RpcClientOptions,
 ) => DynamicPathProxyAsFunction<T>;

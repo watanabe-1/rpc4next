@@ -14,7 +14,7 @@ import {
 import { defaultProcedureOnError } from "../server/on-error";
 import type { SuccessfulResponsePayload } from "./response";
 import { createRpcClient } from "./rpc-client";
-import type { ParamsKey, QueryKey, RpcEndpoint } from "./types";
+import type { ParamsKey, QueryKey, RpcEndpoint, RpcGeneratedPathStructure } from "./types";
 
 const staticRouteContract = {
   pathname: "/api/hoge",
@@ -66,31 +66,33 @@ const { DELETE: _delete_1 } = nextRoute(
   { method: "DELETE", onError: defaultProcedureOnError },
 );
 
-type PathStructure = RpcEndpoint & {
-  fuga: RpcEndpoint & {
-    _foo: RpcEndpoint &
-      Record<ParamsKey, { foo: string }> &
-      Record<QueryKey, { baz: string }> & {
-        _piyo: RpcEndpoint;
-      };
-  };
-  hoge: RpcEndpoint & {
-    _foo: RpcEndpoint;
-  };
-  api: {
-    hoge: {
-      $post: typeof _post_0;
-      $delete: typeof _delete_0;
-      $head: typeof _head_0;
-      $patch: typeof _patch_0;
-      $put: typeof _put_0;
-    } & RpcEndpoint & {
-        _foo: { $get: typeof _get_0 } & RpcEndpoint & {
-            _bar: { $delete: typeof _delete_1 } & RpcEndpoint;
-          };
-      };
-  };
-};
+type PathStructure = RpcGeneratedPathStructure<
+  RpcEndpoint & {
+    fuga: RpcEndpoint & {
+      _foo: RpcEndpoint &
+        Record<ParamsKey, { foo: string }> &
+        Record<QueryKey, { baz: string }> & {
+          _piyo: RpcEndpoint;
+        };
+    };
+    hoge: RpcEndpoint & {
+      _foo: RpcEndpoint;
+    };
+    api: {
+      hoge: {
+        $post: typeof _post_0;
+        $delete: typeof _delete_0;
+        $head: typeof _head_0;
+        $patch: typeof _patch_0;
+        $put: typeof _put_0;
+      } & RpcEndpoint & {
+          _foo: { $get: typeof _get_0 } & RpcEndpoint & {
+              _bar: { $delete: typeof _delete_1 } & RpcEndpoint;
+            };
+        };
+    };
+  }
+>;
 
 // MSW handler configuration
 const server = setupServer(
@@ -491,7 +493,7 @@ describe("createRpcClient", () => {
     });
 
     it("throws when a dynamic parameter is called without an argument", () => {
-      type FailurePath = RpcEndpoint & { _fuga: RpcEndpoint };
+      type FailurePath = RpcGeneratedPathStructure<RpcEndpoint & { _fuga: RpcEndpoint }>;
       const client = createRpcClient<FailurePath>("");
       expect(() => (client._fuga as unknown as (v?: string) => void)()).toThrow(
         "Missing value for dynamic parameter: _fuga",
@@ -499,16 +501,20 @@ describe("createRpcClient", () => {
     });
   });
 
-  type FalierPathStructure = RpcEndpoint & {
-    _fuga: RpcEndpoint;
-    hoge: RpcEndpoint;
-  };
+  type FalierPathStructure = RpcGeneratedPathStructure<
+    RpcEndpoint & {
+      _fuga: RpcEndpoint;
+      hoge: RpcEndpoint;
+    }
+  >;
 
-  type OptionalCatchAllPath = RpcEndpoint & {
-    patterns: {
-      _____parts: RpcEndpoint & Record<ParamsKey, { parts: string[] | undefined }>;
-    };
-  };
+  type OptionalCatchAllPath = RpcGeneratedPathStructure<
+    RpcEndpoint & {
+      patterns: {
+        _____parts: RpcEndpoint & Record<ParamsKey, { parts: string[] | undefined }>;
+      };
+    }
+  >;
 
   describe("Invalid usage patterns", () => {
     it("throws when a dynamic parameter is called without an argument or when a static path is called as a function", () => {
@@ -653,29 +659,38 @@ describe("createRpcClient", () => {
     return NextResponse.json({ default: "true" });
   }
 
-  type PathStructureForTypeTest = RpcEndpoint & {
-    fuga: RpcEndpoint & {
-      _foo: RpcEndpoint &
-        Record<ParamsKey, { foo: string }> & {
-          _piyo: RpcEndpoint &
-            Record<QueryKey, { baz: string }> &
-            Record<ParamsKey, { foo: string; piyo: string }>;
-        };
-    };
-    api: {
-      hoge: {
-        $post: typeof _post_1;
-      } & RpcEndpoint & {
-          _foo: { $get: typeof _get_1 } & RpcEndpoint & Record<ParamsKey, { foo: string }>;
-          _bar: { $get: typeof _get_2 } & RpcEndpoint & Record<ParamsKey, { bar: string }>;
-          validation: { $get: typeof _get_3 } & RpcEndpoint;
-          onError: { $get: typeof _get_4 } & RpcEndpoint;
-        };
-    };
-  };
+  type PathStructureForTypeTest = RpcGeneratedPathStructure<
+    RpcEndpoint & {
+      fuga: RpcEndpoint & {
+        _foo: RpcEndpoint &
+          Record<ParamsKey, { foo: string }> & {
+            _piyo: RpcEndpoint &
+              Record<QueryKey, { baz: string }> &
+              Record<ParamsKey, { foo: string; piyo: string }>;
+          };
+      };
+      api: {
+        hoge: {
+          $post: typeof _post_1;
+        } & RpcEndpoint & {
+            _foo: { $get: typeof _get_1 } & RpcEndpoint & Record<ParamsKey, { foo: string }>;
+            _bar: { $get: typeof _get_2 } & RpcEndpoint & Record<ParamsKey, { bar: string }>;
+            validation: { $get: typeof _get_3 } & RpcEndpoint;
+            onError: { $get: typeof _get_4 } & RpcEndpoint;
+          };
+      };
+    }
+  >;
 
   describe("createHandler type definitions", () => {
     it("should infer types correctly", async () => {
+      // @ts-expect-error createRpcClient requires a current rpc4next-cli generated PathStructure
+      createRpcClient<RpcEndpoint>("");
+
+      // @ts-expect-error generated schema version must match the runtime client
+      type StalePathStructure = RpcGeneratedPathStructure<RpcEndpoint, 0>;
+      void (null as unknown as StalePathStructure);
+
       const customFetch = async (_: RequestInfo | URL, __?: RequestInit) => {
         return new Response();
       };
