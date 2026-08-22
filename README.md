@@ -330,11 +330,13 @@ rpc4next omits that synthetic header and lets `fetch` send real browser cookies
 instead. For cross-origin browser calls, pass the appropriate `credentials`
 option, such as `{ init: { credentials: "include" } }`.
 
-### 5. Unwrap Typed Responses
+### 5. Handle Typed Responses
 
 Client methods still return typed `Response` objects, so existing
 `response.ok`, `response.status`, and `response.json()` narrowing continues to
-work:
+work. This is the recommended path when UI code needs to branch on expected
+application errors such as validation failures, authorization failures, or
+business-rule conflicts:
 
 ```ts
 const response = await rpc.api.users._userId("123").$get({
@@ -342,16 +344,31 @@ const response = await rpc.api.users._userId("123").$get({
 });
 
 if (!response.ok) {
-  const errorBody = await response.json();
-  throw new Error(JSON.stringify(errorBody));
+  const error = await response.json();
+
+  switch (error.error.code) {
+    case "BAD_REQUEST":
+      showValidationMessage(error.error.message);
+      break;
+    case "UNAUTHORIZED":
+      showSignInPrompt();
+      break;
+    case "INTERNAL_SERVER_ERROR":
+      showRetryMessage();
+      break;
+  }
+
+  return;
 }
 
 const body = await response.json();
+renderUser(body);
 ```
 
-When application code only needs the parsed success body, call `unwrap()` on the
-RPC response promise. It returns the payload from the `ok: true` response branch
-and throws `RpcResponseError` for non-2xx responses.
+When application code only needs the parsed success body and non-2xx responses
+can follow the exception path, call `unwrap()` on the RPC response promise. It
+returns the payload from the `ok: true` response branch and throws
+`RpcResponseError` for non-2xx responses.
 
 ```ts
 import { RpcResponseError } from "rpc4next/client";
@@ -385,6 +402,10 @@ return response.error("FORBIDDEN", {
   details: { reason: "editor_only" as const },
 });
 ```
+
+TypeScript does not type thrown values from a `catch` block, so `unwrap()` is not
+the primary API for fine-grained UI branching on known errors. Use the typed
+`Response` path above when the UI needs exhaustive, endpoint-specific handling.
 
 Non-JSON error bodies are also handled safely. `unwrap()` parses JSON when
 possible, reads text responses for `text/*`, XML, and YAML media types, and
