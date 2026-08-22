@@ -1,6 +1,7 @@
 import type { ContentType } from "../lib/content-type-types";
 import { normalizeHeaders } from "../lib/headers";
 import { deepMerge } from "./client-utils";
+import { createRpcResponsePromise } from "./response";
 import type {
   JsonBodyOptions,
   PathParamsInput,
@@ -85,7 +86,7 @@ export const httpMethod = (
   const defaultInitWithoutHeaders = stripHeaders(defaultInit);
   const defaultHeaders = normalizeHeaders(defaultInit?.headers ?? defaultInit?.headersInit);
 
-  return async (
+  return (
     methodParam?: {
       url?: UrlOptions;
       body?: ExtendedBodyOptions;
@@ -93,107 +94,113 @@ export const httpMethod = (
     },
     options?: RpcClientOptions,
   ) => {
-    // Build URL (path + query from url options)
-    const urlObj = buildUrl(methodParam?.url);
+    const responsePromise = (async () => {
+      // Build URL (path + query from url options)
+      const urlObj = buildUrl(methodParam?.url);
 
-    // Select fetch implementation
-    const customFetch = options?.fetch ?? defaultOptions.fetch ?? fetch;
+      // Select fetch implementation
+      const customFetch = options?.fetch ?? defaultOptions.fetch ?? fetch;
 
-    // --- Merge headers (default < options.init < methodParam.requestHeaders)
-    const innerInit = options?.init;
+      // --- Merge headers (default < options.init < methodParam.requestHeaders)
+      const innerInit = options?.init;
 
-    const innerHeaders = normalizeHeaders(innerInit?.headers ?? innerInit?.headersInit);
-    const methodParamHeaders = normalizeHeaders(
-      methodParam?.requestHeaders?.headers as Record<string, string> | undefined,
-    );
+      const innerHeaders = normalizeHeaders(innerInit?.headers ?? innerInit?.headersInit);
+      const methodParamHeaders = normalizeHeaders(
+        methodParam?.requestHeaders?.headers as Record<string, string> | undefined,
+      );
 
-    // Start from low precedence and overlay higher precedence
-    const mergedHeaders: Record<string, string> = {
-      ...defaultHeaders,
-      ...innerHeaders,
-      ...methodParamHeaders,
-    };
-
-    const headersWithCookies = (() => {
-      if (isBrowserRuntime()) {
-        return omitCookieHeader(mergedHeaders);
-      }
-
-      // ---- Cookies: merge (existing cookie header + methodParam cookies map)
-      const existingCookie = mergedHeaders.cookie;
-      const methodParamCookies = methodParam?.requestHeaders?.cookies;
-      if (!methodParamCookies || Object.keys(methodParamCookies).length === 0) {
-        return mergedHeaders;
-      }
-
-      const cookieFromMap = Object.entries(methodParamCookies).map(serializeCookiePair).join("; ");
-
-      return {
-        ...mergedHeaders,
-        cookie: existingCookie ? `${existingCookie}; ${cookieFromMap}` : cookieFromMap,
+      // Start from low precedence and overlay higher precedence
+      const mergedHeaders: Record<string, string> = {
+        ...defaultHeaders,
+        ...innerHeaders,
+        ...methodParamHeaders,
       };
+
+      const headersWithCookies = (() => {
+        if (isBrowserRuntime()) {
+          return omitCookieHeader(mergedHeaders);
+        }
+
+        // ---- Cookies: merge (existing cookie header + methodParam cookies map)
+        const existingCookie = mergedHeaders.cookie;
+        const methodParamCookies = methodParam?.requestHeaders?.cookies;
+        if (!methodParamCookies || Object.keys(methodParamCookies).length === 0) {
+          return mergedHeaders;
+        }
+
+        const cookieFromMap = Object.entries(methodParamCookies)
+          .map(serializeCookiePair)
+          .join("; ");
+
+        return {
+          ...mergedHeaders,
+          cookie: existingCookie ? `${existingCookie}; ${cookieFromMap}` : cookieFromMap,
+        };
+      })();
+
+      // --- Body & content-type inference
+      let bodyInit: BodyInit | undefined;
+      let inferredContentType: ContentType | undefined;
+
+      const b = methodParam?.body;
+
+      if (b?.json !== undefined) {
+        bodyInit = JSON.stringify(b.json);
+        inferredContentType = "application/json";
+      } else if (typeof b?.text === "string") {
+        bodyInit = b.text;
+        inferredContentType = "text/plain; charset=utf-8";
+      } else if (b?.formData instanceof FormData) {
+        bodyInit = b.formData; // boundary is auto-generated; do not set Content-Type explicitly
+        inferredContentType = undefined;
+      } else if (b?.urlencoded instanceof URLSearchParams) {
+        bodyInit = b.urlencoded;
+        inferredContentType = "application/x-www-form-urlencoded; charset=UTF-8";
+      } else if (b?.raw !== undefined) {
+        bodyInit = b.raw;
+        inferredContentType = undefined;
+      }
+
+      // Do not attach a body to GET or HEAD requests
+      if (method === "GET" || method === "HEAD") {
+        bodyInit = undefined;
+      }
+
+      // Only set Content-Type when the user hasn't specified one
+      if (!hasUserContentType(headersWithCookies) && bodyInit && inferredContentType) {
+        headersWithCookies["content-type"] = inferredContentType;
+      }
+
+      // --- Build final init
+      const mergedInit: TypedRequestInit = deepMerge(
+        defaultInitWithoutHeaders,
+        stripHeaders(innerInit),
+      );
+      mergedInit.method = method;
+
+      if (method === "GET" || method === "HEAD") {
+        delete mergedInit.body;
+      }
+
+      if (Object.keys(headersWithCookies).length > 0) {
+        mergedInit.headers = headersWithCookies;
+      }
+      if (bodyInit !== undefined) {
+        mergedInit.body = bodyInit;
+      }
+
+      // ---- Fetch with helpful error surface
+      try {
+        return await customFetch(urlObj.path, mergedInit);
+      } catch (err) {
+        // Surface method and URL for easier debugging
+        const msg = err instanceof Error ? err.message : String(err);
+        throw new Error(`[httpMethod] ${method} ${urlObj.path} failed: ${msg}`, {
+          cause: err,
+        });
+      }
     })();
 
-    // --- Body & content-type inference
-    let bodyInit: BodyInit | undefined;
-    let inferredContentType: ContentType | undefined;
-
-    const b = methodParam?.body;
-
-    if (b?.json !== undefined) {
-      bodyInit = JSON.stringify(b.json);
-      inferredContentType = "application/json";
-    } else if (typeof b?.text === "string") {
-      bodyInit = b.text;
-      inferredContentType = "text/plain; charset=utf-8";
-    } else if (b?.formData instanceof FormData) {
-      bodyInit = b.formData; // boundary is auto-generated; do not set Content-Type explicitly
-      inferredContentType = undefined;
-    } else if (b?.urlencoded instanceof URLSearchParams) {
-      bodyInit = b.urlencoded;
-      inferredContentType = "application/x-www-form-urlencoded; charset=UTF-8";
-    } else if (b?.raw !== undefined) {
-      bodyInit = b.raw;
-      inferredContentType = undefined;
-    }
-
-    // Do not attach a body to GET or HEAD requests
-    if (method === "GET" || method === "HEAD") {
-      bodyInit = undefined;
-    }
-
-    // Only set Content-Type when the user hasn't specified one
-    if (!hasUserContentType(headersWithCookies) && bodyInit && inferredContentType) {
-      headersWithCookies["content-type"] = inferredContentType;
-    }
-
-    // --- Build final init
-    const mergedInit: TypedRequestInit = deepMerge(
-      defaultInitWithoutHeaders,
-      stripHeaders(innerInit),
-    );
-    mergedInit.method = method;
-
-    if (method === "GET" || method === "HEAD") {
-      delete mergedInit.body;
-    }
-
-    if (Object.keys(headersWithCookies).length > 0) {
-      mergedInit.headers = headersWithCookies;
-    }
-    if (bodyInit !== undefined) {
-      mergedInit.body = bodyInit;
-    }
-
-    // ---- Fetch with helpful error surface
-    try {
-      return await customFetch(urlObj.path, mergedInit);
-    } catch (err) {
-      // Surface method and URL for easier debugging
-      const msg = err instanceof Error ? err.message : String(err);
-      throw new Error(`[httpMethod] ${method} ${urlObj.path} failed: ${msg}`, {
-        cause: err,
-      });
-    }
+    return createRpcResponsePromise(responsePromise);
   };
 };

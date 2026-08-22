@@ -12,6 +12,7 @@ import {
   type TypedNextResponse,
 } from "../server";
 import { defaultProcedureOnError } from "../server/on-error";
+import type { SuccessfulResponsePayload } from "./response";
 import { createRpcClient } from "./rpc-client";
 import type { ParamsKey, QueryKey, RpcEndpoint } from "./types";
 
@@ -149,6 +150,22 @@ describe("createRpcClient", () => {
       expect(response.status).toBe(200);
       const data = await response.json();
       expect(data).toEqual({ method: "get" });
+    });
+
+    it("unwraps HTTP method response promises without changing Promise behavior", async () => {
+      const client = createRpcClient<PathStructure>("http://localhost:3000");
+      const request = client.api.hoge._foo("test").$get();
+
+      expect(request.unwrap).toBeTypeOf("function");
+      await expect(request.then((response) => response.status)).resolves.toBe(200);
+      expect("unwrap" in request.then((response) => response)).toBe(false);
+      await expect(client.api.hoge._foo("test").$get().unwrap()).resolves.toEqual({
+        method: "get",
+      });
+
+      const response = await request;
+      expect(response).toBeInstanceOf(Response);
+      expect("unwrap" in response).toBe(false);
     });
 
     it("should successfully perform POST request", async () => {
@@ -689,6 +706,16 @@ describe("createRpcClient", () => {
       const _response = await client.api.hoge.$post();
 
       expectTypeOf(_response).toExtend<Response>();
+
+      const _responsePromise = client.api.hoge._foo("").$get();
+      expectTypeOf(_responsePromise).toExtend<Promise<Response>>();
+      expectTypeOf(_responsePromise.unwrap).toEqualTypeOf<
+        () => Promise<SuccessfulResponsePayload<Awaited<typeof _responsePromise>>>
+      >();
+      const _unwrappedPayload = await _responsePromise.unwrap();
+      expectTypeOf(_unwrappedPayload).toEqualTypeOf<
+        SuccessfulResponsePayload<Awaited<typeof _responsePromise>>
+      >();
 
       const incloudErrResponse = await client.api.hoge._foo("").$get();
 

@@ -19,6 +19,7 @@ import type {
 } from "../server/procedure-types";
 import type { RouteHandlerResponse, RouteResponse, ValidationSchema } from "../server/route-types";
 import type { TypedNextResponse, ValidationInputFor } from "../server/types";
+import type { RpcResponsePromise } from "./response";
 
 type DistributeOmit<T, K extends keyof any> = T extends any ? Omit<T, K> : never;
 
@@ -154,7 +155,7 @@ type HttpMethodsArgs<
 type InferHttpMethods<T extends HttpMethodMapLike> = {
   [K in keyof T as K extends HttpMethodFuncKey ? K : never]: (
     ...args: HttpMethodsArgs<Extract<K, HttpMethodFuncKey>, T, InferValidationSchema<T[K]>>
-  ) => Promise<InferTypedNextResponseType<T[K]>>;
+  ) => RpcResponsePromise<InferTypedNextResponseType<T[K]>>;
 };
 
 type InferHttpMethodValidationSchema<T> = {

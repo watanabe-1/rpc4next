@@ -179,3 +179,20 @@ export const parseResponse = async <TResponse extends BodyParserResponseLike>(
 
   return payload as SuccessfulResponsePayload<TResponse>;
 };
+
+export type RpcResponsePromise<TResponse> = Promise<TResponse> & {
+  unwrap: () => Promise<SuccessfulResponsePayload<TResponse>>;
+};
+
+export const createRpcResponsePromise = <TResponse extends BodyParserResponseLike>(
+  responsePromise: Promise<TResponse>,
+): RpcResponsePromise<TResponse> => {
+  const rpcResponsePromise = responsePromise as RpcResponsePromise<TResponse>;
+
+  void Object.defineProperty(rpcResponsePromise, "unwrap", {
+    configurable: true,
+    value: () => parseResponse(rpcResponsePromise),
+  });
+
+  return rpcResponsePromise;
+};

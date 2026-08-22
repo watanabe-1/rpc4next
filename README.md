@@ -349,19 +349,20 @@ if (!response.ok) {
 const body = await response.json();
 ```
 
-When application code only needs the parsed success body, use `parseResponse`
-from `rpc4next/client`. It returns the payload from the `ok: true` response
-branch and throws `RpcResponseError` for non-2xx responses.
+When application code only needs the parsed success body, call `unwrap()` on the
+RPC response promise. It returns the payload from the `ok: true` response branch
+and throws `RpcResponseError` for non-2xx responses.
 
 ```ts
-import { parseResponse, RpcResponseError } from "rpc4next/client";
+import { RpcResponseError } from "rpc4next/client";
 
 try {
-  const body = await parseResponse(
-    rpc.api.users._userId("123").$get({
+  const body = await rpc.api.users
+    ._userId("123")
+    .$get({
       url: { query: { includePosts: "true" } },
-    }),
-  );
+    })
+    .unwrap();
 
   console.log(body);
 } catch (error) {
@@ -375,6 +376,9 @@ try {
 }
 ```
 
+The standalone `parseResponse` helper is also exported from `rpc4next/client`
+when you already have a response or response promise to parse.
+
 `RpcResponseError.code` is populated when the response body is an rpc4next error
 envelope returned by `response.error(...)`:
 
@@ -385,8 +389,8 @@ return response.error("FORBIDDEN", {
 });
 ```
 
-Non-JSON error bodies are also handled safely. `parseResponse` parses JSON when
-possible, falls back to text for non-JSON responses, and still throws
+Non-JSON error bodies are also handled safely. `unwrap()` and `parseResponse`
+parse JSON when possible, fall back to text for non-JSON responses, and still throw
 `RpcResponseError` with `status`, `statusText`, and `response` if the body is
 empty or cannot be read.
 

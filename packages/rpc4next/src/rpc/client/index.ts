@@ -3,6 +3,7 @@ export { parseResponse, RpcResponseError } from "./response";
 export type {
   ErrorResponseCode,
   ErrorResponsePayload,
+  RpcResponsePromise,
   SuccessfulJsonPayload,
   SuccessfulResponsePayload,
 } from "./response";

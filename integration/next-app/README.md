@@ -43,6 +43,7 @@ Use these files as entry points, depending on what you want to understand:
 - Procedure-backed page with params and runtime output validation: `app/photo/[id]/page.tsx`
 - Procedure-backed page with typed search params: `app/patterns/search/page.tsx`
 - Procedure-first walkthrough page: `app/procedure-examples/page.tsx`
+- Response promise unwrap examples: `app/response-unwrap/page.tsx`
 - Typed client setup: `src/lib/rpc-client.ts`
 - Generated output shape: `src/generated/rpc.ts`
 - Generated sibling route contract: `app/api/procedure-contract/[userId]/route-contract.ts`
