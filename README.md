@@ -198,12 +198,14 @@ Positional arguments:
 Useful options:
 
 - `-w`, `--watch`: regenerate on file changes
+- `-c`, `--check`: verify generated files are current without writing changes
 - `-p`, `--params-file [filename]`: generate sibling route contract files such as `app/users/[userId]/route-contract.ts`
 
 Examples:
 
 ```bash
 npx rpc4next --watch
+npx rpc4next app src/generated/rpc.ts --check
 npx rpc4next app src/generated/rpc.ts --params-file route-contract.ts
 ```
 
@@ -211,6 +213,8 @@ The generated `PathStructure` includes the rpc4next client schema version used b
 the CLI. If `rpc4next` and `rpc4next-cli` drift out of sync, TypeScript reports
 the mismatch at `createRpcClient<PathStructure>(...)` so stale generated files do
 not silently keep compiling.
+Use `--check` in CI to fail when `src/generated/rpc.ts` or generated route
+contract files are stale.
 
 ### 3. Create a Client
 

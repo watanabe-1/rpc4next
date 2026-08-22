@@ -29,6 +29,10 @@ const writeFileIfChanged = (filePath: string, nextContent: string): boolean => {
   return true;
 };
 
+const isFileContentCurrent = (filePath: string, expectedContent: string): boolean => {
+  return fs.existsSync(filePath) && fs.readFileSync(filePath, "utf8") === expectedContent;
+};
+
 const isWithinBaseDir = (targetPath: string, baseDir: string): boolean => {
   const resolvedBaseDir = path.resolve(baseDir);
   const resolvedTargetPath = path.resolve(targetPath);
@@ -99,6 +103,82 @@ const cleanupStaleGeneratedParamsFiles = ({
     }
 
     fs.rmSync(resolvedFilePath, { force: true });
+  }
+};
+
+const findStaleGeneratedParamsFiles = ({
+  baseDir,
+  paramsFileName,
+  expectedFilePaths,
+}: {
+  baseDir: string;
+  paramsFileName: string;
+  expectedFilePaths: Set<string>;
+}): string[] => {
+  return listGeneratedCandidateFiles(baseDir, paramsFileName).filter((filePath) => {
+    const resolvedFilePath = path.resolve(filePath);
+
+    if (expectedFilePaths.has(resolvedFilePath) || !isWithinBaseDir(resolvedFilePath, baseDir)) {
+      return false;
+    }
+
+    return fs.readFileSync(resolvedFilePath, "utf8").includes(ROUTE_CONTRACT_GENERATED_MARKER);
+  });
+};
+
+export const checkGenerated = ({
+  baseDir,
+  outputPath,
+  paramsFileName,
+  logger,
+}: {
+  baseDir: string;
+  outputPath: string;
+  paramsFileName: string | null;
+  logger: Logger;
+}): boolean => {
+  try {
+    logger.info("Checking generated types...", { event: "check" });
+
+    const { pathStructure, paramsTypes } = generatePathStructure(outputPath, baseDir);
+    let isCurrent = true;
+
+    if (!isFileContentCurrent(outputPath, pathStructure)) {
+      logger.error(`Generated path structure is stale: ${relativeFromRoot(outputPath)}`);
+      isCurrent = false;
+    }
+
+    if (paramsFileName) {
+      const expectedFilePaths = new Set(
+        paramsTypes.map(({ dirPath }) => path.resolve(path.join(dirPath, paramsFileName))),
+      );
+
+      for (const { paramsType, dirPath } of paramsTypes) {
+        const filePath = path.join(dirPath, paramsFileName);
+
+        if (!isFileContentCurrent(filePath, paramsType)) {
+          logger.error(`Generated params file is stale: ${relativeFromRoot(filePath)}`);
+          isCurrent = false;
+        }
+      }
+
+      for (const filePath of findStaleGeneratedParamsFiles({
+        baseDir,
+        paramsFileName,
+        expectedFilePaths,
+      })) {
+        logger.error(`Generated params file should be removed: ${relativeFromRoot(filePath)}`);
+        isCurrent = false;
+      }
+    }
+
+    if (isCurrent) {
+      logger.success("Generated files are up to date.");
+    }
+
+    return isCurrent;
+  } finally {
+    clearScanCaches();
   }
 };
 
