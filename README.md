@@ -387,9 +387,9 @@ return response.error("FORBIDDEN", {
 ```
 
 Non-JSON error bodies are also handled safely. `unwrap()` parses JSON when
-possible, falls back to text for non-JSON responses, and still throws
-`RpcResponseError` with `status`, `statusText`, and `response` if the body is
-empty or cannot be read.
+possible, reads text responses for `text/*`, XML, and YAML media types, and
+still throws `RpcResponseError` with `status`, `statusText`, and `response` if
+the body is empty or cannot be read.
 
 Responses with HTTP statuses that cannot include a body, such as `204`, `205`,
 and `304`, unwrap to `undefined` regardless of their `Content-Type` header.
