@@ -218,6 +218,27 @@ export const rpc = createRpcClient<PathStructure>("");
 ```
 
 Use `""` for same-origin calls in the browser, or pass an absolute base URL for server-side or cross-origin usage.
+When you call routes from a Server Component or another server-side runtime, derive
+that absolute base URL from request headers or your deployment config before
+creating the client:
+
+```ts
+import { headers } from "next/headers";
+import { createRpcClient } from "rpc4next/client";
+import type { PathStructure } from "../generated/rpc";
+
+export const createServerRpcClient = async () => {
+  const headerStore = await headers();
+  const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host");
+  const protocol = headerStore.get("x-forwarded-proto") ?? "https";
+
+  if (!host) {
+    throw new Error("Missing host header");
+  }
+
+  return createRpcClient<PathStructure>(`${protocol}://${host}`);
+};
+```
 
 ### 4. Call Routes
 
@@ -430,6 +451,28 @@ export const { GET } = appProcedure
   .nextRoute({ method: "GET" });
 ```
 
+For route procedures, prefer returning the `response` helpers when the exact
+client response shape matters:
+
+```ts
+export const { GET } = appProcedure
+  .forRoute(routeContract)
+  .query(z.object({ name: z.string().min(1) }))
+  .handle(({ query, response }) => response.text(`hello:${query.name}`, { status: 202 }))
+  .nextRoute({ method: "GET" });
+
+export const { POST } = appProcedure
+  .forRoute(routeContract)
+  .handle(({ response }) => response.redirect("/feed", 307))
+  .nextRoute({ method: "POST" });
+```
+
+`response.json(...)`, `response.text(...)`, `response.body(...)`,
+`response.redirect(...)`, and `response.error(...)` preserve more precise status,
+content-type, and payload information than returning a raw `NextResponse` in
+custom branches. Raw `NextResponse.json(...)` is still allowed, but its status and
+content-type often stay broader in the generated client type.
+
 ### `procedure` and `nextPage`
 
 `nextPage` adapts a route-bound procedure to a Next.js App Router `page.tsx`
@@ -611,6 +654,13 @@ Returning `{ ctx: ... }` from middleware adds that shape to later middleware and
 the final handler. Returning `response.error(...)`, `response.json(...)`, or
 another terminal response short-circuits execution and preserves that response in
 the generated client response union.
+
+Use shared procedure builders for checks that must run with the route itself,
+such as assigning trace IDs, resolving the viewer or tenant, enforcing role or
+plan rules, preparing request context, or logging structured request metadata.
+Next.js Proxy or middleware can still handle broad early redirects, but
+procedure middleware is the safer place for typed checks that need validated
+headers, request-local context, or route-specific error unions.
 
 ### Error Handling
 
