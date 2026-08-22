@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.8.2...rpc4next-cli-v0.9.0) (2026-08-22)
+
+
+### Features
+
+* **client:** detect generated schema version mismatches ([#572](https://github.com/watanabe-1/rpc4next/issues/572)) ([6f78003](https://github.com/watanabe-1/rpc4next/commit/6f78003935be09af8b83a918e75c6bc2d2d3c0a8))
+
 ## [0.8.2](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.8.1...rpc4next-cli-v0.8.2) (2026-08-21)
 
 ### Bug Fixes
