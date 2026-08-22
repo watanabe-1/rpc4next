@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { EXIT_FAILURE, EXIT_SUCCESS } from "./constants.js";
 import { toPosixPath } from "./core/path-utils.js";
-import { generate } from "./generator.js";
+import { checkGenerated, generate } from "./generator.js";
 import type { CliOptions, ExitCode, Logger } from "./types.js";
 import { setupWatcher } from "./watcher.js";
 
@@ -29,6 +29,32 @@ const handleGenerateSafely = (
       logger.error(`Failed to generate: ${error.message}`);
     } else {
       logger.error(`Unknown error occurred during generate: ${String(error)}`);
+    }
+
+    return EXIT_FAILURE;
+  }
+};
+
+const handleCheckSafely = (
+  baseDir: string,
+  outputPath: string,
+  paramsFileName: string | null,
+  logger: Logger,
+): ExitCode => {
+  try {
+    return checkGenerated({
+      baseDir,
+      outputPath,
+      paramsFileName,
+      logger,
+    })
+      ? EXIT_SUCCESS
+      : EXIT_FAILURE;
+  } catch (error) {
+    if (error instanceof Error) {
+      logger.error(`Failed to check generated files: ${error.message}`);
+    } else {
+      logger.error(`Unknown error occurred during check: ${String(error)}`);
     }
 
     return EXIT_FAILURE;
@@ -111,6 +137,16 @@ export const handleCli = (
     logger.error("Error: --params-file must be a filename, not a path.");
 
     return EXIT_FAILURE;
+  }
+
+  if (options.watch && options.check) {
+    logger.error("Error: --check cannot be used with --watch.");
+
+    return EXIT_FAILURE;
+  }
+
+  if (options.check) {
+    return handleCheckSafely(resolvedBaseDir, resolvedOutputPath, paramsFileName, logger);
   }
 
   if (options.watch) {

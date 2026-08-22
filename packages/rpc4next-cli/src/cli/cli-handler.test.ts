@@ -8,6 +8,7 @@ import type { CliOptions, Logger } from "./types.js";
 import * as watcherModule from "./watcher.js";
 
 vi.mock("./generator.js", () => ({
+  checkGenerated: vi.fn<(...args: unknown[]) => unknown>(),
   generate: vi.fn<(...args: unknown[]) => unknown>(),
 }));
 
@@ -51,6 +52,42 @@ describe("handleCli", () => {
       logger,
       preserveCache: false,
     });
+  });
+
+  it("should call checkGenerated with resolved paths when check option is true", () => {
+    const options: CliOptions = { paramsFile: "params.json", check: true };
+    vi.mocked(generatorModule.checkGenerated).mockReturnValue(true);
+
+    const result = handleCli(baseDir, outputPath, options, logger);
+
+    expect(result).toBe(0);
+    expect(generatorModule.checkGenerated).toHaveBeenCalledWith({
+      baseDir: expect.stringContaining("/testDir"),
+      outputPath: expect.stringContaining("/outputDir"),
+      paramsFileName: "params.json",
+      logger,
+    });
+    expect(generatorModule.generate).not.toHaveBeenCalled();
+  });
+
+  it("should return 1 when checkGenerated reports stale files", () => {
+    const options: CliOptions = { check: true };
+    vi.mocked(generatorModule.checkGenerated).mockReturnValue(false);
+
+    const result = handleCli(baseDir, outputPath, options, logger);
+
+    expect(result).toBe(1);
+  });
+
+  it("should reject check and watch together", () => {
+    const options: CliOptions = { check: true, watch: true };
+
+    const result = handleCli(baseDir, outputPath, options, logger);
+
+    expect(result).toBe(1);
+    expect(logger.error).toHaveBeenCalledWith("Error: --check cannot be used with --watch.");
+    expect(generatorModule.checkGenerated).not.toHaveBeenCalled();
+    expect(watcherModule.setupWatcher).not.toHaveBeenCalled();
   });
 
   it("should reject baseDir outside the current working directory", () => {

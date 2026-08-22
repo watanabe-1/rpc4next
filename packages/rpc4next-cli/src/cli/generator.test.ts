@@ -12,7 +12,7 @@ import {
 } from "./core/cache.js";
 import * as generatePathStructure from "./core/generate-path-structure.js";
 import { ROUTE_CONTRACT_GENERATED_MARKER } from "./core/generate-path-structure.js";
-import { generate } from "./generator.js";
+import { checkGenerated, generate } from "./generator.js";
 import { padMessage } from "./logger.js";
 
 describe("generate", () => {
@@ -606,6 +606,139 @@ describe("generate", () => {
       });
 
       expect(fs.existsSync(staleFilePath)).toBe(true);
+    } finally {
+      cleanupTempDir(tmpDir);
+    }
+  });
+});
+
+describe("checkGenerated", () => {
+  const logger = {
+    info: vi.fn<(...args: unknown[]) => void>(),
+    success: vi.fn<(...args: unknown[]) => void>(),
+    error: vi.fn<(...args: unknown[]) => void>(),
+  };
+
+  const baseDir = "test/base";
+  const outputPath = "test/output/types.ts";
+  const paramsFileName = "params.ts";
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.clearAllMocks();
+    scanAppDirCache.clear();
+    visitedDirsCache.clear();
+    generatedParamsFilesCache.clear();
+  });
+
+  it("returns true when generated files are current without writing", () => {
+    vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
+      pathStructure: "generated-type-content",
+      paramsTypes: [{ paramsType: "params-type", dirPath: "dir1" }],
+    });
+    vi.spyOn(fs, "existsSync").mockReturnValue(true);
+    vi.spyOn(fs, "readFileSync").mockImplementation((filePath) => {
+      if (filePath === outputPath) {
+        return "generated-type-content";
+      }
+
+      if (filePath === path.join("dir1", paramsFileName)) {
+        return "params-type";
+      }
+
+      return "";
+    });
+    vi.spyOn(fs, "writeFileSync").mockImplementation(() => {});
+    vi.spyOn(fs, "readdirSync").mockReturnValue([]);
+
+    const result = checkGenerated({
+      baseDir,
+      outputPath,
+      paramsFileName,
+      logger,
+    });
+
+    expect(result).toBe(true);
+    expect(fs.writeFileSync).not.toHaveBeenCalled();
+    expect(logger.info).toHaveBeenCalledWith("Checking generated types...", {
+      event: "check",
+    });
+    expect(logger.success).toHaveBeenCalledWith("Generated files are up to date.");
+    expect(logger.error).not.toHaveBeenCalled();
+  });
+
+  it("returns false when the path structure file is stale", () => {
+    vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
+      pathStructure: "generated-type-content",
+      paramsTypes: [],
+    });
+    vi.spyOn(fs, "existsSync").mockReturnValue(true);
+    vi.spyOn(fs, "readFileSync").mockReturnValue("stale-content");
+
+    const result = checkGenerated({
+      baseDir,
+      outputPath,
+      paramsFileName: null,
+      logger,
+    });
+
+    expect(result).toBe(false);
+    expect(logger.error).toHaveBeenCalledWith(
+      `Generated path structure is stale: ${path.relative(process.cwd(), outputPath)}`,
+    );
+    expect(logger.success).not.toHaveBeenCalled();
+  });
+
+  it("returns false when params files are missing or should be removed", () => {
+    const tmpDir = makeTempDir();
+    const appDir = path.join(tmpDir, "app");
+    const currentDir = path.join(appDir, "current");
+    const staleDir = path.join(appDir, "stale");
+    const output = path.join(tmpDir, "src", "generated", "rpc.ts");
+    const staleFilePath = path.join(staleDir, paramsFileName);
+
+    try {
+      writeTree(tmpDir, {
+        app: {
+          current: {},
+          stale: {
+            [paramsFileName]: `${ROUTE_CONTRACT_GENERATED_MARKER}\nstale`,
+          },
+        },
+        src: {
+          generated: {
+            "rpc.ts": "generated-type-content",
+          },
+        },
+      });
+
+      vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
+        pathStructure: "generated-type-content",
+        paramsTypes: [
+          {
+            paramsType: `${ROUTE_CONTRACT_GENERATED_MARKER}\ncurrent`,
+            dirPath: currentDir,
+          },
+        ],
+      });
+
+      const result = checkGenerated({
+        baseDir: appDir,
+        outputPath: output,
+        paramsFileName,
+        logger,
+      });
+
+      expect(result).toBe(false);
+      expect(logger.error).toHaveBeenCalledWith(
+        `Generated params file is stale: ${path.relative(
+          process.cwd(),
+          path.join(currentDir, paramsFileName),
+        )}`,
+      );
+      expect(logger.error).toHaveBeenCalledWith(
+        `Generated params file should be removed: ${path.relative(process.cwd(), staleFilePath)}`,
+      );
     } finally {
       cleanupTempDir(tmpDir);
     }
