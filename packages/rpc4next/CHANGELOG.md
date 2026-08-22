@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.12.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.11.0...rpc4next-v0.12.0) (2026-08-21)
+
+### Features
+
+- Add shared validation error handlers ([#546](https://github.com/watanabe-1/rpc4next/issues/546)) ([9dd6510](https://github.com/watanabe-1/rpc4next/commit/9dd651098be1679ccb7b92d2d7bdbdadae487289))
+- **client:** add typed response unwrapping ([#563](https://github.com/watanabe-1/rpc4next/issues/563)) ([f434556](https://github.com/watanabe-1/rpc4next/commit/f434556fcf2513337ecd7b08d7f015c37e872109))
+- **client:** add typed RPC error metadata ([#564](https://github.com/watanabe-1/rpc4next/issues/564)) ([07bd08d](https://github.com/watanabe-1/rpc4next/commit/07bd08dd4add19b728afff590d8893e250ecb2fe))
+- **server:** support type-only output contracts ([#543](https://github.com/watanabe-1/rpc4next/issues/543)) ([b562927](https://github.com/watanabe-1/rpc4next/commit/b5629272fe1356b663c660151aaaf40469eb5017))
+
+### Bug Fixes
+
+- **build:** prevent helper code from leaking into client bundles ([#550](https://github.com/watanabe-1/rpc4next/issues/550)) ([25eba3e](https://github.com/watanabe-1/rpc4next/commit/25eba3ef9fae0fe937ba6b80f8b716a8f61e5bca))
+- **client:** preserve URL structure when encoding paths ([#558](https://github.com/watanabe-1/rpc4next/issues/558)) ([c0ccbf2](https://github.com/watanabe-1/rpc4next/commit/c0ccbf21e09ca765a62aaf756d5985640361ff39))
+- Preserve overridden procedure error response types ([#548](https://github.com/watanabe-1/rpc4next/issues/548)) ([e630750](https://github.com/watanabe-1/rpc4next/commit/e630750b27568f69dcffdf01906d421d75176ad8))
+- **security:** harden object and path handling ([#562](https://github.com/watanabe-1/rpc4next/issues/562)) ([a4f6914](https://github.com/watanabe-1/rpc4next/commit/a4f6914808b452f2fe862d843f378c1c448e3187))
+- **security:** harden untrusted input handling ([#561](https://github.com/watanabe-1/rpc4next/issues/561)) ([4a7eaad](https://github.com/watanabe-1/rpc4next/commit/4a7eaad4fa61a2d1cb4b3ce06c35e446c82febb3))
+- Validate serialized cookie pairs ([#547](https://github.com/watanabe-1/rpc4next/issues/547)) ([6fa5a93](https://github.com/watanabe-1/rpc4next/commit/6fa5a93bc9456ff168bcbd18193b9592e81e9b69))
+
 ## [0.11.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.10.0...rpc4next-v0.11.0) (2026-08-18)
 
 ### Features
