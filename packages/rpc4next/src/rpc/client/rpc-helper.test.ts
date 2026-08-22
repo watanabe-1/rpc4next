@@ -5,7 +5,7 @@ import { z } from "zod";
 import { nextRoute as baseNextRoute, type ProcedureRouteContract, procedure } from "../server";
 import { defaultProcedureOnError } from "../server/on-error";
 import { createRpcHelper } from "./rpc-helper";
-import type { ParamsKey, QueryKey, RpcEndpoint } from "./types";
+import type { ParamsKey, QueryKey, RpcEndpoint, RpcGeneratedPathStructure } from "./types";
 
 const queryRouteContract = {
   pathname: "/api/query",
@@ -76,23 +76,25 @@ const _post_mixed_query = nextRoute(
   { method: "POST" },
 );
 
-type PathStructure = RpcEndpoint & {
-  fuga: RpcEndpoint & {
-    _foo: RpcEndpoint &
-      Record<ParamsKey, { foo: string }> & {
-        _piyo: RpcEndpoint &
-          Record<QueryKey, { baz: string }> &
-          Record<ParamsKey, { foo: string; piyo: string }>;
-      };
-  };
-  api: {
-    query: { $post: typeof _post_query } & RpcEndpoint;
-    mixedQuery: {
-      $get: typeof _get_mixed_query;
-      $post: typeof _post_mixed_query;
-    } & RpcEndpoint;
-  };
-};
+type PathStructure = RpcGeneratedPathStructure<
+  RpcEndpoint & {
+    fuga: RpcEndpoint & {
+      _foo: RpcEndpoint &
+        Record<ParamsKey, { foo: string }> & {
+          _piyo: RpcEndpoint &
+            Record<QueryKey, { baz: string }> &
+            Record<ParamsKey, { foo: string; piyo: string }>;
+        };
+    };
+    api: {
+      query: { $post: typeof _post_query } & RpcEndpoint;
+      mixedQuery: {
+        $get: typeof _get_mixed_query;
+        $post: typeof _post_mixed_query;
+      } & RpcEndpoint;
+    };
+  }
+>;
 
 const rpcHelper = createRpcHelper<PathStructure>();
 
@@ -132,6 +134,9 @@ describe("createRpcHelper basic behavior", () => {
 
 describe("createRpcHelper type definitions", () => {
   it("should infer params types correctly", async () => {
+    // @ts-expect-error createRpcHelper requires a current rpc4next-cli generated PathStructure
+    createRpcHelper<RpcEndpoint>();
+
     const _dynamic = rpcHelper.fuga._foo.$match("/fuga/dynamic");
 
     type ExpectedDynamicMatch =

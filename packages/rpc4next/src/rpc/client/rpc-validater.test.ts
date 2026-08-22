@@ -7,7 +7,7 @@ import { searchParamsToObject } from "../lib/search-params";
 import { nextRoute, type ProcedureRouteContract, procedure } from "../server";
 import { defaultProcedureOnError } from "../server/on-error";
 import { createRpcClient } from "./rpc-client";
-import type { RpcClientOptions, RpcEndpoint } from "./types";
+import type { RpcClientOptions, RpcEndpoint, RpcGeneratedPathStructure } from "./types";
 
 const schema = z.object({
   name: z.string(),
@@ -106,24 +106,26 @@ const { POST: _post_mixed_query } = nextRoute(
 
 const server = setupServer();
 
-type PathStructure = RpcEndpoint & {
-  api: {
-    none: {
-      $get: typeof _get_1;
-    } & RpcEndpoint & {
-        _json: { $post: typeof _post_1 } & RpcEndpoint;
-        headers: { $post: typeof _post_2 } & RpcEndpoint;
-        cookies: { $post: typeof _post_3 } & RpcEndpoint;
-        query: { $post: typeof _post_4 } & RpcEndpoint;
-        optionalQuery: { $post: typeof _post_5 } & RpcEndpoint;
-        all: { $post: typeof _post_all } & RpcEndpoint;
-        mixedQuery: {
-          $get: typeof _get_mixed_query;
-          $post: typeof _post_mixed_query;
-        } & RpcEndpoint;
-      };
-  };
-};
+type PathStructure = RpcGeneratedPathStructure<
+  RpcEndpoint & {
+    api: {
+      none: {
+        $get: typeof _get_1;
+      } & RpcEndpoint & {
+          _json: { $post: typeof _post_1 } & RpcEndpoint;
+          headers: { $post: typeof _post_2 } & RpcEndpoint;
+          cookies: { $post: typeof _post_3 } & RpcEndpoint;
+          query: { $post: typeof _post_4 } & RpcEndpoint;
+          optionalQuery: { $post: typeof _post_5 } & RpcEndpoint;
+          all: { $post: typeof _post_all } & RpcEndpoint;
+          mixedQuery: {
+            $get: typeof _get_mixed_query;
+            $post: typeof _post_mixed_query;
+          } & RpcEndpoint;
+        };
+    };
+  }
+>;
 
 describe("createRpcClient", () => {
   beforeAll(() => server.listen());

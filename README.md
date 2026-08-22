@@ -207,6 +207,11 @@ npx rpc4next --watch
 npx rpc4next app src/generated/rpc.ts --params-file route-contract.ts
 ```
 
+The generated `PathStructure` includes the rpc4next client schema version used by
+the CLI. If `rpc4next` and `rpc4next-cli` drift out of sync, TypeScript reports
+the mismatch at `createRpcClient<PathStructure>(...)` so stale generated files do
+not silently keep compiling.
+
 ### 3. Create a Client
 
 ```ts
@@ -843,6 +848,9 @@ export declare const routeContract: unknown;
 That lets procedure routes import a generated `routeContract` and lets other
 routes import the param shape instead of repeating it manually.
 These generated `route-contract.ts` files are optional, and your generated `src/generated/rpc.ts` is typically not something you edit by hand.
+`src/generated/rpc.ts` also carries the rpc4next client schema version, so
+upgrading the runtime without regenerating types fails during type checking
+instead of surfacing later in application code.
 
 Your generated `src/generated/rpc.ts` exports a `PathStructure` type that includes:
 

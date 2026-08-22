@@ -4,11 +4,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanupTempDir, makeTempDir } from "../../test-helpers/tmp-dir.js";
 import {
   NEWLINE,
+  RPC4NEXT_GENERATED_SCHEMA_VERSION,
   RPC4NEXT_CLIENT_IMPORT_PATH,
   STATEMENT_TERMINATOR,
   TYPE_KEY_PARAMS,
   TYPE_KEY_QUERY,
   TYPE_RPC_ENDPOINT,
+  TYPE_RPC_GENERATED_PATH_STRUCTURE,
 } from "./constants.js";
 import {
   generatePathStructure,
@@ -65,10 +67,10 @@ describe("generatePathStructure", () => {
     const { pathStructure, paramsTypes } = generatePathStructure(outputPath, baseDir);
 
     const expectedImports =
-      `import type { ${TYPE_RPC_ENDPOINT} ,${TYPE_KEY_PARAMS} ,${TYPE_KEY_QUERY} } from "${RPC4NEXT_CLIENT_IMPORT_PATH}"${STATEMENT_TERMINATOR}${NEWLINE}` +
+      `import type { ${TYPE_RPC_GENERATED_PATH_STRUCTURE} ,${TYPE_RPC_ENDPOINT} ,${TYPE_KEY_PARAMS} ,${TYPE_KEY_QUERY} } from "${RPC4NEXT_CLIENT_IMPORT_PATH}"${STATEMENT_TERMINATOR}${NEWLINE}` +
       `import Home from './routes/home';${NEWLINE}import User from './routes/user';`;
 
-    const expectedTypeDefinition = `export type PathStructure = { home: ${TYPE_RPC_ENDPOINT}, user: { id: ${TYPE_KEY_PARAMS} }, ${TYPE_KEY_QUERY}}${STATEMENT_TERMINATOR}`;
+    const expectedTypeDefinition = `export type PathStructure = ${TYPE_RPC_GENERATED_PATH_STRUCTURE}<{ home: ${TYPE_RPC_ENDPOINT}, user: { id: ${TYPE_KEY_PARAMS} }, ${TYPE_KEY_QUERY}}, ${RPC4NEXT_GENERATED_SCHEMA_VERSION}>${STATEMENT_TERMINATOR}`;
 
     expect(pathStructure).toBe(`${expectedImports}${NEWLINE}${NEWLINE}${expectedTypeDefinition}`);
     expect(paramsTypes).toStrictEqual([
@@ -104,8 +106,8 @@ describe("generatePathStructure", () => {
     const baseDir = path.join(tmpDir, "base");
     const { pathStructure, paramsTypes } = generatePathStructure(outputPath, baseDir);
 
-    const expectedImports = `import type { ${TYPE_RPC_ENDPOINT} } from "${RPC4NEXT_CLIENT_IMPORT_PATH}"${STATEMENT_TERMINATOR}${NEWLINE}${NEWLINE}`;
-    const expectedTypeDefinition = `export type PathStructure = { dashboard: ${TYPE_RPC_ENDPOINT} }${STATEMENT_TERMINATOR}`;
+    const expectedImports = `import type { ${TYPE_RPC_GENERATED_PATH_STRUCTURE} ,${TYPE_RPC_ENDPOINT} } from "${RPC4NEXT_CLIENT_IMPORT_PATH}"${STATEMENT_TERMINATOR}${NEWLINE}${NEWLINE}`;
+    const expectedTypeDefinition = `export type PathStructure = ${TYPE_RPC_GENERATED_PATH_STRUCTURE}<{ dashboard: ${TYPE_RPC_ENDPOINT} }, ${RPC4NEXT_GENERATED_SCHEMA_VERSION}>${STATEMENT_TERMINATOR}`;
 
     expect(pathStructure).toBe(`${expectedImports}${NEWLINE}${expectedTypeDefinition}`);
     expect(paramsTypes).toStrictEqual([]);

@@ -50,6 +50,16 @@ export type RpcClientOptions<
 declare const __proxy: unique symbol;
 export type RpcEndpoint = { [__proxy]?: true };
 
+export declare const rpc4nextGeneratedSchemaSymbol: unique symbol;
+export type RpcGeneratedSchemaVersion = 1;
+export type RpcGeneratedPathStructure<
+  TPathStructure extends object = object,
+  TSchemaVersion extends RpcGeneratedSchemaVersion = RpcGeneratedSchemaVersion,
+> = TPathStructure & {
+  readonly [rpc4nextGeneratedSchemaSymbol]: TSchemaVersion;
+};
+type RpcGeneratedSchemaKey = typeof rpc4nextGeneratedSchemaSymbol;
+
 export type ParamsKey = "__params";
 type HasParamsMarker = Record<ParamsKey, unknown>;
 export type QueryKey = "__query";
@@ -330,7 +340,7 @@ export type DynamicPathProxyAsFunction<T> = Omit<
           ? ParamFunction<T[K], [value: string | number]>
           : DynamicPathProxyAsFunction<T[K]>;
   },
-  QueryKey | ParamsKey
+  QueryKey | ParamsKey | RpcGeneratedSchemaKey
 >;
 
 export type DynamicPathProxyAsProperty<T> = Omit<
@@ -339,7 +349,7 @@ export type DynamicPathProxyAsProperty<T> = Omit<
       ? DynamicPathProxyAsProperty<T[K]>
       : DynamicPathProxyAsProperty<T[K]>;
   },
-  QueryKey | ParamsKey
+  QueryKey | ParamsKey | RpcGeneratedSchemaKey
 >;
 
 export type RpcProxyHandler = (

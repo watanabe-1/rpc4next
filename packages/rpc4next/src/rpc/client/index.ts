@@ -8,4 +8,11 @@ export type {
   SuccessfulJsonPayload,
   SuccessfulResponsePayload,
 } from "./response";
-export type { ParamsKey, ProcedureQueryInput, QueryKey, RpcEndpoint } from "./types";
+export type {
+  ParamsKey,
+  ProcedureQueryInput,
+  QueryKey,
+  RpcEndpoint,
+  RpcGeneratedPathStructure,
+  RpcGeneratedSchemaVersion,
+} from "./types";
