@@ -394,6 +394,18 @@ the body is empty or cannot be read.
 Responses with HTTP statuses that cannot include a body, such as `204`, `205`,
 and `304`, unwrap to `undefined` regardless of their `Content-Type` header.
 
+For file downloads, call `unwrapFile()` instead. It keeps the same error
+handling behavior as `unwrap()`, but reads successful responses as `Blob`
+payloads and includes response metadata for saving the file.
+
+```ts
+const file = await rpc.api.exports.$get().unwrapFile();
+
+console.log(file.blob);
+console.log(file.filename);
+console.log(file.contentType);
+```
+
 ### 6. Generate Typed URLs for Pages
 
 `page.tsx` files are included in the generated path tree, so you can build typed URLs even when there is no RPC method to call.

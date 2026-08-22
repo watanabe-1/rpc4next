@@ -5,6 +5,7 @@ import {
   createRpcResponsePromise,
   type ErrorResponseCode,
   type ErrorResponsePayload,
+  type RpcFilePayload,
   RpcResponseError,
   type SuccessfulJsonPayload,
   type SuccessfulResponsePayload,
@@ -12,6 +13,9 @@ import {
 
 const unwrapResponse = <TResponse extends Response>(response: TResponse | Promise<TResponse>) =>
   createRpcResponsePromise(Promise.resolve(response)).unwrap();
+
+const unwrapFileResponse = <TResponse extends Response>(response: TResponse | Promise<TResponse>) =>
+  createRpcResponsePromise(Promise.resolve(response)).unwrapFile();
 
 describe("response promise unwrap", () => {
   it("parses successful JSON responses", async () => {
@@ -74,6 +78,36 @@ describe("response promise unwrap", () => {
 
     expect(payload).toBeInstanceOf(Blob);
     await expect((payload as Blob).text()).resolves.toBe("binary");
+  });
+
+  it("unwraps successful file responses with blob metadata", async () => {
+    const response = new Response("id,name\n1,Ada", {
+      headers: {
+        "content-disposition": `attachment; filename="users.csv"`,
+        "content-type": "text/csv; charset=utf-8",
+      },
+    });
+
+    const file = await createRpcResponsePromise(Promise.resolve(response)).unwrapFile();
+
+    expectTypeOf(file).toEqualTypeOf<RpcFilePayload<Response>>();
+    expect(file.filename).toBe("users.csv");
+    expect(file.contentType).toBe("text/csv; charset=utf-8");
+    expect(file.response).toBe(response);
+    await expect(file.blob.text()).resolves.toBe("id,name\n1,Ada");
+  });
+
+  it("unwraps RFC 5987 encoded file names", async () => {
+    const file = await unwrapFileResponse(
+      new Response("pdf", {
+        headers: {
+          "content-disposition": "attachment; filename*=UTF-8''report%202026.pdf",
+          "content-type": "application/pdf",
+        },
+      }),
+    );
+
+    expect(file.filename).toBe("report 2026.pdf");
   });
 
   it("returns undefined for successful no-body statuses", async () => {
@@ -175,6 +209,33 @@ describe("response promise unwrap", () => {
       statusText: "Service Unavailable",
       payload: undefined,
       response: unreadableResponse,
+    });
+  });
+
+  it("throws RpcResponseError with a parsed payload for file error responses", async () => {
+    const response = Response.json(
+      {
+        error: {
+          code: "BAD_REQUEST",
+          message: "invalid export",
+        },
+      },
+      { status: 400, statusText: "Bad Request" },
+    );
+
+    await expect(
+      createRpcResponsePromise(Promise.resolve(response)).unwrapFile(),
+    ).rejects.toMatchObject({
+      status: 400,
+      statusText: "Bad Request",
+      code: "BAD_REQUEST",
+      payload: {
+        error: {
+          code: "BAD_REQUEST",
+          message: "invalid export",
+        },
+      },
+      response,
     });
   });
 

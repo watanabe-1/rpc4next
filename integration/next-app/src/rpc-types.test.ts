@@ -2,6 +2,7 @@ import {
   createRpcClient,
   type ErrorResponseCode,
   type ErrorResponsePayload,
+  type RpcFilePayload,
   RpcResponseError,
   type SuccessfulResponsePayload,
 } from "rpc4next/client";
@@ -815,6 +816,22 @@ describe("integration next-app generated RPC type coverage", () => {
     type _procedureFormDataKeepsDefaultError = ExpectTrue<
       HasVariant<typeof procedureFormDataResponse, SharedProcedureOnErrorResponse>
     >;
+
+    const procedureFileDownloadResponse = await client.api["procedure-file-download"].$get();
+    type ExpectedProcedureFileDownloadResponse =
+      | TypedNextResponse<string, 200, "text/csv">
+      | SharedProcedureValidationErrorResponse
+      | SharedProcedureOnErrorResponse;
+    expectTypeOf<
+      typeof procedureFileDownloadResponse
+    >().toExtend<ExpectedProcedureFileDownloadResponse>();
+    type _procedureFileDownloadKeepsSuccess = ExpectTrue<
+      HasResponseVariant<typeof procedureFileDownloadResponse, string, 200, "text/csv">
+    >;
+    const _procedureFilePayload = await client.api["procedure-file-download"].$get().unwrapFile();
+    expectTypeOf<typeof _procedureFilePayload>().toEqualTypeOf<
+      RpcFilePayload<typeof procedureFileDownloadResponse>
+    >();
 
     const procedureValidationBranchResponse = await client.api["procedure-validation-branch"].$get({
       url: { query: { page: "1" } },
