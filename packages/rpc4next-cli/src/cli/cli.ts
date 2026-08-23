@@ -44,6 +44,7 @@ Arguments:
 
 Options:
   -w, --watch                   Watch mode: regenerate on file changes
+  -c, --check                   Check generated files without writing changes
   -p, --params-file [filename]  Generate params types file (optional filename)
   Config file:                  rpc4next.config.json in the current directory
   -h, --help                    Show help
@@ -114,6 +115,7 @@ export const runCli = (argv: string[], logger: Logger = createLogger()) => {
       args: userArgs1,
       options: {
         watch: { type: "boolean", short: "w" },
+        check: { type: "boolean", short: "c" },
         help: { type: "boolean", short: "h" },
       },
       allowPositionals: true,
@@ -139,6 +141,7 @@ export const runCli = (argv: string[], logger: Logger = createLogger()) => {
     // Build CliOptions compatible with your existing handler.
     const options: CliOptions = {
       watch: Boolean(values.watch),
+      check: Boolean(values.check),
       // paramsFile semantics:
       // - undefined: not specified
       // - true: specified without filename

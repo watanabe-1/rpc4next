@@ -42,7 +42,12 @@ describe("runCli", () => {
     runCli(["node", "cli", "src", "types.ts"]);
     await flushAsync();
 
-    expect(handleCliSpy).toHaveBeenCalledWith("src", "types.ts", { watch: false }, mockLogger);
+    expect(handleCliSpy).toHaveBeenCalledWith(
+      "src",
+      "types.ts",
+      { watch: false, check: false },
+      mockLogger,
+    );
   });
 
   it("loads required args from rpc4next.config.json when positionals are omitted", async () => {
@@ -59,7 +64,7 @@ describe("runCli", () => {
     expect(handleCliSpy).toHaveBeenCalledWith(
       "app",
       "src/generated/rpc.ts",
-      { watch: false, paramsFile: "params.ts" },
+      { watch: false, check: false, paramsFile: "params.ts" },
       mockLogger,
     );
   });
@@ -78,7 +83,7 @@ describe("runCli", () => {
     expect(handleCliSpy).toHaveBeenCalledWith(
       "custom-app",
       "custom-rpc.ts",
-      { watch: false, paramsFile: "custom.ts" },
+      { watch: false, check: false, paramsFile: "custom.ts" },
       mockLogger,
     );
   });
@@ -114,7 +119,12 @@ describe("runCli", () => {
     runCli(["node", "cli", "src", "types.ts", "--watch"]);
     await flushAsync();
 
-    expect(handleCliSpy).toHaveBeenCalledWith("src", "types.ts", { watch: true }, mockLogger);
+    expect(handleCliSpy).toHaveBeenCalledWith(
+      "src",
+      "types.ts",
+      { watch: true, check: false },
+      mockLogger,
+    );
     expect(processExitSpy).not.toHaveBeenCalled();
   });
 
@@ -127,7 +137,7 @@ describe("runCli", () => {
     expect(handleCliSpy).toHaveBeenCalledWith(
       "app",
       "src/types/rpc.ts",
-      { watch: true },
+      { watch: true, check: false },
       mockLogger,
     );
     expect(processExitSpy).not.toHaveBeenCalled();
@@ -164,7 +174,21 @@ describe("runCli", () => {
     expect(handleCliSpy).toHaveBeenCalledWith(
       "src",
       "types.ts",
-      { watch: false, paramsFile: expected },
+      { watch: false, check: false, paramsFile: expected },
+      mockLogger,
+    );
+  });
+
+  it("parses check flag", async () => {
+    const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
+
+    runCli(["node", "cli", "src", "types.ts", "--check"]);
+    await flushAsync();
+
+    expect(handleCliSpy).toHaveBeenCalledWith(
+      "src",
+      "types.ts",
+      { watch: false, check: true },
       mockLogger,
     );
   });
@@ -180,14 +204,14 @@ describe("runCli", () => {
       1,
       "src",
       "types.ts",
-      { watch: false },
+      { watch: false, check: false },
       mockLogger,
     );
     expect(handleCliSpy).toHaveBeenNthCalledWith(
       2,
       "src",
       "types.ts",
-      { watch: false },
+      { watch: false, check: false },
       mockLogger,
     );
   });
@@ -203,7 +227,12 @@ describe("runCli", () => {
     ]);
     await flushAsync();
 
-    expect(handleCliSpy).toHaveBeenCalledWith("src", "types.ts", { watch: false }, mockLogger);
+    expect(handleCliSpy).toHaveBeenCalledWith(
+      "src",
+      "types.ts",
+      { watch: false, check: false },
+      mockLogger,
+    );
   });
 
   it("accepts user-args-only help flag that starts with '-'", () => {
@@ -267,7 +296,7 @@ describe("runCli", () => {
     expect(handleCliSpy).toHaveBeenCalledWith(
       "src",
       "types.ts",
-      { watch: true, paramsFile: true },
+      { watch: true, check: false, paramsFile: true },
       mockLogger,
     );
     expect(processExitSpy).not.toHaveBeenCalled();

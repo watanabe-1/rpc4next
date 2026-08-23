@@ -4,7 +4,8 @@ export type EndPointFileNames = (typeof END_POINT_FILE_NAMES)[number];
 
 export interface CliOptions {
   watch?: boolean;
-  paramsFile?: string;
+  check?: boolean;
+  paramsFile?: true | string;
 }
 
 type LogOptions = {
