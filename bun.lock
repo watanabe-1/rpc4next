@@ -9,7 +9,7 @@
         "@vitest/coverage-v8": "^4.1.10",
         "@vitest/ui": "^4.1.10",
         "arktype": "^2.2.3",
-        "diff2prompt": "^0.0.14",
+        "diff2prompt": "^0.0.15",
         "esbuild": "^0.28.2",
         "fast-glob": "^3.3.3",
         "msw": "^2.15.0",
@@ -40,7 +40,7 @@
     },
     "packages/rpc4next": {
       "name": "rpc4next",
-      "version": "0.10.0",
+      "version": "0.12.0",
       "dependencies": {
         "rpc4next-shared": "workspace:*",
         "server-only": "^0.0.1",
@@ -51,7 +51,7 @@
     },
     "packages/rpc4next-cli": {
       "name": "rpc4next-cli",
-      "version": "0.8.0",
+      "version": "0.8.2",
       "bin": {
         "rpc4next": "dist/index.js",
       },
@@ -487,7 +487,7 @@
 
     "detect-libc": ["detect-libc@2.1.2", "", {}, "sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ=="],
 
-    "diff2prompt": ["diff2prompt@0.0.14", "", { "bin": { "diff2prompt": "dist/index.js" } }, "sha512-uDy6dPz3ha5mis4BM8jqvxuWxZeHY/7HMnolhryNMzYKuDRda8ZNNUvR0kHNDiFsdnv6RjJXPTvZ/sqQ+ooigA=="],
+    "diff2prompt": ["diff2prompt@0.0.15", "", { "bin": { "diff2prompt": "dist/index.js" } }, "sha512-MK3dXzXdiTh7ljnT5N1RycvVfUHinxjY5ebV+/URn5O+NnEYwD97DxvpVfO6VjNhZIwDS7vR6rONqV8wgPU7qw=="],
 
     "emoji-regex": ["emoji-regex@8.0.0", "", {}, "sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A=="],
 

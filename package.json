@@ -38,7 +38,7 @@
     "@vitest/coverage-v8": "^4.1.10",
     "@vitest/ui": "^4.1.10",
     "arktype": "^2.2.3",
-    "diff2prompt": "^0.0.14",
+    "diff2prompt": "^0.0.15",
     "esbuild": "^0.28.2",
     "fast-glob": "^3.3.3",
     "msw": "^2.15.0",
