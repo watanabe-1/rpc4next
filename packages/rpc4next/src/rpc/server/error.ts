@@ -1,56 +1,63 @@
-export type RpcErrorCode =
-  | "BAD_REQUEST"
-  | "UNAUTHORIZED"
-  | "FORBIDDEN"
-  | "NOT_FOUND"
-  | "CONFLICT"
-  | "UNPROCESSABLE_CONTENT"
-  | "TOO_MANY_REQUESTS"
-  | "INTERNAL_SERVER_ERROR";
+import type { HttpStatusCode } from "../lib/http-status-code-types";
 
-type RpcErrorMessageMap = Record<RpcErrorCode, string>;
-
-const DEFAULT_RPC_ERROR_MESSAGES: RpcErrorMessageMap = {
-  BAD_REQUEST: "Bad request",
-  UNAUTHORIZED: "Unauthorized",
-  FORBIDDEN: "Forbidden",
-  NOT_FOUND: "Not found",
-  CONFLICT: "Conflict",
-  UNPROCESSABLE_CONTENT: "Unprocessable content",
-  TOO_MANY_REQUESTS: "Too many requests",
-  INTERNAL_SERVER_ERROR: "Internal server error",
+export type RpcErrorCatalogEntry<TStatus extends HttpStatusCode = HttpStatusCode> = {
+  status: TStatus;
+  message?: string;
 };
 
-const DEFAULT_RPC_ERROR_STATUS: Record<RpcErrorCode, number> = {
-  BAD_REQUEST: 400,
-  UNAUTHORIZED: 401,
-  FORBIDDEN: 403,
-  NOT_FOUND: 404,
-  CONFLICT: 409,
-  UNPROCESSABLE_CONTENT: 422,
-  TOO_MANY_REQUESTS: 429,
-  INTERNAL_SERVER_ERROR: 500,
+export type RpcErrorCatalog = Record<string, RpcErrorCatalogEntry>;
+
+const DEFAULT_RPC_ERROR_CATALOG = {
+  BAD_REQUEST: { status: 400, message: "Bad request" },
+  UNAUTHORIZED: { status: 401, message: "Unauthorized" },
+  FORBIDDEN: { status: 403, message: "Forbidden" },
+  NOT_FOUND: { status: 404, message: "Not found" },
+  CONFLICT: { status: 409, message: "Conflict" },
+  UNPROCESSABLE_CONTENT: { status: 422, message: "Unprocessable content" },
+  TOO_MANY_REQUESTS: { status: 429, message: "Too many requests" },
+  INTERNAL_SERVER_ERROR: { status: 500, message: "Internal server error" },
+} as const satisfies RpcErrorCatalog;
+
+export type DefaultRpcErrorCatalog = typeof DEFAULT_RPC_ERROR_CATALOG;
+
+export type RpcErrorCode<TCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog> = Extract<
+  keyof TCatalog,
+  string
+>;
+
+export type RpcErrorStatus<
+  TCode extends string = RpcErrorCode,
+  TCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
+> = TCode extends keyof TCatalog ? TCatalog[TCode]["status"] : never;
+
+export type DefineRpcErrors<TCatalog extends RpcErrorCatalog> = Omit<
+  DefaultRpcErrorCatalog,
+  keyof TCatalog
+> &
+  TCatalog;
+
+export const defaultRpcErrorCatalog = DEFAULT_RPC_ERROR_CATALOG;
+
+export const defineRpcErrors = <const TCatalog extends RpcErrorCatalog>(
+  catalog: TCatalog,
+): DefineRpcErrors<TCatalog> => {
+  return {
+    ...DEFAULT_RPC_ERROR_CATALOG,
+    ...catalog,
+  } as DefineRpcErrors<TCatalog>;
 };
 
-export type RpcErrorStatus<TCode extends RpcErrorCode = RpcErrorCode> = TCode extends "BAD_REQUEST"
-  ? 400
-  : TCode extends "UNAUTHORIZED"
-    ? 401
-    : TCode extends "FORBIDDEN"
-      ? 403
-      : TCode extends "NOT_FOUND"
-        ? 404
-        : TCode extends "CONFLICT"
-          ? 409
-          : TCode extends "UNPROCESSABLE_CONTENT"
-            ? 422
-            : TCode extends "TOO_MANY_REQUESTS"
-              ? 429
-              : TCode extends "INTERNAL_SERVER_ERROR"
-                ? 500
-                : never;
+const getRpcErrorCatalogEntry = <
+  TCatalog extends RpcErrorCatalog,
+  TCode extends RpcErrorCode<TCatalog>,
+>(
+  catalog: TCatalog,
+  code: TCode,
+) => {
+  return catalog[code];
+};
 
-export interface RpcErrorEnvelope<TCode extends RpcErrorCode = RpcErrorCode, TDetails = unknown> {
+export interface RpcErrorEnvelope<TCode extends string = RpcErrorCode, TDetails = unknown> {
   error: {
     code: TCode;
     message: string;
@@ -66,7 +73,17 @@ export interface RpcErrorResponseInit<TDetails = unknown> {
 export const getDefaultRpcErrorStatus = <TCode extends RpcErrorCode>(
   code: TCode,
 ): RpcErrorStatus<TCode> => {
-  return DEFAULT_RPC_ERROR_STATUS[code] as RpcErrorStatus<TCode>;
+  return DEFAULT_RPC_ERROR_CATALOG[code].status as RpcErrorStatus<TCode>;
+};
+
+export const getRpcErrorStatus = <
+  TCatalog extends RpcErrorCatalog,
+  TCode extends RpcErrorCode<TCatalog>,
+>(
+  catalog: TCatalog,
+  code: TCode,
+): RpcErrorStatus<TCode, TCatalog> => {
+  return getRpcErrorCatalogEntry(catalog, code).status as RpcErrorStatus<TCode, TCatalog>;
 };
 
 export const createRpcErrorEnvelope = <TCode extends RpcErrorCode, TDetails = unknown>(
@@ -76,7 +93,27 @@ export const createRpcErrorEnvelope = <TCode extends RpcErrorCode, TDetails = un
   return {
     error: {
       code,
-      message: init.message ?? DEFAULT_RPC_ERROR_MESSAGES[code],
+      message: init.message ?? DEFAULT_RPC_ERROR_CATALOG[code].message,
+      ...(init.details === undefined ? {} : { details: init.details }),
+    },
+  };
+};
+
+export const createRpcErrorEnvelopeFromCatalog = <
+  TCatalog extends RpcErrorCatalog,
+  TCode extends RpcErrorCode<TCatalog>,
+  TDetails = unknown,
+>(
+  catalog: TCatalog,
+  code: TCode,
+  init: RpcErrorResponseInit<TDetails> = {},
+): RpcErrorEnvelope<TCode, TDetails> => {
+  const entry = getRpcErrorCatalogEntry(catalog, code);
+
+  return {
+    error: {
+      code,
+      message: init.message ?? entry.message ?? code,
       ...(init.details === undefined ? {} : { details: init.details }),
     },
   };

@@ -5,7 +5,12 @@ import type { ContentType } from "../lib/content-type-types";
 import { normalizeHeaders } from "../lib/headers";
 import type { HttpStatusCode, RedirectionHttpStatusCode } from "../lib/http-status-code-types";
 import { searchParamsToObject } from "../lib/search-params";
-import { createRpcErrorEnvelope, getDefaultRpcErrorStatus } from "./error";
+import {
+  createRpcErrorEnvelopeFromCatalog,
+  defaultRpcErrorCatalog,
+  getRpcErrorStatus,
+} from "./error";
+import type { DefaultRpcErrorCatalog, RpcErrorCatalog } from "./error";
 import type { ValidationSchema } from "./route-types";
 import type {
   Params,
@@ -76,7 +81,12 @@ const resolvedHeaders = (
   return resolvedInit as TypedResponseInit<HttpStatusCode, ContentType>;
 };
 
-export const createResponseHelpers = <TJson = unknown>(): ResponseHelpers<TJson> => ({
+export const createResponseHelpers = <
+  TJson = unknown,
+  TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
+>(
+  errorCatalog: TErrorCatalog = defaultRpcErrorCatalog as unknown as TErrorCatalog,
+): ResponseHelpers<TJson, TErrorCatalog> => ({
   body: (<
     TData extends BodyInit | null,
     TContentType extends ContentType,
@@ -146,18 +156,18 @@ export const createResponseHelpers = <TJson = unknown>(): ResponseHelpers<TJson>
   },
 
   error: ((code, init) => {
-    const payload = createRpcErrorEnvelope(code, init);
+    const payload = createRpcErrorEnvelopeFromCatalog(errorCatalog, code, init);
 
     return attachResponseHelperMetadata(
       NextResponse.json(payload, {
-        status: getDefaultRpcErrorStatus(code),
-      }) as ReturnType<ResponseHelpers<TJson>["error"]>,
+        status: getRpcErrorStatus(errorCatalog, code),
+      }) as ReturnType<ResponseHelpers<TJson, TErrorCatalog>["error"]>,
       {
         kind: "json",
         payload,
       },
     );
-  }) as ResponseHelpers<TJson>["error"],
+  }) as ResponseHelpers<TJson, TErrorCatalog>["error"],
 });
 
 export const createRouteContext = <

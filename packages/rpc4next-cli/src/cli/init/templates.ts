@@ -15,13 +15,19 @@ import type { PathStructure } from "../generated/rpc";
 export const rpc = createRpcClient<PathStructure>("");
 `;
 
-export const RPC_ERRORS = `import type { ProcedureOnError, ProcedureValidationErrorHandler } from "rpc4next/server";
+export const RPC_ERRORS = `import { createRpcValidationErrorHandler, defineRpcErrors } from "rpc4next/server";
+import type {
+  ProcedureInputTarget,
+  ProcedureOnError,
+  ProcedureOnErrorResult,
+  ProcedureValidationErrorHandler,
+  ProcedureValidationErrorHandlerResult,
+} from "rpc4next/server";
+
+export const appRpcErrors = defineRpcErrors({});
 
 export const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
-
-export const getIssuePath = (path: readonly (PropertyKey | { key: PropertyKey })[] | undefined) =>
-  path?.map((segment) => String(typeof segment === "object" ? segment.key : segment)) ?? [];
 
 export const routeOnError = ((error, { response }) => {
   console.error("[rpc4next] Unexpected procedure error", {
@@ -32,19 +38,18 @@ export const routeOnError = ((error, { response }) => {
   return response.error("INTERNAL_SERVER_ERROR", {
     message: "Internal server error",
   });
-}) satisfies ProcedureOnError;
+}) satisfies ProcedureOnError<ProcedureOnErrorResult, typeof appRpcErrors>;
 
-export const routeOnValidationError = (({ issues, response, target }) =>
-  response.error("BAD_REQUEST", {
-    message: issues[0]?.message ?? "Validation failed.",
-    details: {
-      target,
-      issues: issues.map(({ message, path }) => ({
-        message,
-        path: getIssuePath(path),
-      })),
-    },
-  })) satisfies ProcedureValidationErrorHandler;
+export const routeOnValidationError =
+  createRpcValidationErrorHandler<
+    ProcedureInputTarget,
+    typeof appRpcErrors
+  >() satisfies ProcedureValidationErrorHandler<
+    ProcedureInputTarget,
+    unknown,
+    ProcedureValidationErrorHandlerResult,
+    typeof appRpcErrors
+  >;
 
 export const pageOnError = () => {
   throw new Error("Unhandled rpc4next page procedure error.");
@@ -53,9 +58,9 @@ export const pageOnError = () => {
 
 export const ROUTE_PROCEDURE = `import { procedure } from "rpc4next/server";
 
-import { routeOnError, routeOnValidationError } from "./errors";
+import { appRpcErrors, routeOnError, routeOnValidationError } from "./errors";
 
-export const appRouteProcedure = procedure.defaults({
+export const appRouteProcedure = procedure.errors(appRpcErrors).defaults({
   route: {
     onError: routeOnError,
     onValidationError: routeOnValidationError,

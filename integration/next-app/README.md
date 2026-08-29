@@ -186,9 +186,15 @@ When a handler or shared middleware should contribute a known error to
 client-side response inference, return `response.error(...)`. Those returned
 errors remain part of the generated response union with their concrete status,
 code, and details shape. `app/_rpc/guarded-route-procedure.ts` demonstrates this
-for shared `UNAUTHORIZED` and `FORBIDDEN` branches, and
+for shared `UNAUTHORIZED`, `FORBIDDEN`, and project-defined `PLAN_REQUIRED`
+branches, and
 `app/api/procedure-guarded/[userId]/route.ts` adds a route-local `FORBIDDEN`
 branch on top.
+`app/_rpc/errors.ts` defines the project catalog with `defineRpcErrors(...)`,
+and `app/_rpc/route-procedure.ts` binds it with
+`procedure.errors(appRpcErrors)`. The shared validation handler uses
+`createRpcValidationErrorHandler()` so input failures keep the recommended
+`BAD_REQUEST` envelope shape across route procedures.
 
 `app/response-unwrap/page.tsx` demonstrates the client side of that contract.
 Expected application errors are handled through typed `Response` branches with

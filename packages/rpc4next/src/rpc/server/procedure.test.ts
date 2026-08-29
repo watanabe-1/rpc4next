@@ -2,9 +2,19 @@ import { describe, expect, expectTypeOf, it } from "vitest";
 
 import type { ContentType } from "../lib/content-type-types";
 import type { HttpStatusCode } from "../lib/http-status-code-types";
-import { defaultProcedureOnError, type ProcedureOnError } from "./on-error";
+import { defineRpcErrors } from "./error";
+import {
+  defaultProcedureOnError,
+  type ProcedureOnError,
+  type ProcedureOnErrorResult,
+} from "./on-error";
 import { procedure } from "./procedure";
-import type { ProcedureRouteContract } from "./procedure-types";
+import type {
+  ProcedureInputTarget,
+  ProcedureRouteContract,
+  ProcedureValidationErrorHandler,
+  ProcedureValidationErrorHandlerResult,
+} from "./procedure-types";
 import type { StandardSchemaV1 } from "./standard-schema";
 import type { ResponseHelpers, TypedNextResponse } from "./types";
 
@@ -539,6 +549,101 @@ describe("procedure builder type definitions", () => {
         },
       ]
     >();
+  });
+
+  it("binds project-level error catalogs to route procedure response helpers", () => {
+    const errors = defineRpcErrors({
+      PLAN_REQUIRED: { status: 402, message: "Plan required" },
+    });
+
+    const appProcedure = procedure.errors(errors);
+    const appOnError = ((error, { response }) => {
+      void error;
+
+      return response.error("PLAN_REQUIRED");
+    }) satisfies ProcedureOnError<ProcedureOnErrorResult, typeof errors>;
+    const appOnValidationError = (({ response }) =>
+      response.error("PLAN_REQUIRED")) satisfies ProcedureValidationErrorHandler<
+      ProcedureInputTarget,
+      unknown,
+      ProcedureValidationErrorHandlerResult,
+      typeof errors
+    >;
+    const defaultedProcedure = appProcedure.defaults({
+      route: {
+        onError: appOnError,
+        onValidationError: appOnValidationError,
+      },
+    });
+    const guardedProcedure = appProcedure
+      .use(({ response }) =>
+        response.error("PLAN_REQUIRED", {
+          details: { plan: "pro" as const },
+        }),
+      )
+      .handle(({ response }) => response.error("PLAN_REQUIRED"));
+
+    type RouteResponse =
+      | Awaited<ReturnType<(typeof guardedProcedure)["handler"]>>
+      | (typeof guardedProcedure)["middlewareTerminalResult"];
+    type DefaultsOnErrorResponse = Awaited<ReturnType<typeof appOnError>>;
+    type DefaultsOnValidationErrorResponse = Awaited<ReturnType<typeof appOnValidationError>>;
+
+    expectTypeOf<RouteResponse>().toExtend<
+      | TypedNextResponse<
+          {
+            error: {
+              code: "PLAN_REQUIRED";
+              message: string;
+              details: {
+                plan: "pro";
+              };
+            };
+          },
+          402,
+          "application/json"
+        >
+      | TypedNextResponse<
+          {
+            error: {
+              code: "PLAN_REQUIRED";
+              message: string;
+            };
+          },
+          402,
+          "application/json"
+        >
+    >();
+    expectTypeOf<DefaultsOnErrorResponse>().toExtend<
+      TypedNextResponse<
+        {
+          error: {
+            code: "PLAN_REQUIRED";
+            message: string;
+          };
+        },
+        402,
+        "application/json"
+      >
+    >();
+    expectTypeOf<DefaultsOnValidationErrorResponse>().toExtend<
+      TypedNextResponse<
+        {
+          error: {
+            code: "PLAN_REQUIRED";
+            message: string;
+          };
+        },
+        402,
+        "application/json"
+      >
+    >();
+    defaultedProcedure.handle(({ response }) => response.error("PLAN_REQUIRED"));
+
+    appProcedure.handle(({ response }) => {
+      // @ts-expect-error codes outside the project catalog are rejected
+      return response.error("PAYMENT_REQUIRED");
+    });
   });
 
   it("limits middleware context to validated inputs only", () => {

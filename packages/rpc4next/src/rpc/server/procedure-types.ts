@@ -1,6 +1,7 @@
 import type { NextRequest, NextResponse } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
 
+import type { DefaultRpcErrorCatalog, RpcErrorCatalog } from "./error";
 import type { RpcMeta } from "./meta";
 import type { ProcedureOnErrorResponse } from "./on-error";
 import type { ProcedureResult } from "./procedure";
@@ -15,12 +16,13 @@ export type ProcedureInputContracts = Partial<Record<ProcedureInputTarget, Stand
 export interface ProcedureValidationErrorContext<
   TTarget extends ProcedureInputTarget = ProcedureInputTarget,
   TValue = unknown,
+  TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
 > {
   target: TTarget;
   value: TValue;
   issues: readonly StandardSchemaV1Issue[];
   request: NextRequest;
-  response: ProcedureOnErrorResponse;
+  response: ProcedureOnErrorResponse<TErrorCatalog>;
 }
 
 export type ProcedureValidationErrorHandlerResult =
@@ -33,7 +35,10 @@ export type ProcedureValidationErrorHandler<
   TTarget extends ProcedureInputTarget = ProcedureInputTarget,
   TValue = unknown,
   TResult extends ProcedureValidationErrorHandlerResult = ProcedureValidationErrorHandlerResult,
-> = (context: ProcedureValidationErrorContext<TTarget, TValue>) => TResult | Promise<TResult>;
+  TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
+> = (
+  context: ProcedureValidationErrorContext<TTarget, TValue, TErrorCatalog>,
+) => TResult | Promise<TResult>;
 
 export type ProcedureValidationErrorRouteResponse = Exclude<
   ProcedureValidationErrorHandlerResult,
@@ -51,8 +56,14 @@ export interface ProcedureInputOptions<
   TValue = unknown,
   TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult =
     ProcedureValidationErrorHandlerResult,
+  TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
 > {
-  onValidationError?: ProcedureValidationErrorHandler<TTarget, TValue, TOnValidationErrorResult>;
+  onValidationError?: ProcedureValidationErrorHandler<
+    TTarget,
+    TValue,
+    TOnValidationErrorResult,
+    TErrorCatalog
+  >;
 }
 
 export type ProcedureInputOptionMap = Partial<Record<ProcedureInputTarget, ProcedureInputOptions>>;

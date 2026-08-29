@@ -438,7 +438,7 @@ describe("integration next-app server route handlers", () => {
     });
   });
 
-  it("returns a typed FORBIDDEN envelope from the shared plan gate", async () => {
+  it("returns a typed PLAN_REQUIRED envelope from the shared plan gate", async () => {
     const { GET: procedureGuardedGet } =
       await import("../app/api/procedure-guarded/[userId]/route");
     const response = await procedureGuardedGet(
@@ -451,10 +451,10 @@ describe("integration next-app server route handlers", () => {
       { params: Promise.resolve({ userId: "procedure-user" }) },
     );
 
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(402);
     await expect(response.json()).resolves.toEqual({
       error: {
-        code: "FORBIDDEN",
+        code: "PLAN_REQUIRED",
         message: "A paid demo plan is required for guarded procedures.",
         details: {
           reason: "plan_upgrade_required",

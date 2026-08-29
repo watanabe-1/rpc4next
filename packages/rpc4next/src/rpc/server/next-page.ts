@@ -3,6 +3,7 @@ import { notFound, redirect, unstable_rethrow } from "next/navigation";
 import { NextRequest } from "next/server";
 
 import { searchParamsToObject } from "../lib/search-params";
+import type { RpcErrorCatalog } from "./error";
 import type { ProcedureMiddleware, ProcedureMiddlewareResult, ProcedureResult } from "./procedure";
 import { attachProcedureDefinition } from "./procedure-definition";
 import { executePipeline, isProcedureResult } from "./procedure-internals";
@@ -95,6 +96,7 @@ export type ProcedurePageOnValidationError<TResult = unknown> = (
 
 export type NextPageProcedureCarrier = {
   definition: ProcedureDefinition;
+  errorCatalog?: RpcErrorCatalog;
   middlewares: readonly ProcedureMiddleware[];
   handler?: (...args: never[]) => unknown;
   middlewareTerminalResult: unknown;
@@ -566,7 +568,7 @@ export const nextPage = <
         ...inputResult,
         json: undefined,
         formData: undefined,
-        response: createResponseHelpers(),
+        response: createResponseHelpers(procedure.errorCatalog),
         page: createPageHelpers(),
         ctx: {} as Record<string, unknown>,
       };

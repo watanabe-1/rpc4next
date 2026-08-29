@@ -1,6 +1,7 @@
 import type { NextResponse } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
 
+import type { DefaultRpcErrorCatalog, RpcErrorCatalog } from "./error";
 import type { RpcMeta } from "./meta";
 import type { ProcedureResult } from "./procedure";
 import type {
@@ -12,6 +13,7 @@ import type {
   ProcedureOutputContract,
   ProcedureRouteBinding,
   ProcedureRouteContract,
+  ProcedureValidationErrorHandlerResult,
   ProcedureValidationErrorResponseMap,
 } from "./procedure-types";
 import type { ValidationSchema } from "./route-types";
@@ -106,11 +108,17 @@ export const withProcedureInputContract = <
   TTarget extends ProcedureInputTarget,
   TSchema extends StandardSchemaV1,
   TValue = unknown,
+  TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
 >(
   definition: TDefinition,
   target: TTarget,
   schema: TSchema,
-  options?: ProcedureInputOptions<TTarget, TValue>,
+  options?: ProcedureInputOptions<
+    TTarget,
+    TValue,
+    ProcedureValidationErrorHandlerResult,
+    TErrorCatalog
+  >,
 ): MergeProcedureDefinition<
   TDefinition,
   {

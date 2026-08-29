@@ -1,5 +1,6 @@
 import type { HttpMethod } from "rpc4next-shared";
 
+import type { DefaultRpcErrorCatalog, RpcErrorCatalog } from "./error";
 import type {
   DefaultProcedurePageOnError,
   NextPageProcedureOptions,
@@ -9,20 +10,37 @@ import type {
   ProcedurePageOnValidationError,
 } from "./next-page";
 import type { NextRouteProcedureOptions } from "./next-route";
-import type { ProcedureOnError } from "./on-error";
+import type { ProcedureOnError, ProcedureOnErrorResult } from "./on-error";
 import type { ProcedureMiddleware } from "./procedure";
-import type { ProcedureDefinition, ProcedureValidationErrorHandler } from "./procedure-types";
+import type {
+  ProcedureDefinition,
+  ProcedureInputTarget,
+  ProcedureValidationErrorHandler,
+  ProcedureValidationErrorHandlerResult,
+} from "./procedure-types";
 
 type ProcedureRouteAdapterCarrier = {
   definition: ProcedureDefinition;
+  errorCatalog?: RpcErrorCatalog;
   middlewares: readonly ProcedureMiddleware[];
   handler: (...args: never[]) => unknown;
   middlewareTerminalResult: unknown;
 };
 
 export type ProcedureSharedRouteDefaults<
-  TRouteOnError extends ProcedureOnError = ProcedureOnError,
-  TRouteOnValidationError extends ProcedureValidationErrorHandler | undefined = undefined,
+  TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
+  TRouteOnError extends ProcedureOnError<ProcedureOnErrorResult, TErrorCatalog> = ProcedureOnError<
+    ProcedureOnErrorResult,
+    TErrorCatalog
+  >,
+  TRouteOnValidationError extends
+    | ProcedureValidationErrorHandler<
+        ProcedureInputTarget,
+        unknown,
+        ProcedureValidationErrorHandlerResult,
+        TErrorCatalog
+      >
+    | undefined = undefined,
 > = {
   route: {
     onError: TRouteOnError;
@@ -43,31 +61,50 @@ export type ProcedureSharedPageDefaults<
 };
 
 export type ProcedureSharedDefaults<
-  TRouteOnError extends ProcedureOnError = ProcedureOnError,
+  TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
+  TRouteOnError extends ProcedureOnError<ProcedureOnErrorResult, TErrorCatalog> = ProcedureOnError<
+    ProcedureOnErrorResult,
+    TErrorCatalog
+  >,
   TPageOnError extends ProcedurePageOnError = ProcedurePageOnError,
-  TRouteOnValidationError extends ProcedureValidationErrorHandler | undefined = undefined,
+  TRouteOnValidationError extends
+    | ProcedureValidationErrorHandler<
+        ProcedureInputTarget,
+        unknown,
+        ProcedureValidationErrorHandlerResult,
+        TErrorCatalog
+      >
+    | undefined = undefined,
   TPageOnValidationError extends ProcedurePageOnValidationError | undefined = undefined,
 > =
-  | ProcedureSharedRouteDefaults<TRouteOnError, TRouteOnValidationError>
+  | ProcedureSharedRouteDefaults<TErrorCatalog, TRouteOnError, TRouteOnValidationError>
   | ProcedureSharedPageDefaults<TPageOnError, TPageOnValidationError>;
 
-export type ProcedureDefaults = ProcedureSharedDefaults<
-  ProcedureOnError,
-  ProcedurePageOnError,
-  ProcedureValidationErrorHandler | undefined,
-  ProcedurePageOnValidationError | undefined
->;
+export type ProcedureDefaults<TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog> =
+  ProcedureSharedDefaults<
+    TErrorCatalog,
+    ProcedureOnError<ProcedureOnErrorResult, TErrorCatalog>,
+    ProcedurePageOnError,
+    | ProcedureValidationErrorHandler<
+        ProcedureInputTarget,
+        unknown,
+        ProcedureValidationErrorHandlerResult,
+        TErrorCatalog
+      >
+    | undefined,
+    ProcedurePageOnValidationError | undefined
+  >;
 
 export type ExtractProcedureSharedRouteOnError<TDefaults> = TDefaults extends {
-  route: { onError: infer TSharedOnError extends ProcedureOnError };
+  route: { onError: infer TSharedOnError extends ProcedureOnError<any, any> };
 }
   ? TSharedOnError
-  : ProcedureOnError;
+  : ProcedureOnError<any, any>;
 
 export type ExtractProcedureSharedRouteOnValidationError<TDefaults> = TDefaults extends {
   route: {
     onValidationError?: infer TSharedOnValidationError extends
-      | ProcedureValidationErrorHandler
+      | ProcedureValidationErrorHandler<any, any, any, any>
       | undefined;
   };
 }
@@ -91,7 +128,7 @@ export type ExtractProcedureSharedPageOnValidationError<TDefaults> = TDefaults e
   : undefined;
 
 type HasProcedureRouteDefaults<TDefaults> = TDefaults extends {
-  route: { onError: ProcedureOnError };
+  route: { onError: ProcedureOnError<any, any> };
 }
   ? true
   : false;
@@ -107,8 +144,8 @@ export type ProcedureNextRouteOptions<
   TMethod extends HttpMethod,
   TValidateOutput extends boolean,
   TDefaults,
-  TOnError extends ProcedureOnError,
-  TOnValidationError extends ProcedureValidationErrorHandler | undefined,
+  TOnError extends ProcedureOnError<any, any>,
+  TOnValidationError extends ProcedureValidationErrorHandler<any, any, any, any> | undefined,
 > =
   HasProcedureRouteDefaults<TDefaults> extends true
     ? Omit<

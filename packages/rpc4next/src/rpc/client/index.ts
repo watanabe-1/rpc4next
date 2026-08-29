@@ -1,8 +1,9 @@
 export { createRpcClient } from "./rpc-client";
-export { RpcResponseError } from "./response";
+export { matchRpcResponseError, RpcResponseError } from "./response";
 export type {
   ErrorResponseCode,
   ErrorResponsePayload,
+  RpcErrorHandlers,
   RpcFilePayload,
   RpcResponsePromise,
   SuccessfulJsonPayload,

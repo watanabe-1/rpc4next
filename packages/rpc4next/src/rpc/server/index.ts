@@ -2,7 +2,22 @@ import "server-only";
 
 export type { ContentType } from "../lib/content-type-types";
 export type { HttpStatusCode } from "../lib/http-status-code-types";
-export type { RpcErrorCode, RpcErrorEnvelope, RpcErrorResponseInit, RpcErrorStatus } from "./error";
+export {
+  defaultRpcErrorCatalog,
+  defineRpcErrors,
+  getDefaultRpcErrorStatus,
+  getRpcErrorStatus,
+} from "./error";
+export type {
+  DefaultRpcErrorCatalog,
+  DefineRpcErrors,
+  RpcErrorCatalog,
+  RpcErrorCatalogEntry,
+  RpcErrorCode,
+  RpcErrorEnvelope,
+  RpcErrorResponseInit,
+  RpcErrorStatus,
+} from "./error";
 export type { InferRouteMeta, RpcMeta, RpcMetaBase } from "./meta";
 export { getRouteMeta } from "./meta";
 export { defaultProcedurePageOnError, nextPage } from "./next-page";
@@ -43,6 +58,7 @@ export type {
 export { procedure } from "./procedure";
 export type {
   ProcedureInputOptions,
+  ProcedureInputTarget,
   ProcedureRouteContract,
   ProcedureValidationErrorContext,
   ProcedureValidationErrorHandler,
@@ -50,3 +66,9 @@ export type {
 } from "./procedure-types";
 export type { StandardSchemaV1, StandardSchemaV1Issue } from "./standard-schema";
 export type { ResponseHelpers, TypedNextResponse } from "./types";
+export { createRpcValidationErrorHandler, getRpcValidationIssuePath } from "./validation-error";
+export type {
+  RpcValidationErrorDetails,
+  RpcValidationErrorIssue,
+  RpcValidationErrorResponse,
+} from "./validation-error";

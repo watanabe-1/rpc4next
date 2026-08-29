@@ -4,7 +4,8 @@ import type { HttpMethod } from "rpc4next-shared";
 import type { ContentType } from "../lib/content-type-types";
 import type { HttpStatusCode } from "../lib/http-status-code-types";
 import { searchParamsToObject } from "../lib/search-params";
-import type { ProcedureOnError } from "./on-error";
+import type { DefaultRpcErrorCatalog, RpcErrorCatalog } from "./error";
+import type { ProcedureOnError, ProcedureOnErrorResult } from "./on-error";
 import type { ProcedureMiddleware, ProcedureMiddlewareResult, ProcedureResult } from "./procedure";
 import { attachProcedureDefinition } from "./procedure-definition";
 import {
@@ -81,7 +82,7 @@ const entriesToNullPrototypeObject = <TValue>(
 const getContractValue = async (
   request: NextRequest,
   segmentData: { params: Promise<Params> },
-  response: ReturnType<typeof createResponseHelpers>,
+  response: ResponseHelpers<any, RpcErrorCatalog>,
   target: ProcedureInputTarget,
 ) => {
   if (target === "params") {
@@ -151,12 +152,16 @@ const getContractValue = async (
 
 type ProcedureTypeCarrier = {
   definition: ProcedureDefinition;
+  errorCatalog?: RpcErrorCatalog;
   middlewares: readonly ProcedureMiddleware[];
   handler: (...args: never[]) => unknown;
   middlewareTerminalResult: unknown;
 };
 
-type ProcedureRouteExecutionContext<TOutput = unknown> = {
+type ProcedureRouteExecutionContext<
+  TOutput = unknown,
+  TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
+> = {
   request: NextRequest;
   params: unknown;
   query: Query | undefined;
@@ -164,7 +169,7 @@ type ProcedureRouteExecutionContext<TOutput = unknown> = {
   formData: unknown;
   headers: Record<string, string> | undefined;
   cookies: Record<string, string> | undefined;
-  response: ResponseHelpers<TOutput>;
+  response: ResponseHelpers<TOutput, TErrorCatalog>;
   ctx: Record<string, unknown>;
 };
 
@@ -221,6 +226,12 @@ type NextRouteMethodConstraint<
           : unknown
       : unknown;
 
+type InferProcedureErrorCatalog<TProcedure extends ProcedureTypeCarrier> = TProcedure extends {
+  errorCatalog: infer TErrorCatalog extends RpcErrorCatalog;
+}
+  ? TErrorCatalog
+  : DefaultRpcErrorCatalog;
+
 type ProcedureErrorResponse<TCode extends "BAD_REQUEST" | "INTERNAL_SERVER_ERROR"> =
   TCode extends "BAD_REQUEST"
     ? TypedNextResponse<
@@ -274,7 +285,7 @@ type InferProcedureOutputValidationErrorResponse<
   : never;
 
 type InferProcedureSharedValidationErrorResponse<TOnValidationError> =
-  TOnValidationError extends ProcedureValidationErrorHandler
+  TOnValidationError extends ProcedureValidationErrorHandler<any, any, any, any>
     ? NormalizeProcedureHandlerResult<Exclude<Awaited<ReturnType<TOnValidationError>>, undefined>>
     : never;
 
@@ -335,14 +346,18 @@ type NormalizeProcedureHandlerResult<TResult> = TResult extends Response | NextR
         ? TypedNextResponse<undefined, ResolveStatus<TStatus, 200>, ContentType>
         : TypedNextResponse<unknown, HttpStatusCode, ContentType>;
 
-type InferProcedureOnErrorResponse<TOnError extends ProcedureOnError> =
+type InferProcedureOnErrorResponse<TOnError extends ProcedureOnError<any, any>> =
   NormalizeProcedureHandlerResult<Awaited<ReturnType<TOnError>>>;
 
 type NextRouteResponse<
   TProcedure extends ProcedureTypeCarrier,
   TValidateOutput extends boolean = false,
-  TOnError extends ProcedureOnError = ProcedureOnError,
-  TOnValidationError extends ProcedureValidationErrorHandler | undefined = undefined,
+  TOnError extends ProcedureOnError<any, any> = ProcedureOnError<
+    ProcedureOnErrorResult,
+    InferProcedureErrorCatalog<TProcedure>
+  >,
+  TOnValidationError extends ProcedureValidationErrorHandler<any, any, any, any> | undefined =
+    undefined,
 > =
   IsNever<InferProcedureHandlerResult<TProcedure>> extends true
     ?
@@ -364,8 +379,12 @@ export type NextRouteHandler<
   TProcedure extends ProcedureTypeCarrier = ProcedureTypeCarrier,
   TMethod extends HttpMethod | undefined = undefined,
   TValidateOutput extends boolean = false,
-  TOnError extends ProcedureOnError = ProcedureOnError,
-  TOnValidationError extends ProcedureValidationErrorHandler | undefined = undefined,
+  TOnError extends ProcedureOnError<any, any> = ProcedureOnError<
+    ProcedureOnErrorResult,
+    InferProcedureErrorCatalog<TProcedure>
+  >,
+  TOnValidationError extends ProcedureValidationErrorHandler<any, any, any, any> | undefined =
+    undefined,
 > = WithProcedureDefinition<
   (
     request: NextRequest,
@@ -378,8 +397,14 @@ export type NextRouteHandler<
 
 export interface NextRouteOptions<
   TMethod extends HttpMethod = HttpMethod,
-  TOnError extends ProcedureOnError = ProcedureOnError,
-  TOnValidationError extends ProcedureValidationErrorHandler | undefined = undefined,
+  TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
+  TOnError extends ProcedureOnError<any, TErrorCatalog> = ProcedureOnError<
+    ProcedureOnErrorResult,
+    TErrorCatalog
+  >,
+  TOnValidationError extends
+    | ProcedureValidationErrorHandler<any, any, any, TErrorCatalog>
+    | undefined = undefined,
 > {
   method: TMethod;
   validateOutput?: boolean;
@@ -391,9 +416,18 @@ export type NextRouteProcedureOptions<
   TProcedure extends ProcedureTypeCarrier,
   TMethod extends HttpMethod | undefined = undefined,
   TValidateOutput extends boolean = false,
-  TOnError extends ProcedureOnError = ProcedureOnError,
-  TOnValidationError extends ProcedureValidationErrorHandler | undefined = undefined,
-> = NextRouteOptions<Exclude<TMethod, undefined>, TOnError, TOnValidationError> &
+  TOnError extends ProcedureOnError<any, any> = ProcedureOnError<
+    ProcedureOnErrorResult,
+    InferProcedureErrorCatalog<TProcedure>
+  >,
+  TOnValidationError extends ProcedureValidationErrorHandler<any, any, any, any> | undefined =
+    undefined,
+> = NextRouteOptions<
+  Exclude<TMethod, undefined>,
+  InferProcedureErrorCatalog<TProcedure>,
+  TOnError,
+  TOnValidationError
+> &
   NextRouteMethodConstraint<TProcedure, TMethod> & {
     validateOutput?: TValidateOutput;
   };
@@ -402,8 +436,12 @@ export type NextRouteExports<
   TProcedure extends ProcedureTypeCarrier = ProcedureTypeCarrier,
   TMethod extends HttpMethod = HttpMethod,
   TValidateOutput extends boolean = false,
-  TOnError extends ProcedureOnError = ProcedureOnError,
-  TOnValidationError extends ProcedureValidationErrorHandler | undefined = undefined,
+  TOnError extends ProcedureOnError<any, any> = ProcedureOnError<
+    ProcedureOnErrorResult,
+    InferProcedureErrorCatalog<TProcedure>
+  >,
+  TOnValidationError extends ProcedureValidationErrorHandler<any, any, any, any> | undefined =
+    undefined,
 > = {
   [TKey in TMethod]: NextRouteHandler<
     TProcedure,
@@ -538,9 +576,9 @@ const applyParsedProcedureOutput = (
 const validateProcedureInputs = async (
   request: NextRequest,
   segmentData: { params: Promise<Params> },
-  response: ReturnType<typeof createRouteContext>,
+  response: ResponseHelpers<any, RpcErrorCatalog>,
   procedureDefinition: ProcedureDefinition,
-  sharedOnValidationError: ProcedureValidationErrorHandler | undefined,
+  sharedOnValidationError: ProcedureValidationErrorHandler<any, any, any, any> | undefined,
 ) => {
   const contracts = procedureDefinition.input?.contracts ?? {};
   const inputOptions = procedureDefinition.input?.options ?? {};
@@ -682,8 +720,13 @@ export const nextRoute = <
   TProcedure extends ProcedureTypeCarrier,
   TMethod extends HttpMethod = HttpMethod,
   TValidateOutput extends boolean = false,
-  TOnError extends ProcedureOnError = ProcedureOnError,
-  TOnValidationError extends ProcedureValidationErrorHandler | undefined = undefined,
+  TOnError extends ProcedureOnError<any, InferProcedureErrorCatalog<TProcedure>> = ProcedureOnError<
+    ProcedureOnErrorResult,
+    InferProcedureErrorCatalog<TProcedure>
+  >,
+  TOnValidationError extends
+    | ProcedureValidationErrorHandler<any, any, any, InferProcedureErrorCatalog<TProcedure>>
+    | undefined = undefined,
 >(
   procedure: TProcedure,
   options: NextRouteProcedureOptions<
@@ -699,10 +742,18 @@ export const nextRoute = <
   ) => InferProcedureHandlerResult<TProcedure> | Promise<InferProcedureHandlerResult<TProcedure>>;
   const outputSchema = procedure.definition.output?.schema;
   const pipelineSteps = [
-    ...(procedure.middlewares as readonly ((
-      context: ProcedureRouteExecutionContext<InferProcedureDeclaredOutput<TProcedure>>,
+    ...(procedure.middlewares as unknown as readonly ((
+      context: ProcedureRouteExecutionContext<
+        InferProcedureDeclaredOutput<TProcedure>,
+        InferProcedureErrorCatalog<TProcedure>
+      >,
     ) => ProcedureMiddlewareResult | Promise<ProcedureMiddlewareResult>)[]),
-    (context: ProcedureRouteExecutionContext<InferProcedureDeclaredOutput<TProcedure>>) =>
+    (
+      context: ProcedureRouteExecutionContext<
+        InferProcedureDeclaredOutput<TProcedure>,
+        InferProcedureErrorCatalog<TProcedure>
+      >,
+    ) =>
       handler(context as InferProcedureHandlerContext<TProcedure>) as
         | InferProcedureHandlerResult<TProcedure>
         | Promise<InferProcedureHandlerResult<TProcedure>>,
@@ -729,13 +780,17 @@ export const nextRoute = <
     segmentData: { params: Promise<Params> },
   ): Promise<NextRouteResponse<TProcedure, TValidateOutput, TOnError, TOnValidationError>> => {
     const routeContext = createRouteContext(request, segmentData);
-    const response = createResponseHelpers<InferProcedureDeclaredOutput<TProcedure>>();
+    const errorCatalog = procedure.errorCatalog as InferProcedureErrorCatalog<TProcedure>;
+    const response = createResponseHelpers<
+      InferProcedureDeclaredOutput<TProcedure>,
+      InferProcedureErrorCatalog<TProcedure>
+    >(errorCatalog);
 
     try {
       const inputResult = await validateProcedureInputs(
         request,
         segmentData,
-        routeContext,
+        response as unknown as ResponseHelpers<any, RpcErrorCatalog>,
         procedure.definition,
         options.onValidationError,
       );
@@ -751,7 +806,8 @@ export const nextRoute = <
       const { params, query, json, formData, headers, cookies } = inputResult.values;
 
       const executionContext: ProcedureRouteExecutionContext<
-        InferProcedureDeclaredOutput<TProcedure>
+        InferProcedureDeclaredOutput<TProcedure>,
+        InferProcedureErrorCatalog<TProcedure>
       > = {
         request,
         params,
@@ -765,7 +821,10 @@ export const nextRoute = <
       };
 
       const result = await executePipeline<
-        ProcedureRouteExecutionContext<InferProcedureDeclaredOutput<TProcedure>>,
+        ProcedureRouteExecutionContext<
+          InferProcedureDeclaredOutput<TProcedure>,
+          InferProcedureErrorCatalog<TProcedure>
+        >,
         ProcedureMiddlewareResult | InferProcedureHandlerResult<TProcedure>,
         Response | NextResponse | ProcedureResult
       >(pipelineSteps, executionContext, {
@@ -806,7 +865,9 @@ export const nextRoute = <
         TOnValidationError
       >;
     } catch (error) {
-      const errorResponse = createResponseHelpers();
+      const errorResponse = createResponseHelpers<unknown, InferProcedureErrorCatalog<TProcedure>>(
+        errorCatalog,
+      );
       const handled = await options.onError(error, {
         request,
         params: await segmentData.params,

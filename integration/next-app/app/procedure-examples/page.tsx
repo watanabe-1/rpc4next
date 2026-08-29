@@ -193,12 +193,12 @@ type ExpectedProcedureGuardedResponse =
   | TypedNextResponse<
       {
         error: {
-          code: "FORBIDDEN";
+          code: "PLAN_REQUIRED";
           message: string;
           details?: { reason: "plan_upgrade_required" };
         };
       },
-      403,
+      402,
       "application/json"
     >;
 const _procedureGuardedFromActual: ExpectedProcedureGuardedResponse =

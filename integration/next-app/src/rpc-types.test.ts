@@ -643,12 +643,12 @@ describe("integration next-app generated RPC type coverage", () => {
       | TypedNextResponse<
           {
             error: {
-              code: "FORBIDDEN";
+              code: "PLAN_REQUIRED";
               message: string;
               details?: { reason: "plan_upgrade_required" };
             };
           },
-          403,
+          402,
           "application/json"
         >;
     expectTypeOf<typeof procedureGuardedResponse>().toExtend<ExpectedProcedureGuardedResponse>();
@@ -711,17 +711,17 @@ describe("integration next-app generated RPC type coverage", () => {
         403
       >
     >;
-    type _procedureGuardedKeepsPlanForbidden = ExpectTrue<
+    type _procedureGuardedKeepsPlanRequired = ExpectTrue<
       HasResponseVariant<
         typeof procedureGuardedResponse,
         {
           error: {
-            code: "FORBIDDEN";
+            code: "PLAN_REQUIRED";
             message: string;
             details?: { reason: "plan_upgrade_required" };
           };
         },
-        403
+        402
       >
     >;
 

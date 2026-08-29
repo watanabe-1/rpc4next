@@ -1,17 +1,19 @@
 import type { NextRequest, NextResponse } from "next/server";
 
+import type { DefaultRpcErrorCatalog, RpcErrorCatalog } from "./error";
 import type { ProcedureResult } from "./procedure";
 import type { Params, ResponseHelpers, RouteContext } from "./types";
 
-export type ProcedureOnErrorResponse = Pick<
-  ResponseHelpers<unknown>,
-  "body" | "error" | "json" | "redirect" | "text"
->;
+export type ProcedureOnErrorResponse<
+  TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
+> = Pick<ResponseHelpers<unknown, TErrorCatalog>, "body" | "error" | "json" | "redirect" | "text">;
 
-export interface ProcedureOnErrorContext {
+export interface ProcedureOnErrorContext<
+  TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
+> {
   request: NextRequest;
   params: Params;
-  response: ProcedureOnErrorResponse;
+  response: ProcedureOnErrorResponse<TErrorCatalog>;
   routeContext: RouteContext;
 }
 
@@ -21,10 +23,10 @@ export type ProcedureOnErrorResult =
   | ProcedureResult
   | Promise<Response | NextResponse | ProcedureResult>;
 
-export type ProcedureOnError<TResult extends ProcedureOnErrorResult = ProcedureOnErrorResult> = (
-  error: unknown,
-  context: ProcedureOnErrorContext,
-) => TResult;
+export type ProcedureOnError<
+  TResult extends ProcedureOnErrorResult = ProcedureOnErrorResult,
+  TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
+> = (error: unknown, context: ProcedureOnErrorContext<TErrorCatalog>) => TResult;
 
 export const defaultProcedureOnError = ((error, context) => {
   if (error instanceof Response) {

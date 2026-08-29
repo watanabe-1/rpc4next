@@ -2,6 +2,8 @@ import type { NextRequest, NextResponse } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
 
 import type { HttpStatusCode } from "../lib/http-status-code-types";
+import { defaultRpcErrorCatalog } from "./error";
+import type { DefaultRpcErrorCatalog, RpcErrorCatalog } from "./error";
 import type { RpcMeta } from "./meta";
 import {
   nextPage as adaptProcedureToNextPage,
@@ -84,6 +86,7 @@ type ExtractProcedureMiddlewareContextExtension<TMiddleware> =
     infer _TBoundParams,
     infer _TContext,
     infer TContextExtension,
+    infer _TErrorCatalog,
     infer _TMode extends ProcedureAdapterMode
   >
     ? TContextExtension
@@ -241,11 +244,13 @@ type ProcedureHandleArgs<
   TDefinition extends ProcedureDefinition,
   TContext extends object,
   TMode extends ProcedureAdapterMode,
+  TErrorCatalog extends RpcErrorCatalog,
   THandler extends ProcedureHandler<
     ExtractValidationSchema<TDefinition>,
     InferProcedureParams<TDefinition>,
     TContext,
     ExtractProcedureOutput<TDefinition>,
+    TErrorCatalog,
     TMode
   >,
 > =
@@ -262,7 +267,10 @@ export type ProcedureResult<TBody = unknown> = {
   redirect?: string;
 };
 
-export type ProcedureResponseHelpers<TOutput = unknown> = ResponseHelpers<TOutput>;
+export type ProcedureResponseHelpers<
+  TOutput = unknown,
+  TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
+> = ResponseHelpers<TOutput, TErrorCatalog>;
 
 export type ProcedurePageResult<TBody = unknown> = Omit<ProcedureResult<TBody>, "redirect"> & {
   redirect?: never;
@@ -307,6 +315,7 @@ export type ProcedureHandlerContext<
   TBoundParams = Params,
   TContext extends object = Record<never, never>,
   TOutput = unknown,
+  TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
   TMode extends ProcedureAdapterMode = "neutral",
 > = ProcedureValidatedContext<TValidationSchema, TBoundParams> & {
   request: NextRequest;
@@ -316,13 +325,14 @@ export type ProcedureHandlerContext<
         page: ProcedurePageHelpers;
       }
     : {
-        response: ProcedureResponseHelpers<TOutput>;
+        response: ProcedureResponseHelpers<TOutput, TErrorCatalog>;
       });
 
 export type ProcedureMiddlewareContext<
   TValidationSchema extends ValidationSchema = ValidationSchema,
   TBoundParams = Params,
   TContext extends object = Record<never, never>,
+  TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
   TMode extends ProcedureAdapterMode = "neutral",
 > = ProcedureValidatedContext<TValidationSchema, TBoundParams> & {
   request: NextRequest;
@@ -332,7 +342,7 @@ export type ProcedureMiddlewareContext<
         page: ProcedurePageHelpers;
       }
     : {
-        response: ResponseHelpers;
+        response: ResponseHelpers<unknown, TErrorCatalog>;
       });
 
 type ProcedureRouteTerminalResult = Response | NextResponse | ProcedureResult;
@@ -370,9 +380,16 @@ export type ProcedureMiddleware<
   TBoundParams = Params,
   TContext extends object = Record<never, never>,
   TContextExtension extends object = Record<never, never>,
+  TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
   TMode extends ProcedureAdapterMode = "neutral",
 > = (
-  context: ProcedureMiddlewareContext<TValidationSchema, TBoundParams, TContext, TMode>,
+  context: ProcedureMiddlewareContext<
+    TValidationSchema,
+    TBoundParams,
+    TContext,
+    TErrorCatalog,
+    TMode
+  >,
 ) =>
   | Promise<ProcedureMiddlewareResult<TContextExtension, TMode>>
   | ProcedureMiddlewareResult<TContextExtension, TMode>;
@@ -382,24 +399,35 @@ export type ProcedureHandler<
   TBoundParams = Params,
   TContext extends object = Record<never, never>,
   TOutput = unknown,
+  TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
   TMode extends ProcedureAdapterMode = "neutral",
 > = (
-  context: ProcedureHandlerContext<TValidationSchema, TBoundParams, TContext, TOutput, TMode>,
+  context: ProcedureHandlerContext<
+    TValidationSchema,
+    TBoundParams,
+    TContext,
+    TOutput,
+    TErrorCatalog,
+    TMode
+  >,
 ) => ProcedureHandlerResult<TOutput, TMode>;
 
 type ProcedureBase<
   TDefinition extends ProcedureDefinition = EmptyProcedureDefinition,
   TContext extends object = Record<never, never>,
   TOutput = ExtractProcedureOutput<TDefinition>,
+  TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
   THandler extends (...args: never[]) => ProcedureAnyHandlerResult<TOutput> = ProcedureHandler<
     ExtractValidationSchema<TDefinition>,
     InferProcedureParams<TDefinition>,
     TContext,
-    TOutput
+    TOutput,
+    TErrorCatalog
   >,
   TMiddlewareTerminalResult = never,
 > = {
   readonly definition: TDefinition;
+  readonly errorCatalog: TErrorCatalog;
   readonly middlewares: readonly ProcedureMiddleware[];
   readonly handler: THandler;
   readonly middlewareTerminalResult: TMiddlewareTerminalResult;
@@ -411,16 +439,26 @@ type ProcedureNextRouteMethod<
   TOutput,
   THandler extends (...args: never[]) => ProcedureAnyHandlerResult<TOutput>,
   TDefaults,
+  TErrorCatalog extends RpcErrorCatalog,
   TMiddlewareTerminalResult,
 > = <
   TMethod extends HttpMethod = HttpMethod,
   TValidateOutput extends boolean = false,
-  TOnError extends ProcedureOnError = ExtractProcedureSharedRouteOnError<TDefaults>,
-  TOnValidationError extends ProcedureValidationErrorHandler | undefined =
-    ExtractProcedureSharedRouteOnValidationError<TDefaults>,
+  TOnError extends ProcedureOnError<any, any> = ExtractProcedureSharedRouteOnError<TDefaults>,
+  TOnValidationError extends
+    | ProcedureValidationErrorHandler<any, any, any, TErrorCatalog>
+    | undefined = ExtractProcedureSharedRouteOnValidationError<TDefaults>,
 >(
   options: ProcedureNextRouteOptions<
-    Procedure<TDefinition, TContext, TOutput, THandler, TDefaults, TMiddlewareTerminalResult>,
+    Procedure<
+      TDefinition,
+      TContext,
+      TOutput,
+      THandler,
+      TDefaults,
+      TErrorCatalog,
+      TMiddlewareTerminalResult
+    >,
     TMethod,
     TValidateOutput,
     TDefaults,
@@ -428,7 +466,15 @@ type ProcedureNextRouteMethod<
     TOnValidationError
   >,
 ) => NextRouteExports<
-  Procedure<TDefinition, TContext, TOutput, THandler, TDefaults, TMiddlewareTerminalResult>,
+  Procedure<
+    TDefinition,
+    TContext,
+    TOutput,
+    THandler,
+    TDefaults,
+    TErrorCatalog,
+    TMiddlewareTerminalResult
+  >,
   TMethod,
   TValidateOutput,
   TOnError,
@@ -449,6 +495,7 @@ type ProcedureNextPageMethod<
   TOutput,
   THandler extends (...args: never[]) => ProcedureAnyHandlerResult<TOutput>,
   TDefaults,
+  TErrorCatalog extends RpcErrorCatalog,
   TMiddlewareTerminalResult,
 > = <
   TResult = unknown,
@@ -457,7 +504,15 @@ type ProcedureNextPageMethod<
     ExtractProcedureSharedPageOnValidationError<TDefaults>,
 >(
   ...args: ProcedureNextPageArgs<
-    Procedure<TDefinition, TContext, TOutput, THandler, TDefaults, TMiddlewareTerminalResult>,
+    Procedure<
+      TDefinition,
+      TContext,
+      TOutput,
+      THandler,
+      TDefaults,
+      TErrorCatalog,
+      TMiddlewareTerminalResult
+    >,
     ExtractProcedureHandlerData<THandler, TOutput>,
     TContext,
     TResult,
@@ -466,7 +521,15 @@ type ProcedureNextPageMethod<
     TOnValidationError
   >
 ) => NextPageHandler<
-  Procedure<TDefinition, TContext, TOutput, THandler, TDefaults, TMiddlewareTerminalResult>,
+  Procedure<
+    TDefinition,
+    TContext,
+    TOutput,
+    THandler,
+    TDefaults,
+    TErrorCatalog,
+    TMiddlewareTerminalResult
+  >,
   | TResult
   | Awaited<ReturnType<TOnError>>
   | (TOnValidationError extends ProcedurePageOnValidationError
@@ -476,9 +539,11 @@ type ProcedureNextPageMethod<
 
 type ProcedureBuilderNextPageCarrier<
   TDefinition extends ProcedureDefinition,
+  TErrorCatalog extends RpcErrorCatalog,
   TMiddlewareTerminalResult,
 > = {
   readonly definition: TDefinition;
+  readonly errorCatalog: TErrorCatalog;
   readonly middlewares: readonly ProcedureMiddleware[];
   readonly handler?: undefined;
   readonly middlewareTerminalResult: TMiddlewareTerminalResult;
@@ -488,6 +553,7 @@ type ProcedureBuilderNextPageMethod<
   TDefinition extends ProcedureDefinition,
   TContext extends object,
   TDefaults,
+  TErrorCatalog extends RpcErrorCatalog,
   TMiddlewareTerminalResult,
 > = <
   TResult = unknown,
@@ -496,7 +562,7 @@ type ProcedureBuilderNextPageMethod<
     ExtractProcedureSharedPageOnValidationError<TDefaults>,
 >(
   ...args: ProcedureNextPageArgs<
-    ProcedureBuilderNextPageCarrier<TDefinition, TMiddlewareTerminalResult>,
+    ProcedureBuilderNextPageCarrier<TDefinition, TErrorCatalog, TMiddlewareTerminalResult>,
     never,
     TContext,
     TResult,
@@ -505,7 +571,7 @@ type ProcedureBuilderNextPageMethod<
     TOnValidationError
   >
 ) => NextPageHandler<
-  ProcedureBuilderNextPageCarrier<TDefinition, TMiddlewareTerminalResult>,
+  ProcedureBuilderNextPageCarrier<TDefinition, TErrorCatalog, TMiddlewareTerminalResult>,
   | TResult
   | Awaited<ReturnType<TOnError>>
   | (TOnValidationError extends ProcedurePageOnValidationError
@@ -521,11 +587,20 @@ export type Procedure<
     ExtractValidationSchema<TDefinition>,
     InferProcedureParams<TDefinition>,
     TContext,
-    TOutput
+    TOutput,
+    DefaultRpcErrorCatalog
   >,
   TDefaults = undefined,
+  TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
   TMiddlewareTerminalResult = never,
-> = ProcedureBase<TDefinition, TContext, TOutput, THandler, TMiddlewareTerminalResult> &
+> = ProcedureBase<
+  TDefinition,
+  TContext,
+  TOutput,
+  TErrorCatalog,
+  THandler,
+  TMiddlewareTerminalResult
+> &
   (ExtractProcedureAdapterMode<TDefaults> extends "page"
     ? {
         nextPage: ProcedureNextPageMethod<
@@ -534,6 +609,7 @@ export type Procedure<
           TOutput,
           THandler,
           TDefaults,
+          TErrorCatalog,
           TMiddlewareTerminalResult
         >;
       }
@@ -545,6 +621,7 @@ export type Procedure<
             TOutput,
             THandler,
             TDefaults,
+            TErrorCatalog,
             TMiddlewareTerminalResult
           >;
         }
@@ -555,6 +632,7 @@ export type Procedure<
             TOutput,
             THandler,
             TDefaults,
+            TErrorCatalog,
             TMiddlewareTerminalResult
           >;
           nextPage: ProcedureNextPageMethod<
@@ -563,6 +641,7 @@ export type Procedure<
             TOutput,
             THandler,
             TDefaults,
+            TErrorCatalog,
             TMiddlewareTerminalResult
           >;
         });
@@ -580,9 +659,8 @@ type HasProcedureRoute<TDefinition extends ProcedureDefinition> = TDefinition ex
   : false;
 
 type HasProcedureDefaults<TDefaults> = [TDefaults] extends [undefined] ? false : true;
-type ProcedureDefaultsArg<TDefaults> = TDefaults extends ProcedureDefaults
-  ? TDefaults
-  : ProcedureDefaults;
+type ProcedureDefaultsArg<TDefaults, TErrorCatalog extends RpcErrorCatalog> =
+  TDefaults extends ProcedureDefaults<TErrorCatalog> ? TDefaults : ProcedureDefaults<TErrorCatalog>;
 
 type ExtractProcedureAdapterMode<TDefaults> = TDefaults extends {
   page: { onError: ProcedurePageOnError };
@@ -618,9 +696,16 @@ export type ProcedureBuilder<
   TDefinition extends ProcedureDefinition = EmptyProcedureDefinition,
   TContext extends object = Record<never, never>,
   TDefaults = undefined,
+  TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
   TMiddlewareTerminalResult = never,
 > = Omit<
-  ProcedureBuilderMethods<TDefinition, TContext, TDefaults, TMiddlewareTerminalResult>,
+  ProcedureBuilderMethods<
+    TDefinition,
+    TContext,
+    TDefaults,
+    TErrorCatalog,
+    TMiddlewareTerminalResult
+  >,
   UsedProcedureBuilderMethodKeys<TDefinition, TDefaults>
 >;
 
@@ -628,11 +713,28 @@ interface ProcedureBuilderMethods<
   TDefinition extends ProcedureDefinition = EmptyProcedureDefinition,
   TContext extends object = Record<never, never>,
   TDefaults = undefined,
+  TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
   TMiddlewareTerminalResult = never,
 > {
+  errors<const TNextErrorCatalog extends RpcErrorCatalog>(
+    errorCatalog: TNextErrorCatalog,
+  ): ProcedureBuilder<
+    TDefinition,
+    TContext,
+    TDefaults,
+    TNextErrorCatalog,
+    TMiddlewareTerminalResult
+  >;
+
   defaults<const TSharedDefaults>(
-    defaults: ProcedureDefaultsArg<TSharedDefaults>,
-  ): ProcedureBuilder<TDefinition, TContext, TSharedDefaults, TMiddlewareTerminalResult>;
+    defaults: ProcedureDefaultsArg<TSharedDefaults, TErrorCatalog>,
+  ): ProcedureBuilder<
+    TDefinition,
+    TContext,
+    TSharedDefaults,
+    TErrorCatalog,
+    TMiddlewareTerminalResult
+  >;
 
   meta<TMeta extends RpcMeta>(
     meta: TMeta,
@@ -640,6 +742,7 @@ interface ProcedureBuilderMethods<
     MergeProcedureDefinition<TDefinition, { meta: TMeta }>,
     TContext,
     TDefaults,
+    TErrorCatalog,
     TMiddlewareTerminalResult
   >;
 
@@ -654,6 +757,7 @@ interface ProcedureBuilderMethods<
     >,
     TContext,
     TDefaults,
+    TErrorCatalog,
     TMiddlewareTerminalResult
   >;
 
@@ -662,11 +766,17 @@ interface ProcedureBuilderMethods<
     TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
   >(
     schema: BoundRouteParamsSchemaArg<TDefinition, TSchema>,
-    options?: ProcedureInputOptions<"params", InferSchemaInput<TSchema>, TOnValidationErrorResult>,
+    options?: ProcedureInputOptions<
+      "params",
+      InferSchemaInput<TSchema>,
+      TOnValidationErrorResult,
+      TErrorCatalog
+    >,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "params", TSchema, TOnValidationErrorResult>,
     TContext,
     TDefaults,
+    TErrorCatalog,
     TMiddlewareTerminalResult
   >;
 
@@ -675,11 +785,17 @@ interface ProcedureBuilderMethods<
     TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
   >(
     schema: TSchema,
-    options?: ProcedureInputOptions<"query", InferSchemaInput<TSchema>, TOnValidationErrorResult>,
+    options?: ProcedureInputOptions<
+      "query",
+      InferSchemaInput<TSchema>,
+      TOnValidationErrorResult,
+      TErrorCatalog
+    >,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "query", TSchema, TOnValidationErrorResult>,
     TContext,
     TDefaults,
+    TErrorCatalog,
     TMiddlewareTerminalResult
   >;
 
@@ -688,11 +804,17 @@ interface ProcedureBuilderMethods<
     TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
   >(
     schema: BodyContractSchemaArg<TDefinition, "json", TSchema>,
-    options?: ProcedureInputOptions<"json", InferSchemaInput<TSchema>, TOnValidationErrorResult>,
+    options?: ProcedureInputOptions<
+      "json",
+      InferSchemaInput<TSchema>,
+      TOnValidationErrorResult,
+      TErrorCatalog
+    >,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "json", TSchema, TOnValidationErrorResult>,
     TContext,
     TDefaults,
+    TErrorCatalog,
     TMiddlewareTerminalResult
   >;
 
@@ -704,12 +826,14 @@ interface ProcedureBuilderMethods<
     options?: ProcedureInputOptions<
       "formData",
       InferSchemaInput<TSchema>,
-      TOnValidationErrorResult
+      TOnValidationErrorResult,
+      TErrorCatalog
     >,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "formData", TSchema, TOnValidationErrorResult>,
     TContext,
     TDefaults,
+    TErrorCatalog,
     TMiddlewareTerminalResult
   >;
 
@@ -718,11 +842,17 @@ interface ProcedureBuilderMethods<
     TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
   >(
     schema: TSchema,
-    options?: ProcedureInputOptions<"headers", InferSchemaInput<TSchema>, TOnValidationErrorResult>,
+    options?: ProcedureInputOptions<
+      "headers",
+      InferSchemaInput<TSchema>,
+      TOnValidationErrorResult,
+      TErrorCatalog
+    >,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "headers", TSchema, TOnValidationErrorResult>,
     TContext,
     TDefaults,
+    TErrorCatalog,
     TMiddlewareTerminalResult
   >;
 
@@ -731,11 +861,17 @@ interface ProcedureBuilderMethods<
     TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
   >(
     schema: TSchema,
-    options?: ProcedureInputOptions<"cookies", InferSchemaInput<TSchema>, TOnValidationErrorResult>,
+    options?: ProcedureInputOptions<
+      "cookies",
+      InferSchemaInput<TSchema>,
+      TOnValidationErrorResult,
+      TErrorCatalog
+    >,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "cookies", TSchema, TOnValidationErrorResult>,
     TContext,
     TDefaults,
+    TErrorCatalog,
     TMiddlewareTerminalResult
   >;
 
@@ -748,6 +884,7 @@ interface ProcedureBuilderMethods<
     >,
     TContext,
     TDefaults,
+    TErrorCatalog,
     TMiddlewareTerminalResult
   >;
 
@@ -762,6 +899,7 @@ interface ProcedureBuilderMethods<
     >,
     TContext,
     TDefaults,
+    TErrorCatalog,
     TMiddlewareTerminalResult
   >;
 
@@ -771,6 +909,7 @@ interface ProcedureBuilderMethods<
       InferProcedureParams<TDefinition>,
       TContext,
       object,
+      TErrorCatalog,
       ExtractProcedureAdapterMode<TDefaults>
     >,
   >(
@@ -779,6 +918,7 @@ interface ProcedureBuilderMethods<
     MergeProcedureDefinitionWithMiddleware<TDefinition, TMiddleware>,
     TContext & ExtractProcedureMiddlewareContextExtension<TMiddleware>,
     TDefaults,
+    TErrorCatalog,
     TMiddlewareTerminalResult | ExtractProcedureMiddlewareTerminalResult<TMiddleware>
   >;
 
@@ -788,6 +928,7 @@ interface ProcedureBuilderMethods<
       InferProcedureParams<TDefinition>,
       TContext,
       ExtractProcedureOutput<TDefinition>,
+      TErrorCatalog,
       ExtractProcedureAdapterMode<TDefaults>
     >,
   >(
@@ -795,6 +936,7 @@ interface ProcedureBuilderMethods<
       TDefinition,
       TContext,
       ExtractProcedureAdapterMode<TDefaults>,
+      TErrorCatalog,
       THandler
     >
   ): Procedure<
@@ -803,6 +945,7 @@ interface ProcedureBuilderMethods<
     ExtractProcedureOutput<TDefinition>,
     THandler,
     TDefaults,
+    TErrorCatalog,
     TMiddlewareTerminalResult
   >;
 
@@ -810,6 +953,7 @@ interface ProcedureBuilderMethods<
     TDefinition,
     TContext,
     TDefaults,
+    TErrorCatalog,
     TMiddlewareTerminalResult
   >;
 }
@@ -818,12 +962,16 @@ const createProcedureBuilder = <
   TDefinition extends ProcedureDefinition,
   TContext extends object,
   TDefaults,
+  TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
   TMiddlewareTerminalResult = never,
 >(
   definition: TDefinition,
   middlewares: readonly ProcedureMiddleware[] = [],
   defaults?: TDefaults,
-): ProcedureBuilder<TDefinition, TContext, TDefaults, TMiddlewareTerminalResult> => {
+  errorCatalog?: TErrorCatalog,
+): ProcedureBuilder<TDefinition, TContext, TDefaults, TErrorCatalog, TMiddlewareTerminalResult> => {
+  const resolvedErrorCatalog = errorCatalog ?? (defaultRpcErrorCatalog as unknown as TErrorCatalog);
+
   const withInputContract = <
     TTarget extends ProcedureInputTarget,
     TSchema extends StandardSchemaV1,
@@ -831,11 +979,17 @@ const createProcedureBuilder = <
   >(
     target: TTarget,
     schema: TSchema,
-    options?: ProcedureInputOptions<TTarget, InferSchemaInput<TSchema>, TOnValidationErrorResult>,
+    options?: ProcedureInputOptions<
+      TTarget,
+      InferSchemaInput<TSchema>,
+      TOnValidationErrorResult,
+      TErrorCatalog
+    >,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, TTarget, TSchema, TOnValidationErrorResult>,
     TContext,
     TDefaults,
+    TErrorCatalog,
     TMiddlewareTerminalResult
   > => {
     return createProcedureBuilder(
@@ -852,17 +1006,41 @@ const createProcedureBuilder = <
       >,
       middlewares,
       defaults,
+      resolvedErrorCatalog,
     );
   };
 
+  const withErrors = <const TNextErrorCatalog extends RpcErrorCatalog>(
+    nextErrorCatalog: TNextErrorCatalog,
+  ): ProcedureBuilder<
+    TDefinition,
+    TContext,
+    TDefaults,
+    TNextErrorCatalog,
+    TMiddlewareTerminalResult
+  > => {
+    return createProcedureBuilder(definition, middlewares, defaults, nextErrorCatalog);
+  };
+
   const withDefaults = <const TSharedDefaults>(
-    nextDefaults: ProcedureDefaultsArg<TSharedDefaults>,
-  ): ProcedureBuilder<TDefinition, TContext, TSharedDefaults, TMiddlewareTerminalResult> => {
+    nextDefaults: ProcedureDefaultsArg<TSharedDefaults, TErrorCatalog>,
+  ): ProcedureBuilder<
+    TDefinition,
+    TContext,
+    TSharedDefaults,
+    TErrorCatalog,
+    TMiddlewareTerminalResult
+  > => {
     if (defaults !== undefined) {
       throw new Error("Procedure defaults have already been declared.");
     }
 
-    return createProcedureBuilder(definition, middlewares, nextDefaults as TSharedDefaults);
+    return createProcedureBuilder(
+      definition,
+      middlewares,
+      nextDefaults as TSharedDefaults,
+      resolvedErrorCatalog,
+    );
   };
 
   const withMeta = <TMeta extends RpcMeta>(
@@ -871,9 +1049,15 @@ const createProcedureBuilder = <
     MergeProcedureDefinition<TDefinition, { meta: TMeta }>,
     TContext,
     TDefaults,
+    TErrorCatalog,
     TMiddlewareTerminalResult
   > => {
-    return createProcedureBuilder(withProcedureMeta(definition, meta), middlewares, defaults);
+    return createProcedureBuilder(
+      withProcedureMeta(definition, meta),
+      middlewares,
+      defaults,
+      resolvedErrorCatalog,
+    );
   };
 
   const withRoute = <TRouteContract extends ProcedureRouteContract>(
@@ -887,12 +1071,14 @@ const createProcedureBuilder = <
     >,
     TContext,
     TDefaults,
+    TErrorCatalog,
     TMiddlewareTerminalResult
   > => {
     return createProcedureBuilder(
       withProcedureRouteBinding(definition, routeContract),
       middlewares,
       defaults,
+      resolvedErrorCatalog,
     );
   };
 
@@ -901,11 +1087,17 @@ const createProcedureBuilder = <
     TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
   >(
     schema: BoundRouteParamsSchemaArg<TDefinition, TSchema>,
-    options?: ProcedureInputOptions<"params", InferSchemaInput<TSchema>, TOnValidationErrorResult>,
+    options?: ProcedureInputOptions<
+      "params",
+      InferSchemaInput<TSchema>,
+      TOnValidationErrorResult,
+      TErrorCatalog
+    >,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "params", TSchema, TOnValidationErrorResult>,
     TContext,
     TDefaults,
+    TErrorCatalog,
     TMiddlewareTerminalResult
   > => {
     return withInputContract("params", schema as TSchema, options);
@@ -916,11 +1108,17 @@ const createProcedureBuilder = <
     TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
   >(
     schema: TSchema,
-    options?: ProcedureInputOptions<"query", InferSchemaInput<TSchema>, TOnValidationErrorResult>,
+    options?: ProcedureInputOptions<
+      "query",
+      InferSchemaInput<TSchema>,
+      TOnValidationErrorResult,
+      TErrorCatalog
+    >,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "query", TSchema, TOnValidationErrorResult>,
     TContext,
     TDefaults,
+    TErrorCatalog,
     TMiddlewareTerminalResult
   > => {
     return withInputContract("query", schema as TSchema, options);
@@ -931,11 +1129,17 @@ const createProcedureBuilder = <
     TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
   >(
     schema: BodyContractSchemaArg<TDefinition, "json", TSchema>,
-    options?: ProcedureInputOptions<"json", InferSchemaInput<TSchema>, TOnValidationErrorResult>,
+    options?: ProcedureInputOptions<
+      "json",
+      InferSchemaInput<TSchema>,
+      TOnValidationErrorResult,
+      TErrorCatalog
+    >,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "json", TSchema, TOnValidationErrorResult>,
     TContext,
     TDefaults,
+    TErrorCatalog,
     TMiddlewareTerminalResult
   > => {
     return withInputContract("json", schema as TSchema, options);
@@ -949,12 +1153,14 @@ const createProcedureBuilder = <
     options?: ProcedureInputOptions<
       "formData",
       InferSchemaInput<TSchema>,
-      TOnValidationErrorResult
+      TOnValidationErrorResult,
+      TErrorCatalog
     >,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "formData", TSchema, TOnValidationErrorResult>,
     TContext,
     TDefaults,
+    TErrorCatalog,
     TMiddlewareTerminalResult
   > => {
     return withInputContract("formData", schema as TSchema, options);
@@ -965,11 +1171,17 @@ const createProcedureBuilder = <
     TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
   >(
     schema: TSchema,
-    options?: ProcedureInputOptions<"headers", InferSchemaInput<TSchema>, TOnValidationErrorResult>,
+    options?: ProcedureInputOptions<
+      "headers",
+      InferSchemaInput<TSchema>,
+      TOnValidationErrorResult,
+      TErrorCatalog
+    >,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "headers", TSchema, TOnValidationErrorResult>,
     TContext,
     TDefaults,
+    TErrorCatalog,
     TMiddlewareTerminalResult
   > => {
     return withInputContract("headers", schema as TSchema, options);
@@ -980,11 +1192,17 @@ const createProcedureBuilder = <
     TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
   >(
     schema: TSchema,
-    options?: ProcedureInputOptions<"cookies", InferSchemaInput<TSchema>, TOnValidationErrorResult>,
+    options?: ProcedureInputOptions<
+      "cookies",
+      InferSchemaInput<TSchema>,
+      TOnValidationErrorResult,
+      TErrorCatalog
+    >,
   ): ProcedureBuilder<
     ExtendProcedureInputDefinition<TDefinition, "cookies", TSchema, TOnValidationErrorResult>,
     TContext,
     TDefaults,
+    TErrorCatalog,
     TMiddlewareTerminalResult
   > => {
     return withInputContract("cookies", schema as TSchema, options);
@@ -996,12 +1214,14 @@ const createProcedureBuilder = <
     MergeProcedureDefinition<TDefinition, { output: ProcedureOutputContract<TOutput> }>,
     TContext,
     TDefaults,
+    TErrorCatalog,
     TMiddlewareTerminalResult
   > => {
     return createProcedureBuilder(
       withProcedureOutput<TDefinition, TOutput, TSchema>(definition, schema),
       middlewares,
       defaults,
+      resolvedErrorCatalog,
     );
   };
 
@@ -1011,6 +1231,7 @@ const createProcedureBuilder = <
       InferProcedureParams<TDefinition>,
       TContext,
       object,
+      TErrorCatalog,
       ExtractProcedureAdapterMode<TDefaults>
     >,
   >(
@@ -1019,16 +1240,19 @@ const createProcedureBuilder = <
     MergeProcedureDefinitionWithMiddleware<TDefinition, TMiddleware>,
     TContext & ExtractProcedureMiddlewareContextExtension<TMiddleware>,
     TDefaults,
+    TErrorCatalog,
     TMiddlewareTerminalResult | ExtractProcedureMiddlewareTerminalResult<TMiddleware>
   > => {
     return createProcedureBuilder(
       definition,
       [...middlewares, middleware as unknown as ProcedureMiddleware],
       defaults,
+      resolvedErrorCatalog,
     ) as ProcedureBuilder<
       MergeProcedureDefinitionWithMiddleware<TDefinition, TMiddleware>,
       TContext & ExtractProcedureMiddlewareContextExtension<TMiddleware>,
       TDefaults,
+      TErrorCatalog,
       TMiddlewareTerminalResult | ExtractProcedureMiddlewareTerminalResult<TMiddleware>
     >;
   };
@@ -1087,6 +1311,7 @@ const createProcedureBuilder = <
   };
 
   return {
+    errors: withErrors,
     defaults: withDefaults,
     meta: withMeta,
     forRoute: withRoute,
@@ -1101,9 +1326,10 @@ const createProcedureBuilder = <
     nextPage: ((render: unknown, options: unknown) => {
       const pageProcedure = {
         definition,
+        errorCatalog: resolvedErrorCatalog,
         middlewares,
         middlewareTerminalResult: undefined as TMiddlewareTerminalResult,
-      } as ProcedureBuilderNextPageCarrier<TDefinition, TMiddlewareTerminalResult>;
+      } as ProcedureBuilderNextPageCarrier<TDefinition, TErrorCatalog, TMiddlewareTerminalResult>;
 
       return adaptProcedureToNextPage(
         pageProcedure as never,
@@ -1114,11 +1340,13 @@ const createProcedureBuilder = <
       TDefinition,
       TContext,
       TDefaults,
+      TErrorCatalog,
       TMiddlewareTerminalResult
     >,
     handle: (...args) => {
       const handledProcedure = {
         definition,
+        errorCatalog: resolvedErrorCatalog,
         middlewares,
         handler: args[0],
         middlewareTerminalResult: undefined as TMiddlewareTerminalResult,
@@ -1132,6 +1360,7 @@ const createProcedureBuilder = <
           ExtractProcedureOutput<TDefinition>,
           (typeof args)[0],
           TDefaults,
+          TErrorCatalog,
           TMiddlewareTerminalResult
         >,
         nextPage: ((render: unknown, options: unknown) =>
@@ -1145,6 +1374,7 @@ const createProcedureBuilder = <
           ExtractProcedureOutput<TDefinition>,
           (typeof args)[0],
           TDefaults,
+          TErrorCatalog,
           TMiddlewareTerminalResult
         >,
       } as Procedure<
@@ -1153,6 +1383,7 @@ const createProcedureBuilder = <
         ExtractProcedureOutput<TDefinition>,
         (typeof args)[0],
         TDefaults,
+        TErrorCatalog,
         TMiddlewareTerminalResult
       >;
 
@@ -1162,8 +1393,9 @@ const createProcedureBuilder = <
     TDefinition,
     TContext,
     TDefaults,
+    TErrorCatalog,
     TMiddlewareTerminalResult
-  > as ProcedureBuilder<TDefinition, TContext, TDefaults, TMiddlewareTerminalResult>;
+  > as ProcedureBuilder<TDefinition, TContext, TDefaults, TErrorCatalog, TMiddlewareTerminalResult>;
 };
 
 export const procedure = createProcedureBuilder<
