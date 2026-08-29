@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { guardedBaseProcedure } from "../../_shared/base-procedure";
+import { guardedRouteProcedure } from "../../../_rpc/guarded-route-procedure";
 import { routeContract } from "./route-contract";
 
 const paramsSchema = z.object({
@@ -23,7 +23,7 @@ const outputSchema = z.object({
   traceId: z.string().min(1),
 });
 
-const getGuardedProcedureUser = guardedBaseProcedure
+const getGuardedProcedureUser = guardedRouteProcedure
   .forRoute(routeContract)
   .params(paramsSchema)
   .query(querySchema)

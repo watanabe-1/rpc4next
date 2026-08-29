@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { createRpcClient, RpcResponseError } from "rpc4next/client";
 
-import { appPageProcedure } from "../api/_shared/procedure-defaults";
+import { appPageProcedure } from "../_rpc/page-procedure";
 import { routeContract } from "./route-contract";
 import type { PathStructure } from "@/generated/rpc";
 

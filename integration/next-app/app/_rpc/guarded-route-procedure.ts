@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { appRouteProcedure } from "./procedure-defaults";
+import { appRouteProcedure } from "./route-procedure";
 
 export const guardedProcedureHeadersSchema = z.object({
   "x-demo-user": z.string().min(1).optional(),
@@ -10,12 +10,12 @@ export const guardedProcedureHeadersSchema = z.object({
   "x-trace-id": z.string().min(1).optional(),
 });
 
-export const guardedBaseProcedure = appRouteProcedure
+export const guardedRouteProcedure = appRouteProcedure
   .headers(guardedProcedureHeadersSchema)
   .meta({
     summary:
       "Shared guardedProcedure preset with descriptive annotations for the integration fixture",
-    tags: ["procedure-examples", "shared-base-procedure", "shared-errors"],
+    tags: ["procedure-examples", "shared-route-procedure", "shared-errors"],
   })
   // Adds request-level tracing before auth checks or protected data access.
   .use(({ headers, request }) => {

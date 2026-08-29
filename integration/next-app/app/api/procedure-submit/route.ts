@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { appRouteProcedure } from "../_shared/procedure-defaults";
+import { appRouteProcedure } from "../../_rpc/route-procedure";
 import { routeContract } from "./route-contract";
 
 export const { POST } = appRouteProcedure

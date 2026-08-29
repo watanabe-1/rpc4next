@@ -1,4 +1,4 @@
-import { appRouteProcedure } from "../_shared/procedure-defaults";
+import { appRouteProcedure } from "../../_rpc/route-procedure";
 import { routeContract } from "./route-contract";
 
 const csv = ["id,name", "1,Ada"].join("\n");
