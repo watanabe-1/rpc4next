@@ -4,6 +4,7 @@ import * as cliHandler from "./cli-handler.js";
 import { runCli } from "./cli.js";
 import * as configModule from "./config.js";
 import { EXIT_FAILURE } from "./constants.js";
+import * as initCommand from "./init/init-command.js";
 import * as loggerModule from "./logger.js";
 
 const flushAsync = async () => {
@@ -48,6 +49,17 @@ describe("runCli", () => {
       { watch: false, check: false },
       mockLogger,
     );
+  });
+
+  it("runs init command with init options", () => {
+    const handleCliSpy = vi.spyOn(cliHandler, "handleCli").mockResolvedValue(0);
+    const handleInitSpy = vi.spyOn(initCommand, "handleInitCommand").mockReturnValue(0);
+
+    runCli(["node", "cli", "init", "--dry-run", "--force"]);
+
+    expect(handleInitSpy).toHaveBeenCalledWith({ dryRun: true, force: true }, mockLogger);
+    expect(handleCliSpy).not.toHaveBeenCalled();
+    expect(processExitSpy).toHaveBeenCalledWith(0);
   });
 
   it("loads required args from rpc4next.config.json when positionals are omitted", async () => {

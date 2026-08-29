@@ -4,6 +4,7 @@ import { parseArgs } from "node:util";
 import { handleCli } from "./cli-handler.js";
 import { loadCliConfig } from "./config.js";
 import { EXIT_FAILURE } from "./constants.js";
+import { handleInitCommand } from "./init/init-command.js";
 import { createLogger } from "./logger.js";
 import type { CliOptions, Logger } from "./types.js";
 
@@ -34,6 +35,7 @@ function printHelp(logger: Logger) {
 Generate RPC client type definitions based on the Next.js path structure.
 
 Usage:
+  rpc4next init [options]
   rpc4next <baseDir> <outputPath> [options]
   rpc4next [options]
 
@@ -43,6 +45,8 @@ Arguments:
                 Both can be omitted when rpc4next.config.json provides them
 
 Options:
+  --dry-run                    Show files that would be created without writing
+  --force                      Overwrite existing files when initializing
   -w, --watch                   Watch mode: regenerate on file changes
   -c, --check                   Check generated files without writing changes
   -p, --params-file [filename]  Generate params types file (optional filename)
@@ -104,6 +108,35 @@ function extractOptionalValueFlag(
 export const runCli = (argv: string[], logger: Logger = createLogger()) => {
   try {
     const userArgs0 = normalizeUserArgs(argv);
+
+    if (userArgs0[0] === "init") {
+      const { values } = parseArgs({
+        args: userArgs0.slice(1),
+        options: {
+          "dry-run": { type: "boolean" },
+          force: { type: "boolean" },
+          help: { type: "boolean", short: "h" },
+        },
+        allowPositionals: false,
+        strict: true,
+      });
+
+      if (values.help) {
+        printHelp(logger);
+
+        return process.exit(0);
+      }
+
+      return process.exit(
+        handleInitCommand(
+          {
+            dryRun: Boolean(values["dry-run"]),
+            force: Boolean(values.force),
+          },
+          logger,
+        ) as number,
+      );
+    }
 
     // Handle optional-value flag first (so parseArgs can stay strict/easy).
     const { args: userArgs1, value: paramsFileRaw } = extractOptionalValueFlag(userArgs0, [

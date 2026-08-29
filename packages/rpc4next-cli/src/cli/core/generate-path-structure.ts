@@ -14,7 +14,7 @@ export const ROUTE_CONTRACT_GENERATED_MARKER =
 
 export const generatePathStructure = (outputPath: string, baseDir: string) => {
   const { pathStructure, imports, paramsTypes } = scanAppDir(outputPath, baseDir);
-  const pathStructureType = `export type PathStructure = ${TYPE_RPC_GENERATED_PATH_STRUCTURE}<${pathStructure}, ${RPC4NEXT_GENERATED_SCHEMA_VERSION}>${STATEMENT_TERMINATOR}`;
+  const pathStructureType = `export type PathStructure = ${TYPE_RPC_GENERATED_PATH_STRUCTURE}<${pathStructure || "{}"}, ${RPC4NEXT_GENERATED_SCHEMA_VERSION}>${STATEMENT_TERMINATOR}`;
 
   const importsStr = imports.length
     ? `${imports
