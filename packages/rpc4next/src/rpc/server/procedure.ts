@@ -2,8 +2,8 @@ import type { NextRequest, NextResponse } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
 
 import type { HttpStatusCode } from "../lib/http-status-code-types";
-import { defaultRpcErrorCatalog } from "./error";
-import type { DefaultRpcErrorCatalog, RpcErrorCatalog } from "./error";
+import { defaultRpcErrorCatalog, defineRpcErrors } from "./error";
+import type { DefaultRpcErrorCatalog, DefineRpcErrors, RpcErrorCatalog } from "./error";
 import type { RpcMeta } from "./meta";
 import {
   nextPage as adaptProcedureToNextPage,
@@ -722,7 +722,7 @@ interface ProcedureBuilderMethods<
     TDefinition,
     TContext,
     TDefaults,
-    TNextErrorCatalog,
+    DefineRpcErrors<TNextErrorCatalog>,
     TMiddlewareTerminalResult
   >;
 
@@ -1016,10 +1016,15 @@ const createProcedureBuilder = <
     TDefinition,
     TContext,
     TDefaults,
-    TNextErrorCatalog,
+    DefineRpcErrors<TNextErrorCatalog>,
     TMiddlewareTerminalResult
   > => {
-    return createProcedureBuilder(definition, middlewares, defaults, nextErrorCatalog);
+    return createProcedureBuilder(
+      definition,
+      middlewares,
+      defaults,
+      defineRpcErrors(nextErrorCatalog),
+    );
   };
 
   const withDefaults = <const TSharedDefaults>(

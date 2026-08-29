@@ -5,12 +5,8 @@ import type { ContentType } from "../lib/content-type-types";
 import { normalizeHeaders } from "../lib/headers";
 import type { HttpStatusCode, RedirectionHttpStatusCode } from "../lib/http-status-code-types";
 import { searchParamsToObject } from "../lib/search-params";
-import {
-  createRpcErrorEnvelopeFromCatalog,
-  defaultRpcErrorCatalog,
-  getRpcErrorStatus,
-} from "./error";
-import type { DefaultRpcErrorCatalog, RpcErrorCatalog } from "./error";
+import { createRpcErrorEnvelopeFromCatalog, defineRpcErrors, getRpcErrorStatus } from "./error";
+import type { DefaultRpcErrorCatalog, DefineRpcErrors, RpcErrorCatalog } from "./error";
 import type { ValidationSchema } from "./route-types";
 import type {
   Params,
@@ -85,90 +81,94 @@ export const createResponseHelpers = <
   TJson = unknown,
   TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
 >(
-  errorCatalog: TErrorCatalog = defaultRpcErrorCatalog as unknown as TErrorCatalog,
-): ResponseHelpers<TJson, TErrorCatalog> => ({
-  body: (<
-    TData extends BodyInit | null,
-    TContentType extends ContentType,
-    TStatus extends HttpStatusCode = 200,
-  >(
-    data: TData,
-    init?: TStatus | TypedResponseInit<TStatus, TContentType>,
-  ) =>
-    attachResponseHelperMetadata<TypedNextResponse<TData, TStatus, TContentType>, TData>(
-      new NextResponse<TData>(data, resolvedHeaders(init)) as TypedNextResponse<
-        TData,
-        TStatus,
-        TContentType
-      >,
-      {
-        kind: "body",
-        payload: data,
-      },
-    )) as ResponseHelpers<TJson>["body"],
+  errorCatalog?: TErrorCatalog,
+): ResponseHelpers<TJson, DefineRpcErrors<TErrorCatalog>> => {
+  const resolvedErrorCatalog = defineRpcErrors((errorCatalog ?? {}) as TErrorCatalog);
 
-  json: (<TData, TStatus extends HttpStatusCode = 200>(
-    data: TData,
-    init?: TStatus | TypedResponseInit<TStatus, "application/json">,
-  ) =>
-    attachResponseHelperMetadata(
-      NextResponse.json<TData>(data, resolvedHeaders(init)) as TypedNextResponse<
-        TData,
-        TStatus,
-        "application/json"
-      >,
-      {
-        kind: "json",
-        payload: data,
-      },
-    )) as ResponseHelpers<TJson>["json"],
+  return {
+    body: (<
+      TData extends BodyInit | null,
+      TContentType extends ContentType,
+      TStatus extends HttpStatusCode = 200,
+    >(
+      data: TData,
+      init?: TStatus | TypedResponseInit<TStatus, TContentType>,
+    ) =>
+      attachResponseHelperMetadata<TypedNextResponse<TData, TStatus, TContentType>, TData>(
+        new NextResponse<TData>(data, resolvedHeaders(init)) as TypedNextResponse<
+          TData,
+          TStatus,
+          TContentType
+        >,
+        {
+          kind: "body",
+          payload: data,
+        },
+      )) as ResponseHelpers<TJson>["body"],
 
-  text: <TData extends string, TStatus extends HttpStatusCode = 200>(
-    data: TData,
-    init?: TStatus | TypedResponseInit<TStatus, "text/plain">,
-  ) => {
-    const resolvedInit = resolvedHeaders(init);
+    json: (<TData, TStatus extends HttpStatusCode = 200>(
+      data: TData,
+      init?: TStatus | TypedResponseInit<TStatus, "application/json">,
+    ) =>
+      attachResponseHelperMetadata(
+        NextResponse.json<TData>(data, resolvedHeaders(init)) as TypedNextResponse<
+          TData,
+          TStatus,
+          "application/json"
+        >,
+        {
+          kind: "json",
+          payload: data,
+        },
+      )) as ResponseHelpers<TJson>["json"],
 
-    return attachResponseHelperMetadata(
-      new NextResponse<TData>(data, {
-        ...resolvedInit,
-        headers: { ...resolvedInit?.headers, "Content-Type": "text/plain" },
-      }) as TypedNextResponse<TData, TStatus, "text/plain">,
-      {
-        kind: "text",
-        payload: data,
-      },
-    );
-  },
+    text: <TData extends string, TStatus extends HttpStatusCode = 200>(
+      data: TData,
+      init?: TStatus | TypedResponseInit<TStatus, "text/plain">,
+    ) => {
+      const resolvedInit = resolvedHeaders(init);
 
-  redirect: <TStatus extends RedirectionHttpStatusCode = 307>(
-    url: string,
-    init?: TStatus | TypedResponseInit<TStatus, "">,
-  ) => {
-    const resolvedInit = isHttpStatusCode(init) ? init : resolvedHeaders(init);
+      return attachResponseHelperMetadata(
+        new NextResponse<TData>(data, {
+          ...resolvedInit,
+          headers: { ...resolvedInit?.headers, "Content-Type": "text/plain" },
+        }) as TypedNextResponse<TData, TStatus, "text/plain">,
+        {
+          kind: "text",
+          payload: data,
+        },
+      );
+    },
 
-    return attachResponseHelperMetadata(
-      NextResponse.redirect(url, resolvedInit) as TypedNextResponse<undefined, TStatus, "">,
-      {
-        kind: "redirect",
-      },
-    );
-  },
+    redirect: <TStatus extends RedirectionHttpStatusCode = 307>(
+      url: string,
+      init?: TStatus | TypedResponseInit<TStatus, "">,
+    ) => {
+      const resolvedInit = isHttpStatusCode(init) ? init : resolvedHeaders(init);
 
-  error: ((code, init) => {
-    const payload = createRpcErrorEnvelopeFromCatalog(errorCatalog, code, init);
+      return attachResponseHelperMetadata(
+        NextResponse.redirect(url, resolvedInit) as TypedNextResponse<undefined, TStatus, "">,
+        {
+          kind: "redirect",
+        },
+      );
+    },
 
-    return attachResponseHelperMetadata(
-      NextResponse.json(payload, {
-        status: getRpcErrorStatus(errorCatalog, code),
-      }) as ReturnType<ResponseHelpers<TJson, TErrorCatalog>["error"]>,
-      {
-        kind: "json",
-        payload,
-      },
-    );
-  }) as ResponseHelpers<TJson, TErrorCatalog>["error"],
-});
+    error: ((code, init) => {
+      const payload = createRpcErrorEnvelopeFromCatalog(resolvedErrorCatalog, code, init);
+
+      return attachResponseHelperMetadata(
+        NextResponse.json(payload, {
+          status: getRpcErrorStatus(resolvedErrorCatalog, code),
+        }) as ReturnType<ResponseHelpers<TJson, DefineRpcErrors<TErrorCatalog>>["error"]>,
+        {
+          kind: "json",
+          payload,
+        },
+      );
+    }) as ResponseHelpers<TJson, DefineRpcErrors<TErrorCatalog>>["error"],
+  };
+};
 
 export const createRouteContext = <
   TParams extends Params,

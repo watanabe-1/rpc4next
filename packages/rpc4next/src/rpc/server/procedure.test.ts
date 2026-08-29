@@ -646,6 +646,24 @@ describe("procedure builder type definitions", () => {
     });
   });
 
+  it("merges partial project-level error catalogs with default codes", () => {
+    const appProcedure = procedure.errors({
+      PLAN_REQUIRED: { status: 402, message: "Plan required" },
+    });
+
+    appProcedure.handle(({ response }) => {
+      response.error("BAD_REQUEST");
+      response.error("PLAN_REQUIRED");
+
+      // @ts-expect-error codes outside the merged project catalog are rejected
+      response.error("PAYMENT_REQUIRED");
+
+      return response.error("INTERNAL_SERVER_ERROR");
+    });
+
+    expect(true).toBe(true);
+  });
+
   it("limits middleware context to validated inputs only", () => {
     procedure
       .query(parsePage)

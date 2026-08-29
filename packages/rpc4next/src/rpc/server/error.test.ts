@@ -89,4 +89,18 @@ describe("RPC error envelopes", () => {
     expectTypeOf(getRpcErrorStatus(errors, "FORBIDDEN")).toEqualTypeOf<451>();
     expectTypeOf(envelope).toEqualTypeOf<RpcErrorEnvelope<"FORBIDDEN", unknown>>();
   });
+
+  it("rejects non-error HTTP statuses in project-level error catalogs", () => {
+    defineRpcErrors({
+      // @ts-expect-error RPC error catalogs only accept 4xx and 5xx statuses
+      NOT_AN_ERROR: { status: 200, message: "OK" },
+    });
+
+    defineRpcErrors({
+      // @ts-expect-error RPC error catalogs only accept 4xx and 5xx statuses
+      REDIRECT: { status: 302, message: "Found" },
+    });
+
+    expect(true).toBe(true);
+  });
 });

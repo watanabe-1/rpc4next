@@ -40,6 +40,22 @@ describe("createRouteContext", () => {
     expectTypeOf<ResultPayload["error"]["code"]>().toEqualTypeOf<"PLAN_REQUIRED">();
   });
 
+  it("keeps default error responses when binding a partial catalog", async () => {
+    const response = createResponseHelpers<unknown, { PLAN_REQUIRED: { status: 402 } }>({
+      PLAN_REQUIRED: { status: 402 },
+    });
+
+    const result = response.error("BAD_REQUEST");
+
+    expect(result.status).toBe(400);
+    await expect(result.json()).resolves.toEqual({
+      error: {
+        code: "BAD_REQUEST",
+        message: "Bad request",
+      },
+    });
+  });
+
   it("should return a route context with query and params", async () => {
     const req = createRealNextRequest("http://localhost/?q=test");
     const context = createRouteContext(req, {

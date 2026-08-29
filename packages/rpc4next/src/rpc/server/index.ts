@@ -17,6 +17,7 @@ export type {
   RpcErrorEnvelope,
   RpcErrorResponseInit,
   RpcErrorStatus,
+  RpcErrorStatusCode,
 } from "./error";
 export type { InferRouteMeta, RpcMeta, RpcMetaBase } from "./meta";
 export { getRouteMeta } from "./meta";
