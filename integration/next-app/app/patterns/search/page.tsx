@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { appPageProcedure } from "../../api/_shared/procedure-defaults";
+import { appPageProcedure } from "../../_rpc/page-procedure";
 import { routeContract } from "./route-contract";
 
 const searchQuerySchema = z

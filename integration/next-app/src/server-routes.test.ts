@@ -490,7 +490,7 @@ describe("integration next-app server route handlers", () => {
     });
   });
 
-  it("returns a typed UNAUTHORIZED envelope from the shared guarded baseProcedure", async () => {
+  it("returns a typed UNAUTHORIZED envelope from the shared guardedRouteProcedure", async () => {
     const { GET: procedureGuardedGet } =
       await import("../app/api/procedure-guarded/[userId]/route");
     const response = await procedureGuardedGet(
@@ -512,7 +512,7 @@ describe("integration next-app server route handlers", () => {
     });
   });
 
-  it("returns a typed shared FORBIDDEN envelope from the guarded baseProcedure", async () => {
+  it("returns a typed shared FORBIDDEN envelope from the guardedRouteProcedure", async () => {
     const { GET: procedureGuardedGet } =
       await import("../app/api/procedure-guarded/[userId]/route");
     const response = await procedureGuardedGet(

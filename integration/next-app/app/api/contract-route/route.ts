@@ -1,6 +1,6 @@
 import type { TypedNextResponse } from "rpc4next/server";
 
-import { appRouteProcedure } from "../_shared/procedure-defaults";
+import { appRouteProcedure } from "../../_rpc/route-procedure";
 import { routeContract } from "./route-contract";
 
 export const { GET } = appRouteProcedure

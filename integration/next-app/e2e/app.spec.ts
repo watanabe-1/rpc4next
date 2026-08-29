@@ -46,7 +46,7 @@ test.describe("integration next-app e2e", () => {
     ).toBeVisible();
     await expect(
       page.getByRole("heading", {
-        name: "Shared baseProcedure adds richer error unions",
+        name: "Shared guardedRouteProcedure adds richer error unions",
       }),
     ).toBeVisible();
     await expect(

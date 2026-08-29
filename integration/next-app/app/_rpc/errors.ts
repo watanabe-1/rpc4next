@@ -1,16 +1,12 @@
-import {
-  type ProcedureOnError,
-  type ProcedureValidationErrorHandler,
-  procedure,
-} from "rpc4next/server";
+import type { ProcedureOnError, ProcedureValidationErrorHandler } from "rpc4next/server";
 
-const getErrorMessage = (error: unknown) =>
+export const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
 
-const getIssuePath = (path: readonly (PropertyKey | { key: PropertyKey })[] | undefined) =>
+export const getIssuePath = (path: readonly (PropertyKey | { key: PropertyKey })[] | undefined) =>
   path?.map((segment) => String(typeof segment === "object" ? segment.key : segment)) ?? [];
 
-const sharedOnError = ((error, { response }) => {
+export const routeOnError = ((error, { response }) => {
   console.error("[rpc4next] Unexpected procedure error", {
     message: getErrorMessage(error),
     error,
@@ -21,7 +17,7 @@ const sharedOnError = ((error, { response }) => {
   });
 }) satisfies ProcedureOnError;
 
-const sharedOnValidationError = (({ issues, response, target }) =>
+export const routeOnValidationError = (({ issues, response, target }) =>
   response.error("BAD_REQUEST", {
     message: issues[0]?.message ?? "Validation failed.",
     details: {
@@ -33,15 +29,4 @@ const sharedOnValidationError = (({ issues, response, target }) =>
     },
   })) satisfies ProcedureValidationErrorHandler;
 
-export const appRouteProcedure = procedure.defaults({
-  route: {
-    onError: sharedOnError,
-    onValidationError: sharedOnValidationError,
-  },
-});
-
-export const appPageProcedure = procedure.defaults({
-  page: {
-    onError: () => "page-helper-error",
-  },
-});
+export const pageOnError = () => "page-helper-error";

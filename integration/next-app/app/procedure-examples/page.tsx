@@ -404,7 +404,7 @@ export default async function ProcedureExamplesPage() {
       runtime: await readResponsePreview(procedureSubmitResponse),
     },
     {
-      title: "Shared baseProcedure adds richer error unions",
+      title: "Shared guardedRouteProcedure adds richer error unions",
       route: "/api/procedure-guarded/[userId]",
       request: `const response = await rpcClient.api["procedure-guarded"]
   ._userId("demo-user")
@@ -420,7 +420,7 @@ export default async function ProcedureExamplesPage() {
   | TypedNextResponse<ForbiddenSuspendedBody, 403, "application/json">
   | TypedNextResponse<ForbiddenEditorOnlyBody, 403, "application/json">;`,
       whyItLooksLikeThat:
-        "The route extends a shared baseProcedure, so shared auth/context/error contracts and route-local FORBIDDEN variants all survive into the generated client type.",
+        "The route extends a shared guardedRouteProcedure, so shared auth/context/error contracts and route-local FORBIDDEN variants all survive into the generated client type.",
       runtime: await readResponsePreview(procedureGuardedResponse),
     },
     {

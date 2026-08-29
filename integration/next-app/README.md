@@ -33,7 +33,8 @@ Use these files as entry points, depending on what you want to understand:
 
 - Recommended typed procedure route via `.handle(...).nextRoute(...)`: `app/api/procedure-contract/[userId]/route.ts`
 - Shared guarded procedure preset: `app/api/procedure-guarded/[userId]/route.ts`
-- Shared procedure preset definitions: `app/api/_shared/procedure-defaults.ts` and `app/api/_shared/base-procedure.ts`
+- Shared procedure foundations: `app/_rpc/route-procedure.ts`, `app/_rpc/page-procedure.ts`, and `app/_rpc/errors.ts`
+- Guarded route procedure preset: `app/_rpc/guarded-route-procedure.ts`
 - Procedure json/header/cookie input: `app/api/procedure-submit/route.ts`
 - Procedure form-data input via `.handle(...).nextRoute(...)` sugar: `app/api/procedure-form-data/route.ts`
 - Procedure runtime output validation: `app/api/procedure-invalid-output/route.ts`
@@ -119,7 +120,16 @@ If a change touches route scanning, generated client shape, params generation, o
 
 This workspace is intended to make scanner and runtime regressions visible in Git. Avoid hand-editing `src/generated/rpc.ts` or `app/**/route-contract.ts` unless the task is specifically about generator output.
 
-The main walkthrough in this fixture is now procedure-first. `app/api/procedure-contract/[userId]/route.ts` is the baseline typed route: it binds the generated `routeContract`, declares params/query/output in one builder, and exports `GET` through terminal `export const { GET } = appRouteProcedure.handle(...).nextRoute({ method: "GET" })` sugar. `app/api/procedure-submit/route.ts` extends that path to json/header/cookie input, `app/api/procedure-form-data/route.ts` covers multipart-style input with the same terminal shape, and `app/api/procedure-guarded/[userId]/route.ts` shows the shared-preset case where continuing the builder chain with `.nextRoute(...)` remains natural because the procedure value comes from a reusable base.
+For the future `rpc4next init` flow, the recommended default generated layout is:
+`app/_rpc/errors.ts`, `app/_rpc/route-procedure.ts`,
+`app/_rpc/page-procedure.ts`, `src/lib/rpc-client.ts`,
+`src/generated/rpc.ts`, and `rpc4next.config.json`. Add
+`app/_rpc/guarded-route-procedure.ts` only when the app wants a reusable
+authorization or authentication preset for route handlers. `app/_rpc` is a
+private App Router folder, so it is available to both route and page files
+without becoming a public URL segment.
+
+The main walkthrough in this fixture is now procedure-first. `app/api/procedure-contract/[userId]/route.ts` is the baseline typed route: it binds the generated `routeContract`, declares params/query/output in one builder, and exports `GET` through terminal `export const { GET } = appRouteProcedure.handle(...).nextRoute({ method: "GET" })` sugar. `app/api/procedure-submit/route.ts` extends that path to json/header/cookie input, `app/api/procedure-form-data/route.ts` covers multipart-style input with the same terminal shape, and `app/api/procedure-guarded/[userId]/route.ts` shows the shared-preset case where continuing the builder chain with `.nextRoute(...)` remains natural because the procedure value comes from `app/_rpc/guarded-route-procedure.ts`.
 
 The form-data fixture intentionally validates user-controlled upload fields in
 the schema, including display-name length, file size, file type, tag length, and
@@ -128,13 +138,13 @@ Overall request body limits still belong at the Next.js runtime, hosting,
 reverse proxy, CDN, or middleware layer because `request.json()` and
 `request.formData()` parse the body before schema validation runs.
 
-Shared procedure middleware should be defined from the builder that declares the
-inputs it needs. `app/api/_shared/base-procedure.ts` uses
+Shared route procedure middleware should be defined from the builder that declares the
+inputs it needs. `app/_rpc/guarded-route-procedure.ts` uses
 `appRouteProcedure.headers(schema).use(...)`, so the middleware is applied in the same
 chain and receives typed `headers`, `request`, `ctx`, and `response` without a
 handwritten `ProcedureMiddlewareContext<...>` annotation. The returned
 `{ ctx: ... }` is available to later middleware and handlers. Routes share that
-middleware by importing `guardedBaseProcedure` and continuing the builder chain,
+middleware by importing `guardedRouteProcedure` and continuing the builder chain,
 as shown in `app/api/procedure-guarded/[userId]/route.ts`.
 
 This shared procedure pattern is intentionally positioned as the place for
@@ -145,12 +155,12 @@ permissions, or preparing request context before API integration or database
 access. Next.js Proxy is still useful for broad, optimistic checks and redirects
 before a request reaches the route, but it is not the right place for slow data
 fetching or complete authorization. The guarded procedure fixture demonstrates
-the complementary layer: every route that starts from `guardedBaseProcedure`
+the complementary layer: every route that starts from `guardedRouteProcedure`
 gets the same trace logging, validated auth headers, typed
 `UNAUTHORIZED`/`FORBIDDEN` responses, and `ctx.viewer`/`ctx.organization`/
 `ctx.traceId` before its handler can reach protected data.
 
-The procedure fixtures also cover the later design phases that made the procedure path complete enough to recommend by default. `app/api/procedure-invalid-output/route.ts` demonstrates opt-in runtime output enforcement with a Standard Schema output contract. `app/api/procedure-defaults-error/route.ts` shows project-level `procedure.defaults({ route: { onError } })` usage through `appRouteProcedure`, while `app/api/_shared/procedure-defaults.ts` keeps the route and page presets explicit. `app/api/procedure-validation-branch/route.ts` shows validator-stage customization through `procedure.query(schema, { onValidationError(...) { ... } })`. `app/api/error-demo/route.ts` shows a route-local `onError` override on top of the shared route preset, and `app/api/_shared/on-error.ts` shows generic `Error` mapping in a shared `onError` implementation.
+The procedure fixtures also cover the later design phases that made the procedure path complete enough to recommend by default. `app/api/procedure-invalid-output/route.ts` demonstrates opt-in runtime output enforcement with a Standard Schema output contract. `app/api/procedure-defaults-error/route.ts` shows project-level `procedure.defaults({ route: { onError } })` usage through `appRouteProcedure`, while `app/_rpc/route-procedure.ts` and `app/_rpc/page-procedure.ts` keep route and page presets separate. `app/api/procedure-validation-branch/route.ts` shows validator-stage customization through `procedure.query(schema, { onValidationError(...) { ... } })`. `app/api/error-demo/route.ts` shows a route-local `onError` override on top of the shared route preset, and `app/_rpc/errors.ts` shows generic `Error` mapping in a shared route `onError` implementation.
 
 Procedure-backed pages use `appPageProcedure` and terminate with `.nextPage(...)`
 instead of `.nextRoute(...)`. `app/photo/[id]/page.tsx` demonstrates validated
@@ -175,7 +185,7 @@ props for browser interactivity.
 When a handler or shared middleware should contribute a known error to
 client-side response inference, return `response.error(...)`. Those returned
 errors remain part of the generated response union with their concrete status,
-code, and details shape. `app/api/_shared/base-procedure.ts` demonstrates this
+code, and details shape. `app/_rpc/guarded-route-procedure.ts` demonstrates this
 for shared `UNAUTHORIZED` and `FORBIDDEN` branches, and
 `app/api/procedure-guarded/[userId]/route.ts` adds a route-local `FORBIDDEN`
 branch on top.

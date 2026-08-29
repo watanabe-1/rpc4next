@@ -74,7 +74,7 @@ output, and reusable builder composition explicit. Optional `meta(...)` values
 remain lightweight descriptive annotations rather than a policy system.
 
 ```ts
-// app/api/_shared/procedure-defaults.ts
+// app/_rpc/route-procedure.ts
 import { procedure, type ProcedureOnError } from "rpc4next/server";
 
 const getErrorMessage = (error: unknown) =>
@@ -95,7 +95,7 @@ const onError = ((error, { response }) => {
   });
 }) satisfies ProcedureOnError;
 
-export const appProcedure = procedure.defaults({
+export const appRouteProcedure = procedure.defaults({
   route: {
     onError,
   },
@@ -105,7 +105,7 @@ export const appProcedure = procedure.defaults({
 ```ts
 // app/api/users/[userId]/route.ts
 import { z } from "zod";
-import { appProcedure } from "../_shared/procedure-defaults";
+import { appRouteProcedure } from "../../../_rpc/route-procedure";
 import { routeContract } from "./route-contract";
 
 const paramsSchema = z.object({
@@ -116,7 +116,7 @@ const querySchema = z.object({
   includePosts: z.enum(["true", "false"]).optional(),
 });
 
-export const { GET } = appProcedure
+export const { GET } = appRouteProcedure
   .forRoute(routeContract)
   .meta({ summary: "Get a user", tags: ["users"] })
   .params(paramsSchema)
@@ -145,7 +145,7 @@ Notes:
 - input contracts consume Standard Schema V1-compatible schemas directly
 - route handlers can receive project-level error handling from a reusable preset such as `procedure.defaults({ route: { onError } })`; bare `procedure` routes still pass `onError` directly to `.nextRoute(...)` / `nextRoute(...)`
 - route-specific presets expose route response helpers and terminal `.nextRoute(...)`; page-specific presets expose page helpers and terminal `.nextPage(...)`
-- shared presets such as `baseProcedure`, `procedure.defaults({ route: { onError } })`, and validator-stage customization all build on this path
+- route presets such as `appRouteProcedure`, guarded route presets such as `guardedRouteProcedure`, and validator-stage customization all build on this path
 
 `procedure` input contracts validate request input and return typed `400` JSON
 errors by default when validation fails. If you need custom branching at the
@@ -301,7 +301,7 @@ validation details, configure `procedure.defaults({ route: { onValidationError }
 shared default for custom branches.
 
 ```ts
-export const appProcedure = procedure.defaults({
+export const appRouteProcedure = procedure.defaults({
   route: {
     onError,
     onValidationError: ({ issues, response, target }) =>
@@ -320,6 +320,23 @@ For page procedures, validation failures do not produce JSON error envelopes.
 They flow through page rendering instead. Use
 `procedure.defaults({ page: { onValidationError } })` when you want shared
 validation UI for pages, or keep using `page.onError` for the generic fallback.
+
+### `rpc4next init` Layout
+
+The planned `rpc4next init` default layout keeps generated files and shared
+procedure foundations separate:
+
+- `app/_rpc/errors.ts`
+- `app/_rpc/route-procedure.ts`
+- `app/_rpc/page-procedure.ts`
+- `src/lib/rpc-client.ts`
+- `src/generated/rpc.ts`
+- `rpc4next.config.json`
+
+When a project wants an authorization preset for route handlers, add
+`app/_rpc/guarded-route-procedure.ts`. The `app/_rpc` directory is an App Router
+private folder, so it can be imported by both `route.ts` and `page.tsx` without
+creating public URL paths.
 
 For request headers and cookies:
 
@@ -460,20 +477,20 @@ It supports:
 - `forRoute(routeContract)` for generated route-contract binding
 - direct schema contracts for `params`, `query`, `json`, `formData`, `headers`, and `cookies`
 - `meta(...)` for lightweight descriptive annotations and `output(...)`
-- shared presets via reusable builders such as `baseProcedure`
+- shared presets via reusable route builders such as `guardedRouteProcedure`
 - middleware through `.use(fn)`
 - validator-stage customization with `onValidationError(...)`
-- adaptation to App Router exports through terminal `export const { GET } = appProcedure.handle(...).nextRoute({ method: "GET" })`
-- standalone `nextRoute(procedure, { method, onError })` for shared base procedures or reused procedure values
+- adaptation to App Router exports through terminal `export const { GET } = appRouteProcedure.handle(...).nextRoute({ method: "GET" })`
+- standalone `nextRoute(procedure, { method, onError })` for shared route presets or reused procedure values
 
 Example:
 
 ```ts
 import { z } from "zod";
-import { appProcedure } from "../_shared/procedure-defaults";
+import { appRouteProcedure } from "../../../_rpc/route-procedure";
 import { routeContract } from "./route-contract";
 
-export const { GET } = appProcedure
+export const { GET } = appRouteProcedure
   .forRoute(routeContract)
   .params(z.object({ userId: z.string().min(1) }))
   .query(
@@ -501,13 +518,13 @@ For route procedures, prefer returning the `response` helpers when the exact
 client response shape matters:
 
 ```ts
-export const { GET } = appProcedure
+export const { GET } = appRouteProcedure
   .forRoute(routeContract)
   .query(z.object({ name: z.string().min(1) }))
   .handle(({ query, response }) => response.text(`hello:${query.name}`, { status: 202 }))
   .nextRoute({ method: "GET" });
 
-export const { POST } = appProcedure
+export const { POST } = appRouteProcedure
   .forRoute(routeContract)
   .handle(({ response }) => response.redirect("/feed", 307))
   .nextRoute({ method: "POST" });
@@ -658,7 +675,7 @@ applied. This keeps `headers`, `query`, `params`, and accumulated `ctx` typed
 without writing `ProcedureMiddlewareContext<...>` by hand.
 
 ```ts
-export const guardedBaseProcedure = appProcedure
+export const guardedRouteProcedure = appRouteProcedure
   .headers(
     z.object({
       "x-demo-user": z.string().min(1).optional(),
@@ -685,7 +702,7 @@ export const guardedBaseProcedure = appProcedure
 Then build route-specific procedures from that shared builder:
 
 ```ts
-export const { GET } = guardedBaseProcedure
+export const { GET } = guardedRouteProcedure
   .params(z.object({ userId: z.string().min(1) }))
   .handle(({ params, ctx }) => ({
     body: {
@@ -719,7 +736,7 @@ type.
 Unexpected failures should still be thrown as normal exceptions. `nextRoute()`
 requires `onError(error, context)` for that fallback path. For project-level
 reuse, prefer `procedure.defaults({ route: { onError } })` and export a shared
-`appProcedure` or similar preset from your project.
+`appRouteProcedure` preset from `app/_rpc/route-procedure`.
 
 Input validation adds a typed `BAD_REQUEST` response when validation fails.
 Runtime output validation, when enabled, adds an `INTERNAL_SERVER_ERROR`
@@ -748,7 +765,7 @@ const onError = ((error, { response }) => {
   });
 }) satisfies ProcedureOnError;
 
-const appProcedure = procedure.defaults({
+const appRouteProcedure = procedure.defaults({
   route: {
     onError,
   },
@@ -772,7 +789,7 @@ export const { GET } = nextRoute(guardedProcedure, {
   onError,
 });
 
-export const { POST } = appProcedure
+export const { POST } = appRouteProcedure
   .forRoute(routeContract)
   .handle(async () => {
     throw new Error("expected failure");
