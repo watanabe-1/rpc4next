@@ -4,7 +4,7 @@ import type { HttpMethod } from "rpc4next-shared";
 import type { ContentType } from "../lib/content-type-types";
 import type { HttpStatusCode } from "../lib/http-status-code-types";
 import { searchParamsToObject } from "../lib/search-params";
-import type { DefaultRpcErrorCatalog, RpcErrorCatalog } from "./error";
+import type { DefaultRpcErrorCatalog, RpcErrorCatalog, RpcErrorStatus } from "./error";
 import type { ProcedureOnError, ProcedureOnErrorResult } from "./on-error";
 import type { ProcedureMiddleware, ProcedureMiddlewareResult, ProcedureResult } from "./procedure";
 import { attachProcedureDefinition } from "./procedure-definition";
@@ -232,28 +232,30 @@ type InferProcedureErrorCatalog<TProcedure extends ProcedureTypeCarrier> = TProc
   ? TErrorCatalog
   : DefaultRpcErrorCatalog;
 
-type ProcedureErrorResponse<TCode extends "BAD_REQUEST" | "INTERNAL_SERVER_ERROR"> =
-  TCode extends "BAD_REQUEST"
-    ? TypedNextResponse<
-        {
-          error: {
-            code: "BAD_REQUEST";
-            message: string;
-          };
-        },
-        400,
-        "application/json"
-      >
-    : TypedNextResponse<
-        {
-          error: {
-            code: "INTERNAL_SERVER_ERROR";
-            message: string;
-          };
-        },
-        500,
-        "application/json"
-      >;
+type ProcedureErrorResponse<
+  TCode extends "BAD_REQUEST" | "INTERNAL_SERVER_ERROR",
+  TErrorCatalog extends RpcErrorCatalog,
+> = TCode extends "BAD_REQUEST"
+  ? TypedNextResponse<
+      {
+        error: {
+          code: "BAD_REQUEST";
+          message: string;
+        };
+      },
+      RpcErrorStatus<TCode, TErrorCatalog>,
+      "application/json"
+    >
+  : TypedNextResponse<
+      {
+        error: {
+          code: "INTERNAL_SERVER_ERROR";
+          message: string;
+        };
+      },
+      RpcErrorStatus<TCode, TErrorCatalog>,
+      "application/json"
+    >;
 
 type InferProcedureValidationErrorResponse<TProcedure extends ProcedureTypeCarrier> =
   InferProcedureDefinition<TProcedure> extends {
@@ -262,7 +264,7 @@ type InferProcedureValidationErrorResponse<TProcedure extends ProcedureTypeCarri
     ? keyof TValidationSchema["input"] extends never
       ? never
       :
-          | ProcedureErrorResponse<"BAD_REQUEST">
+          | ProcedureErrorResponse<"BAD_REQUEST", InferProcedureErrorCatalog<TProcedure>>
           | InferProcedureCustomValidationErrorResponse<TValidationErrorResponses>
     : never;
 
@@ -280,7 +282,7 @@ type InferProcedureOutputValidationErrorResponse<
   ? InferProcedureDefinition<TProcedure> extends {
       output: ProcedureDefinition["output"];
     }
-    ? ProcedureErrorResponse<"INTERNAL_SERVER_ERROR">
+    ? ProcedureErrorResponse<"INTERNAL_SERVER_ERROR", InferProcedureErrorCatalog<TProcedure>>
     : never
   : never;
 

@@ -678,6 +678,7 @@ type ExtractProcedureAdapterMode<TDefaults> = TDefaults extends {
 
 type UsedProcedureBuilderMethodKeys<TDefinition extends ProcedureDefinition, TDefaults> =
   | (HasProcedureDefaults<TDefaults> extends true ? "defaults" : never)
+  | (HasProcedureDefaults<TDefaults> extends true ? "errors" : never)
   | (ExtractProcedureAdapterMode<TDefaults> extends "route" ? "nextPage" : never)
   | (HasProcedureRoute<TDefinition> extends true ? "forRoute" : never)
   | (HasProcedureOutput<TDefinition> extends true ? "output" : never)
@@ -1019,6 +1020,10 @@ const createProcedureBuilder = <
     DefineRpcErrors<TNextErrorCatalog>,
     TMiddlewareTerminalResult
   > => {
+    if (defaults !== undefined) {
+      throw new Error("Procedure errors must be declared before procedure defaults.");
+    }
+
     return createProcedureBuilder(
       definition,
       middlewares,

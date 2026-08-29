@@ -403,6 +403,13 @@ describe("procedure builder type definitions", () => {
         },
       });
     }).toThrow("Procedure defaults have already been declared.");
+
+    expect(() => {
+      // @ts-expect-error errors must be declared before defaults
+      defaultedProcedure.errors({
+        PLAN_REQUIRED: { status: 402, message: "Plan required" },
+      });
+    }).toThrow("Procedure errors must be declared before procedure defaults.");
   });
 
   it("keeps repeatedly composable builder methods available", () => {
@@ -662,6 +669,74 @@ describe("procedure builder type definitions", () => {
     });
 
     expect(true).toBe(true);
+  });
+
+  it("uses catalog statuses for implicit procedure route error responses", () => {
+    const errors = defineRpcErrors({
+      BAD_REQUEST: { status: 422, message: "Invalid input" },
+      INTERNAL_SERVER_ERROR: { status: 503, message: "Service unavailable" },
+    });
+    const okOutputSchema: StandardSchemaV1<unknown, { ok: true }> = {
+      "~standard": {
+        version: 1,
+        vendor: "rpc4next-test",
+        types: {
+          input: {} as unknown,
+          output: {} as { ok: true },
+        },
+        validate: (value) => ({
+          value: value as { ok: true },
+        }),
+      },
+    };
+    const onError = ((_error, { response }) =>
+      response.error("INTERNAL_SERVER_ERROR")) satisfies ProcedureOnError<
+      ProcedureOnErrorResult,
+      typeof errors
+    >;
+
+    const { GET: route } = procedure
+      .errors(errors)
+      .forRoute(staticPageRouteContract)
+      .query(parsePage)
+      .output(okOutputSchema)
+      .handle(() => ({
+        body: {
+          ok: true as const,
+        },
+      }))
+      .nextRoute({
+        method: "GET",
+        validateOutput: true,
+        onError,
+      });
+
+    type RouteResponse = Awaited<ReturnType<typeof route>>;
+    type _implicitBadRequestUsesCatalogStatus = ExpectTrue<
+      HasResponseVariant<
+        RouteResponse,
+        {
+          error: {
+            code: "BAD_REQUEST";
+            message: string;
+          };
+        },
+        422
+      >
+    >;
+    type _implicitInternalErrorUsesCatalogStatus = ExpectTrue<
+      HasResponseVariant<
+        RouteResponse,
+        {
+          error: {
+            code: "INTERNAL_SERVER_ERROR";
+            message: string;
+          };
+        },
+        503
+      >
+    >;
+    expectTypeOf<RouteResponse>().toExtend<Response>();
   });
 
   it("limits middleware context to validated inputs only", () => {
