@@ -20,21 +20,36 @@ type ProcedureRouteAdapterCarrier = {
   middlewareTerminalResult: unknown;
 };
 
+export type ProcedureSharedRouteDefaults<
+  TRouteOnError extends ProcedureOnError = ProcedureOnError,
+  TRouteOnValidationError extends ProcedureValidationErrorHandler | undefined = undefined,
+> = {
+  route: {
+    onError: TRouteOnError;
+    onValidationError?: TRouteOnValidationError;
+  };
+  page?: never;
+};
+
+export type ProcedureSharedPageDefaults<
+  TPageOnError extends ProcedurePageOnError = ProcedurePageOnError,
+  TPageOnValidationError extends ProcedurePageOnValidationError | undefined = undefined,
+> = {
+  route?: never;
+  page: {
+    onError: TPageOnError;
+    onValidationError?: TPageOnValidationError;
+  };
+};
+
 export type ProcedureSharedDefaults<
   TRouteOnError extends ProcedureOnError = ProcedureOnError,
   TPageOnError extends ProcedurePageOnError = ProcedurePageOnError,
   TRouteOnValidationError extends ProcedureValidationErrorHandler | undefined = undefined,
   TPageOnValidationError extends ProcedurePageOnValidationError | undefined = undefined,
-> = {
-  route?: {
-    onError: TRouteOnError;
-    onValidationError?: TRouteOnValidationError;
-  };
-  page?: {
-    onError: TPageOnError;
-    onValidationError?: TPageOnValidationError;
-  };
-};
+> =
+  | ProcedureSharedRouteDefaults<TRouteOnError, TRouteOnValidationError>
+  | ProcedureSharedPageDefaults<TPageOnError, TPageOnValidationError>;
 
 export type ProcedureDefaults = ProcedureSharedDefaults<
   ProcedureOnError,

@@ -369,6 +369,16 @@ describe("procedure builder type definitions", () => {
       onError: defaultProcedureOnError,
     });
 
+    // @ts-expect-error defaults accepts either route or page, not both
+    procedure.defaults({
+      route: {
+        onError: defaultProcedureOnError,
+      },
+      page: {
+        onError: () => null,
+      },
+    });
+
     const defaultedProcedure = procedure.defaults({
       route: {
         onError: defaultProcedureOnError,
