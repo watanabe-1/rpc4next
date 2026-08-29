@@ -65,7 +65,41 @@ npm install zod
 
 If you prefer to inspect a complete app before wiring this into your own project, see [integration/next-app/README.md](./integration/next-app/README.md).
 
-### 1. Define a Route
+### 1. Initialize rpc4next
+
+Create the default config, generated client type file, browser client, and
+shared route/page procedure presets:
+
+```bash
+npm install rpc4next
+npm install -D rpc4next-cli
+npx rpc4next init
+npx rpc4next
+```
+
+If you use Bun:
+
+```bash
+bun add rpc4next
+bun add -d rpc4next-cli
+bunx rpc4next init
+bunx rpc4next
+```
+
+`rpc4next init` creates:
+
+- `rpc4next.config.json`
+- `src/generated/rpc.ts`
+- `src/lib/rpc-client.ts`
+- `app/_rpc/errors.ts`
+- `app/_rpc/route-procedure.ts`
+- `app/_rpc/page-procedure.ts`
+
+It does not overwrite existing files by default. Use `npx rpc4next init --dry-run`
+to preview the files, or `npx rpc4next init --force` to overwrite existing init
+files.
+
+### 2. Define a Route
 
 `rpc4next` can scan plain Next.js App Router handlers as-is, but the recommended
 typed server authoring path is `procedure` with terminal `.nextRoute(...)`
@@ -154,9 +188,21 @@ For known application errors that clients should branch on, return
 `response.error(...)` from the procedure handler or middleware. Those returned
 error responses are preserved in the generated client response union.
 
-### 2. Generate `PathStructure`
+### 3. Generate `PathStructure`
 
-Generate the client types from your `app` directory:
+After adding or changing routes, regenerate the client types:
+
+```bash
+npx rpc4next
+```
+
+If you use Bun:
+
+```bash
+bunx rpc4next
+```
+
+You can also generate manually by passing the source and output paths:
 
 ```bash
 npx rpc4next app src/generated/rpc.ts
@@ -178,7 +224,7 @@ You can also configure the CLI with `rpc4next.config.json`:
 }
 ```
 
-Then run:
+When positional arguments are omitted, `rpc4next` reads the config file:
 
 ```bash
 npx rpc4next
@@ -216,7 +262,7 @@ not silently keep compiling.
 Use `--check` in CI to fail when `src/generated/rpc.ts` or generated route
 contract files are stale.
 
-### 3. Create a Client
+### 4. Create a Client
 
 ```ts
 // src/lib/rpc-client.ts
@@ -249,7 +295,7 @@ export const createServerRpcClient = async () => {
 };
 ```
 
-### 4. Call Routes
+### 5. Call Routes
 
 Generated client naming follows the App Router path shape:
 
@@ -323,8 +369,8 @@ validation UI for pages, or keep using `page.onError` for the generic fallback.
 
 ### `rpc4next init` Layout
 
-The planned `rpc4next init` default layout keeps generated files and shared
-procedure foundations separate:
+The `rpc4next init` default layout keeps generated files and shared procedure
+foundations separate:
 
 - `app/_rpc/errors.ts`
 - `app/_rpc/route-procedure.ts`
@@ -356,7 +402,7 @@ rpc4next omits that synthetic header and lets `fetch` send real browser cookies
 instead. For cross-origin browser calls, pass the appropriate `credentials`
 option, such as `{ init: { credentials: "include" } }`.
 
-### 5. Handle Typed Responses
+### 6. Handle Typed Responses
 
 Client methods still return typed `Response` objects, so existing
 `response.ok`, `response.status`, and `response.json()` narrowing continues to
@@ -453,7 +499,7 @@ console.log(file.filename);
 console.log(file.contentType);
 ```
 
-### 6. Generate Typed URLs for Pages
+### 7. Generate Typed URLs for Pages
 
 `page.tsx` files are included in the generated path tree, so you can build typed URLs even when there is no RPC method to call.
 

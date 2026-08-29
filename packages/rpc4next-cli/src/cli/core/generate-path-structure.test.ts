@@ -113,6 +113,22 @@ describe("generatePathStructure", () => {
     expect(paramsTypes).toStrictEqual([]);
   });
 
+  it("should generate an empty path structure for apps without endpoints", () => {
+    tmpDir = makeTempDir();
+
+    scanAppDir.mockReturnValue({
+      pathStructure: "",
+      imports: [],
+      paramsTypes: [],
+    });
+
+    const outputPath = path.join(tmpDir, "output");
+    const baseDir = path.join(tmpDir, "base");
+    const { pathStructure } = generatePathStructure(outputPath, baseDir);
+
+    expect(pathStructure).toContain("export type PathStructure = RpcGeneratedPathStructure<{},");
+  });
+
   it("should escape generated route contract pathnames", () => {
     tmpDir = makeTempDir();
 
