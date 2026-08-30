@@ -2,9 +2,19 @@ import { describe, expect, expectTypeOf, it } from "vitest";
 
 import type { ContentType } from "../lib/content-type-types";
 import type { HttpStatusCode } from "../lib/http-status-code-types";
-import { defaultProcedureOnError, type ProcedureOnError } from "./on-error";
+import { defineRpcErrors } from "./error";
+import {
+  defaultProcedureOnError,
+  type ProcedureOnError,
+  type ProcedureOnErrorResult,
+} from "./on-error";
 import { procedure } from "./procedure";
-import type { ProcedureRouteContract } from "./procedure-types";
+import type {
+  ProcedureInputTarget,
+  ProcedureRouteContract,
+  ProcedureValidationErrorHandler,
+  ProcedureValidationErrorHandlerResult,
+} from "./procedure-types";
 import type { StandardSchemaV1 } from "./standard-schema";
 import type { ResponseHelpers, TypedNextResponse } from "./types";
 
@@ -393,6 +403,42 @@ describe("procedure builder type definitions", () => {
         },
       });
     }).toThrow("Procedure defaults have already been declared.");
+
+    expect(() => {
+      // @ts-expect-error errors must be declared before defaults
+      defaultedProcedure.errors({
+        PLAN_REQUIRED: { status: 402, message: "Plan required" },
+      });
+    }).toThrow("Procedure errors must be declared before other procedure configuration.");
+
+    const errorCatalogProcedure = procedure.errors({
+      PLAN_REQUIRED: { status: 402, message: "Plan required" },
+    });
+
+    expect(() => {
+      // @ts-expect-error errors are only declared once
+      errorCatalogProcedure.errors({
+        OTHER_ERROR: { status: 400, message: "Other error" },
+      });
+    }).toThrow("Procedure errors must be declared before other procedure configuration.");
+
+    expect(() => {
+      procedure
+        .use(({ response }) => response.error("BAD_REQUEST"))
+        // @ts-expect-error errors must be declared before middleware captures response helpers
+        .errors({
+          PLAN_REQUIRED: { status: 402, message: "Plan required" },
+        });
+    }).toThrow("Procedure errors must be declared before other procedure configuration.");
+
+    expect(() => {
+      procedure
+        .query(parsePage)
+        // @ts-expect-error errors must be declared before input hooks capture response helpers
+        .errors({
+          PLAN_REQUIRED: { status: 402, message: "Plan required" },
+        });
+    }).toThrow("Procedure errors must be declared before other procedure configuration.");
   });
 
   it("keeps repeatedly composable builder methods available", () => {
@@ -539,6 +585,187 @@ describe("procedure builder type definitions", () => {
         },
       ]
     >();
+  });
+
+  it("binds project-level error catalogs to route procedure response helpers", () => {
+    const errors = defineRpcErrors({
+      PLAN_REQUIRED: { status: 402, message: "Plan required" },
+    });
+
+    const appProcedure = procedure.errors(errors);
+    const appOnError = ((error, { response }) => {
+      void error;
+
+      return response.error("PLAN_REQUIRED");
+    }) satisfies ProcedureOnError<ProcedureOnErrorResult, typeof errors>;
+    const appOnValidationError = (({ response }) =>
+      response.error("PLAN_REQUIRED")) satisfies ProcedureValidationErrorHandler<
+      ProcedureInputTarget,
+      unknown,
+      ProcedureValidationErrorHandlerResult,
+      typeof errors
+    >;
+    const defaultedProcedure = appProcedure.defaults({
+      route: {
+        onError: appOnError,
+        onValidationError: appOnValidationError,
+      },
+    });
+    const guardedProcedure = appProcedure
+      .use(({ response }) =>
+        response.error("PLAN_REQUIRED", {
+          details: { plan: "pro" as const },
+        }),
+      )
+      .handle(({ response }) => response.error("PLAN_REQUIRED"));
+
+    type RouteResponse =
+      | Awaited<ReturnType<(typeof guardedProcedure)["handler"]>>
+      | (typeof guardedProcedure)["middlewareTerminalResult"];
+    type DefaultsOnErrorResponse = Awaited<ReturnType<typeof appOnError>>;
+    type DefaultsOnValidationErrorResponse = Awaited<ReturnType<typeof appOnValidationError>>;
+
+    expectTypeOf<RouteResponse>().toExtend<
+      | TypedNextResponse<
+          {
+            error: {
+              code: "PLAN_REQUIRED";
+              message: string;
+              details: {
+                plan: "pro";
+              };
+            };
+          },
+          402,
+          "application/json"
+        >
+      | TypedNextResponse<
+          {
+            error: {
+              code: "PLAN_REQUIRED";
+              message: string;
+            };
+          },
+          402,
+          "application/json"
+        >
+    >();
+    expectTypeOf<DefaultsOnErrorResponse>().toExtend<
+      TypedNextResponse<
+        {
+          error: {
+            code: "PLAN_REQUIRED";
+            message: string;
+          };
+        },
+        402,
+        "application/json"
+      >
+    >();
+    expectTypeOf<DefaultsOnValidationErrorResponse>().toExtend<
+      TypedNextResponse<
+        {
+          error: {
+            code: "PLAN_REQUIRED";
+            message: string;
+          };
+        },
+        402,
+        "application/json"
+      >
+    >();
+    defaultedProcedure.handle(({ response }) => response.error("PLAN_REQUIRED"));
+
+    appProcedure.handle(({ response }) => {
+      // @ts-expect-error codes outside the project catalog are rejected
+      return response.error("PAYMENT_REQUIRED");
+    });
+  });
+
+  it("merges partial project-level error catalogs with default codes", () => {
+    const appProcedure = procedure.errors({
+      PLAN_REQUIRED: { status: 402, message: "Plan required" },
+    });
+
+    appProcedure.handle(({ response }) => {
+      response.error("BAD_REQUEST");
+      response.error("PLAN_REQUIRED");
+
+      // @ts-expect-error codes outside the merged project catalog are rejected
+      response.error("PAYMENT_REQUIRED");
+
+      return response.error("INTERNAL_SERVER_ERROR");
+    });
+
+    expect(true).toBe(true);
+  });
+
+  it("uses catalog statuses for implicit procedure route error responses", () => {
+    const errors = defineRpcErrors({
+      BAD_REQUEST: { status: 422, message: "Invalid input" },
+      INTERNAL_SERVER_ERROR: { status: 503, message: "Service unavailable" },
+    });
+    const okOutputSchema: StandardSchemaV1<unknown, { ok: true }> = {
+      "~standard": {
+        version: 1,
+        vendor: "rpc4next-test",
+        types: {
+          input: {} as unknown,
+          output: {} as { ok: true },
+        },
+        validate: (value) => ({
+          value: value as { ok: true },
+        }),
+      },
+    };
+    const onError = ((_error, { response }) =>
+      response.error("INTERNAL_SERVER_ERROR")) satisfies ProcedureOnError<
+      ProcedureOnErrorResult,
+      typeof errors
+    >;
+
+    const { GET: route } = procedure
+      .errors(errors)
+      .forRoute(staticPageRouteContract)
+      .query(parsePage)
+      .output(okOutputSchema)
+      .handle(() => ({
+        body: {
+          ok: true as const,
+        },
+      }))
+      .nextRoute({
+        method: "GET",
+        validateOutput: true,
+        onError,
+      });
+
+    type RouteResponse = Awaited<ReturnType<typeof route>>;
+    type _implicitBadRequestUsesCatalogStatus = ExpectTrue<
+      HasResponseVariant<
+        RouteResponse,
+        {
+          error: {
+            code: "BAD_REQUEST";
+            message: string;
+          };
+        },
+        422
+      >
+    >;
+    type _implicitInternalErrorUsesCatalogStatus = ExpectTrue<
+      HasResponseVariant<
+        RouteResponse,
+        {
+          error: {
+            code: "INTERNAL_SERVER_ERROR";
+            message: string;
+          };
+        },
+        503
+      >
+    >;
+    expectTypeOf<RouteResponse>().toExtend<Response>();
   });
 
   it("limits middleware context to validated inputs only", () => {

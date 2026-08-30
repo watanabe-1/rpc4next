@@ -72,6 +72,9 @@ export type ErrorResponseCode<TResponse> =
 type RpcErrorCodeFromPayload<TPayload> =
   TPayload extends RpcErrorEnvelope<infer TCode, any> ? TCode : string;
 
+type RpcErrorPayloadByCode<TPayload, TCode extends string> =
+  TPayload extends RpcErrorEnvelope<TCode, any> ? TPayload : never;
+
 const getRpcErrorCode = <TPayload>(
   payload: TPayload,
 ): RpcErrorCodeFromPayload<TPayload> | undefined => {
@@ -112,6 +115,28 @@ export class RpcResponseError<
     this.response = response;
   }
 }
+
+export type RpcErrorHandlers<TPayload, TResult> = {
+  [TCode in RpcErrorCodeFromPayload<TPayload> & string]: (
+    error: RpcResponseError<RpcErrorPayloadByCode<TPayload, TCode>>,
+  ) => TResult;
+};
+
+export const matchRpcResponseError = <TPayload, TResult>(
+  error: RpcResponseError<TPayload>,
+  handlers: RpcErrorHandlers<TPayload, TResult>,
+): TResult => {
+  if (error.code === undefined) {
+    throw error;
+  }
+
+  const handler = handlers[error.code as RpcErrorCodeFromPayload<TPayload> & string];
+  if (!handler) {
+    throw error;
+  }
+
+  return handler(error as never);
+};
 
 const isJsonContentType = (contentType: string) => {
   const mediaType = contentType.split(";", 1)[0]?.trim().toLowerCase() ?? "";

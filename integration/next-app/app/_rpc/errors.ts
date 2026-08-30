@@ -1,10 +1,18 @@
-import type { ProcedureOnError, ProcedureValidationErrorHandler } from "rpc4next/server";
+import { createRpcValidationErrorHandler, defineRpcErrors } from "rpc4next/server";
+import type {
+  ProcedureInputTarget,
+  ProcedureOnError,
+  ProcedureOnErrorResult,
+  ProcedureValidationErrorHandler,
+  ProcedureValidationErrorHandlerResult,
+} from "rpc4next/server";
+
+export const appRpcErrors = defineRpcErrors({
+  PLAN_REQUIRED: { status: 402, message: "Plan required" },
+});
 
 export const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
-
-export const getIssuePath = (path: readonly (PropertyKey | { key: PropertyKey })[] | undefined) =>
-  path?.map((segment) => String(typeof segment === "object" ? segment.key : segment)) ?? [];
 
 export const routeOnError = ((error, { response }) => {
   console.error("[rpc4next] Unexpected procedure error", {
@@ -15,18 +23,16 @@ export const routeOnError = ((error, { response }) => {
   return response.error("INTERNAL_SERVER_ERROR", {
     message: "Internal server error",
   });
-}) satisfies ProcedureOnError;
+}) satisfies ProcedureOnError<ProcedureOnErrorResult, typeof appRpcErrors>;
 
-export const routeOnValidationError = (({ issues, response, target }) =>
-  response.error("BAD_REQUEST", {
-    message: issues[0]?.message ?? "Validation failed.",
-    details: {
-      target,
-      issues: issues.map(({ message, path }) => ({
-        message,
-        path: getIssuePath(path),
-      })),
-    },
-  })) satisfies ProcedureValidationErrorHandler;
+export const routeOnValidationError = createRpcValidationErrorHandler<
+  ProcedureInputTarget,
+  typeof appRpcErrors
+>() satisfies ProcedureValidationErrorHandler<
+  ProcedureInputTarget,
+  unknown,
+  ProcedureValidationErrorHandlerResult,
+  typeof appRpcErrors
+>;
 
 export const pageOnError = () => "page-helper-error";

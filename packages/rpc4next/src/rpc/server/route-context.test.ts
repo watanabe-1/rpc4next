@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { describe, expect, expectTypeOf, it } from "vitest";
 
 import type { ContentType } from "../lib/content-type-types";
-import { createRouteContext } from "./route-context";
+import { defineRpcErrors } from "./error";
+import { createResponseHelpers, createRouteContext } from "./route-context";
 import type { ValidationSchema } from "./route-types";
 import type { TypedNextResponse } from "./types";
 
@@ -13,6 +14,47 @@ const createRealNextRequest = (url: string): NextRequest => {
 describe("createRouteContext", () => {
   const mockParams = { id: "123" };
   const mockSearchParamsObject = { q: "test" };
+
+  it("creates catalog-bound typed error responses", async () => {
+    const errors = defineRpcErrors({
+      PLAN_REQUIRED: { status: 402, message: "Plan required" },
+    });
+    const response = createResponseHelpers<unknown, typeof errors>(errors);
+
+    const result = response.error("PLAN_REQUIRED", {
+      details: { plan: "pro" as const },
+    });
+
+    expect(result.status).toBe(402);
+    await expect(result.json()).resolves.toEqual({
+      error: {
+        code: "PLAN_REQUIRED",
+        message: "Plan required",
+        details: { plan: "pro" },
+      },
+    });
+    type Result = typeof result;
+    type ResultPayload = Awaited<ReturnType<Result["json"]>>;
+
+    expectTypeOf<Result["status"]>().toEqualTypeOf<402>();
+    expectTypeOf<ResultPayload["error"]["code"]>().toEqualTypeOf<"PLAN_REQUIRED">();
+  });
+
+  it("keeps default error responses when binding a partial catalog", async () => {
+    const response = createResponseHelpers<unknown, { PLAN_REQUIRED: { status: 402 } }>({
+      PLAN_REQUIRED: { status: 402 },
+    });
+
+    const result = response.error("BAD_REQUEST");
+
+    expect(result.status).toBe(400);
+    await expect(result.json()).resolves.toEqual({
+      error: {
+        code: "BAD_REQUEST",
+        message: "Bad request",
+      },
+    });
+  });
 
   it("should return a route context with query and params", async () => {
     const req = createRealNextRequest("http://localhost/?q=test");

@@ -8,7 +8,14 @@ import type {
   RedirectionHttpStatusCode,
   SuccessfulHttpStatusCode,
 } from "../lib/http-status-code-types";
-import type { RpcErrorCode, RpcErrorEnvelope, RpcErrorResponseInit, RpcErrorStatus } from "./error";
+import type {
+  DefaultRpcErrorCatalog,
+  RpcErrorCatalog,
+  RpcErrorCode,
+  RpcErrorEnvelope,
+  RpcErrorResponseInit,
+  RpcErrorStatus,
+} from "./error";
 import type { ValidationSchema } from "./route-types";
 
 /**
@@ -94,7 +101,10 @@ export type JsonResponseHelper<TJson = unknown> = [unknown] extends [TJson]
       init?: TStatus | TypedResponseInit<TStatus, "application/json">,
     ) => TypedNextResponse<TJson, TStatus, "application/json">;
 
-export interface ResponseHelpers<TJson = unknown> {
+export interface ResponseHelpers<
+  TJson = unknown,
+  TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
+> {
   body: <
     TData extends BodyInit | null,
     TContentType extends ContentType,
@@ -120,12 +130,12 @@ export interface ResponseHelpers<TJson = unknown> {
     init?: TStatus | TypedResponseInit<TStatus, "">,
   ) => TypedNextResponse<undefined, TStatus, "">;
 
-  error: <TCode extends RpcErrorCode, TDetails = unknown>(
+  error: <TCode extends RpcErrorCode<TErrorCatalog>, TDetails = unknown>(
     code: TCode,
     init?: RpcErrorResponseInit<TDetails>,
   ) => TypedNextResponse<
     RpcErrorEnvelope<TCode, TDetails>,
-    RpcErrorStatus<TCode>,
+    RpcErrorStatus<TCode, TErrorCatalog>,
     "application/json"
   >;
 }

@@ -70,7 +70,7 @@ export const guardedRouteProcedure = appRouteProcedure
     const plan = headers["x-demo-plan"] ?? "pro";
 
     if (plan === "free") {
-      return response.error("FORBIDDEN", {
+      return response.error("PLAN_REQUIRED", {
         message: "A paid demo plan is required for guarded procedures.",
         details: { reason: "plan_upgrade_required" as const },
       });

@@ -5,6 +5,7 @@ import {
   createRpcResponsePromise,
   type ErrorResponseCode,
   type ErrorResponsePayload,
+  matchRpcResponseError,
   type RpcFilePayload,
   RpcResponseError,
   type SuccessfulJsonPayload,
@@ -331,6 +332,55 @@ describe("response promise unwrap", () => {
           };
         }
     >();
+  });
+
+  it("matches RPC response errors with exhaustive typed handlers", () => {
+    type Payload =
+      | {
+          error: {
+            code: "NOT_FOUND";
+            message: string;
+            details: {
+              entryId: string;
+            };
+          };
+        }
+      | {
+          error: {
+            code: "CONFLICT";
+            message: string;
+          };
+        };
+
+    const response = Response.json(
+      {
+        error: {
+          code: "NOT_FOUND",
+          message: "Missing",
+          details: {
+            entryId: "entry-1",
+          },
+        },
+      },
+      { status: 404 },
+    );
+    const error = new RpcResponseError<Payload>(response, {
+      error: {
+        code: "NOT_FOUND",
+        message: "Missing",
+        details: {
+          entryId: "entry-1",
+        },
+      },
+    });
+
+    const result = matchRpcResponseError<Payload, string>(error, {
+      NOT_FOUND: (matched) => matched.payload.error.details.entryId,
+      CONFLICT: (matched) => matched.payload.error.message,
+    });
+
+    expect(result).toBe("entry-1");
+    expectTypeOf(result).toEqualTypeOf<string>();
   });
 
   it("infers text payloads from successful text response union members", async () => {

@@ -1,8 +1,8 @@
 import { procedure } from "rpc4next/server";
 
-import { routeOnError, routeOnValidationError } from "./errors";
+import { appRpcErrors, routeOnError, routeOnValidationError } from "./errors";
 
-export const appRouteProcedure = procedure.defaults({
+export const appRouteProcedure = procedure.errors(appRpcErrors).defaults({
   route: {
     onError: routeOnError,
     onValidationError: routeOnValidationError,
