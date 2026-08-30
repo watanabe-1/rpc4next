@@ -409,7 +409,36 @@ describe("procedure builder type definitions", () => {
       defaultedProcedure.errors({
         PLAN_REQUIRED: { status: 402, message: "Plan required" },
       });
-    }).toThrow("Procedure errors must be declared before procedure defaults.");
+    }).toThrow("Procedure errors must be declared before other procedure configuration.");
+
+    const errorCatalogProcedure = procedure.errors({
+      PLAN_REQUIRED: { status: 402, message: "Plan required" },
+    });
+
+    expect(() => {
+      // @ts-expect-error errors are only declared once
+      errorCatalogProcedure.errors({
+        OTHER_ERROR: { status: 400, message: "Other error" },
+      });
+    }).toThrow("Procedure errors must be declared before other procedure configuration.");
+
+    expect(() => {
+      procedure
+        .use(({ response }) => response.error("BAD_REQUEST"))
+        // @ts-expect-error errors must be declared before middleware captures response helpers
+        .errors({
+          PLAN_REQUIRED: { status: 402, message: "Plan required" },
+        });
+    }).toThrow("Procedure errors must be declared before other procedure configuration.");
+
+    expect(() => {
+      procedure
+        .query(parsePage)
+        // @ts-expect-error errors must be declared before input hooks capture response helpers
+        .errors({
+          PLAN_REQUIRED: { status: 402, message: "Plan required" },
+        });
+    }).toThrow("Procedure errors must be declared before other procedure configuration.");
   });
 
   it("keeps repeatedly composable builder methods available", () => {
