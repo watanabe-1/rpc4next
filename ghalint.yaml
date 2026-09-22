@@ -1,0 +1,7 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/suzuki-shunsuke/ghalint/main/json-schema/ghalint.json
+
+excludes:
+  - policy_name: action_ref_should_be_full_length_commit_sha
+    action_name: watanabe-1/github-actions-common/actions/setup-toolchain
+  - policy_name: action_ref_should_be_full_length_commit_sha
+    action_name: watanabe-1/github-actions-common/.github/workflows/gha-static-check.yml

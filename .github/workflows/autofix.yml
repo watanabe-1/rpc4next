@@ -24,7 +24,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup toolchain
-        uses: $/.github/actions/setup-toolchain
+        uses: watanabe-1/github-actions-common/actions/setup-toolchain@v1 # zizmor: ignore[unpinned-uses] Intentionally testing the v1 release tag.
         with:
           setup-aqua: "true"
           bun-version: aqua
