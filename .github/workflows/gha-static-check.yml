@@ -21,5 +21,3 @@ jobs:
       checks: write
       pull-requests: write
       actions: read
-    with:
-      actionlint-self-action-path: "$/.github/actions/setup-toolchain"
