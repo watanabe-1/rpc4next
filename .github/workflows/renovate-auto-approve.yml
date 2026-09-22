@@ -15,7 +15,7 @@ jobs:
   approve:
     name: Auto approve Renovate PR
     if: >-
-      github.event.pull_request.user.login == 'watanabe-1-renovate-bot' &&
+      github.event.pull_request.user.login == 'watanabe-1-renovate-bot[bot]' &&
       github.event.pull_request.user.type == 'Bot' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.base.repo.full_name == github.repository &&
