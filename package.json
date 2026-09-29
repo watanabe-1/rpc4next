@@ -34,7 +34,7 @@
     "diff2prompt": "diff2prompt"
   },
   "devDependencies": {
-    "@types/node": "^26.6.1",
+    "@types/node": "^26.6.2",
     "@vitest/coverage-v8": "^5.0.1",
     "@vitest/ui": "^5.0.1",
     "arktype": "^2.2.3",
@@ -42,9 +42,9 @@
     "esbuild": "^0.28.2",
     "fast-glob": "^3.3.3",
     "msw": "^2.15.0",
-    "next": "16.3.5",
-    "oxfmt": "^0.68.0",
-    "oxlint": "^1.83.0",
+    "next": "16.3.6",
+    "oxfmt": "^0.70.0",
+    "oxlint": "^1.85.0",
     "oxlint-tsgolint": "7",
     "typescript": "^7.0.2",
     "valibot": "^1.5.0",
