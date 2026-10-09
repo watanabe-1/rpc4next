@@ -61,6 +61,6 @@
     "test": "vitest run"
   },
   "engines": {
-    "node": ">=20.19.2"
+    "node": ">=22.0.0"
   }
 }
