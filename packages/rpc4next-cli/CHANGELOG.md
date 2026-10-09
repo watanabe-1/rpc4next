@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.9.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.8.2...rpc4next-cli-v0.9.0) (2026-10-09)
+
+
+### ⚠ BREAKING CHANGES
+
+* **rpc4next:** The public nextRoute export and the .nextRoute() and .nextPage() terminal APIs have been removed. Consumers must migrate to the new method-specific terminals and .page().
+
+### Features
+
+* **cli:** add generated files check mode ([#573](https://github.com/watanabe-1/rpc4next/issues/573)) ([397f31c](https://github.com/watanabe-1/rpc4next/commit/397f31ccd8be0ec79d174a964c52d0f77b994ed6))
+* **cli:** add init command ([#578](https://github.com/watanabe-1/rpc4next/issues/578)) ([da3ba3d](https://github.com/watanabe-1/rpc4next/commit/da3ba3d87d910d005c3afb94b2c92e34b14b11f5))
+* **client:** detect generated schema version mismatches ([#572](https://github.com/watanabe-1/rpc4next/issues/572)) ([6f78003](https://github.com/watanabe-1/rpc4next/commit/6f78003935be09af8b83a918e75c6bc2d2d3c0a8))
+* **errors:** add project error catalogs ([#579](https://github.com/watanabe-1/rpc4next/issues/579)) ([0cbb3d7](https://github.com/watanabe-1/rpc4next/commit/0cbb3d7c8afca98ceb83595569133fb78805879c))
+* Infer page query types from searchParams props ([#627](https://github.com/watanabe-1/rpc4next/issues/627)) ([1923b30](https://github.com/watanabe-1/rpc4next/commit/1923b3075833e4ae5610f461afde395ae0cb774e))
+
+
+### Code Refactoring
+
+* **rpc4next:** replace legacy adapters with method-specific terminals ([#626](https://github.com/watanabe-1/rpc4next/issues/626)) ([186aae1](https://github.com/watanabe-1/rpc4next/commit/186aae1fc9f00c41fed028b4b647eb21e9485e95))
+
 ## [0.8.2](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.8.1...rpc4next-cli-v0.8.2) (2026-08-21)
 
 ### Bug Fixes
