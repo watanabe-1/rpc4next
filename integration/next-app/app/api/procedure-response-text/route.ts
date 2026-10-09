@@ -11,6 +11,4 @@ export const { GET } = appRouteProcedure
     }),
   )
   .handle(async ({ query, response }) => response.text(`procedure-response-text:${query.name}`))
-  .nextRoute({
-    method: "GET",
-  });
+  .get({});

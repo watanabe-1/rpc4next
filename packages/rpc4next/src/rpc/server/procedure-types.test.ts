@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
 import { describe, expect, expectTypeOf, it } from "vitest";
 
-import { nextRoute as baseNextRoute } from "./next-route";
+import { createNextRoute as basecreateNextRoute } from "./next-route";
 import { defaultProcedureOnError } from "./on-error";
 import { procedure } from "./procedure";
 import { getProcedureDefinition, procedureDefinitionSymbol } from "./procedure-definition";
@@ -14,7 +14,7 @@ import {
 import type { ValidationSchema } from "./route-types";
 import type { StandardSchemaV1 } from "./standard-schema";
 
-const nextRoute = <
+const createNextRoute = <
   TProcedure,
   TMethod extends HttpMethod = "GET",
   TValidateOutput extends boolean = false,
@@ -32,8 +32,8 @@ const nextRoute = <
       ? { ...options, method }
       : { ...options, method, onError: defaultProcedureOnError };
 
-  const routes = baseNextRoute<
-    TProcedure & Parameters<typeof baseNextRoute>[0],
+  const routes = basecreateNextRoute<
+    TProcedure & Parameters<typeof basecreateNextRoute>[0],
     TMethod,
     TValidateOutput
   >(procedureDefinition as never, resolvedOptions as never);
@@ -47,7 +47,7 @@ describe("procedure contract internals", () => {
       pathname: "/api/test",
       params: {} as Record<never, never>,
     } as ProcedureRouteContract<"/api/test", Record<never, never>>;
-    const handler = nextRoute(
+    const handler = createNextRoute(
       procedure.forRoute(routeContract).handle(async ({ response }) => response.text("ok")),
       { method: "GET" },
     );

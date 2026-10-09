@@ -21,4 +21,4 @@ export const { POST } = appRouteProcedure
       title: json.title,
     },
   }))
-  .nextRoute({ method: "POST" });
+  .post();

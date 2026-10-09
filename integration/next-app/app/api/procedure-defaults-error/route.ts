@@ -26,6 +26,4 @@ export const { GET } = appRouteProcedure
       },
     };
   })
-  .nextRoute({
-    method: "GET",
-  });
+  .get({});

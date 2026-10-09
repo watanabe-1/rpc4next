@@ -3,13 +3,13 @@ import type { HttpMethod } from "rpc4next-shared";
 import * as v from "valibot";
 import { describe, expect, expectTypeOf, it } from "vitest";
 
-import { nextRoute as baseNextRoute } from "./next-route";
+import { createNextRoute as basecreateNextRoute } from "./next-route";
 import { defaultProcedureOnError } from "./on-error";
 import { procedure } from "./procedure";
 import type { ProcedureRouteContract } from "./procedure-types";
 import type { TypedNextResponse } from "./types";
 
-const nextRoute = <
+const createNextRoute = <
   TProcedure,
   TMethod extends HttpMethod = "GET",
   TValidateOutput extends boolean = false,
@@ -27,8 +27,8 @@ const nextRoute = <
       ? { ...options, method }
       : { ...options, method, onError: defaultProcedureOnError };
 
-  const routes = baseNextRoute<
-    TProcedure & Parameters<typeof baseNextRoute>[0],
+  const routes = basecreateNextRoute<
+    TProcedure & Parameters<typeof basecreateNextRoute>[0],
     TMethod,
     TValidateOutput
   >(procedureDefinition as never, resolvedOptions as never);
@@ -45,7 +45,7 @@ describe("procedure builder valibot integration", () => {
   } as ProcedureRouteContract<"/api/test", EmptyParams>;
 
   it("accepts valibot schemas as direct procedure query contracts", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .query(

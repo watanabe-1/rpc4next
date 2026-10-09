@@ -4,7 +4,8 @@ import { afterAll, afterEach, beforeAll, describe, expect, expectTypeOf, it } fr
 import { z } from "zod";
 
 import { searchParamsToObject } from "../lib/search-params";
-import { nextRoute, type ProcedureRouteContract, procedure } from "../server";
+import { type ProcedureRouteContract, procedure } from "../server";
+import { createNextRoute } from "../server/next-route";
 import { defaultProcedureOnError } from "../server/on-error";
 import { createRpcClient } from "./rpc-client";
 import type { RpcClientOptions, RpcEndpoint, RpcGeneratedPathStructure } from "./types";
@@ -32,12 +33,12 @@ const staticRouteContract = {
   params: {} as Record<never, never>,
 } as ProcedureRouteContract<"/api/none", Record<never, never>>;
 
-const { GET: _get_1 } = nextRoute(
+const { GET: _get_1 } = createNextRoute(
   procedure.forRoute(staticRouteContract).handle(async ({ response }) => response.text("text")),
   { method: "GET", onError: defaultProcedureOnError },
 );
 
-const { POST: _post_1 } = nextRoute(
+const { POST: _post_1 } = createNextRoute(
   procedure
     .forRoute(staticRouteContract)
     .json(schema)
@@ -45,7 +46,7 @@ const { POST: _post_1 } = nextRoute(
   { method: "POST", onError: defaultProcedureOnError },
 );
 
-const { POST: _post_2 } = nextRoute(
+const { POST: _post_2 } = createNextRoute(
   procedure
     .forRoute(staticRouteContract)
     .headers(schema)
@@ -53,7 +54,7 @@ const { POST: _post_2 } = nextRoute(
   { method: "POST", onError: defaultProcedureOnError },
 );
 
-const { POST: _post_3 } = nextRoute(
+const { POST: _post_3 } = createNextRoute(
   procedure
     .forRoute(staticRouteContract)
     .cookies(schema)
@@ -61,7 +62,7 @@ const { POST: _post_3 } = nextRoute(
   { method: "POST", onError: defaultProcedureOnError },
 );
 
-const { POST: _post_4 } = nextRoute(
+const { POST: _post_4 } = createNextRoute(
   procedure
     .forRoute(staticRouteContract)
     .query(schema)
@@ -69,7 +70,7 @@ const { POST: _post_4 } = nextRoute(
   { method: "POST", onError: defaultProcedureOnError },
 );
 
-const { POST: _post_5 } = nextRoute(
+const { POST: _post_5 } = createNextRoute(
   procedure
     .forRoute(staticRouteContract)
     .query(optionalSchema)
@@ -77,7 +78,7 @@ const { POST: _post_5 } = nextRoute(
   { method: "POST", onError: defaultProcedureOnError },
 );
 
-const { POST: _post_all } = nextRoute(
+const { POST: _post_all } = createNextRoute(
   procedure
     .forRoute(staticRouteContract)
     .json(schema)
@@ -88,7 +89,7 @@ const { POST: _post_all } = nextRoute(
   { method: "POST", onError: defaultProcedureOnError },
 );
 
-const { GET: _get_mixed_query } = nextRoute(
+const { GET: _get_mixed_query } = createNextRoute(
   procedure
     .forRoute(staticRouteContract)
     .query(getQuerySchema)
@@ -96,7 +97,7 @@ const { GET: _get_mixed_query } = nextRoute(
   { method: "GET", onError: defaultProcedureOnError },
 );
 
-const { POST: _post_mixed_query } = nextRoute(
+const { POST: _post_mixed_query } = createNextRoute(
   procedure
     .forRoute(staticRouteContract)
     .query(postQuerySchema)

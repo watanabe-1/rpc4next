@@ -27,4 +27,4 @@ export const { GET } = appRouteProcedure
       includePosts: query.includePosts === "true",
     },
   }))
-  .nextRoute({ method: "GET" });
+  .get();

@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
 import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 
-import { nextRoute as baseNextRoute } from "./next-route";
+import { createNextRoute as basecreateNextRoute } from "./next-route";
 import { defaultProcedureOnError } from "./on-error";
 import { procedure } from "./procedure";
 import { getProcedureDefinition } from "./procedure-definition";
 import type { ProcedureRouteContract } from "./procedure-types";
 import type { StandardSchemaV1 } from "./standard-schema";
 
-const nextRoute = <
+const createNextRoute = <
   TProcedure,
   TMethod extends HttpMethod = "GET",
   TValidateOutput extends boolean = false,
@@ -27,8 +27,8 @@ const nextRoute = <
       ? { ...options, method }
       : { ...options, method, onError: defaultProcedureOnError };
 
-  const routes = baseNextRoute<
-    TProcedure & Parameters<typeof baseNextRoute>[0],
+  const routes = basecreateNextRoute<
+    TProcedure & Parameters<typeof basecreateNextRoute>[0],
     TMethod,
     TValidateOutput
   >(procedureDefinition as never, resolvedOptions as never);
@@ -36,7 +36,7 @@ const nextRoute = <
   return routes[method];
 };
 
-describe("nextRoute", () => {
+describe("createNextRoute", () => {
   type EmptyParams = Record<never, never>;
 
   const staticRouteContract = {
@@ -106,7 +106,7 @@ describe("nextRoute", () => {
   });
 
   it("returns an object keyed by the configured Next.js HTTP method", async () => {
-    const routes = baseNextRoute(
+    const routes = basecreateNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .handle(async ({ response }) => response.text("object route")),
@@ -128,7 +128,7 @@ describe("nextRoute", () => {
 
   it("does not resolve params when no params contract is declared", async () => {
     const readParams = vi.fn<() => void>();
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .handle(async ({ response }) => response.text("no params")),
@@ -148,7 +148,7 @@ describe("nextRoute", () => {
   });
 
   it("supports injected procedure validators", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .query(pageSchema)
@@ -168,7 +168,7 @@ describe("nextRoute", () => {
   });
 
   it("returns typed procedure errors with the default envelope", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure.forRoute(staticRouteContract).handle(async ({ response }) => {
         return response.error("FORBIDDEN", {
           message: "blocked",
@@ -211,7 +211,7 @@ describe("nextRoute", () => {
         );
       },
     );
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure.forRoute(staticRouteContract).handle(async () => {
         throw new Error("custom onError");
       }),
@@ -236,7 +236,7 @@ describe("nextRoute", () => {
     const onError = vi.fn<(error: unknown) => Response>((error: unknown) =>
       error instanceof Response ? error : new Response("unexpected", { status: 500 }),
     );
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure.forRoute(staticRouteContract).handle(async () => {
         throw new Response("blocked", { status: 418 });
       }),
@@ -255,7 +255,7 @@ describe("nextRoute", () => {
   });
 
   it("can attach an explicit method to the generated route contract", () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure.forRoute(staticRouteContract).handle(async () => ({
         status: 204 as const,
       })),
@@ -266,7 +266,7 @@ describe("nextRoute", () => {
   });
 
   it("serializes malformed JSON bodies as BAD_REQUEST errors", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .json({
@@ -311,7 +311,7 @@ describe("nextRoute", () => {
   });
 
   it("keeps prototype-like formData keys as data properties", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .formData({
@@ -366,7 +366,7 @@ describe("nextRoute", () => {
   });
 
   it("preserves raw Response escape hatches", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure.forRoute(staticRouteContract).handle(async () => {
         return new Response("raw-response", {
           status: 202,
@@ -387,7 +387,7 @@ describe("nextRoute", () => {
 
   it("requires Standard Schema output contracts when runtime validation is enabled", () => {
     expect(() =>
-      nextRoute(
+      createNextRoute(
         procedure
           .forRoute(staticRouteContract)
           .output({
@@ -408,7 +408,7 @@ describe("nextRoute", () => {
   });
 
   it("supports redirects from normalized procedure results", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure.forRoute(staticRouteContract).handle(async () => ({
         redirect: "http://127.0.0.1:3000/feed",
       })),
@@ -429,7 +429,7 @@ describe("nextRoute", () => {
     const handler = vi.fn<() => Promise<{ body: { ok: boolean } }>>(async () => ({
       body: { ok: true },
     }));
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .use(() => ({
@@ -454,7 +454,7 @@ describe("nextRoute", () => {
   });
 
   it("preserves middleware error responses as terminal results", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .use(({ response }) => {
@@ -487,7 +487,7 @@ describe("nextRoute", () => {
   });
 
   it("includes implicit BAD_REQUEST responses for validated procedure routes", () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .query(pageSchema)
@@ -504,7 +504,7 @@ describe("nextRoute", () => {
   });
 
   it("reflects helper-based custom validation json responses in the route type", () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .query(pageSchema, {
@@ -530,7 +530,7 @@ describe("nextRoute", () => {
   });
 
   it("reflects helper-based custom validation text responses in the route type", () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .query(pageSchema, {
@@ -549,7 +549,7 @@ describe("nextRoute", () => {
     expectTypeOf<ActualResponse>().toExtend<Response>();
   });
 
-  it("supports procedure.handle(...).nextRoute(...) as thin sugar", async () => {
+  it("supports procedure.handle(...).get(...) as method terminal sugar", async () => {
     const onError = vi.fn<typeof defaultProcedureOnError>(defaultProcedureOnError);
     const { GET: route } = procedure
       .forRoute(staticRouteContract)
@@ -559,8 +559,7 @@ describe("nextRoute", () => {
           page: query.page,
         },
       }))
-      .nextRoute({
-        method: "GET",
+      .get({
         onError,
       });
 
@@ -575,7 +574,7 @@ describe("nextRoute", () => {
     expect(onError).not.toHaveBeenCalled();
   });
 
-  it("keeps standalone nextRoute(...) available alongside procedure.nextRoute(...)", async () => {
+  it("keeps the internal createNextRoute adapter aligned with procedure method terminals", async () => {
     const standaloneProcedure = procedure
       .forRoute(staticRouteContract)
       .handle(async ({ response }) => response.text("standalone"));
@@ -583,11 +582,10 @@ describe("nextRoute", () => {
       .forRoute(staticRouteContract)
       .handle(async ({ response }) => response.text("sugar"));
 
-    const standaloneRoute = nextRoute(standaloneProcedure, {
+    const standaloneRoute = createNextRoute(standaloneProcedure, {
       method: "GET",
     });
-    const { GET: sugarRoute } = sugarProcedure.nextRoute({
-      method: "GET",
+    const { GET: sugarRoute } = sugarProcedure.get({
       onError: defaultProcedureOnError,
     });
 
@@ -604,7 +602,7 @@ describe("nextRoute", () => {
     ).resolves.toBe("sugar");
   });
 
-  it("applies validateOutput through procedure.nextRoute(...)", async () => {
+  it("applies validateOutput through procedure method terminals", async () => {
     const { GET: route } = procedure
       .forRoute(staticRouteContract)
       .output<typeof outputSchema, unknown>(outputSchema)
@@ -614,8 +612,7 @@ describe("nextRoute", () => {
           slug: "draft",
         },
       }))
-      .nextRoute({
-        method: "GET",
+      .get({
         validateOutput: true,
         onError: defaultProcedureOnError,
       });
@@ -634,7 +631,7 @@ describe("nextRoute", () => {
   });
 
   it("preserves raw validation error responses in runtime and route types", async () => {
-    const rawResponseRoute = nextRoute(
+    const rawResponseRoute = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .query(pageSchema, {
@@ -667,7 +664,7 @@ describe("nextRoute", () => {
     type RawResponseRouteResponse = Awaited<ReturnType<typeof rawResponseRoute>>;
     expectTypeOf<RawResponseRouteResponse>().toExtend<Response>();
 
-    const rawNextResponseRoute = nextRoute(
+    const rawNextResponseRoute = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .query(pageSchema, {
@@ -693,7 +690,7 @@ describe("nextRoute", () => {
   });
 
   it("includes implicit INTERNAL_SERVER_ERROR responses for runtime-enforced output routes", () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .output({

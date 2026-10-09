@@ -6,8 +6,7 @@ export const { GET } = appRouteProcedure
   .handle(async () => {
     throw new Error("expected integration failure");
   })
-  .nextRoute({
-    method: "GET",
+  .get({
     onError: (error) => {
       const message = error instanceof Error ? error.message : "unknown integration error";
 

@@ -6,11 +6,11 @@ import { afterAll, afterEach, beforeAll, describe, expect, expectTypeOf, it } fr
 import {
   type ContentType,
   type HttpStatusCode,
-  nextRoute,
   type ProcedureRouteContract,
   procedure,
   type TypedNextResponse,
 } from "../server";
+import { createNextRoute } from "../server/next-route";
 import { defaultProcedureOnError } from "../server/on-error";
 import type { SuccessfulResponsePayload } from "./response";
 import { createRpcClient } from "./rpc-client";
@@ -21,39 +21,39 @@ const staticRouteContract = {
   params: {} as Record<never, never>,
 } as ProcedureRouteContract<"/api/hoge", Record<never, never>>;
 
-const { POST: _post_0 } = nextRoute(
+const { POST: _post_0 } = createNextRoute(
   procedure.forRoute(staticRouteContract).handle(async ({ response }) => response.text("post")),
   { method: "POST", onError: defaultProcedureOnError },
 );
 
-const { GET: _get_0 } = nextRoute(
+const { GET: _get_0 } = createNextRoute(
   procedure
     .forRoute(staticRouteContract)
     .handle(async ({ response }) => response.json({ method: "get" })),
   { method: "GET", onError: defaultProcedureOnError },
 );
 
-const { DELETE: _delete_0 } = nextRoute(
+const { DELETE: _delete_0 } = createNextRoute(
   procedure.forRoute(staticRouteContract).handle(async ({ response }) => response.text("delete")),
   { method: "DELETE", onError: defaultProcedureOnError },
 );
 
-const { HEAD: _head_0 } = nextRoute(
+const { HEAD: _head_0 } = createNextRoute(
   procedure.forRoute(staticRouteContract).handle(async ({ response }) => response.text("head")),
   { method: "HEAD", onError: defaultProcedureOnError },
 );
 
-const { PATCH: _patch_0 } = nextRoute(
+const { PATCH: _patch_0 } = createNextRoute(
   procedure.forRoute(staticRouteContract).handle(async ({ response }) => response.text("patch")),
   { method: "PATCH", onError: defaultProcedureOnError },
 );
 
-const { PUT: _put_0 } = nextRoute(
+const { PUT: _put_0 } = createNextRoute(
   procedure.forRoute(staticRouteContract).handle(async ({ response }) => response.text("put")),
   { method: "PUT", onError: defaultProcedureOnError },
 );
 
-const { DELETE: _delete_1 } = nextRoute(
+const { DELETE: _delete_1 } = createNextRoute(
   procedure
     .forRoute(staticRouteContract)
     .handle(
@@ -545,14 +545,14 @@ describe("createRpcClient", () => {
     });
   });
 
-  const { POST: _post_1 } = nextRoute(
+  const { POST: _post_1 } = createNextRoute(
     procedure.forRoute(staticRouteContract).handle(async ({ response }) => {
       return Math.random() > 0.5 ? response.json("json") : response.text("text");
     }),
     { method: "POST", onError: defaultProcedureOnError },
   );
 
-  const { GET: _get_1 } = nextRoute(
+  const { GET: _get_1 } = createNextRoute(
     procedure.forRoute(staticRouteContract).handle(
       async ({
         response,
@@ -574,7 +574,7 @@ describe("createRpcClient", () => {
     { method: "GET", onError: defaultProcedureOnError },
   );
 
-  const { GET: _get_3 } = nextRoute(
+  const { GET: _get_3 } = createNextRoute(
     procedure
       .forRoute(staticRouteContract)
       .query(
@@ -627,7 +627,7 @@ describe("createRpcClient", () => {
     { method: "GET", onError: defaultProcedureOnError },
   );
 
-  const { GET: _get_4 } = nextRoute(
+  const { GET: _get_4 } = createNextRoute(
     procedure
       .forRoute(staticRouteContract)
       .output({

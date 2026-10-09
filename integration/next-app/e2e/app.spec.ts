@@ -232,7 +232,7 @@ test.describe("integration next-app e2e", () => {
     await expect(page.getByText("native-query:playwright:2")).toBeVisible();
   });
 
-  test("nextPage can render a client component with server data", async ({ page }) => {
+  test("page terminal can render a client component with server data", async ({ page }) => {
     await page.goto("/patterns/client-page?label=playwright");
 
     await expect(page.getByText("client-page:playwright")).toBeVisible();

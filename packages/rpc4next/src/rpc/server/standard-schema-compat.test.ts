@@ -2,14 +2,14 @@ import { NextRequest } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
 import { describe, expect, expectTypeOf, it } from "vitest";
 
-import { nextRoute as baseNextRoute } from "./next-route";
+import { createNextRoute as basecreateNextRoute } from "./next-route";
 import { defaultProcedureOnError } from "./on-error";
 import { procedure } from "./procedure";
 import type { ProcedureRouteContract } from "./procedure-types";
 import type { StandardSchemaV1 } from "./standard-schema";
 import type { TypedNextResponse } from "./types";
 
-const nextRoute = <
+const createNextRoute = <
   TProcedure,
   TMethod extends HttpMethod = "GET",
   TValidateOutput extends boolean = false,
@@ -27,8 +27,8 @@ const nextRoute = <
       ? { ...options, method }
       : { ...options, method, onError: defaultProcedureOnError };
 
-  const routes = baseNextRoute<
-    TProcedure & Parameters<typeof baseNextRoute>[0],
+  const routes = basecreateNextRoute<
+    TProcedure & Parameters<typeof basecreateNextRoute>[0],
     TMethod,
     TValidateOutput
   >(procedureDefinition as never, resolvedOptions as never);
@@ -213,7 +213,7 @@ describe("Standard Schema compatibility", () => {
   });
 
   it("runs validator-stage customization with Standard Schema issues", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .query(positivePageQuerySchema, {
@@ -250,7 +250,7 @@ describe("Standard Schema compatibility", () => {
   });
 
   it("validates normalized form-data with Standard Schema V1", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .formData(uploadFormDataSchema)
@@ -329,7 +329,7 @@ describe("Standard Schema compatibility", () => {
   });
 
   it("validates runtime output with Standard Schema V1", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .output(procedureOutputSchema)

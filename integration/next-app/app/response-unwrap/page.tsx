@@ -28,7 +28,7 @@ const createServerRpcClient = async () => {
 
 const formatPayload = (payload: unknown) => JSON.stringify(payload, null, 2);
 
-export default appPageProcedure.forRoute(routeContract).nextPage(async () => {
+export default appPageProcedure.forRoute(routeContract).page(async () => {
   const serverRpcClient = await createServerRpcClient();
 
   const manualResponse = await serverRpcClient.api["procedure-contract"]._userId("demo-user").$get({

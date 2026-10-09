@@ -7,15 +7,15 @@
 - Scope: `packages/rpc4next`, `packages/rpc4next-cli`, and `integration/next-app`
 - Current implementation status:
   - Phases 1 through 14 are implemented
-  - `procedure` and `nextRoute` are available publicly
+  - `procedure` and `procedure method terminals` are available publicly
   - procedure input contracts are executed through Standard Schema V1-compatible validators
   - the integration fixture includes a shared `baseProcedure` preset under `integration/next-app/app/api/_shared/base-procedure.ts`
   - shared guarded procedures can declare multiple error variants and opt into runtime output validation
-  - `procedure.formData(...)` is available publicly and validated by `nextRoute()`
+  - `procedure.formData(...)` is available publicly and validated by `procedure method terminals`
   - `procedure.defaults({ onError })` can provide shared project-level route defaults, including `onError`, for procedure routes
   - procedure input contracts accept validator-stage failure branching through `procedure.<target>(schema, { onValidationError(...) { ... } })`
   - narrow `response.*(...)` helpers are available inside `procedure.handle(...)`, `onValidationError(...)`, and `errorFormatter`
-  - README and integration fixture docs now present `procedure` / `nextRoute()` as the typed server authoring path
+  - README and integration fixture docs now present `procedure` / `procedure method terminals` as the typed server authoring path
   - legacy middleware-first exports described in early sections of this draft are historical design context, not the current public API
 
 ## Background
@@ -120,7 +120,7 @@ const getUser = procedure
       },
     };
   })
-  .nextRoute({ method: "GET", onError });
+  .get({ method: "GET", onError });
 ```
 
 This keeps route files and HTTP methods explicit while moving contract assembly into a builder.
@@ -133,7 +133,7 @@ The runtime contract for those schemas should follow Standard Schema V1. In prac
 
 - application code can pass supported validator schemas directly
 - `rpc4next` should read validation input/output types from the schema where possible
-- `nextRoute()` should execute validation through the schema's Standard Schema interface instead of validator-specific duck typing
+- `procedure method terminals` should execute validation through the schema's Standard Schema interface instead of validator-specific duck typing
 
 This keeps the authoring style simple:
 
@@ -219,16 +219,16 @@ Initial target capabilities:
 
 Input contract methods should accept Standard Schema V1-compatible schema values directly.
 
-### `nextRoute(procedure)`
+### `procedure method terminals`
 
 A Next adapter that converts a procedure into a route handler compatible with `export const GET`, `POST`, and other supported HTTP method exports.
 
 Ergonomics note:
 
-- the default route-file shape should be terminal `.handle(...).nextRoute(options)` because it keeps single-route authoring linear and local
-- that sugar should remain a thin delegation to the same adapter internals, equivalent to `nextRoute(procedure, options)`
+- the default route-file shape should be terminal `.handle(...).get(options)` because it keeps single-route authoring linear and local
+- that sugar should remain a thin delegation to the same adapter internals, equivalent to `procedure method terminals(procedure, options)`
 - the implementation goal is API ergonomics, not a collapse of responsibilities; procedure construction and Next route adaptation should still stay separate internally
-- the standalone `nextRoute(procedure, options)` form should remain supported because it keeps shared `baseProcedure` reuse straightforward
+- the standalone `procedure method terminals(procedure, options)` form should remain supported because it keeps shared `baseProcedure` reuse straightforward
 
 ### `defineError`
 
@@ -489,12 +489,12 @@ Why second:
 
 - strengthens the contract model without requiring a new authoring style
 
-## Phase 3: first-class `procedure` and `nextRoute`
+## Phase 3: first-class `procedure` and `procedure method terminals`
 
 Scope:
 
 - introduce public `procedure`
-- introduce `nextRoute(procedure)`
+- introduce `procedure method terminals`
 
 Deliverables:
 
@@ -619,7 +619,7 @@ Scope:
 
 Deliverables:
 
-- optional runtime output validation in `nextRoute()`
+- optional runtime output validation in `procedure method terminals`
 - clear failure behavior for invalid handler output, likely normalized as internal server error or explicit contract error
 - docs that distinguish type-only output contracts from runtime-enforced output contracts
 
@@ -632,7 +632,7 @@ Notes:
 
 - output validation should remain opt-in initially to avoid unexpected runtime cost
 - phase 7 should not block the simpler phase 5 shared preset pattern
-- recommended initial API: `nextRoute(procedure, { method: "GET", validateOutput: true })`
+- recommended initial API: `procedure method terminals(procedure, { method: "GET", validateOutput: true })`
 - when enabled, runtime enforcement should apply to successful `ProcedureResult.body` payloads produced by the procedure pipeline
 - raw `Response` / `NextResponse`, redirects, and empty-body results should remain escape hatches and skip output validation
 - invalid runtime output should normalize through `rpcError("INTERNAL_SERVER_ERROR", ...)` so failure behavior stays explicit and machine-readable
@@ -693,7 +693,7 @@ const getGuardedProcedureUser = guardedBaseProcedure
     };
   });
 
-export const GET = nextRoute(getGuardedProcedureUser, {
+export const GET = procedure method terminals(getGuardedProcedureUser, {
   method: "GET",
   validateOutput: true,
 });
@@ -702,7 +702,7 @@ export const GET = nextRoute(getGuardedProcedureUser, {
 Why eighth:
 
 - route files already know they are extending a shared preset, so the most ergonomic time to attach generated route constraints is before `.params(...)` and `.handle(...)`
-- pushing route binding into `nextRoute()` would surface errors too late in the authoring flow
+- pushing route binding into `procedure method terminals` would surface errors too late in the authoring flow
 - requiring a generated branded value is stronger than requiring a generic type argument because it avoids easy structural re-creation by hand
 - this phase strengthens the "file-route-first" identity by making server procedures consume CLI knowledge derived from the route file system itself
 
@@ -710,7 +710,7 @@ Notes:
 
 - `generated/rpc.ts` should remain client-oriented and should not become the server binding source because route files importing it would create awkward dependency cycles
 - the preferred source of server route contracts is the generated `app/**/route-contract.ts` companion file, extended to include a branded `routeContract` export in addition to the existing `Params` type
-- `forRoute(routeContract)` should produce a route-bound builder; `nextRoute()` may optionally be narrowed later to only accept route-bound procedures
+- `forRoute(routeContract)` should produce a route-bound builder; `procedure method terminals` may optionally be narrowed later to only accept route-bound procedures
 - initial type enforcement should focus on "params schema is required" and "schema output covers generated params"; strict exactness for extra keys can remain a follow-up if validator interoperability makes it worthwhile
 - the same pattern may later be extended to generated query or body contracts, but phase 8 should focus on route params first
 
@@ -720,13 +720,13 @@ Scope:
 
 - add first-class request contract support for `multipart/form-data` and other `FormData`-backed submissions
 - make validated form fields available to `procedure.handle(...)` without requiring manual `request.formData()` parsing in every route
-- preserve the current `procedure` mental model where input contracts are declared before execution and validated by `nextRoute()`
+- preserve the current `procedure` mental model where input contracts are declared before execution and validated by `procedure method terminals`
 
 Deliverables:
 
 - a new `procedure.formData(schema)` input contract method
 - a `formData` property on the procedure handler context alongside `params`, `query`, `json`, `headers`, and `cookies`
-- runtime extraction in `nextRoute()` via `request.formData()`
+- runtime extraction in `procedure method terminals` via `request.formData()`
 - normalization from `FormData` into a validator-friendly plain object shape before Standard Schema validation
 - type and runtime constraints that reject ambiguous body contract combinations such as `.json(...)` together with `.formData(...)`
 - fixture coverage for scalar form fields, repeated keys, and uploaded `File` values
@@ -757,7 +757,7 @@ const uploadAvatar = procedure
     };
   });
 
-export const POST = nextRoute(uploadAvatar, {
+export const POST = procedure method terminals(uploadAvatar, {
   method: "POST",
   validateOutput: true,
 });
@@ -788,7 +788,7 @@ Scope:
 
 Deliverables:
 
-- an overridable error formatting hook for `nextRoute(...)`, such as `errorFormatter`
+- an overridable error formatting hook for `procedure method terminals`, such as `errorFormatter`
 - a project-level preset path, such as `procedure.defaults({ onError })`, that can provide shared error behavior
 - a documented distinction between rpc4next's default error codes and optional project-defined codes or registries
 - fixture coverage showing:
@@ -841,7 +841,7 @@ Why tenth:
 
 - error envelopes are one of the areas most likely to vary across projects, even when route typing and procedure composition stay shared
 - rpc4next should provide a strong standard path without forcing every application into the same operational or product-level error vocabulary
-- allowing formatter and registry customization is a better escape hatch than requiring projects to abandon `procedure` and `nextRoute()` entirely
+- allowing formatter and registry customization is a better escape hatch than requiring projects to abandon `procedure` and `procedure method terminals` entirely
 
 Notes:
 
@@ -966,11 +966,11 @@ Implemented outcome:
 
 - `procedure` is now the documented default for new typed route authoring
 - the legacy middleware-first API is no longer presented as a public default or compatibility surface in the current server exports
-- new-user docs now reduce ambiguity by leading with `procedure` / `nextRoute()`
+- new-user docs now reduce ambiguity by leading with `procedure` / `procedure method terminals`
 
 Completed documentation changes:
 
-- README and integration docs now lead typed examples with `procedure` / `nextRoute()`
+- README and integration docs now lead typed examples with `procedure` / `procedure method terminals`
 - fixture walkthroughs and example pages now present a single procedure-first story instead of a dual-surface migration map
 - stale wording that framed this shift as a future milestone has been removed from the current assessment and recommendation sections
 
@@ -1077,19 +1077,19 @@ These should remain out of scope until the core contract model is stable.
 
 Scope:
 
-- replace formatter-centric error customization with an explicit `onError` contract on `nextRoute(...)`
+- replace formatter-centric error customization with an explicit `onError` contract on `procedure method terminals`
 - make final route error serialization mandatory instead of optional fallback behavior
 - keep reusable procedure defaults as the project-level configuration path
 - remove procedure-level typed error contracts from the core authoring model
 
 Deliverables:
 
-- `nextRoute(...)` requires `onError(error, context)` and always delegates caught errors through it
+- `procedure method terminals` requires `onError(error, context)` and always delegates caught errors through it
 - `procedure.defaults({ onError })` remains the shared configuration path for project-level reuse
 - `procedure.error(...)` and related typed error-contract machinery are removed from the primary procedure surface
 - shared `onError` implementations should preserve their concrete return types so client inference can reflect the final error response shape
 - fixture coverage showing:
-  - direct `nextRoute(..., { onError })` usage
+  - direct `procedure method terminals(..., { onError })` usage
   - shared `procedure.defaults({ onError })` usage for project-wide policy
   - standard `rpcError(...)` handling through a user-supplied `onError`
   - arbitrary thrown errors mapped by the same `onError`
@@ -1097,7 +1097,7 @@ Deliverables:
 Target authoring shape:
 
 ```ts
-export const GET = nextRoute(
+export const GET = procedure method terminals(
   procedure.route(routeContract).handle(async ({ response }) => {
     throw rpcError("FORBIDDEN", { message: "Forbidden" });
   }),
@@ -1159,7 +1159,7 @@ export const GET = appProcedure
   .handle(async () => {
     throw new Error("Unexpected");
   })
-  .nextRoute();
+  .get();
 ```
 
 Typing note:
@@ -1178,10 +1178,10 @@ Why sixteenth:
 
 Notes:
 
-- `onError` should be required for `nextRoute(...)` and should not be allowed to return `undefined`
+- `onError` should be required for `procedure method terminals` and should not be allowed to return `undefined`
 - the primary abstraction should be a reusable procedure preset/default, not a separate kit namespace
 - if projects want shared route behavior such as `onError`, the preferred long-term shape is `procedure`-derived configuration reuse, for example `const appProcedure = procedure.defaults({ onError })`
-- any shared setting applied at the procedure level should flow naturally into terminal `.nextRoute(...)` without requiring a parallel builder surface that must mirror `procedure`
+- any shared setting applied at the procedure level should flow naturally into terminal `.get(...)` without requiring a parallel builder surface that must mirror `procedure`
 - `rpcError(...)` should remain as a standard framework error value, but it should no longer imply a required route-level error contract declaration
 - `Response` / `NextResponse` escape hatches should continue to work by allowing `onError` to return them directly
 - validator-stage customization can continue to use `onValidationError(...)`, but unexpected exceptions from validation should still flow through the required `onError`
@@ -1189,7 +1189,7 @@ Notes:
 Design direction:
 
 - avoid duplicating the procedure builder API just to carry project-level route defaults; that increases long-term maintenance cost and creates an avoidable second surface that must track every builder change
-- prefer one canonical builder contract, with optional internal support for shared defaults/presets that are attached to derived procedures and consumed by `.nextRoute(...)`
+- prefer one canonical builder contract, with optional internal support for shared defaults/presets that are attached to derived procedures and consumed by `.get(...)`
 - avoid reintroducing a parallel project-kit surface over the same underlying procedure-preset mechanism
 
 ## Detailed implementation order for Codex
@@ -1275,7 +1275,7 @@ Validation:
 
 ### Step 6
 
-Introduce `nextRoute(procedure)`.
+Introduce `procedure method terminals`.
 
 Expected work:
 
@@ -1402,12 +1402,12 @@ Mitigation:
 - Should middleware in `procedure.use()` be allowed to widen context immediately, or should phase 1 keep middleware scope narrow?
 - Should plain Next route handlers gain an optional companion export for metadata, or should that remain out of scope?
 - Should `forRoute(routeContract)` become mandatory for every `procedure` route eventually, or only for routes that want generated params enforcement?
-- Should `nextRoute()` eventually reject unbound procedures entirely once the route-bound workflow is stable?
+- Should `procedure method terminals` eventually reject unbound procedures entirely once the route-bound workflow is stable?
 - Should `procedure.formData(...)` validate against a normalized plain object only, or should rpc4next also expose a lower-level way to validate the raw `FormData` object when a schema library can support it?
 
 ## Current assessment after phase 12
 
-With phases 1 through 14 in place, the `procedure` / `nextRoute()` path now covers the typed server authoring scenarios that were previously split across the legacy middleware-first API and the newer procedure path.
+With phases 1 through 14 in place, the `procedure` / `procedure method terminals` path now covers the typed server authoring scenarios that were previously split across the legacy middleware-first API and the newer procedure path.
 
 What is now covered:
 
@@ -1423,9 +1423,9 @@ What is now covered:
 
 Design backlog after phase 14:
 
-- re-center route error handling around required `nextRoute(..., { onError })`
+- re-center route error handling around required `procedure method terminals(..., { onError })`
 - remove `procedure.error(...)` from the core procedure contract if the mandatory `onError` model proves cleaner in practice
-- consider adding `.nextRoute(options)` as optional sugar over `nextRoute(procedure, options)` if the current split keeps feeling heavier than necessary in route files
+- consider adding `.get(options)` as optional sugar over `procedure method terminals(procedure, options)` if the current split keeps feeling heavier than necessary in route files
 
 Remaining notable gap versus the old middleware-first path:
 
@@ -1435,7 +1435,7 @@ The center of gravity for server authoring has therefore moved fully to `procedu
 
 Current documentation stance:
 
-- new typed server examples should lead with `procedure`, generated `route-contract.ts`, and `nextRoute()`
+- new typed server examples should lead with `procedure`, generated `route-contract.ts`, and `procedure method terminals`
 - route-level redirects, formatter hooks, validation branching, and shared presets should all be demonstrated on the same procedure-first surface
 - fixture walkthroughs should show one consistent procedure-first story rather than a dual-API migration map
 - migration guidance should stay short and practical rather than prescriptive

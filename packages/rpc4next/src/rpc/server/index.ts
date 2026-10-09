@@ -21,7 +21,7 @@ export type {
 } from "./error";
 export type { InferRouteMeta, RpcMeta, RpcMetaBase } from "./meta";
 export { getRouteMeta } from "./meta";
-export { defaultProcedurePageOnError, nextPage } from "./next-page";
+export { defaultProcedurePageOnError } from "./next-page";
 export type {
   DefaultProcedurePageOnError,
   NextPageHandler,
@@ -34,7 +34,6 @@ export type {
   ProcedurePageOnValidationError,
   ProcedurePageOnValidationErrorContext,
 } from "./next-page";
-export { nextRoute } from "./next-route";
 export type {
   ProcedureOnError,
   ProcedureOnErrorContext,

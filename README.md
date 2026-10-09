@@ -102,8 +102,8 @@ files.
 ### 2. Define a Route
 
 `rpc4next` can scan plain Next.js App Router handlers as-is, but the recommended
-typed server authoring path is `procedure` with terminal `.nextRoute(...)`
-sugar. This keeps the route file as the source of truth while making input,
+typed server authoring path is `procedure` with method terminal APIs such as
+`.get()` and `.post()`. This keeps the route file as the source of truth while making input,
 output, and reusable builder composition explicit. Optional `meta(...)` values
 remain lightweight descriptive annotations rather than a policy system.
 
@@ -168,17 +168,17 @@ export const { GET } = appRouteProcedure
       includePosts: query.includePosts === "true",
     },
   }))
-  .nextRoute({ method: "GET" });
+  .get();
 ```
 
 Notes:
 
-- `procedure.handle(...).nextRoute(...)` is the default recommendation for new typed routes
-- `.nextRoute({ method })` returns an object keyed by the matching Next.js export name, such as `{ GET }` or `{ POST }`
+- `procedure.handle(...).get()` / `.post()` / `.put()` / `.patch()` / `.delete()` / `.head()` is the default recommendation for new typed routes
+- method terminals return an object keyed by the matching Next.js export name, such as `{ GET }` or `{ POST }`
 - generated sibling `route-contract.ts` files are the recommended params source for procedure routes
 - input contracts consume Standard Schema V1-compatible schemas directly
-- route handlers can receive project-level error handling from a reusable preset such as `procedure.defaults({ route: { onError } })`; bare `procedure` routes still pass `onError` directly to `.nextRoute(...)` / `nextRoute(...)`
-- route-specific presets expose route response helpers and terminal `.nextRoute(...)`; page-specific presets expose page helpers and terminal `.nextPage(...)`
+- route handlers can receive project-level error handling from a reusable preset such as `procedure.defaults({ route: { onError } })`; bare `procedure` routes still pass `onError` directly to method terminals
+- route-specific presets expose route response helpers and method terminals; page-specific presets expose page helpers and terminal `.page(...)`
 - route presets such as `appRouteProcedure`, guarded route presets such as `guardedRouteProcedure`, and validator-stage customization all build on this path
 
 `procedure` input contracts validate request input and return typed `400` JSON
@@ -514,7 +514,7 @@ photoUrl.params;
 
 ## Server Helpers
 
-### `procedure` and `nextRoute`
+### Route Procedures
 
 `procedure` is the recommended typed server authoring API for new routes.
 
@@ -526,8 +526,8 @@ It supports:
 - shared presets via reusable route builders such as `guardedRouteProcedure`
 - middleware through `.use(fn)`
 - validator-stage customization with `onValidationError(...)`
-- adaptation to App Router exports through terminal `export const { GET } = appRouteProcedure.handle(...).nextRoute({ method: "GET" })`
-- standalone `nextRoute(procedure, { method, onError })` for shared route presets or reused procedure values
+- adaptation to App Router exports through terminal `export const { GET } = appRouteProcedure.handle(...).get()`
+- method-specific terminal APIs: `.get(options?)`, `.post(options?)`, `.put(options?)`, `.patch(options?)`, `.delete(options?)`, and `.head(options?)`
 
 Example:
 
@@ -557,7 +557,7 @@ export const { GET } = appRouteProcedure
       includeDrafts: query.includeDrafts === "true",
     },
   }))
-  .nextRoute({ method: "GET" });
+  .get();
 ```
 
 For route procedures, prefer returning the `response` helpers when the exact
@@ -568,12 +568,12 @@ export const { GET } = appRouteProcedure
   .forRoute(routeContract)
   .query(z.object({ name: z.string().min(1) }))
   .handle(({ query, response }) => response.text(`hello:${query.name}`, { status: 202 }))
-  .nextRoute({ method: "GET" });
+  .get();
 
 export const { POST } = appRouteProcedure
   .forRoute(routeContract)
   .handle(({ response }) => response.redirect("/feed", 307))
-  .nextRoute({ method: "POST" });
+  .post();
 ```
 
 `response.json(...)`, `response.text(...)`, `response.body(...)`,
@@ -582,11 +582,11 @@ content-type, and payload information than returning a raw `NextResponse` in
 custom branches. Raw `NextResponse.json(...)` is still allowed, but its status and
 content-type often stay broader in the generated client type.
 
-### `procedure` and `nextPage`
+### Page Procedures
 
-`nextPage` adapts a route-bound procedure to a Next.js App Router `page.tsx`
-default export. It is for validating page props and preparing typed render data,
-not for returning HTTP responses.
+`.page(render, options?)` adapts a route-bound procedure to a Next.js App Router
+`page.tsx` default export. It is for validating page props and preparing typed
+render data, not for returning HTTP responses.
 
 ```tsx
 // app/photo/[id]/page.tsx
@@ -611,7 +611,7 @@ export default procedure
       id: params.id,
     },
   }))
-  .nextPage(({ data }) => <div>photo:{data.id}</div>, {
+  .page(({ data }) => <div>photo:{data.id}</div>, {
     validateOutput: true,
   });
 ```
@@ -620,9 +620,9 @@ For pages:
 
 - supported input contracts are `params`, `query`, `headers`, and `cookies`
 - `json` and `formData` are rejected because pages do not receive request bodies
-- `nextPage` receives validated `params` and `query` directly from the procedure pipeline
+- `.page(...)` receives validated `params` and `query` directly from the procedure pipeline
 - if the page only needs validated URL input, `.handle()` is optional
-- handlers are still useful for DB reads or render-time data preparation; their `ProcedureResult` body is passed to `nextPage` as `data`
+- handlers are still useful for DB reads or render-time data preparation; their `ProcedureResult` body is passed to `.page(...)` as `data`
 - `validateOutput: true` parses the body with `.output(schema)` before render
 - raw `Response`, `response.error(...)`, and `{ redirect: ... }` results are rejected for page procedures; use Next.js `redirect()` / `notFound()` by throwing them from page code instead
 - `page.redirect(...)` and `page.notFound()` do not return at runtime, but prefer `return page.redirect(...)` / `return page.notFound()` so the terminal branch is clear to TypeScript and readers
@@ -634,7 +634,7 @@ params directly:
 export default procedure
   .forRoute(routeContract)
   .query(querySchema)
-  .nextPage(({ query }) => <Page initialMonth={query.month} />);
+  .page(({ query }) => <Page initialMonth={query.month} />);
 ```
 
 When the page needs work before render, return that data from `.handle()`:
@@ -649,7 +649,7 @@ export default procedure
       user: await getUser(params.id),
     },
   }))
-  .nextPage(({ data, params, query }) => <Page user={data.user} id={params.id} tab={query.tab} />);
+  .page(({ data, params, query }) => <Page user={data.user} id={params.id} tab={query.tab} />);
 ```
 
 If a page should have project-level error handling or shared page middleware,
@@ -682,15 +682,15 @@ export default pageProcedure
       },
     };
   })
-  .nextPage(({ data }) => <div>{data.mode}</div>);
+  .page(({ data }) => <div>{data.mode}</div>);
 ```
 
-`nextRoute` remains the HTTP adapter. `nextPage` is the page-render adapter.
+Method terminals are the HTTP adapter. `.page(...)` is the page-render adapter.
 When `procedure.defaults({ route: { onError } })` is used, later middleware and
-handlers receive `response` helpers and the handled procedure exposes
-`.nextRoute(...)`. When `procedure.defaults({ page: { onError } })` is used,
+handlers receive `response` helpers and the handled procedure exposes method
+terminals. When `procedure.defaults({ page: { onError } })` is used,
 later middleware and handlers receive `page.redirect(...)` and
-`page.notFound()`, and the handled procedure exposes `.nextPage(...)`.
+`page.notFound()`, and the handled procedure exposes `.page(...)`.
 The un-defaulted `procedure` builder can still feed either adapter, but the
 terminal adapter decides which inputs and return values are valid.
 
@@ -756,7 +756,7 @@ export const { GET } = guardedRouteProcedure
       viewerId: ctx.viewer.id,
     },
   }))
-  .nextRoute({ method: "GET" });
+  .get();
 ```
 
 Returning `{ ctx: ... }` from middleware adds that shape to later middleware and
@@ -779,8 +779,8 @@ that error. Because this is a normal return value, rpc4next can preserve the
 exact `code`, HTTP status, and `details` shape in the generated client response
 type.
 
-Unexpected failures should still be thrown as normal exceptions. `nextRoute()`
-requires `onError(error, context)` for that fallback path. For project-level
+Unexpected failures should still be thrown as normal exceptions. Route method
+terminals require `onError(error, context)` for that fallback path. For project-level
 reuse, prefer `procedure.defaults({ route: { onError } })` and export a shared
 `appRouteProcedure` preset from `app/_rpc/route-procedure`.
 
@@ -790,7 +790,7 @@ response. Other known error codes are only inferred when your handler or
 middleware returns them.
 
 ```ts
-import { nextRoute, procedure, type ProcedureOnError } from "rpc4next/server";
+import { procedure, type ProcedureOnError } from "rpc4next/server";
 import { routeContract } from "./route-contract";
 
 const getErrorMessage = (error: unknown) =>
@@ -830,19 +830,14 @@ const guardedProcedure = procedure.forRoute(routeContract).handle(async ({ respo
   return response.json({ ok: true as const });
 });
 
-export const { GET } = nextRoute(guardedProcedure, {
-  method: "GET",
-  onError,
-});
+export const { GET } = guardedProcedure.get({ onError });
 
 export const { POST } = appRouteProcedure
   .forRoute(routeContract)
   .handle(async () => {
     throw new Error("expected failure");
   })
-  .nextRoute({
-    method: "POST",
-  });
+  .post();
 ```
 
 ## Plain Next.js Route Handlers Also Work
@@ -932,7 +927,7 @@ Your generated `src/generated/rpc.ts` exports a `PathStructure` type that includ
 2. Run `rpc4next` to regenerate `PathStructure`
 3. Import `PathStructure` into your client
 4. Call routes with `createRpcClient<PathStructure>(...)`
-5. Prefer `procedure` with `nextRoute()` for typed routes and `nextPage()` for typed page render data; keep plain Next.js handlers when you intentionally want broader response typing
+5. Prefer `procedure` with method terminals for typed routes and `.page()` for typed page render data; keep plain Next.js handlers when you intentionally want broader response typing
 
 ## Repository Layout
 

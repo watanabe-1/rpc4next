@@ -37,4 +37,4 @@ export const { POST } = appRouteProcedure
       source: "procedure-submit",
     },
   }))
-  .nextRoute({ method: "POST" });
+  .post();

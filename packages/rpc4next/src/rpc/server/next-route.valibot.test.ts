@@ -3,12 +3,12 @@ import type { HttpMethod } from "rpc4next-shared";
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
 
-import { nextRoute as baseNextRoute } from "./next-route";
+import { createNextRoute as basecreateNextRoute } from "./next-route";
 import { defaultProcedureOnError } from "./on-error";
 import { procedure } from "./procedure";
 import type { ProcedureRouteContract } from "./procedure-types";
 
-const nextRoute = <
+const createNextRoute = <
   TProcedure,
   TMethod extends HttpMethod = "GET",
   TValidateOutput extends boolean = false,
@@ -26,8 +26,8 @@ const nextRoute = <
       ? { ...options, method }
       : { ...options, method, onError: defaultProcedureOnError };
 
-  const routes = baseNextRoute<
-    TProcedure & Parameters<typeof baseNextRoute>[0],
+  const routes = basecreateNextRoute<
+    TProcedure & Parameters<typeof basecreateNextRoute>[0],
     TMethod,
     TValidateOutput
   >(procedureDefinition as never, resolvedOptions as never);
@@ -35,7 +35,7 @@ const nextRoute = <
   return routes[method];
 };
 
-describe("nextRoute valibot integration", () => {
+describe("createNextRoute valibot integration", () => {
   type EmptyParams = Record<never, never>;
 
   const staticRouteContract = {
@@ -44,7 +44,7 @@ describe("nextRoute valibot integration", () => {
   } as ProcedureRouteContract<"/api/test", EmptyParams>;
 
   it("normalizes json, headers, and cookies for valibot contracts", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .json(
@@ -96,7 +96,7 @@ describe("nextRoute valibot integration", () => {
   });
 
   it("normalizes multipart form-data for valibot contracts", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .formData(
@@ -141,7 +141,7 @@ describe("nextRoute valibot integration", () => {
   });
 
   it("normalizes invalid valibot runtime output as INTERNAL_SERVER_ERROR", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .output(
@@ -189,7 +189,7 @@ describe("nextRoute valibot integration", () => {
       },
     );
 
-    const route = nextRoute(
+    const route = createNextRoute(
       baseProcedure.handle(async ({ query }) => ({
         body: {
           page: query.page,

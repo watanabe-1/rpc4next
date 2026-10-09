@@ -14,4 +14,4 @@ const searchQuerySchema = z
 export default appPageProcedure
   .forRoute(routeContract)
   .query(searchQuerySchema)
-  .nextPage(({ query }) => <div>search:{query.q ?? "none"}</div>);
+  .page(({ query }) => <div>search:{query.q ?? "none"}</div>);

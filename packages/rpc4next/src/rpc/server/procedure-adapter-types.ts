@@ -170,6 +170,46 @@ export type ProcedureNextRouteOptions<
         )
     : NextRouteProcedureOptions<TProcedure, TMethod, TValidateOutput, TOnError, TOnValidationError>;
 
+export type ProcedureNextRouteTerminalOptions<
+  TProcedure extends ProcedureRouteAdapterCarrier,
+  TMethod extends HttpMethod,
+  TValidateOutput extends boolean,
+  TDefaults,
+  TOnError extends ProcedureOnError<any, any>,
+  TOnValidationError extends ProcedureValidationErrorHandler<any, any, any, any> | undefined,
+> = Omit<
+  ProcedureNextRouteOptions<
+    TProcedure,
+    TMethod,
+    TValidateOutput,
+    TDefaults,
+    TOnError,
+    TOnValidationError
+  >,
+  "method"
+>;
+
+export type ProcedureNextRouteTerminalArgs<
+  TProcedure extends ProcedureRouteAdapterCarrier,
+  TMethod extends HttpMethod,
+  TValidateOutput extends boolean,
+  TDefaults,
+  TOnError extends ProcedureOnError<any, any>,
+  TOnValidationError extends ProcedureValidationErrorHandler<any, any, any, any> | undefined,
+> =
+  ProcedureNextRouteTerminalOptions<
+    TProcedure,
+    TMethod,
+    TValidateOutput,
+    TDefaults,
+    TOnError,
+    TOnValidationError
+  > extends infer TOptions
+    ? {} extends TOptions
+      ? [options?: TOptions]
+      : [options: TOptions]
+    : never;
+
 export type ProcedureNextPageOptions<
   TProcedure extends NextPageProcedureCarrier,
   TDefaults,

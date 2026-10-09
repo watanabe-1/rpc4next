@@ -34,4 +34,4 @@ export default appPageProcedure
       },
     };
   })
-  .nextPage(({ data }) => <div>page-helper:{data.mode}</div>);
+  .page(({ data }) => <div>page-helper:{data.mode}</div>);

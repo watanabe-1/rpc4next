@@ -31,4 +31,4 @@ export const { GET } = appRouteProcedure
         source: "contract-route",
       }),
   )
-  .nextRoute({ method: "GET" });
+  .get();

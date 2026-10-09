@@ -6,12 +6,12 @@ import { defaultRpcErrorCatalog, defineRpcErrors } from "./error";
 import type { DefaultRpcErrorCatalog, DefineRpcErrors, RpcErrorCatalog } from "./error";
 import type { RpcMeta } from "./meta";
 import {
-  nextPage as adaptProcedureToNextPage,
+  createNextPage as adaptProcedureToNextPage,
   type NextPageHandler,
   type ProcedurePageOnError,
   type ProcedurePageOnValidationError,
 } from "./next-page";
-import { nextRoute as adaptProcedureToNextRoute, type NextRouteExports } from "./next-route";
+import { createNextRoute as adaptProcedureToNextRoute, type NextRouteExports } from "./next-route";
 import type { ProcedureOnError } from "./on-error";
 import type {
   ExtractProcedureSharedPageOnError,
@@ -20,7 +20,7 @@ import type {
   ExtractProcedureSharedRouteOnValidationError,
   ProcedureDefaults,
   ProcedureNextPageArgs,
-  ProcedureNextRouteOptions,
+  ProcedureNextRouteTerminalArgs,
   ProcedureSharedDefaults,
 } from "./procedure-adapter-types";
 import {
@@ -441,15 +441,15 @@ type ProcedureNextRouteMethod<
   TDefaults,
   TErrorCatalog extends RpcErrorCatalog,
   TMiddlewareTerminalResult,
+  TMethod extends HttpMethod,
 > = <
-  TMethod extends HttpMethod = HttpMethod,
   TValidateOutput extends boolean = false,
   TOnError extends ProcedureOnError<any, any> = ExtractProcedureSharedRouteOnError<TDefaults>,
   TOnValidationError extends
     | ProcedureValidationErrorHandler<any, any, any, TErrorCatalog>
     | undefined = ExtractProcedureSharedRouteOnValidationError<TDefaults>,
 >(
-  options: ProcedureNextRouteOptions<
+  ...args: ProcedureNextRouteTerminalArgs<
     Procedure<
       TDefinition,
       TContext,
@@ -464,7 +464,7 @@ type ProcedureNextRouteMethod<
     TDefaults,
     TOnError,
     TOnValidationError
-  >,
+  >
 ) => NextRouteExports<
   Procedure<
     TDefinition,
@@ -480,6 +480,77 @@ type ProcedureNextRouteMethod<
   TOnError,
   TOnValidationError
 >;
+
+type ProcedureRouteTerminalMethods<
+  TDefinition extends ProcedureDefinition,
+  TContext extends object,
+  TOutput,
+  THandler extends (...args: never[]) => ProcedureAnyHandlerResult<TOutput>,
+  TDefaults,
+  TErrorCatalog extends RpcErrorCatalog,
+  TMiddlewareTerminalResult,
+> = {
+  get: ProcedureNextRouteMethod<
+    TDefinition,
+    TContext,
+    TOutput,
+    THandler,
+    TDefaults,
+    TErrorCatalog,
+    TMiddlewareTerminalResult,
+    "GET"
+  >;
+  post: ProcedureNextRouteMethod<
+    TDefinition,
+    TContext,
+    TOutput,
+    THandler,
+    TDefaults,
+    TErrorCatalog,
+    TMiddlewareTerminalResult,
+    "POST"
+  >;
+  put: ProcedureNextRouteMethod<
+    TDefinition,
+    TContext,
+    TOutput,
+    THandler,
+    TDefaults,
+    TErrorCatalog,
+    TMiddlewareTerminalResult,
+    "PUT"
+  >;
+  patch: ProcedureNextRouteMethod<
+    TDefinition,
+    TContext,
+    TOutput,
+    THandler,
+    TDefaults,
+    TErrorCatalog,
+    TMiddlewareTerminalResult,
+    "PATCH"
+  >;
+  delete: ProcedureNextRouteMethod<
+    TDefinition,
+    TContext,
+    TOutput,
+    THandler,
+    TDefaults,
+    TErrorCatalog,
+    TMiddlewareTerminalResult,
+    "DELETE"
+  >;
+  head: ProcedureNextRouteMethod<
+    TDefinition,
+    TContext,
+    TOutput,
+    THandler,
+    TDefaults,
+    TErrorCatalog,
+    TMiddlewareTerminalResult,
+    "HEAD"
+  >;
+};
 
 type ExtractProcedureHandlerData<THandler, TFallback> = THandler extends (
   ...args: never[]
@@ -603,7 +674,7 @@ export type Procedure<
 > &
   (ExtractProcedureAdapterMode<TDefaults> extends "page"
     ? {
-        nextPage: ProcedureNextPageMethod<
+        page: ProcedureNextPageMethod<
           TDefinition,
           TContext,
           TOutput,
@@ -614,28 +685,25 @@ export type Procedure<
         >;
       }
     : ExtractProcedureAdapterMode<TDefaults> extends "route"
-      ? {
-          nextRoute: ProcedureNextRouteMethod<
-            TDefinition,
-            TContext,
-            TOutput,
-            THandler,
-            TDefaults,
-            TErrorCatalog,
-            TMiddlewareTerminalResult
-          >;
-        }
-      : {
-          nextRoute: ProcedureNextRouteMethod<
-            TDefinition,
-            TContext,
-            TOutput,
-            THandler,
-            TDefaults,
-            TErrorCatalog,
-            TMiddlewareTerminalResult
-          >;
-          nextPage: ProcedureNextPageMethod<
+      ? ProcedureRouteTerminalMethods<
+          TDefinition,
+          TContext,
+          TOutput,
+          THandler,
+          TDefaults,
+          TErrorCatalog,
+          TMiddlewareTerminalResult
+        >
+      : ProcedureRouteTerminalMethods<
+          TDefinition,
+          TContext,
+          TOutput,
+          THandler,
+          TDefaults,
+          TErrorCatalog,
+          TMiddlewareTerminalResult
+        > & {
+          page: ProcedureNextPageMethod<
             TDefinition,
             TContext,
             TOutput,
@@ -709,7 +777,7 @@ type UsedProcedureBuilderMethodKeys<
   | (true extends HasProcedureConfiguration<TDefinition, TDefaults, THasMiddleware>
       ? "errors"
       : never)
-  | (ExtractProcedureAdapterMode<TDefaults> extends "route" ? "nextPage" : never)
+  | (ExtractProcedureAdapterMode<TDefaults> extends "route" ? "page" : never)
   | (HasProcedureRoute<TDefinition> extends true ? "forRoute" : never)
   | (HasProcedureOutput<TDefinition> extends true ? "output" : never)
   | (HasProcedureInputContractTarget<TDefinition, "params"> extends true ? "params" : never)
@@ -996,7 +1064,7 @@ interface ProcedureBuilderMethods<
     TMiddlewareTerminalResult
   >;
 
-  nextPage: ProcedureBuilderNextPageMethod<
+  page: ProcedureBuilderNextPageMethod<
     TDefinition,
     TContext,
     TDefaults,
@@ -1417,7 +1485,7 @@ const createProcedureBuilder = <
     cookies: withCookies,
     output: withOutput,
     use: withMiddleware,
-    nextPage: ((render: unknown, options: unknown) => {
+    page: ((render: unknown, options: unknown) => {
       const pageProcedure = {
         definition,
         errorCatalog: resolvedErrorCatalog,
@@ -1444,20 +1512,91 @@ const createProcedureBuilder = <
         middlewares,
         handler: args[0],
         middlewareTerminalResult: undefined as TMiddlewareTerminalResult,
-        nextRoute: ((options: unknown) =>
+        get: ((options: unknown) =>
           adaptProcedureToNextRoute(
             handledProcedure as never,
-            resolveRouteDefaults(options) as never,
-          )) as ProcedureNextRouteMethod<
+            resolveRouteDefaults({ ...(options as object), method: "GET" }) as never,
+          )) as unknown as ProcedureNextRouteMethod<
           TDefinition,
           TContext,
           ExtractProcedureOutput<TDefinition>,
           (typeof args)[0],
           TDefaults,
           TErrorCatalog,
-          TMiddlewareTerminalResult
+          TMiddlewareTerminalResult,
+          "GET"
         >,
-        nextPage: ((render: unknown, options: unknown) =>
+        post: ((options: unknown) =>
+          adaptProcedureToNextRoute(
+            handledProcedure as never,
+            resolveRouteDefaults({ ...(options as object), method: "POST" }) as never,
+          )) as unknown as ProcedureNextRouteMethod<
+          TDefinition,
+          TContext,
+          ExtractProcedureOutput<TDefinition>,
+          (typeof args)[0],
+          TDefaults,
+          TErrorCatalog,
+          TMiddlewareTerminalResult,
+          "POST"
+        >,
+        put: ((options: unknown) =>
+          adaptProcedureToNextRoute(
+            handledProcedure as never,
+            resolveRouteDefaults({ ...(options as object), method: "PUT" }) as never,
+          )) as unknown as ProcedureNextRouteMethod<
+          TDefinition,
+          TContext,
+          ExtractProcedureOutput<TDefinition>,
+          (typeof args)[0],
+          TDefaults,
+          TErrorCatalog,
+          TMiddlewareTerminalResult,
+          "PUT"
+        >,
+        patch: ((options: unknown) =>
+          adaptProcedureToNextRoute(
+            handledProcedure as never,
+            resolveRouteDefaults({ ...(options as object), method: "PATCH" }) as never,
+          )) as unknown as ProcedureNextRouteMethod<
+          TDefinition,
+          TContext,
+          ExtractProcedureOutput<TDefinition>,
+          (typeof args)[0],
+          TDefaults,
+          TErrorCatalog,
+          TMiddlewareTerminalResult,
+          "PATCH"
+        >,
+        delete: ((options: unknown) =>
+          adaptProcedureToNextRoute(
+            handledProcedure as never,
+            resolveRouteDefaults({ ...(options as object), method: "DELETE" }) as never,
+          )) as unknown as ProcedureNextRouteMethod<
+          TDefinition,
+          TContext,
+          ExtractProcedureOutput<TDefinition>,
+          (typeof args)[0],
+          TDefaults,
+          TErrorCatalog,
+          TMiddlewareTerminalResult,
+          "DELETE"
+        >,
+        head: ((options: unknown) =>
+          adaptProcedureToNextRoute(
+            handledProcedure as never,
+            resolveRouteDefaults({ ...(options as object), method: "HEAD" }) as never,
+          )) as unknown as ProcedureNextRouteMethod<
+          TDefinition,
+          TContext,
+          ExtractProcedureOutput<TDefinition>,
+          (typeof args)[0],
+          TDefaults,
+          TErrorCatalog,
+          TMiddlewareTerminalResult,
+          "HEAD"
+        >,
+        page: ((render: unknown, options: unknown) =>
           adaptProcedureToNextPage(
             handledProcedure as never,
             render as never,

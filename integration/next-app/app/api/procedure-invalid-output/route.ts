@@ -24,7 +24,6 @@ export const { GET } = appRouteProcedure
       result: 123,
     } as unknown as z.output<typeof outputSchema>,
   }))
-  .nextRoute({
-    method: "GET",
+  .get({
     validateOutput: true,
   });

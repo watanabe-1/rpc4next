@@ -31,12 +31,12 @@ If you want to verify the built package entrypoint instead, use the `:dist` vari
 
 Use these files as entry points, depending on what you want to understand:
 
-- Recommended typed procedure route via `.handle(...).nextRoute(...)`: `app/api/procedure-contract/[userId]/route.ts`
+- Recommended typed procedure route via `.handle(...).get()`: `app/api/procedure-contract/[userId]/route.ts`
 - Shared guarded procedure preset: `app/api/procedure-guarded/[userId]/route.ts`
 - Shared procedure foundations: `app/_rpc/route-procedure.ts`, `app/_rpc/page-procedure.ts`, and `app/_rpc/errors.ts`
 - Guarded route procedure preset: `app/_rpc/guarded-route-procedure.ts`
 - Procedure json/header/cookie input: `app/api/procedure-submit/route.ts`
-- Procedure form-data input via `.handle(...).nextRoute(...)` sugar: `app/api/procedure-form-data/route.ts`
+- Procedure form-data input via `.handle(...).post()` terminal: `app/api/procedure-form-data/route.ts`
 - Procedure runtime output validation: `app/api/procedure-invalid-output/route.ts`
 - Procedure validator-stage customization: `app/api/procedure-validation-branch/route.ts`
 - Project-level route procedure defaults via `appRouteProcedure`: `app/api/procedure-defaults-error/route.ts`
@@ -129,7 +129,7 @@ authorization or authentication preset for route handlers. `app/_rpc` is a
 private App Router folder, so it is available to both route and page files
 without becoming a public URL segment.
 
-The main walkthrough in this fixture is now procedure-first. `app/api/procedure-contract/[userId]/route.ts` is the baseline typed route: it binds the generated `routeContract`, declares params/query/output in one builder, and exports `GET` through terminal `export const { GET } = appRouteProcedure.handle(...).nextRoute({ method: "GET" })` sugar. `app/api/procedure-submit/route.ts` extends that path to json/header/cookie input, `app/api/procedure-form-data/route.ts` covers multipart-style input with the same terminal shape, and `app/api/procedure-guarded/[userId]/route.ts` shows the shared-preset case where continuing the builder chain with `.nextRoute(...)` remains natural because the procedure value comes from `app/_rpc/guarded-route-procedure.ts`.
+The main walkthrough in this fixture is now procedure-first. `app/api/procedure-contract/[userId]/route.ts` is the baseline typed route: it binds the generated `routeContract`, declares params/query/output in one builder, and exports `GET` through terminal `export const { GET } = appRouteProcedure.handle(...).get()`. `app/api/procedure-submit/route.ts` extends that path to json/header/cookie input, `app/api/procedure-form-data/route.ts` covers multipart-style input with the same terminal shape, and `app/api/procedure-guarded/[userId]/route.ts` shows the shared-preset case where continuing the builder chain with `.get(...)` remains natural because the procedure value comes from `app/_rpc/guarded-route-procedure.ts`.
 
 The form-data fixture intentionally validates user-controlled upload fields in
 the schema, including display-name length, file size, file type, tag length, and
@@ -162,15 +162,15 @@ gets the same trace logging, validated auth headers, typed
 
 The procedure fixtures also cover the later design phases that made the procedure path complete enough to recommend by default. `app/api/procedure-invalid-output/route.ts` demonstrates opt-in runtime output enforcement with a Standard Schema output contract. `app/api/procedure-defaults-error/route.ts` shows project-level `procedure.defaults({ route: { onError } })` usage through `appRouteProcedure`, while `app/_rpc/route-procedure.ts` and `app/_rpc/page-procedure.ts` keep route and page presets separate. `app/api/procedure-validation-branch/route.ts` shows validator-stage customization through `procedure.query(schema, { onValidationError(...) { ... } })`. `app/api/error-demo/route.ts` shows a route-local `onError` override on top of the shared route preset, and `app/_rpc/errors.ts` shows generic `Error` mapping in a shared route `onError` implementation.
 
-Procedure-backed pages use `appPageProcedure` and terminate with `.nextPage(...)`
-instead of `.nextRoute(...)`. `app/photo/[id]/page.tsx` demonstrates validated
+Procedure-backed pages use `appPageProcedure` and terminate with `.page(...)`
+instead of a route method terminal. `app/photo/[id]/page.tsx` demonstrates validated
 `params` and opt-in runtime output validation before render.
 `app/patterns/search/page.tsx` demonstrates page query input inference flowing
 into generated `$url({ query })` types while the page itself validates
 `searchParams` through `procedure.query(schema)` and renders from the validated
 `query` without a `.handle()` step. Use `.handle()` when a page needs server-side
 data fetching or preparation before render; that returned `body` becomes
-`data` in `.nextPage(...)`. HTTP response helpers and raw `Response` values are
+`data` in `.page(...)`. HTTP response helpers and raw `Response` values are
 reserved for route procedures. When a shared preset is page-specific, prefer
 `procedure.defaults({ page: { onError } })` so later middleware and handlers
 receive page helpers such as `page.redirect(...)` and `page.notFound()` instead
@@ -178,7 +178,7 @@ of route response helpers. Those page helpers throw Next.js navigation
 interrupts and do not return at runtime, but examples still use
 `return page.redirect(...)` and `return page.notFound()` to make terminal
 branches explicit for TypeScript and readers.
-`app/patterns/client-page/page.tsx` keeps `.nextPage(...)` on the server-side
+`app/patterns/client-page/page.tsx` keeps `.page(...)` on the server-side
 page entry while rendering a `"use client"` component with serializable `data`
 props for browser interactivity.
 

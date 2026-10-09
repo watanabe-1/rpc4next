@@ -734,8 +734,7 @@ describe("procedure builder type definitions", () => {
           ok: true as const,
         },
       }))
-      .nextRoute({
-        method: "GET",
+      .get({
         validateOutput: true,
         onError,
       });
@@ -989,7 +988,7 @@ describe("procedure builder type definitions", () => {
     expectTypeOf(editorProcedure.definition).toExtend<object>();
   });
 
-  it("adds nextRoute sugar without changing validated input and output inference", () => {
+  it("adds method terminal sugar without changing validated input and output inference", () => {
     const { GET: queryRoute } = procedure
       .forRoute(guardedUserRouteContract)
       .params(userIdSchema)
@@ -1008,8 +1007,7 @@ describe("procedure builder type definitions", () => {
           includeDrafts: query.includeDrafts === "true",
         }),
       )
-      .nextRoute({
-        method: "GET",
+      .get({
         onError: defaultProcedureOnError,
       });
 
@@ -1025,8 +1023,7 @@ describe("procedure builder type definitions", () => {
           avatar: formData.avatar,
         },
       }))
-      .nextRoute({
-        method: "POST",
+      .post({
         onError: defaultProcedureOnError,
       });
 
@@ -1034,12 +1031,12 @@ describe("procedure builder type definitions", () => {
     expectTypeOf<FormDataRouteResponse>().toExtend<Response>();
   });
 
-  it("exposes validated params and query directly to nextPage renders", () => {
+  it("exposes validated params and query directly to page renders", () => {
     procedure
       .forRoute(guardedUserRouteContract)
       .params(userIdSchema)
       .query(parsePage)
-      .nextPage((context) => {
+      .page((context) => {
         const _params: { userId: string } = context.params;
         const _query: { page: number } = context.query;
         const _ctx: Record<never, never> = context.ctx;
@@ -1059,7 +1056,7 @@ describe("procedure builder type definitions", () => {
     procedure
       .forRoute(staticPageRouteContract)
       .query(parsePage)
-      .nextPage(({ query }) => {
+      .page(({ query }) => {
         const _query: { page: number } = query;
 
         void _query;
@@ -1077,7 +1074,7 @@ describe("procedure builder type definitions", () => {
           page: query.page,
         },
       }))
-      .nextPage(({ data, params, query }) => {
+      .page(({ data, params, query }) => {
         const _data: { userId: string; page: number } = data;
         const _params: { userId: string } = params;
         const _query: { page: number } = query;
@@ -1092,16 +1089,16 @@ describe("procedure builder type definitions", () => {
     expect(true).toBe(true);
   });
 
-  it("requires params before nextPage on bound routes with generated params", () => {
+  it("requires params before page on bound routes with generated params", () => {
     procedure
       .forRoute(guardedUserRouteContract)
-      // @ts-expect-error bound page routes with params must declare params(schema) before nextPage()
-      .nextPage(() => null);
+      // @ts-expect-error bound page routes with params must declare params(schema) before page()
+      .page(() => null);
 
     expect(true).toBe(true);
   });
 
-  it("lets procedure.defaults({ route: { onError } }) make terminal nextRoute onError optional", () => {
+  it("lets procedure.defaults({ route: { onError } }) make method terminal onError optional", () => {
     const sharedOnError = ((error, { response }) => {
       if (error instanceof Response) {
         return error;
@@ -1140,9 +1137,7 @@ describe("procedure builder type definitions", () => {
           includeDrafts: query.includeDrafts === "true",
         }),
       )
-      .nextRoute({
-        method: "GET",
-      });
+      .get();
 
     type RouteResponse = Awaited<ReturnType<typeof route>>;
     type _defaultOnErrorResponseIncluded = ExpectTrue<
@@ -1188,8 +1183,7 @@ describe("procedure builder type definitions", () => {
           ok: true as const,
         },
       }))
-      .nextRoute({
-        method: "GET",
+      .get({
         onError: localOnError,
       });
 
@@ -1215,7 +1209,7 @@ describe("procedure builder type definitions", () => {
     expectTypeOf<RouteResponse>().toExtend<Response>();
   });
 
-  it("infers procedure default validation error responses for nextRoute", () => {
+  it("infers procedure default validation error responses for method terminals", () => {
     const appProcedure = procedure.defaults({
       route: {
         onError: defaultProcedureOnError,
@@ -1237,9 +1231,7 @@ describe("procedure builder type definitions", () => {
       .handle(async ({ query }) => ({
         body: query,
       }))
-      .nextRoute({
-        method: "GET",
-      });
+      .get();
 
     type RouteResponse = Awaited<ReturnType<typeof route>>;
     type SharedValidationResponse = TypedNextResponse<
@@ -1261,7 +1253,7 @@ describe("procedure builder type definitions", () => {
     expectTypeOf<RouteResponse>().toExtend<Response | SharedValidationResponse>();
   });
 
-  it("infers procedure default page validation error results for nextPage", () => {
+  it("infers procedure default page validation error results for page", () => {
     const appProcedure = procedure.defaults({
       page: {
         onError: () => "page-error" as const,
@@ -1274,7 +1266,7 @@ describe("procedure builder type definitions", () => {
     const page = appProcedure
       .forRoute(staticPageRouteContract)
       .query(parsePage)
-      .nextPage(() => "rendered" as const);
+      .page(() => "rendered" as const);
 
     type PageResult = Awaited<ReturnType<typeof page>>;
     type _renderResultIncluded = ExpectTrue<HasVariant<PageResult, "rendered">>;
@@ -1309,8 +1301,8 @@ describe("procedure builder type definitions", () => {
       .handle(() => ({
         status: 204 as const,
       }))
-      // @ts-expect-error route defaults should expose nextRoute only
-      .nextPage(() => null);
+      // @ts-expect-error route defaults should expose method terminals only
+      .page(() => null);
 
     const pageProcedure = procedure.defaults({
       page: {
@@ -1370,22 +1362,19 @@ describe("procedure builder type definitions", () => {
           ok: true as const,
         },
       }))
-      // @ts-expect-error page defaults should expose nextPage only
-      .nextRoute({
-        method: "GET",
-      });
+      // @ts-expect-error page defaults should expose page only
+      .get();
 
     expect(true).toBe(true);
   });
 
-  it("keeps route binding and GET body constraints on procedure.nextRoute", () => {
+  it("keeps route binding and GET body constraints on method terminals", () => {
     const unboundProcedure = procedure.handle(() => ({
       status: 204 as const,
     }));
 
-    // @ts-expect-error nextRoute() only accepts route-bound procedures
-    unboundProcedure.nextRoute({
-      method: "GET",
+    // @ts-expect-error get() only accepts route-bound procedures
+    unboundProcedure.get({
       onError: defaultProcedureOnError,
     });
 
@@ -1398,10 +1387,8 @@ describe("procedure builder type definitions", () => {
         },
       }));
 
-    // @ts-expect-error bare procedure.nextRoute still requires onError
-    bareBoundProcedure.nextRoute({
-      method: "GET",
-    });
+    // @ts-expect-error bare procedure get still requires onError
+    bareBoundProcedure.get();
 
     const jsonProcedure = procedure
       .forRoute(guardedUserRouteContract)
@@ -1411,9 +1398,8 @@ describe("procedure builder type definitions", () => {
         body: json,
       }));
 
-    // @ts-expect-error GET nextRoute should reject json contracts
-    jsonProcedure.nextRoute({
-      method: "GET",
+    // @ts-expect-error get should reject json contracts
+    jsonProcedure.get({
       onError: defaultProcedureOnError,
     });
 
@@ -1425,16 +1411,15 @@ describe("procedure builder type definitions", () => {
         body: formData,
       }));
 
-    // @ts-expect-error HEAD nextRoute should reject formData contracts
-    formDataProcedure.nextRoute({
-      method: "HEAD",
+    // @ts-expect-error head should reject formData contracts
+    formDataProcedure.head({
       onError: defaultProcedureOnError,
     });
 
     expect(true).toBe(true);
   });
 
-  it("keeps route binding and GET body constraints on defaulted procedure.nextRoute", () => {
+  it("keeps route binding and GET body constraints on defaulted method terminals", () => {
     const appProcedure = procedure.defaults({
       route: {
         onError: defaultProcedureOnError,
@@ -1445,10 +1430,8 @@ describe("procedure builder type definitions", () => {
       status: 204 as const,
     }));
 
-    // @ts-expect-error nextRoute() only accepts route-bound procedures
-    unboundProcedure.nextRoute({
-      method: "GET",
-    });
+    // @ts-expect-error get() only accepts route-bound procedures
+    unboundProcedure.get();
 
     const jsonProcedure = appProcedure
       .forRoute(guardedUserRouteContract)
@@ -1458,10 +1441,8 @@ describe("procedure builder type definitions", () => {
         body: json,
       }));
 
-    // @ts-expect-error GET nextRoute should reject json contracts
-    jsonProcedure.nextRoute({
-      method: "GET",
-    });
+    // @ts-expect-error get should reject json contracts
+    jsonProcedure.get();
 
     const formDataProcedure = appProcedure
       .forRoute(guardedUserRouteContract)
@@ -1471,10 +1452,8 @@ describe("procedure builder type definitions", () => {
         body: formData,
       }));
 
-    // @ts-expect-error HEAD nextRoute should reject formData contracts
-    formDataProcedure.nextRoute({
-      method: "HEAD",
-    });
+    // @ts-expect-error head should reject formData contracts
+    formDataProcedure.head();
 
     expect(true).toBe(true);
   });

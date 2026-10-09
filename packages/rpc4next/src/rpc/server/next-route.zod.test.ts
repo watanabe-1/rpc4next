@@ -3,12 +3,12 @@ import type { HttpMethod } from "rpc4next-shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
-import { nextRoute as baseNextRoute } from "./next-route";
+import { createNextRoute as basecreateNextRoute } from "./next-route";
 import { defaultProcedureOnError } from "./on-error";
 import { procedure } from "./procedure";
 import type { ProcedureRouteContract } from "./procedure-types";
 
-const nextRoute = <
+const createNextRoute = <
   TProcedure,
   TMethod extends HttpMethod = "GET",
   TValidateOutput extends boolean = false,
@@ -26,8 +26,8 @@ const nextRoute = <
       ? { ...options, method }
       : { ...options, method, onError: defaultProcedureOnError };
 
-  const routes = baseNextRoute<
-    TProcedure & Parameters<typeof baseNextRoute>[0],
+  const routes = basecreateNextRoute<
+    TProcedure & Parameters<typeof basecreateNextRoute>[0],
     TMethod,
     TValidateOutput
   >(procedureDefinition as never, resolvedOptions as never);
@@ -35,7 +35,7 @@ const nextRoute = <
   return routes[method];
 };
 
-describe("nextRoute zod integration", () => {
+describe("createNextRoute zod integration", () => {
   type EmptyParams = Record<never, never>;
 
   const staticRouteContract = {
@@ -52,7 +52,7 @@ describe("nextRoute zod integration", () => {
   });
 
   it("normalizes validated input, middleware context, and response contracts", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(dynamicUserRouteContract)
         .meta({
@@ -125,7 +125,7 @@ describe("nextRoute zod integration", () => {
   });
 
   it("preserves repeated query parameters for procedure validation", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .query(
@@ -170,7 +170,7 @@ describe("nextRoute zod integration", () => {
         ok: true,
       },
     }));
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .query(
@@ -217,7 +217,7 @@ describe("nextRoute zod integration", () => {
   });
 
   it("allows validation hooks to use the same text helper surface as handlers", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .query(
@@ -245,7 +245,7 @@ describe("nextRoute zod integration", () => {
   });
 
   it("keeps the default BAD_REQUEST normalization when no custom branch is configured", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .query(
@@ -307,9 +307,7 @@ describe("nextRoute zod integration", () => {
       .handle(async ({ query }) => ({
         body: query,
       }))
-      .nextRoute({
-        method: "GET",
-      });
+      .get({});
 
     const response = await route(new NextRequest("http://127.0.0.1:3000/api/test?page=0"), {
       params: Promise.resolve({}),
@@ -360,9 +358,7 @@ describe("nextRoute zod integration", () => {
       .handle(async ({ query }) => ({
         body: query,
       }))
-      .nextRoute({
-        method: "GET",
-      });
+      .get({});
 
     const response = await route(new NextRequest("http://127.0.0.1:3000/api/test?page=0"), {
       params: Promise.resolve({}),
@@ -384,7 +380,7 @@ describe("nextRoute zod integration", () => {
         );
       },
     );
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .query(
@@ -431,7 +427,7 @@ describe("nextRoute zod integration", () => {
   it.each(["GET", "HEAD"] as const)(
     "rejects JSON contracts on %s requests at runtime",
     async (method) => {
-      const route = nextRoute(
+      const route = createNextRoute(
         procedure
           .forRoute(staticRouteContract)
           .json(z.object({ title: z.string() }))
@@ -461,7 +457,7 @@ describe("nextRoute zod integration", () => {
   );
 
   it("normalizes multipart form-data into validator-friendly input", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .formData(
@@ -506,7 +502,7 @@ describe("nextRoute zod integration", () => {
   });
 
   it("keeps single form-data values scalar after normalization", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .formData(
@@ -548,7 +544,7 @@ describe("nextRoute zod integration", () => {
   it.each(["GET", "HEAD"] as const)(
     "rejects formData contracts on %s requests at runtime",
     async (method) => {
-      const route = nextRoute(
+      const route = createNextRoute(
         procedure
           .forRoute(staticRouteContract)
           .formData(
@@ -582,7 +578,7 @@ describe("nextRoute zod integration", () => {
   );
 
   it("supports narrow response helpers inside procedure handlers", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .query(
@@ -617,7 +613,7 @@ describe("nextRoute zod integration", () => {
   });
 
   it("validates procedure output bodies at runtime when enabled", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .output(
@@ -648,7 +644,7 @@ describe("nextRoute zod integration", () => {
   });
 
   it("replaces ProcedureResult bodies with parsed output values", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .output(
@@ -682,7 +678,7 @@ describe("nextRoute zod integration", () => {
   });
 
   it("normalizes invalid runtime output as INTERNAL_SERVER_ERROR", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .output(
@@ -715,7 +711,7 @@ describe("nextRoute zod integration", () => {
   });
 
   it("validates response helper payloads when runtime output validation is enabled", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .output(
@@ -747,7 +743,7 @@ describe("nextRoute zod integration", () => {
   });
 
   it("replaces response.json payloads with parsed output values", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .output(
@@ -777,7 +773,7 @@ describe("nextRoute zod integration", () => {
   });
 
   it("preserves statusText when helper responses are rebuilt after output parsing", async () => {
-    const jsonRoute = nextRoute(
+    const jsonRoute = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .output(
@@ -809,7 +805,7 @@ describe("nextRoute zod integration", () => {
       slug: "DRAFT-POST",
     });
 
-    const textRoute = nextRoute(
+    const textRoute = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .output(z.string().transform((value) => value.toUpperCase()))
@@ -830,7 +826,7 @@ describe("nextRoute zod integration", () => {
     expect(textResponse.statusText).toBe("Accepted via helper");
     await expect(textResponse.text()).resolves.toBe("DRAFT-POST");
 
-    const bodyRoute = nextRoute(
+    const bodyRoute = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .output(z.string().transform((value) => value.toUpperCase()))
@@ -853,7 +849,7 @@ describe("nextRoute zod integration", () => {
   });
 
   it("replaces response.body payloads with parsed output values", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .output(z.string().transform((value) => value.toUpperCase()))
@@ -870,7 +866,7 @@ describe("nextRoute zod integration", () => {
   });
 
   it("fails response.body output validation when parsed values cannot be reflected", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .output(
@@ -896,7 +892,7 @@ describe("nextRoute zod integration", () => {
   });
 
   it("skips runtime output validation for raw Response escape hatches", async () => {
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .output(
@@ -943,7 +939,7 @@ describe("nextRoute zod integration", () => {
         },
       }));
 
-    const baseRoute = nextRoute(
+    const baseRoute = createNextRoute(
       baseProcedure.handle(async ({ ctx }) => ({
         body: {
           ok: true,
@@ -954,7 +950,7 @@ describe("nextRoute zod integration", () => {
       { method: "GET" },
     );
 
-    const extendedRoute = nextRoute(
+    const extendedRoute = createNextRoute(
       baseProcedure
         .query(
           z.object({
@@ -1023,7 +1019,7 @@ describe("nextRoute zod integration", () => {
       },
     );
 
-    const route = nextRoute(
+    const route = createNextRoute(
       baseProcedure.handle(async ({ query }) => ({
         body: {
           page: query.page,
