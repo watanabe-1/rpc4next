@@ -97,6 +97,7 @@ export type UrlResult<T = unknown> = {
 
 type IsNever<T> = [T] extends [never] ? true : false;
 type AllOptional<T> = Partial<T> extends T ? true : false;
+type AwaitedProps<T> = Awaited<T>;
 
 type UrlArgs<T, TQuery, TUrlOptions = UrlOptions<T, TQuery>> =
   AllOptional<TUrlOptions> extends true ? [url?: TUrlOptions] : [url: TUrlOptions];
@@ -319,6 +320,22 @@ export type ProcedureQueryInput<T> =
   }
     ? ValidationInputFor<"query", TValidationSchema>
     : never;
+
+type PagePropsQueryInput<TPage> = TPage extends (props: infer TProps, ...args: any[]) => unknown
+  ? TProps extends { searchParams?: infer TSearchParams }
+    ? AwaitedProps<TSearchParams>
+    : never
+  : never;
+
+export type InferPageQuery<TPage> =
+  IsNever<ProcedureQueryInput<TPage>> extends true
+    ? PagePropsQueryInput<TPage>
+    : ProcedureQueryInput<TPage>;
+
+export type PageQueryInput<TPage> = InferPageQuery<TPage>;
+
+export type PageRouteMarker<TPage> =
+  IsNever<InferPageQuery<TPage>> extends true ? unknown : Record<QueryKey, InferPageQuery<TPage>>;
 
 type PathProxyAsFunction<T> = {
   $url: (...args: UrlArgs<T, InferQuery<T>>) => UrlResult<T>;

@@ -11,12 +11,14 @@ export const RPC4NEXT_GENERATED_SCHEMA_VERSION = 1;
 export const TYPE_KEY_QUERY = "QueryKey";
 export const TYPE_KEY_PARAMS = "ParamsKey";
 export const TYPE_PROCEDURE_QUERY_INPUT = "ProcedureQueryInput";
+export const TYPE_PAGE_ROUTE_MARKER = "PageRouteMarker";
 
 export const TYPE_KEYS = [
   TYPE_RPC_ENDPOINT,
   TYPE_KEY_PARAMS,
   TYPE_KEY_QUERY,
   TYPE_PROCEDURE_QUERY_INPUT,
+  TYPE_PAGE_ROUTE_MARKER,
 ];
 
 export const RPC4NEXT_CLIENT_IMPORT_PATH = "rpc4next/client";

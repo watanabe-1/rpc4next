@@ -28,6 +28,9 @@ type NativePageQuery = {
   term?: string | string[] | undefined;
   page?: string | undefined;
 };
+type InferredPageQuery = {
+  foo?: string | undefined;
+};
 type NativeRouteQuery = {
   filter?: string | undefined;
 };
@@ -136,6 +139,15 @@ describe("integration next-app generated RPC type coverage", () => {
       params: Record<string, string>;
     };
     expectTypeOf<NativeQueryPageUrl>().toEqualTypeOf<ExpectedNativeQueryPageUrl>();
+
+    type InferredQueryPageUrl = (typeof client.patterns)["inferred-query"]["$url"];
+    type ExpectedInferredQueryPageUrl = (url?: { query?: InferredPageQuery; hash?: string }) => {
+      pathname: string;
+      path: string;
+      relativePath: string;
+      params: Record<string, string>;
+    };
+    expectTypeOf<InferredQueryPageUrl>().toEqualTypeOf<ExpectedInferredQueryPageUrl>();
 
     type PostsArg = Parameters<typeof client.api.posts.$post>[0];
     type ExpectedPostsArg = {
@@ -1056,6 +1068,22 @@ describe("integration next-app generated RPC type coverage", () => {
     client.patterns["native-query"].$url({
       // @ts-expect-error native page query should follow its exported Query type
       query: { page: 2 },
+    });
+
+    client.patterns["inferred-query"].$url({
+      query: { foo: "typed-inferred-page-query" },
+    });
+
+    client.patterns["inferred-query"].$url({
+      // @ts-expect-error inferred page query should follow the searchParams prop type
+      query: { foo: 2 },
+    });
+
+    client.feed.$url();
+
+    client.feed.$url({
+      // @ts-expect-error pages without inferred query should not accept query input
+      query: { q: "not-accepted" },
     });
   });
 });

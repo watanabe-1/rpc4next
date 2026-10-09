@@ -285,7 +285,7 @@ describe("route-scanner", () => {
       expect(pathStructure).equals(`{
   "page": {
     "_user": {
-      "home": RpcEndpoint & Record<ParamsKey, { "user": string }>
+      "home": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & Record<ParamsKey, { "user": string }>
     }
   }
 }`);
@@ -330,7 +330,7 @@ describe("route-scanner", () => {
   "dynamic": {
     "_user": {
       "_id": {
-        "home": RpcEndpoint & Record<ParamsKey, { "user": string; "id": string; }>
+        "home": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & Record<ParamsKey, { "user": string; "id": string; }>
       }
     }
   }
@@ -354,7 +354,7 @@ describe("route-scanner", () => {
       expect(pathStructure).equals(`{
   "catchAll": {
     "_user": {
-      "___names": RpcEndpoint & Record<ParamsKey, { "user": string; "names": string[]; }>
+      "___names": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & Record<ParamsKey, { "user": string; "names": string[]; }>
     }
   }
 }`);
@@ -377,7 +377,7 @@ describe("route-scanner", () => {
       expect(pathStructure).equals(`{
   "OptionalCatchAll": {
     "user": {
-      "_____names": RpcEndpoint & Record<ParamsKey, { "names": string[] | undefined }>
+      "_____names": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & Record<ParamsKey, { "names": string[] | undefined }>
     }
   }
 }`);
@@ -399,7 +399,7 @@ describe("route-scanner", () => {
       const { pathStructure } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(pathStructure).equals(`{
   "group": {
-    "home": RpcEndpoint
+    "home": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint
   }
 }`);
     });
@@ -417,7 +417,7 @@ describe("route-scanner", () => {
 
       const { pathStructure } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(pathStructure).equals(`{
-  "group": RpcEndpoint
+  "group": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint
 }`);
     });
 
@@ -442,7 +442,7 @@ describe("route-scanner", () => {
       const { pathStructure, paramsTypes } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(pathStructure).equals(`{
   "group": {
-    "base": RpcEndpoint
+    "base": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint
   }
 }`);
       expect(paramsTypes).toStrictEqual([
@@ -507,8 +507,8 @@ describe("route-scanner", () => {
 
       const { pathStructure } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(pathStructure).equals(`{
-  "parallel": RpcEndpoint & {
-    "home": RpcEndpoint
+  "parallel": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & {
+    "home": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint
   }
 }`);
     });
@@ -546,7 +546,7 @@ describe("route-scanner", () => {
 
       const { pathStructure, paramsTypes } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(pathStructure).equals(`{
-  "base": RpcEndpoint
+  "base": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint
 }`);
       expect(paramsTypes).toStrictEqual([
         {
@@ -593,7 +593,7 @@ describe("route-scanner", () => {
 
       const { pathStructure } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(pathStructure).equals(`{
-  "base": RpcEndpoint
+  "base": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint
 }`);
     });
 
@@ -611,7 +611,7 @@ describe("route-scanner", () => {
       const { pathStructure } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(pathStructure).equals(`{
   "patterns": {
-    "%5Fescaped": RpcEndpoint
+    "%5Fescaped": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint
   }
 }`);
     });
@@ -652,7 +652,7 @@ describe("route-scanner", () => {
       const { pathStructure } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(pathStructure).equals(`{
   "patterns": {
-    "%E0%A4%A": RpcEndpoint
+    "%E0%A4%A": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint
   }
 }`);
     });
@@ -694,7 +694,7 @@ describe("route-scanner", () => {
 
       expect(pathStructure).equals(`{
   "patterns": {
-    "\\"quoted": RpcEndpoint
+    "\\"quoted": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint
   }
 }`);
       expect(paramsTypes).toStrictEqual([
@@ -735,7 +735,7 @@ describe("route-scanner", () => {
       const { pathStructure, paramsTypes } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(pathStructure).equals(`{
   "parent": {
-    "public": RpcEndpoint
+    "public": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint
   }
 }`);
       expect(paramsTypes).toStrictEqual([
@@ -770,7 +770,7 @@ describe("route-scanner", () => {
 
       const { pathStructure, paramsTypes } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(pathStructure).equals(`{
-  "feed": RpcEndpoint
+  "feed": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint
 }`);
       expect(paramsTypes).toStrictEqual([
         {
@@ -864,10 +864,10 @@ describe("route-scanner", () => {
 
       expect(nestedFromParent).not.toBe(nestedStandalone);
       expect(nestedFromParent.pathStructure).toBe(`{
-    "_id": RpcEndpoint & Record<ParamsKey, { "id": string }>
+    "_id": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & Record<ParamsKey, { "id": string }>
   }`);
       expect(nestedStandalone.pathStructure).toBe(`{
-  "_id": RpcEndpoint & Record<ParamsKey, { "id": string }>
+  "_id": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & Record<ParamsKey, { "id": string }>
 }`);
       expect(nestedFromParent.paramsTypes).toStrictEqual([
         {
@@ -910,9 +910,11 @@ describe("route-scanner", () => {
       ]);
 
       expect(childWithoutParentParams).not.toBe(childWithParentParams);
-      expect(childWithoutParentParams.pathStructure).toBe("RpcEndpoint");
+      expect(childWithoutParentParams.pathStructure).toBe(
+        "PageRouteMarker<typeof Page_asmocked> & RpcEndpoint",
+      );
       expect(childWithParentParams.pathStructure).toBe(
-        'RpcEndpoint & Record<ParamsKey, { "user": string }>',
+        'PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & Record<ParamsKey, { "user": string }>',
       );
     });
 
@@ -990,7 +992,7 @@ describe("route-scanner", () => {
       });
       const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(initial.pathStructure).toBe(`{
-  "child": RpcEndpoint
+  "child": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint
 }`);
 
       resetTree({
@@ -1003,7 +1005,7 @@ describe("route-scanner", () => {
       clearScanAppDirCacheAbove(tmpPath("testApp", "child", "page.tsx"));
       const modified = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(modified.pathStructure).toBe(`{
-  "child": { "$get": typeof GET_asmocked } & RpcEndpoint
+  "child": PageRouteMarker<typeof Page_asmocked> & { "$get": typeof GET_asmocked } & RpcEndpoint
 }`);
     });
 
@@ -1017,7 +1019,7 @@ describe("route-scanner", () => {
       });
       const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(initial.pathStructure).toBe(`{
-  "mid": RpcEndpoint
+  "mid": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint
 }`);
 
       resetTree({
@@ -1030,7 +1032,7 @@ describe("route-scanner", () => {
       clearScanAppDirCacheAbove(tmpPath("testApp", "mid", "page.tsx"));
       const modified = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(modified.pathStructure).toBe(`{
-  "mid": { "$get": typeof GET_asmocked } & RpcEndpoint
+  "mid": PageRouteMarker<typeof Page_asmocked> & { "$get": typeof GET_asmocked } & RpcEndpoint
 }`);
     });
 
@@ -1063,7 +1065,7 @@ describe("route-scanner", () => {
       });
       const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(initial.pathStructure).toBe(`{
-  "child": RpcEndpoint
+  "child": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint
 }`);
 
       resetTree({
@@ -1079,8 +1081,8 @@ describe("route-scanner", () => {
       clearScanAppDirCacheAbove(tmpPath("testApp", "child", "newFolder"));
       const modified = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(modified.pathStructure).toBe(`{
-  "child": RpcEndpoint & {
-    "newFolder": RpcEndpoint
+  "child": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & {
+    "newFolder": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint
   }
 }`);
     });
@@ -1098,7 +1100,7 @@ describe("route-scanner", () => {
       const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(initial.pathStructure).toBe(`{
   "mid": {
-    "child": RpcEndpoint
+    "child": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint
   }
 }`);
 
@@ -1118,8 +1120,8 @@ describe("route-scanner", () => {
       const modified = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(modified.pathStructure).toBe(`{
   "mid": {
-    "child": RpcEndpoint,
-    "newFolder": RpcEndpoint
+    "child": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint,
+    "newFolder": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint
   }
 }`);
     });
@@ -1144,7 +1146,7 @@ describe("route-scanner", () => {
       clearScanAppDirCacheAbove(tmpPath("testApp", "newFolder"));
       const modified = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(modified.pathStructure).toBe(`RpcEndpoint & {
-  "newFolder": RpcEndpoint
+  "newFolder": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint
 }`);
     });
   });
@@ -1168,7 +1170,7 @@ describe("route-scanner", () => {
       const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(initial.pathStructure).toBe(`{
   "_user": {
-    "home": RpcEndpoint & Record<ParamsKey, { "user": string }>
+    "home": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & Record<ParamsKey, { "user": string }>
   }
 }`);
 
@@ -1188,7 +1190,7 @@ describe("route-scanner", () => {
       expect(modified.pathStructure).toBe(`{
   "_user": {
     "_id": {
-      "home": RpcEndpoint & Record<ParamsKey, { "user": string; "id": string; }>
+      "home": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & Record<ParamsKey, { "user": string; "id": string; }>
     }
   }
 }`);
@@ -1207,7 +1209,7 @@ describe("route-scanner", () => {
       const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(initial.pathStructure).toBe(`{
   "_user": {
-    "home": RpcEndpoint & Record<ParamsKey, { "user": string }>
+    "home": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & Record<ParamsKey, { "user": string }>
   }
 }`);
 
@@ -1230,7 +1232,7 @@ describe("route-scanner", () => {
   "_user": {
     "_id": {
       "_detail": {
-        "home": RpcEndpoint & Record<ParamsKey, { "user": string; "id": string; "detail": string; }>
+        "home": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & Record<ParamsKey, { "user": string; "id": string; "detail": string; }>
       }
     }
   }
@@ -1253,7 +1255,7 @@ describe("route-scanner", () => {
       expect(initial.pathStructure).toBe(`{
   "_user": {
     "_id": {
-      "home": RpcEndpoint & Record<ParamsKey, { "user": string; "id": string; }>
+      "home": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & Record<ParamsKey, { "user": string; "id": string; }>
     }
   }
 }`);
@@ -1277,7 +1279,7 @@ describe("route-scanner", () => {
   "_user": {
     "_lang": {
       "_id": {
-        "home": RpcEndpoint & Record<ParamsKey, { "user": string; "lang": string; "id": string; }>
+        "home": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & Record<ParamsKey, { "user": string; "lang": string; "id": string; }>
       }
     }
   }
@@ -1315,13 +1317,13 @@ describe("route-scanner", () => {
       const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(initial.pathStructure).toBe(`{
   "_admin": {
-    "home": RpcEndpoint & Record<ParamsKey, { "admin": string }>
+    "home": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & Record<ParamsKey, { "admin": string }>
   },
   "_user": {
-    "home": RpcEndpoint & Record<ParamsKey, { "user": string }>
+    "home": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & Record<ParamsKey, { "user": string }>
   },
   "static": {
-    "home": RpcEndpoint
+    "home": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint
   }
 }`);
 
@@ -1356,16 +1358,16 @@ describe("route-scanner", () => {
       expect(modified.pathStructure).toBe(`{
   "_admin": {
     "_id": {
-      "home": RpcEndpoint & Record<ParamsKey, { "admin": string; "id": string; }>
+      "home": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & Record<ParamsKey, { "admin": string; "id": string; }>
     }
   },
   "_user": {
     "_id": {
-      "home": RpcEndpoint & Record<ParamsKey, { "user": string; "id": string; }>
+      "home": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & Record<ParamsKey, { "user": string; "id": string; }>
     }
   },
   "static": {
-    "home": RpcEndpoint
+    "home": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint
   }
 }`);
     });
@@ -1389,10 +1391,10 @@ describe("route-scanner", () => {
       const initial = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(initial.pathStructure).toBe(`{
   "_group": {
-    "dashboard": RpcEndpoint & Record<ParamsKey, { "group": string }>
+    "dashboard": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & Record<ParamsKey, { "group": string }>
   },
   "_user": {
-    "home": RpcEndpoint & Record<ParamsKey, { "user": string }>
+    "home": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & Record<ParamsKey, { "user": string }>
   }
 }`);
 
@@ -1422,12 +1424,12 @@ describe("route-scanner", () => {
       expect(modified.pathStructure).toBe(`{
   "_group": {
     "_id": {
-      "dashboard": RpcEndpoint & Record<ParamsKey, { "group": string; "id": string; }>
+      "dashboard": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & Record<ParamsKey, { "group": string; "id": string; }>
     }
   },
   "_user": {
     "_id": {
-      "home": RpcEndpoint & Record<ParamsKey, { "user": string; "id": string; }>
+      "home": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & Record<ParamsKey, { "user": string; "id": string; }>
     }
   }
 }`);
