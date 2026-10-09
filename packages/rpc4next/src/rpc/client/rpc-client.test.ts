@@ -106,7 +106,7 @@ const server = setupServer(
     return HttpResponse.text("delete");
   }),
   http.head("http://localhost:3000/api/hoge", () => {
-    return HttpResponse.text("head");
+    return new HttpResponse(null, { headers: { "x-rpc4next-method": "head" } });
   }),
   http.patch("http://localhost:3000/api/hoge", () => {
     return HttpResponse.text("patch");
@@ -186,12 +186,13 @@ describe("createRpcClient", () => {
       expect(text).toBe("delete");
     });
 
-    it("should successfully perform HEAD request", async () => {
+    it("should successfully perform HEAD request without response body", async () => {
       const client = createRpcClient<PathStructure>("http://localhost:3000");
       const response = await client.api.hoge.$head();
       expect(response.status).toBe(200);
+      expect(response.headers.get("x-rpc4next-method")).toBe("head");
       const text = await response.text();
-      expect(text).toBe("head");
+      expect(text).toBe("");
     });
 
     it("should successfully perform PATCH request", async () => {
