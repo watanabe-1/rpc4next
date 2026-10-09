@@ -212,7 +212,7 @@ type NextRouteMethodConstraint<
 > =
   ProcedureIsRouteBound<TProcedure> extends false
     ? {
-        __error__: "nextRoute() only accepts procedures that were bound with forRoute(routeContract).";
+        __error__: "Route method terminals only accept procedures that were bound with forRoute(routeContract).";
       }
     : TMethod extends "GET" | "HEAD"
       ? ProcedureHasJsonContract<TProcedure> extends true
@@ -718,7 +718,7 @@ const validateProcedureInputs = async (
   };
 };
 
-export const nextRoute = <
+export const createNextRoute = <
   TProcedure extends ProcedureTypeCarrier,
   TMethod extends HttpMethod = HttpMethod,
   TValidateOutput extends boolean = false,

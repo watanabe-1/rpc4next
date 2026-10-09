@@ -2,7 +2,8 @@ import type { HttpMethod } from "rpc4next-shared";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { z } from "zod";
 
-import { nextRoute as baseNextRoute, type ProcedureRouteContract, procedure } from "../server";
+import { type ProcedureRouteContract, procedure } from "../server";
+import { createNextRoute as basecreateNextRoute } from "../server/next-route";
 import { defaultProcedureOnError } from "../server/on-error";
 import { createRpcHelper } from "./rpc-helper";
 import type { ParamsKey, QueryKey, RpcEndpoint, RpcGeneratedPathStructure } from "./types";
@@ -12,7 +13,7 @@ const queryRouteContract = {
   params: {} as Record<never, never>,
 } as ProcedureRouteContract<"/api/query", Record<never, never>>;
 
-const nextRoute = <
+const createNextRoute = <
   TProcedure,
   TMethod extends HttpMethod = "GET",
   TValidateOutput extends boolean = false,
@@ -30,8 +31,8 @@ const nextRoute = <
       ? { ...options, method }
       : { ...options, method, onError: defaultProcedureOnError };
 
-  const routes = baseNextRoute<
-    TProcedure & Parameters<typeof baseNextRoute>[0],
+  const routes = basecreateNextRoute<
+    TProcedure & Parameters<typeof basecreateNextRoute>[0],
     TMethod,
     TValidateOutput
   >(procedureDefinition as never, resolvedOptions as never);
@@ -52,7 +53,7 @@ const postQuerySchema = z.object({
   mode: z.enum(["draft", "published"]),
 });
 
-const _post_query = nextRoute(
+const _post_query = createNextRoute(
   procedure
     .forRoute(queryRouteContract)
     .query(schema)
@@ -60,7 +61,7 @@ const _post_query = nextRoute(
   { method: "POST" },
 );
 
-const _get_mixed_query = nextRoute(
+const _get_mixed_query = createNextRoute(
   procedure
     .forRoute(queryRouteContract)
     .query(getQuerySchema)
@@ -68,7 +69,7 @@ const _get_mixed_query = nextRoute(
   { method: "GET" },
 );
 
-const _post_mixed_query = nextRoute(
+const _post_mixed_query = createNextRoute(
   procedure
     .forRoute(queryRouteContract)
     .query(postQuerySchema)

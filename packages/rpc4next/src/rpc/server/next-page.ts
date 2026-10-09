@@ -218,13 +218,13 @@ type ProcedureHasPageIncompatibleTerminalResult<TProcedure extends NextPageProce
 type NextPageProcedureConstraint<TProcedure extends NextPageProcedureCarrier> =
   ProcedureIsRouteBound<TProcedure> extends false
     ? {
-        __error__: "nextPage() only accepts procedures that were bound with forRoute(routeContract).";
+        __error__: "page() only accepts procedures that were bound with forRoute(routeContract).";
       }
     : ProcedureHasBoundRouteParams<TProcedure> extends true
       ? ProcedureHasValidatedParams<TProcedure> extends true
         ? ProcedureNextPageInputConstraint<TProcedure>
         : {
-            __error__: "Bound page procedures with generated params must call .params(schema) before .nextPage().";
+            __error__: "Bound page procedures with generated params must call .params(schema) before .page().";
           }
       : ProcedureNextPageInputConstraint<TProcedure>;
 
@@ -495,7 +495,7 @@ const assertPageTerminalResult = (result: Response | ProcedureResult | undefined
   };
 };
 
-export const nextPage = <
+export const createNextPage = <
   TProcedure extends NextPageProcedureCarrier,
   TResult = unknown,
   TOnError extends ProcedurePageOnError = DefaultProcedurePageOnError,

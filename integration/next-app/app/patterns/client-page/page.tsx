@@ -23,4 +23,4 @@ export default appPageProcedure
       label: query.label ?? "server-data",
     },
   }))
-  .nextPage(({ data }) => <ClientPageView initialCount={data.count} label={data.label} />);
+  .page(({ data }) => <ClientPageView initialCount={data.count} label={data.label} />);

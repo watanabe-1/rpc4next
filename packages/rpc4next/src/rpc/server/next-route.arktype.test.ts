@@ -3,13 +3,13 @@ import { NextRequest } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
 import { describe, expect, it } from "vitest";
 
-import { nextRoute as baseNextRoute } from "./next-route";
+import { createNextRoute as basecreateNextRoute } from "./next-route";
 import { defaultProcedureOnError } from "./on-error";
 import { procedure } from "./procedure";
 import type { ProcedureRouteContract } from "./procedure-types";
 import type { StandardSchemaV1 } from "./standard-schema";
 
-const nextRoute = <
+const createNextRoute = <
   TProcedure,
   TMethod extends HttpMethod = "GET",
   TValidateOutput extends boolean = false,
@@ -27,8 +27,8 @@ const nextRoute = <
       ? { ...options, method }
       : { ...options, method, onError: defaultProcedureOnError };
 
-  const routes = baseNextRoute<
-    TProcedure & Parameters<typeof baseNextRoute>[0],
+  const routes = basecreateNextRoute<
+    TProcedure & Parameters<typeof basecreateNextRoute>[0],
     TMethod,
     TValidateOutput
   >(procedureDefinition as never, resolvedOptions as never);
@@ -36,7 +36,7 @@ const nextRoute = <
   return routes[method];
 };
 
-describe("nextRoute arktype integration", () => {
+describe("createNextRoute arktype integration", () => {
   type EmptyParams = Record<never, never>;
 
   const staticRouteContract = {
@@ -56,7 +56,7 @@ describe("nextRoute arktype integration", () => {
       session: "string",
     });
 
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .json(jsonSchema)
@@ -100,7 +100,7 @@ describe("nextRoute arktype integration", () => {
       page: "string",
     });
 
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .query(pageSchema)
@@ -144,7 +144,7 @@ describe("nextRoute arktype integration", () => {
       ok: "boolean",
     });
 
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .output(outputSchema)
@@ -171,7 +171,7 @@ describe("nextRoute arktype integration", () => {
       count: "number > 0",
     });
 
-    const route = nextRoute(
+    const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .output(outputSchema)
@@ -212,7 +212,7 @@ describe("nextRoute arktype integration", () => {
         ),
     });
 
-    const route = nextRoute(
+    const route = createNextRoute(
       baseProcedure.handle(async ({ query }) => ({
         body: {
           page: query.page,

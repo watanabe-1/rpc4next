@@ -25,4 +25,4 @@ export const { GET } = appRouteProcedure
       session: cookies.session,
     },
   }))
-  .nextRoute({ method: "GET" });
+  .get();

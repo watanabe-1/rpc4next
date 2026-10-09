@@ -41,4 +41,4 @@ export const { GET } = appRouteProcedure
       requestId: ctx.requestId,
     },
   }))
-  .nextRoute({ method: "GET" });
+  .get();

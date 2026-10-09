@@ -55,7 +55,6 @@ const getGuardedProcedureUser = guardedRouteProcedure
     };
   });
 
-export const { GET } = getGuardedProcedureUser.nextRoute({
-  method: "GET",
+export const { GET } = getGuardedProcedureUser.get({
   validateOutput: true,
 });

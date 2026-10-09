@@ -20,6 +20,6 @@ export default appPageProcedure
       id: params.id,
     },
   }))
-  .nextPage(({ data }) => <div>photo:{data.id}</div>, {
+  .page(({ data }) => <div>photo:{data.id}</div>, {
     validateOutput: true,
   });

@@ -44,6 +44,4 @@ export const { GET } = appRouteProcedure
       page: query.page,
     }),
   )
-  .nextRoute({
-    method: "GET",
-  });
+  .get({});

@@ -1,11 +1,14 @@
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 
-import { nextPage as baseNextPage, type ProcedurePageOnValidationError } from "./next-page";
+import {
+  createNextPage as basecreateNextPage,
+  type ProcedurePageOnValidationError,
+} from "./next-page";
 import { procedure } from "./procedure";
 import type { ProcedureRouteContract } from "./procedure-types";
 import type { StandardSchemaV1 } from "./standard-schema";
 
-describe("nextPage", () => {
+describe("createNextPage", () => {
   const pageRouteContract = {
     pathname: "/photo/[id]",
     params: {} as { id: string },
@@ -97,7 +100,7 @@ describe("nextPage", () => {
   };
 
   it("renders procedure body data for page props", async () => {
-    const page = baseNextPage(
+    const page = basecreateNextPage(
       procedure
         .forRoute(pageRouteContract)
         .params(paramsSchema)
@@ -141,7 +144,7 @@ describe("nextPage", () => {
       .forRoute(pageRouteContract)
       .params(paramsSchema)
       .query(querySchema)
-      .nextPage(({ params, query }) => `${params.id}:${query.tab}`);
+      .page(({ params, query }) => `${params.id}:${query.tab}`);
 
     await expect(
       page({
@@ -161,7 +164,7 @@ describe("nextPage", () => {
           summary: `${params.id}:${query.tab}`,
         },
       }))
-      .nextPage(({ data, params, query }) => `${data.summary}:${params.id}:${query.tab}`);
+      .page(({ data, params, query }) => `${data.summary}:${params.id}:${query.tab}`);
 
     await expect(
       page({
@@ -178,7 +181,7 @@ describe("nextPage", () => {
       .forRoute(pageRouteContract)
       .params(paramsSchema)
       .query(querySchema)
-      .nextPage(render, {
+      .page(render, {
         onError,
       });
 
@@ -211,7 +214,7 @@ describe("nextPage", () => {
       .forRoute(pageRouteContract)
       .params(paramsSchema)
       .query(querySchema)
-      .nextPage(render);
+      .page(render);
 
     await expect(
       page({
@@ -241,7 +244,7 @@ describe("nextPage", () => {
       .forRoute(pageRouteContract)
       .params(paramsSchema)
       .query(querySchema)
-      .nextPage(() => "rendered", {
+      .page(() => "rendered", {
         onValidationError,
       });
 
@@ -281,7 +284,7 @@ describe("nextPage", () => {
           tab: query.tab,
         },
       }))
-      .nextPage(({ data, params, query }) => `${data.id}:${data.tab}:${params.id}:${query.tab}`);
+      .page(({ data, params, query }) => `${data.id}:${data.tab}:${params.id}:${query.tab}`);
 
     await expect(
       page({
@@ -306,7 +309,7 @@ describe("nextPage", () => {
           tab: query.tab,
         },
       }))
-      .nextPage(({ data }) => data, {
+      .page(({ data }) => data, {
         onError,
       });
 
@@ -334,7 +337,7 @@ describe("nextPage", () => {
           requestId: "before-parse",
         },
       }))
-      .nextPage(({ data }) => data, {
+      .page(({ data }) => data, {
         validateOutput: true,
       });
 
@@ -364,7 +367,7 @@ describe("nextPage", () => {
           requestId: "before-parse",
         },
       }))
-      .nextPage(({ data }) => data, {
+      .page(({ data }) => data, {
         onError,
         validateOutput: true,
       });
@@ -393,7 +396,7 @@ describe("nextPage", () => {
             id: params.id,
           },
         }))
-        .nextPage(({ data }) => data, {
+        .page(({ data }) => data, {
           validateOutput: true,
         }),
     ).toThrow(
@@ -401,7 +404,7 @@ describe("nextPage", () => {
     );
   });
 
-  it("lets page defaults provide nextPage onError", async () => {
+  it("lets page defaults provide page terminal onError", async () => {
     const appProcedure = procedure.defaults({
       page: {
         onError: () => "default-page-error",
@@ -418,7 +421,7 @@ describe("nextPage", () => {
           tab: query.tab,
         },
       }))
-      .nextPage(({ data }) => data);
+      .page(({ data }) => data);
 
     await expect(
       page({
@@ -441,7 +444,7 @@ describe("nextPage", () => {
       .handle(({ page }) => {
         return page.redirect("/photo/next");
       })
-      .nextPage(() => "rendered");
+      .page(() => "rendered");
 
     let caught: unknown;
 
@@ -462,8 +465,8 @@ describe("nextPage", () => {
       status: 204 as const,
     }));
 
-    // @ts-expect-error nextPage() only accepts route-bound procedures
-    unboundProcedure.nextPage(() => null);
+    // @ts-expect-error page() only accepts route-bound procedures
+    unboundProcedure.page(() => null);
 
     const jsonProcedure = procedure
       .forRoute(pageRouteContract)
@@ -482,7 +485,7 @@ describe("nextPage", () => {
       }));
 
     // @ts-expect-error page procedures do not support json contracts
-    jsonProcedure.nextPage(() => null);
+    jsonProcedure.page(() => null);
 
     expectTypeOf(unboundProcedure.definition).toExtend<object>();
   });
@@ -494,7 +497,7 @@ describe("nextPage", () => {
       .handle(() => new Response("route-response"));
 
     // @ts-expect-error page procedures cannot return raw Response values
-    responseProcedure.nextPage(() => null);
+    responseProcedure.page(() => null);
 
     const responseHelperProcedure = procedure
       .forRoute(pageRouteContract)
@@ -506,7 +509,7 @@ describe("nextPage", () => {
       );
 
     // @ts-expect-error page procedures cannot return response helper values
-    responseHelperProcedure.nextPage(() => null);
+    responseHelperProcedure.page(() => null);
 
     const redirectProcedure = procedure
       .forRoute(pageRouteContract)
@@ -516,7 +519,7 @@ describe("nextPage", () => {
       }));
 
     // @ts-expect-error page procedures should throw redirect(), not return ProcedureResult redirects
-    redirectProcedure.nextPage(() => null);
+    redirectProcedure.page(() => null);
 
     const middlewareResponseProcedure = procedure
       .forRoute(pageRouteContract)
@@ -529,7 +532,7 @@ describe("nextPage", () => {
       }));
 
     // @ts-expect-error page middleware cannot return raw Response values
-    middlewareResponseProcedure.nextPage(() => null);
+    middlewareResponseProcedure.page(() => null);
 
     expectTypeOf(responseProcedure.definition).toExtend<object>();
   });

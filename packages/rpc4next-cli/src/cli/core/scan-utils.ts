@@ -52,7 +52,7 @@ const hasDefaultPageQueryProcedure = (inputFile: string, fileContents: string) =
     /[/\\]page\.tsx$/.test(inputFile) &&
     /\bexport\s+default\b/.test(fileContents) &&
     /\.query\s*\(/.test(fileContents) &&
-    /\.nextPage\s*\(/.test(fileContents)
+    /\.page\s*\(/.test(fileContents)
   );
 };
 

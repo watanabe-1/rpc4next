@@ -88,7 +88,7 @@ describe("scanEndpointFile", () => {
         export default procedure
           .query(querySchema)
           .handle(() => ({ body: {} }))
-          .nextPage(() => null);
+          .page(() => null);
       `,
     });
 
@@ -113,7 +113,7 @@ describe("scanEndpointFile", () => {
         export default procedure
           .query(querySchema)
           .handle(() => ({ body: {} }))
-          .nextPage(() => null);
+          .page(() => null);
       `,
     });
 
