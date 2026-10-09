@@ -34,10 +34,10 @@
     "diff2prompt": "diff2prompt"
   },
   "devDependencies": {
-    "@types/node": "^26.6.3",
+    "@types/node": "^26.6.4",
     "@vitest/coverage-v8": "^5.0.3",
     "@vitest/ui": "^5.0.3",
-    "arktype": "^2.2.6",
+    "arktype": "^2.2.7",
     "diff2prompt": "^0.0.15",
     "esbuild": "^0.28.2",
     "fast-glob": "^3.3.3",
