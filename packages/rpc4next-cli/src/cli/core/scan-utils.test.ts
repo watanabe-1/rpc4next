@@ -80,15 +80,15 @@ describe("scanEndpointFile", () => {
     expect(result.query).toBeUndefined();
   });
 
-  it("should infer query from default-exported page procedures", () => {
+  it("should add a page query marker for page files without an exported Query type", () => {
     const { outputFile, rootDir } = createPaths();
     const inputFile = path.join(rootDir, "app", "search", "page.tsx");
     writeTree(rootDir, {
       "app/search/page.tsx": `
-        export default procedure
-          .query(querySchema)
-          .handle(() => ({ body: {} }))
-          .page(() => null);
+        const page = procedure
+          .handle(() => ({ body: {} }));
+
+        export default page;
       `,
     });
 
@@ -99,12 +99,30 @@ describe("scanEndpointFile", () => {
     expect(result.query?.importStatement).toBe(
       "import type Page_51d775b458cca87b from './app/search/page';",
     );
-    expect(result.query?.type).toBe(
-      "Record<QueryKey, ProcedureQueryInput<typeof Page_51d775b458cca87b>>",
-    );
+    expect(result.query?.type).toBe("PageRouteMarker<typeof Page_51d775b458cca87b>");
   });
 
-  it("should prefer an exported query type over default page procedure inference", () => {
+  it("should not inspect helper spelling when adding a page query marker", () => {
+    const { outputFile, rootDir } = createPaths();
+    const inputFile = path.join(rootDir, "app", "search", "page.tsx");
+    writeTree(rootDir, {
+      "app/search/page.tsx": `
+        const withQuery = appPageProcedure
+          .query(querySchema);
+
+        const Page = withQuery
+          .page(() => null);
+
+        export default Page;
+      `,
+    });
+
+    const result = scanEndpointFile(outputFile, inputFile);
+
+    expect(result.query?.type).toBe("PageRouteMarker<typeof Page_51d775b458cca87b>");
+  });
+
+  it("should prefer an exported query type over default page query inference", () => {
     const { outputFile, rootDir } = createPaths();
     const inputFile = path.join(rootDir, "app", "search", "page.tsx");
     writeTree(rootDir, {
@@ -121,6 +139,18 @@ describe("scanEndpointFile", () => {
 
     expect(result.query?.importName).toBe("Query_426664e2544b3fd1");
     expect(result.query?.type).toBe("Record<QueryKey, Query_426664e2544b3fd1>");
+  });
+
+  it("should not add a page query marker to route files", () => {
+    const { outputFile, rootDir } = createPaths();
+    const inputFile = path.join(rootDir, "app", "search", "route.ts");
+    writeTree(rootDir, {
+      "app/search/route.ts": "export default function handler() {}",
+    });
+
+    const result = scanEndpointFile(outputFile, inputFile);
+
+    expect(result.query).toBeUndefined();
   });
 
   it("should return a route definition for an exported async function", () => {

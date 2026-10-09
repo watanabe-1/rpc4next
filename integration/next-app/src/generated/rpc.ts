@@ -1,4 +1,4 @@
-import type { RpcGeneratedPathStructure ,RpcEndpoint ,ParamsKey ,QueryKey ,ProcedureQueryInput } from "rpc4next/client";
+import type { RpcGeneratedPathStructure ,RpcEndpoint ,ParamsKey ,QueryKey ,PageRouteMarker } from "rpc4next/client";
 import type { GET as GET_1505e5e59b9e28fa } from "../../app/api/client-bundle-leak-sentinel/route";
 import type { GET as GET_1cdff2d46851497f } from "../../app/api/contract-route/route";
 import type { GET as GET_871f64658e86ddce } from "../../app/api/error-demo/route";
@@ -21,12 +21,31 @@ import type { GET as GET_9e56a535c83ceae0 } from "../../app/api/procedure-valida
 import type { GET as GET_61a9f4b9fd49ccf5 } from "../../app/api/redirect-me/route";
 import type { GET as GET_fbb09db60ba2ae51 } from "../../app/api/request-meta/route";
 import type { GET as GET_b6e4799d411d6efe } from "../../app/api/users/[userId]/route";
+import type Page_38c066c7ee3c5334 from "../../app/e2e-client/page";
+import type Page_f20ba6bf73502dc1 from "../../app/feed/page";
+import type Page_5f11bc234a1e0c67 from "../../app/page";
+import type Page_ce69f0ecf7424845 from "../../app/patterns/(grouped)/reports/page";
+import type Page_96ecf6fa8566fbe4 from "../../app/patterns/%5Fescaped/page";
+import type Page_68eb0f7249e31d28 from "../../app/patterns/%E3%81%ZZ/page";
+import type Page_0b1738dbbaa74a00 from "../../app/patterns/catch-all/[...parts]/page";
 import type Page_3284828b6f1a8f87 from "../../app/patterns/client-page/page";
+import type Page_0125c4bb93973531 from "../../app/patterns/dynamic/[category]/[item]/page";
+import type Page_33255c6a6746256a from "../../app/patterns/dynamic/[category]/page";
+import type Page_2c846c950cc20c49 from "../../app/patterns/inferred-query/page";
 import type { Query as Query_56a6df9ad49eb575 } from "../../app/patterns/native-query/page";
+import type Page_d38b38fed2ec9f91 from "../../app/patterns/optional-catch-all/[[...parts]]/page";
+import type Page_8636af1013bbed4a from "../../app/patterns/page";
 import type Page_79cdb44a777689a5 from "../../app/patterns/page-helpers/page";
+import type Page_788e67e18069669b from "../../app/patterns/parallel/@analytics/views/page";
+import type Page_cd2765a820488e3c from "../../app/patterns/parallel/@team/members/page";
+import type Page_608a7d9f533a2285 from "../../app/patterns/parallel/page";
 import type Page_14a3d277b7c2ce94 from "../../app/patterns/search/page";
+import type Page_ec4d53d56d2cdbe0 from "../../app/photo/[id]/comments/[commentId]/page";
+import type Page_17fbe6f0abbd0030 from "../../app/photo/[id]/page";
+import type Page_6fe4147621bd043b from "../../app/procedure-examples/page";
+import type Page_e14cc8f4edef5d4a from "../../app/response-unwrap/page";
 
-export type PathStructure = RpcGeneratedPathStructure<RpcEndpoint & {
+export type PathStructure = RpcGeneratedPathStructure<PageRouteMarker<typeof Page_5f11bc234a1e0c67> & RpcEndpoint & {
   "api": {
     "client-bundle-leak-sentinel": { "$get": typeof GET_1505e5e59b9e28fa } & RpcEndpoint,
     "contract-route": { "$get": typeof GET_1cdff2d46851497f } & RpcEndpoint,
@@ -57,39 +76,40 @@ export type PathStructure = RpcGeneratedPathStructure<RpcEndpoint & {
       "_userId": { "$get": typeof GET_b6e4799d411d6efe } & RpcEndpoint & Record<ParamsKey, { "userId": string }>
     }
   },
-  "e2e-client": RpcEndpoint,
-  "feed": RpcEndpoint,
-  "patterns": RpcEndpoint & {
-    "reports": RpcEndpoint,
-    "%5Fescaped": RpcEndpoint,
-    "%E3%81%ZZ": RpcEndpoint,
+  "e2e-client": PageRouteMarker<typeof Page_38c066c7ee3c5334> & RpcEndpoint,
+  "feed": PageRouteMarker<typeof Page_f20ba6bf73502dc1> & RpcEndpoint,
+  "patterns": PageRouteMarker<typeof Page_8636af1013bbed4a> & RpcEndpoint & {
+    "reports": PageRouteMarker<typeof Page_ce69f0ecf7424845> & RpcEndpoint,
+    "%5Fescaped": PageRouteMarker<typeof Page_96ecf6fa8566fbe4> & RpcEndpoint,
+    "%E3%81%ZZ": PageRouteMarker<typeof Page_68eb0f7249e31d28> & RpcEndpoint,
     "catch-all": {
-      "___parts": RpcEndpoint & Record<ParamsKey, { "parts": string[] }>
+      "___parts": PageRouteMarker<typeof Page_0b1738dbbaa74a00> & RpcEndpoint & Record<ParamsKey, { "parts": string[] }>
     },
-    "client-page": Record<QueryKey, ProcedureQueryInput<typeof Page_3284828b6f1a8f87>> & RpcEndpoint,
+    "client-page": PageRouteMarker<typeof Page_3284828b6f1a8f87> & RpcEndpoint,
     "dynamic": {
-      "_category": RpcEndpoint & Record<ParamsKey, { "category": string }> & {
-        "_item": RpcEndpoint & Record<ParamsKey, { "category": string; "item": string; }>
+      "_category": PageRouteMarker<typeof Page_33255c6a6746256a> & RpcEndpoint & Record<ParamsKey, { "category": string }> & {
+        "_item": PageRouteMarker<typeof Page_0125c4bb93973531> & RpcEndpoint & Record<ParamsKey, { "category": string; "item": string; }>
       }
     },
+    "inferred-query": PageRouteMarker<typeof Page_2c846c950cc20c49> & RpcEndpoint,
     "native-query": Record<QueryKey, Query_56a6df9ad49eb575> & RpcEndpoint,
     "optional-catch-all": {
-      "_____parts": RpcEndpoint & Record<ParamsKey, { "parts": string[] | undefined }>
+      "_____parts": PageRouteMarker<typeof Page_d38b38fed2ec9f91> & RpcEndpoint & Record<ParamsKey, { "parts": string[] | undefined }>
     },
-    "page-helpers": Record<QueryKey, ProcedureQueryInput<typeof Page_79cdb44a777689a5>> & RpcEndpoint,
-    "parallel": RpcEndpoint & {
-      "views": RpcEndpoint,
-      "members": RpcEndpoint
+    "page-helpers": PageRouteMarker<typeof Page_79cdb44a777689a5> & RpcEndpoint,
+    "parallel": PageRouteMarker<typeof Page_608a7d9f533a2285> & RpcEndpoint & {
+      "views": PageRouteMarker<typeof Page_788e67e18069669b> & RpcEndpoint,
+      "members": PageRouteMarker<typeof Page_cd2765a820488e3c> & RpcEndpoint
     },
-    "search": Record<QueryKey, ProcedureQueryInput<typeof Page_14a3d277b7c2ce94>> & RpcEndpoint
+    "search": PageRouteMarker<typeof Page_14a3d277b7c2ce94> & RpcEndpoint
   },
   "photo": {
-    "_id": RpcEndpoint & Record<ParamsKey, { "id": string }> & {
+    "_id": PageRouteMarker<typeof Page_17fbe6f0abbd0030> & RpcEndpoint & Record<ParamsKey, { "id": string }> & {
       "comments": {
-        "_commentId": RpcEndpoint & Record<ParamsKey, { "id": string; "commentId": string; }>
+        "_commentId": PageRouteMarker<typeof Page_ec4d53d56d2cdbe0> & RpcEndpoint & Record<ParamsKey, { "id": string; "commentId": string; }>
       }
     }
   },
-  "procedure-examples": RpcEndpoint,
-  "response-unwrap": RpcEndpoint
+  "procedure-examples": PageRouteMarker<typeof Page_6fe4147621bd043b> & RpcEndpoint,
+  "response-unwrap": PageRouteMarker<typeof Page_e14cc8f4edef5d4a> & RpcEndpoint
 }, 1>;

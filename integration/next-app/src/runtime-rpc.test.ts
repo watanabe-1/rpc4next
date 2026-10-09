@@ -83,6 +83,16 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
         },
       },
       {
+        name: "native page route with inferred searchParams query type",
+        actual: () => client.patterns["inferred-query"].$url({ query: { foo: "runtime" } }),
+        expected: {
+          path: `${baseUrl}/patterns/inferred-query?foo=runtime`,
+          relativePath: "/patterns/inferred-query?foo=runtime",
+          pathname: "/patterns/inferred-query",
+          params: {},
+        },
+      },
+      {
         name: "native API route with params and exported query type",
         actual: () =>
           client.api["next-native"]._itemId("native-item").$url({

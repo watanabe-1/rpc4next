@@ -10,6 +10,9 @@ export type {
   SuccessfulResponsePayload,
 } from "./response";
 export type {
+  InferPageQuery,
+  PageQueryInput,
+  PageRouteMarker,
   ParamsKey,
   ProcedureQueryInput,
   QueryKey,

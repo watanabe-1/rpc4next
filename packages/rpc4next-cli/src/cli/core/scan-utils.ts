@@ -4,7 +4,7 @@ import type { HttpMethod } from "rpc4next-shared";
 
 import { createImportAlias } from "./alias.js";
 import type { ImportAliasName } from "./alias.js";
-import { QUERY_TYPES, TYPE_KEY_QUERY, TYPE_PROCEDURE_QUERY_INPUT } from "./constants.js";
+import { QUERY_TYPES, TYPE_KEY_QUERY, TYPE_PAGE_ROUTE_MARKER } from "./constants.js";
 import { createRelativeImportPath } from "./path-utils.js";
 import {
   createDefaultImport,
@@ -47,14 +47,7 @@ const findQueryExport = (fileContents: string) => {
   );
 };
 
-const hasDefaultPageQueryProcedure = (inputFile: string, fileContents: string) => {
-  return (
-    /[/\\]page\.tsx$/.test(inputFile) &&
-    /\bexport\s+default\b/.test(fileContents) &&
-    /\.query\s*\(/.test(fileContents) &&
-    /\.page\s*\(/.test(fileContents)
-  );
-};
+const isPageFile = (inputFile: string) => /[/\\]page\.tsx$/.test(inputFile);
 
 const hasRouteExport = (fileContents: string, httpMethod: HttpMethod) => {
   const exportPatterns = [
@@ -82,7 +75,7 @@ export const scanEndpointFile = (
     ? buildDefinition(outputFile, inputFile, queryExport, (_, importAlias) =>
         createRecodeType(TYPE_KEY_QUERY, importAlias),
       )
-    : hasDefaultPageQueryProcedure(inputFile, fileContents)
+    : isPageFile(inputFile)
       ? (() => {
           const relativeImportPath = createRelativeImportPath(outputFile, inputFile);
           const importAlias = createImportAlias(relativeImportPath, "Page");
@@ -91,10 +84,7 @@ export const scanEndpointFile = (
             importName: importAlias,
             importPath: relativeImportPath,
             importStatement: createDefaultImport(relativeImportPath, importAlias),
-            type: createRecodeType(
-              TYPE_KEY_QUERY,
-              `${TYPE_PROCEDURE_QUERY_INPUT}<typeof ${importAlias}>`,
-            ),
+            type: `${TYPE_PAGE_ROUTE_MARKER}<typeof ${importAlias}>`,
             exportName: "Page" as const,
           };
         })()
