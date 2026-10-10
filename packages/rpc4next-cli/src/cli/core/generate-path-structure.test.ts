@@ -14,6 +14,7 @@ import {
 } from "./constants.js";
 import {
   generatePathStructure,
+  generateTestRouteManifest,
   ROUTE_CONTRACT_GENERATED_MARKER,
 } from "./generate-path-structure.js";
 
@@ -27,6 +28,12 @@ vi.mock("./type-utils.js", () => ({
     (type, importPath) => `import type { ${type} } from "${importPath}";`,
   ),
   createStringLiteral: vi.fn<(value: string) => string>((value) => JSON.stringify(value)),
+  createValueImport: vi.fn<(name: string, importPath: string, importAlias?: string) => string>(
+    (name, importPath, importAlias) =>
+      importAlias
+        ? `import { ${name} as ${importAlias} } from "${importPath}";`
+        : `import { ${name} } from "${importPath}";`,
+  ),
 }));
 
 describe("generatePathStructure", () => {
@@ -153,5 +160,25 @@ describe("generatePathStructure", () => {
       'export type RouteContract = ProcedureRouteContract<"/\\"quoted", Params>;',
     );
     expect(paramsTypes[0].paramsType).toContain('  pathname: "/\\"quoted",');
+  });
+
+  it("generates a test route manifest from scanned route files", () => {
+    tmpDir = makeTempDir();
+
+    const outputPath = path.join(tmpDir, "src", "generated", "rpc-test-routes.ts");
+    const routePath = path.join(tmpDir, "app", "api", "users", "[userId]", "route.ts");
+    const manifest = generateTestRouteManifest(outputPath, [
+      {
+        fullPath: routePath,
+        methods: ["GET", "POST"],
+        pathname: "/api/users/[userId]",
+      },
+    ]);
+
+    expect(manifest).toContain('import type { RpcTestRoute } from "rpc4next/client/test";');
+    expect(manifest).toContain("import { GET as Route_");
+    expect(manifest).toContain("import { POST as Route_");
+    expect(manifest).toContain('pathname: "/api/users/[userId]"');
+    expect(manifest).toContain("] as const satisfies readonly RpcTestRoute[];");
   });
 });

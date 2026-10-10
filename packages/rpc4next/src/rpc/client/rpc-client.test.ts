@@ -1,6 +1,6 @@
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
-import { type NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { afterAll, afterEach, beforeAll, describe, expect, expectTypeOf, it } from "vitest";
 
 import {
@@ -14,6 +14,7 @@ import { createNextRoute } from "../server/next-route";
 import { defaultProcedureOnError } from "../server/on-error";
 import type { SuccessfulResponsePayload } from "./response";
 import { createRpcClient } from "./rpc-client";
+import { createRpcTestClient } from "./test";
 import type { ParamsKey, QueryKey, RpcEndpoint, RpcGeneratedPathStructure } from "./types";
 
 const staticRouteContract = {
@@ -213,6 +214,168 @@ describe("createRpcClient", () => {
   });
 
   describe("customFetch behavior", () => {
+    it("can call a Next.js route handler directly without starting a mock server", async () => {
+      const routeFetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = new URL(input instanceof Request ? input.url : input);
+        const nextInit: ConstructorParameters<typeof NextRequest>[1] = init
+          ? {
+              ...init,
+              signal: init.signal ?? undefined,
+            }
+          : undefined;
+        expect(url.origin).toBe("http://rpc4next.local");
+        expect(url.pathname).toBe("/api/hoge/test");
+
+        return _get_0(new NextRequest(url, nextInit), {
+          params: Promise.resolve({}),
+        });
+      };
+
+      const client = createRpcClient<PathStructure>("http://rpc4next.local", {
+        fetch: routeFetch,
+      });
+
+      const response = await client.api.hoge._foo("test").$get();
+
+      expect(response.status).toBe(200);
+      await expect(response.json()).resolves.toEqual({
+        method: "get",
+      });
+    });
+
+    it("can dispatch typed client calls to route handlers with createRpcTestClient", async () => {
+      const client = createRpcTestClient<PathStructure>(
+        [
+          {
+            pathname: "/api/hoge/[foo]",
+            params: {},
+            GET: async (request, segmentData) =>
+              NextResponse.json({
+                method: request.method,
+                pathname: request.nextUrl.pathname,
+                params: await segmentData.params,
+              }),
+          },
+        ],
+        { baseUrl: "http://rpc4next.local" },
+      );
+
+      const response = await client.api.hoge._foo("test").$get();
+
+      expect(response.status).toBe(200);
+      await expect(response.json()).resolves.toEqual({
+        method: "GET",
+        pathname: "/api/hoge/test",
+        params: { foo: "test" },
+      });
+    });
+
+    it("matches more specific test routes before dynamic catch-all routes", async () => {
+      type RoutePriorityPath = RpcGeneratedPathStructure<{
+        api: {
+          docs: {
+            _____parts: { $get: typeof _get_0 } & RpcEndpoint &
+              Record<ParamsKey, { parts: string[] | undefined }>;
+          };
+          users: {
+            me: { $get: typeof _get_0 } & RpcEndpoint;
+            _userId: { $get: typeof _get_0 } & RpcEndpoint & Record<ParamsKey, { userId: string }>;
+            ___parts: { $get: typeof _get_0 } & RpcEndpoint &
+              Record<ParamsKey, { parts: [string, ...string[]] }>;
+          };
+        };
+      }>;
+
+      const client = createRpcTestClient<RoutePriorityPath>(
+        [
+          {
+            pathname: "/api/users/[...parts]",
+            GET: async (_request, segmentData) =>
+              NextResponse.json({
+                route: "catch-all",
+                params: await segmentData.params,
+              }),
+          },
+          {
+            pathname: "/api/users/[userId]",
+            GET: async (_request, segmentData) =>
+              NextResponse.json({
+                route: "dynamic",
+                params: await segmentData.params,
+              }),
+          },
+          {
+            pathname: "/api/users/me",
+            GET: async () => NextResponse.json({ route: "static" }),
+          },
+          {
+            pathname: "/api/docs/[[...parts]]",
+            GET: async (_request, segmentData) =>
+              NextResponse.json({
+                route: "optional-catch-all",
+                params: await segmentData.params,
+              }),
+          },
+        ],
+        { baseUrl: "http://rpc4next.local" },
+      );
+
+      await expect(client.api.users.me.$get().unwrap()).resolves.toEqual({ route: "static" });
+      await expect(client.api.users._userId("alice").$get().unwrap()).resolves.toEqual({
+        route: "dynamic",
+        params: { userId: "alice" },
+      });
+      await expect(
+        client.api.users.___parts(["alice", "settings"]).$get().unwrap(),
+      ).resolves.toEqual({
+        route: "catch-all",
+        params: { parts: ["alice", "settings"] },
+      });
+      await expect(client.api.docs._____parts().$get().unwrap()).resolves.toEqual({
+        route: "optional-catch-all",
+        params: { parts: undefined },
+      });
+    });
+
+    it("infers params from the matched test route pathname by default", async () => {
+      const client = createRpcTestClient<PathStructure>(
+        [
+          {
+            pathname: "/api/hoge/[foo]",
+            GET: async (_request, segmentData) =>
+              NextResponse.json({
+                params: await segmentData.params,
+              }),
+          },
+        ],
+        { baseUrl: "http://rpc4next.local" },
+      );
+
+      await expect(client.api.hoge._foo("test").$get().unwrap()).resolves.toEqual({
+        params: { foo: "test" },
+      });
+    });
+
+    it("uses explicit route params when provided", async () => {
+      const client = createRpcTestClient<PathStructure>(
+        [
+          {
+            pathname: "/api/hoge/[foo]",
+            params: { foo: "override" },
+            GET: async (_request, segmentData) =>
+              NextResponse.json({
+                params: await segmentData.params,
+              }),
+          },
+        ],
+        { baseUrl: "http://rpc4next.local" },
+      );
+
+      await expect(client.api.hoge._foo("test").$get().unwrap()).resolves.toEqual({
+        params: { foo: "override" },
+      });
+    });
+
     it("should use only client-level options when only client options are specified", async () => {
       let capturedInit: RequestInit | undefined;
       const customFetch = async (_input: RequestInfo | URL, init?: RequestInit) => {

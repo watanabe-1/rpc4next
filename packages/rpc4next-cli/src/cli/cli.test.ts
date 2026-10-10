@@ -76,7 +76,11 @@ describe("runCli", () => {
     expect(handleCliSpy).toHaveBeenCalledWith(
       "app",
       "src/generated/rpc.ts",
-      { watch: false, check: false, paramsFile: "params.ts" },
+      {
+        watch: false,
+        check: false,
+        paramsFile: "params.ts",
+      },
       mockLogger,
     );
   });
@@ -95,7 +99,11 @@ describe("runCli", () => {
     expect(handleCliSpy).toHaveBeenCalledWith(
       "custom-app",
       "custom-rpc.ts",
-      { watch: false, check: false, paramsFile: "custom.ts" },
+      {
+        watch: false,
+        check: false,
+        paramsFile: "custom.ts",
+      },
       mockLogger,
     );
   });

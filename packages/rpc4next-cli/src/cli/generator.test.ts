@@ -24,6 +24,7 @@ describe("generate", () => {
 
   const baseDir = "test/base";
   const outputPath = "test/output/types.ts";
+  const testRoutesOutputPath = "test/output/types-test-routes.ts";
   const paramsFileName = "params.ts";
 
   beforeEach(() => {
@@ -196,7 +197,13 @@ describe("generate", () => {
     });
 
     vi.spyOn(fs, "existsSync").mockReturnValue(true);
-    vi.spyOn(fs, "readFileSync").mockReturnValue("generated-type-content");
+    vi.spyOn(fs, "readFileSync").mockImplementation((filePath) => {
+      if (filePath === testRoutesOutputPath) {
+        return generatePathStructure.generateTestRouteManifest(testRoutesOutputPath, []);
+      }
+
+      return "generated-type-content";
+    });
     vi.spyOn(fs, "writeFileSync").mockImplementation(() => {});
 
     generate({
@@ -301,7 +308,7 @@ describe("generate", () => {
       path.join("dir3", paramsFileName),
       "params-type-3",
     );
-    expect(fs.writeFileSync).toHaveBeenCalledTimes(3);
+    expect(fs.writeFileSync).toHaveBeenCalledTimes(4);
 
     const expectedTypeMessage = padMessage(
       "Path structure type",
@@ -358,7 +365,7 @@ describe("generate", () => {
     expect(logger.info).toHaveBeenNthCalledWith(2, expectedParamsInfoMessage, {
       indentLevel: SUCCESS_INDENT_LEVEL,
     });
-    expect(fs.writeFileSync).toHaveBeenCalledTimes(1);
+    expect(fs.writeFileSync).toHaveBeenCalledTimes(2);
     expect(fs.writeFileSync).toHaveBeenCalledWith(outputPath, "generated-type-content");
   });
 
@@ -621,6 +628,7 @@ describe("checkGenerated", () => {
 
   const baseDir = "test/base";
   const outputPath = "test/output/types.ts";
+  const testRoutesOutputPath = "test/output/types-test-routes.ts";
   const paramsFileName = "params.ts";
 
   beforeEach(() => {
@@ -644,6 +652,10 @@ describe("checkGenerated", () => {
 
       if (filePath === path.join("dir1", paramsFileName)) {
         return "params-type";
+      }
+
+      if (filePath === testRoutesOutputPath) {
+        return generatePathStructure.generateTestRouteManifest(testRoutesOutputPath, []);
       }
 
       return "";
