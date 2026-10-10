@@ -495,6 +495,123 @@ console.log(file.filename);
 console.log(file.contentType);
 ```
 
+### Reusable Client Types
+
+The generated client is useful beyond the exact place where you call it.
+`rpc4next/client` exports compact inference helpers so forms, service functions,
+hooks, test data, and error UI can reuse the same request and response types
+without spelling out `Parameters<typeof method>[0]` or `Awaited<ReturnType<...>>`.
+
+Use `InferRpcRequestType` for generated method inputs:
+
+```ts
+import type { InferRpcRequestType } from "rpc4next/client";
+
+type CreatePostInput = InferRpcRequestType<typeof client.api.posts.$post>;
+
+export async function submitPost(input: CreatePostInput) {
+  return client.api.posts.$post(input).unwrap();
+}
+```
+
+Pass a target when you only need one part of the generated request shape:
+
+```ts
+import type { InferRpcRequestType } from "rpc4next/client";
+
+type SearchQuery = InferRpcRequestType<typeof client.patterns.search.$url, "query">;
+type CreatePostFormValues = InferRpcRequestType<typeof client.api.posts.$post, "json">;
+
+const initialValues: CreatePostFormValues = {
+  title: "",
+};
+```
+
+Use `InferRpcResponseType` for success payloads. It accepts either a generated
+method or a `RpcResponsePromise`:
+
+```ts
+import type { InferRpcResponseType } from "rpc4next/client";
+
+type CreatedPost = InferRpcResponseType<typeof client.api.posts.$post>;
+type UserPayload = InferRpcResponseType<ReturnType<typeof client.api.users._userId>["$get"]>;
+```
+
+For status-specific response handling, pass the status as the second generic.
+By default this returns the parsed payload; pass `"response"` as the third
+generic when you need the typed `Response` branch itself:
+
+```ts
+import type { InferRpcResponseType } from "rpc4next/client";
+
+type CreatedPost = InferRpcResponseType<typeof client.api.posts.$post, 201>;
+type CreatedPostResponse = InferRpcResponseType<typeof client.api.posts.$post, 201, "response">;
+type PostErrorPayload = InferRpcResponseType<typeof client.api.posts.$post, "error">;
+```
+
+Error payload and code helpers let UI branches follow the endpoint definition,
+including custom error catalogs:
+
+```ts
+import {
+  matchRpcResponseError,
+  RpcResponseError,
+  type InferRpcErrorCode,
+} from "rpc4next/client";
+
+type GuardedErrorCode = InferRpcErrorCode<
+  ReturnType<typeof client.api["procedure-guarded"]._userId>["$get"]
+>;
+
+async function loadGuarded(userId: string) {
+  try {
+    return await client.api["procedure-guarded"]._userId(userId).$get().unwrap();
+  } catch (error) {
+    if (error instanceof RpcResponseError) {
+      return matchRpcResponseError(error, {
+        FORBIDDEN: () => "Permission denied",
+        BAD_REQUEST: () => "Invalid input",
+        INTERNAL_SERVER_ERROR: () => "Server error",
+      });
+    }
+
+    throw error;
+  }
+}
+```
+
+These types also compose with data-fetching libraries. For example, React Query
+can own cache, loading, refetch, and error state, while rpc4next owns the type
+safety for path params, query, request bodies, headers, cookies, and response
+payloads:
+
+```ts
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { InferRpcRequestType, InferRpcResponseType } from "rpc4next/client";
+
+type UserPayload = InferRpcResponseType<ReturnType<typeof client.api.users._userId>["$get"]>;
+type CreatePostInput = InferRpcRequestType<typeof client.api.posts.$post>;
+type CreatePostPayload = InferRpcResponseType<typeof client.api.posts.$post>;
+
+export function useUser(userId: string) {
+  return useQuery<UserPayload>({
+    queryKey: ["user", userId],
+    queryFn: () => client.api.users._userId(userId).$get().unwrap(),
+  });
+}
+
+export function useCreatePost() {
+  const queryClient = useQueryClient();
+
+  return useMutation<CreatePostPayload, Error, CreatePostInput>({
+    mutationFn: (input) => client.api.posts.$post(input).unwrap(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+    },
+  });
+}
+```
+
 ### 7. Generate Typed URLs for Pages
 
 `page.tsx` files are included in the generated path tree, so you can build typed URLs even when there is no RPC method to call.
