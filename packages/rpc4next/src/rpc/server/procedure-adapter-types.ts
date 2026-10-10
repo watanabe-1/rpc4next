@@ -19,6 +19,18 @@ import type {
   ProcedureValidationErrorHandlerResult,
 } from "./procedure-types";
 
+// oxlint-disable-next-line typescript/no-explicit-any -- Procedure error handlers must preserve user-defined error catalog variance.
+type AnyProcedureOnError<TErrorCatalog extends RpcErrorCatalog = any> = ProcedureOnError<
+  // oxlint-disable-next-line typescript/no-explicit-any -- Procedure callbacks intentionally accept any user result type.
+  any,
+  TErrorCatalog
+>;
+
+// oxlint-disable-next-line typescript/no-explicit-any -- Validation hooks accept arbitrary target/value/result combinations from user schemas.
+type AnyProcedureValidationErrorHandler<TErrorCatalog extends RpcErrorCatalog = any> =
+  // oxlint-disable-next-line typescript/no-explicit-any -- Validation hooks intentionally accept arbitrary user schema shapes.
+  ProcedureValidationErrorHandler<any, any, any, TErrorCatalog>;
+
 type ProcedureRouteAdapterCarrier = {
   definition: ProcedureDefinition;
   errorCatalog?: RpcErrorCatalog;
@@ -96,15 +108,15 @@ export type ProcedureDefaults<TErrorCatalog extends RpcErrorCatalog = DefaultRpc
   >;
 
 export type ExtractProcedureSharedRouteOnError<TDefaults> = TDefaults extends {
-  route: { onError: infer TSharedOnError extends ProcedureOnError<any, any> };
+  route: { onError: infer TSharedOnError extends AnyProcedureOnError };
 }
   ? TSharedOnError
-  : ProcedureOnError<any, any>;
+  : AnyProcedureOnError;
 
 export type ExtractProcedureSharedRouteOnValidationError<TDefaults> = TDefaults extends {
   route: {
     onValidationError?: infer TSharedOnValidationError extends
-      | ProcedureValidationErrorHandler<any, any, any, any>
+      | AnyProcedureValidationErrorHandler
       | undefined;
   };
 }
@@ -128,7 +140,7 @@ export type ExtractProcedureSharedPageOnValidationError<TDefaults> = TDefaults e
   : undefined;
 
 type HasProcedureRouteDefaults<TDefaults> = TDefaults extends {
-  route: { onError: ProcedureOnError<any, any> };
+  route: { onError: AnyProcedureOnError };
 }
   ? true
   : false;
@@ -144,8 +156,8 @@ export type ProcedureNextRouteOptions<
   TMethod extends HttpMethod,
   TValidateOutput extends boolean,
   TDefaults,
-  TOnError extends ProcedureOnError<any, any>,
-  TOnValidationError extends ProcedureValidationErrorHandler<any, any, any, any> | undefined,
+  TOnError extends AnyProcedureOnError,
+  TOnValidationError extends AnyProcedureValidationErrorHandler | undefined,
 > =
   HasProcedureRouteDefaults<TDefaults> extends true
     ? Omit<
@@ -175,8 +187,8 @@ export type ProcedureNextRouteTerminalOptions<
   TMethod extends HttpMethod,
   TValidateOutput extends boolean,
   TDefaults,
-  TOnError extends ProcedureOnError<any, any>,
-  TOnValidationError extends ProcedureValidationErrorHandler<any, any, any, any> | undefined,
+  TOnError extends AnyProcedureOnError,
+  TOnValidationError extends AnyProcedureValidationErrorHandler | undefined,
 > = Omit<
   ProcedureNextRouteOptions<
     TProcedure,
@@ -194,8 +206,8 @@ export type ProcedureNextRouteTerminalArgs<
   TMethod extends HttpMethod,
   TValidateOutput extends boolean,
   TDefaults,
-  TOnError extends ProcedureOnError<any, any>,
-  TOnValidationError extends ProcedureValidationErrorHandler<any, any, any, any> | undefined,
+  TOnError extends AnyProcedureOnError,
+  TOnValidationError extends AnyProcedureValidationErrorHandler | undefined,
 > =
   ProcedureNextRouteTerminalOptions<
     TProcedure,

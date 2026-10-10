@@ -21,7 +21,7 @@ import type { RouteHandlerResponse, RouteResponse, ValidationSchema } from "../s
 import type { TypedNextResponse, ValidationInputFor } from "../server/types";
 import type { RpcResponsePromise } from "./response";
 
-type DistributeOmit<T, K extends keyof any> = T extends any ? Omit<T, K> : never;
+type DistributeOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
 
 /** Extension of the standard `RequestInit` interface with strongly typed headers. */
 export type TypedRequestInit<TWithoutHeaders extends keyof HttpRequestHeaders = never> = Omit<
@@ -184,11 +184,11 @@ type InferValidationSchema<T> =
     input: ProcedureInputContract<infer TValidationSchema>;
   }
     ? TValidationSchema
-    : T extends (...args: any[]) => RouteHandlerResponse<RouteResponse, infer TValidationSchema>
+    : T extends (...args: never[]) => RouteHandlerResponse<RouteResponse, infer TValidationSchema>
       ? TValidationSchema
       : ValidationSchema;
 
-type InferNextResponseType<T> = T extends (...args: any[]) => Promise<NextResponse<infer U>>
+type InferNextResponseType<T> = T extends (...args: never[]) => Promise<NextResponse<infer U>>
   ? U
   : never;
 
@@ -275,16 +275,16 @@ type ReplaceSuccessResponseBody<TResponse, TOutput> =
     : never;
 
 type InferTypedNextResponseTypeFromOutput<T, TOutput> = T extends (
-  ...args: any[]
+  ...args: never[]
 ) => Promise<infer TResponse>
   ? [ReplaceSuccessResponseBody<TResponse, TOutput>] extends [never]
     ? TypedNextResponse<TOutput, HttpStatusCode, ContentType>
     : ReplaceSuccessResponseBody<TResponse, TOutput>
   : TypedNextResponse<TOutput, HttpStatusCode, ContentType>;
 
-type InferTypedNextResponseType<T> = T extends (...args: any[]) => Promise<unknown>
+type InferTypedNextResponseType<T> = T extends (...args: never[]) => Promise<unknown>
   ? IsNever<InferProcedureOutput<T>> extends true
-    ? T extends (...args: any[]) => Promise<TypedNextResponse>
+    ? T extends (...args: never[]) => Promise<TypedNextResponse>
       ?
           | Awaited<ReturnType<T>>
           | InferProcedureValidationErrorResponse<T>
@@ -321,7 +321,7 @@ export type ProcedureQueryInput<T> =
     ? ValidationInputFor<"query", TValidationSchema>
     : never;
 
-type PagePropsQueryInput<TPage> = TPage extends (props: infer TProps, ...args: any[]) => unknown
+type PagePropsQueryInput<TPage> = TPage extends (props: infer TProps, ...args: never[]) => unknown
   ? TProps extends { searchParams?: infer TSearchParams }
     ? AwaitedProps<TSearchParams>
     : never

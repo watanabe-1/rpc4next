@@ -67,13 +67,13 @@ export type ErrorResponsePayload<TResponse> = [ErrorResponse<Awaited<TResponse>>
   : ParsedPayload<ErrorResponse<Awaited<TResponse>>>;
 
 export type ErrorResponseCode<TResponse> =
-  ErrorResponsePayload<TResponse> extends RpcErrorEnvelope<infer TCode, any> ? TCode : never;
+  ErrorResponsePayload<TResponse> extends RpcErrorEnvelope<infer TCode, unknown> ? TCode : never;
 
 type RpcErrorCodeFromPayload<TPayload> =
-  TPayload extends RpcErrorEnvelope<infer TCode, any> ? TCode : string;
+  TPayload extends RpcErrorEnvelope<infer TCode, unknown> ? TCode : string;
 
 type RpcErrorPayloadByCode<TPayload, TCode extends string> =
-  TPayload extends RpcErrorEnvelope<TCode, any> ? TPayload : never;
+  TPayload extends RpcErrorEnvelope<TCode, unknown> ? TPayload : never;
 
 const getRpcErrorCode = <TPayload>(
   payload: TPayload,
