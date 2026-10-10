@@ -12,7 +12,7 @@
   - the integration fixture includes a shared `baseProcedure` preset under `integration/next-app/app/api/_shared/base-procedure.ts`
   - shared guarded procedures can declare multiple error variants and opt into runtime output validation
   - `procedure.formData(...)` is available publicly and validated by `procedure method terminals`
-  - `procedure.defaults({ onError })` can provide shared project-level route defaults, including `onError`, for procedure routes
+  - `createRouteProcedure({ onError })` and `createPageProcedure({ onError })` provide shared project-level presets
   - procedure input contracts accept validator-stage failure branching through `procedure.<target>(schema, { onValidationError(...) { ... } })`
   - narrow `response.*(...)` helpers are available inside `procedure.handle(...)`, `onValidationError(...)`, and `errorFormatter`
   - README and integration fixture docs now present `procedure` / `procedure method terminals` as the typed server authoring path
@@ -789,7 +789,7 @@ Scope:
 Deliverables:
 
 - an overridable error formatting hook for `procedure method terminals`, such as `errorFormatter`
-- a project-level preset path, such as `procedure.defaults({ onError })`, that can provide shared error behavior
+- a project-level preset path, such as `createRouteProcedure({ onError })`, that can provide shared error behavior
 - a documented distinction between rpc4next's default error codes and optional project-defined codes or registries
 - fixture coverage showing:
   - the default rpc4next formatter
@@ -799,7 +799,7 @@ Deliverables:
 Target authoring shape:
 
 ```ts
-const appProcedure = procedure.defaults({
+const appProcedure = createRouteProcedure({
   onError: defaultRpcErrorFormatter,
 });
 ```
@@ -807,7 +807,7 @@ const appProcedure = procedure.defaults({
 Possible project-level customization:
 
 ```ts
-const appProcedure = procedure.defaults({
+const appProcedure = createRouteProcedure({
   onError: (error, { response }) => {
     if (!isProjectError(error)) {
       return response.json(
@@ -1079,18 +1079,18 @@ Scope:
 
 - replace formatter-centric error customization with an explicit `onError` contract on `procedure method terminals`
 - make final route error serialization mandatory instead of optional fallback behavior
-- keep reusable procedure defaults as the project-level configuration path
+- keep reusable procedure factories as the project-level configuration path
 - remove procedure-level typed error contracts from the core authoring model
 
 Deliverables:
 
 - `procedure method terminals` requires `onError(error, context)` and always delegates caught errors through it
-- `procedure.defaults({ onError })` remains the shared configuration path for project-level reuse
+- `createRouteProcedure({ onError })` remains the shared configuration path for project-level route reuse
 - `procedure.error(...)` and related typed error-contract machinery are removed from the primary procedure surface
 - shared `onError` implementations should preserve their concrete return types so client inference can reflect the final error response shape
 - fixture coverage showing:
   - direct `procedure method terminals(..., { onError })` usage
-  - shared `procedure.defaults({ onError })` usage for project-wide policy
+  - shared `createRouteProcedure({ onError })` usage for project-wide policy
   - standard `rpcError(...)` handling through a user-supplied `onError`
   - arbitrary thrown errors mapped by the same `onError`
 
@@ -1130,7 +1130,7 @@ export const GET = procedure method terminals(
 Optional project preset shape:
 
 ```ts
-const appProcedure = procedure.defaults({
+const appProcedure = createRouteProcedure({
   onError(error, ctx) {
     if (error instanceof Response) {
       return error;
@@ -1174,13 +1174,13 @@ Why sixteenth:
 
 - the current formatter-plus-contract model adds type and API surface area without guaranteeing that every route makes an explicit runtime error decision
 - projects often want freedom to throw domain-specific errors while still forcing one final HTTP serialization path
-- reusable `procedure.defaults({ onError })` presets should remain the conceptual center of the server API
+- reusable `createRouteProcedure({ onError })` presets should remain the conceptual center of the server API
 
 Notes:
 
 - `onError` should be required for `procedure method terminals` and should not be allowed to return `undefined`
 - the primary abstraction should be a reusable procedure preset/default, not a separate kit namespace
-- if projects want shared route behavior such as `onError`, the preferred long-term shape is `procedure`-derived configuration reuse, for example `const appProcedure = procedure.defaults({ onError })`
+- if projects want shared route behavior such as `onError`, the preferred long-term shape is a route-specific factory preset, for example `const appProcedure = createRouteProcedure({ onError })`
 - any shared setting applied at the procedure level should flow naturally into terminal `.get(...)` without requiring a parallel builder surface that must mirror `procedure`
 - `rpcError(...)` should remain as a standard framework error value, but it should no longer imply a required route-level error contract declaration
 - `Response` / `NextResponse` escape hatches should continue to work by allowing `onError` to return them directly
@@ -1416,7 +1416,7 @@ What is now covered:
 - reusable shared presets such as `baseProcedure`
 - shared and route-local typed error contracts
 - optional runtime output validation
-- project-level shared `onError` through `procedure.defaults({ onError })`
+- project-level shared `onError` through `createRouteProcedure({ onError })`
 - validator-stage failure branching on procedure input contracts
 - raw `Response` / `NextResponse` escape hatches
 - middleware short-circuiting and incremental context widening

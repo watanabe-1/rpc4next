@@ -1,9 +1,7 @@
-import { procedure } from "rpc4next/server";
+import { createPageProcedure } from "rpc4next/server";
 
 import { pageOnError } from "./errors";
 
-export const appPageProcedure = procedure.defaults({
-  page: {
-    onError: pageOnError,
-  },
+export const appPageProcedure = createPageProcedure({
+  onError: pageOnError,
 });

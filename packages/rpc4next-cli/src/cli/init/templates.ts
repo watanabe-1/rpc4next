@@ -56,26 +56,23 @@ export const pageOnError = () => {
 };
 `;
 
-export const ROUTE_PROCEDURE = `import { procedure } from "rpc4next/server";
+export const ROUTE_PROCEDURE = `import { createRouteProcedure } from "rpc4next/server";
 
 import { appRpcErrors, routeOnError, routeOnValidationError } from "./errors";
 
-export const appRouteProcedure = procedure.errors(appRpcErrors).defaults({
-  route: {
-    onError: routeOnError,
-    onValidationError: routeOnValidationError,
-  },
+export const appRouteProcedure = createRouteProcedure({
+  errors: appRpcErrors,
+  onError: routeOnError,
+  onValidationError: routeOnValidationError,
 });
 `;
 
-export const PAGE_PROCEDURE = `import { procedure } from "rpc4next/server";
+export const PAGE_PROCEDURE = `import { createPageProcedure } from "rpc4next/server";
 
 import { pageOnError } from "./errors";
 
-export const appPageProcedure = procedure.defaults({
-  page: {
-    onError: pageOnError,
-  },
+export const appPageProcedure = createPageProcedure({
+  onError: pageOnError,
 });
 `;
 

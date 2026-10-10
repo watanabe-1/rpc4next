@@ -45,7 +45,10 @@ export { output, withOutput } from "./output";
 export type {
   Procedure,
   ProcedureAdapterMode,
+  BareProcedureBuilder,
   ProcedureBuilder,
+  CreatePageProcedureOptions,
+  CreateRouteProcedureOptions,
   ProcedureHandler,
   ProcedureHandlerContext,
   ProcedureMiddleware,
@@ -55,7 +58,7 @@ export type {
   ProcedureResponseHelpers,
   ProcedureResult,
 } from "./procedure";
-export { procedure } from "./procedure";
+export { createPageProcedure, createRouteProcedure, procedure } from "./procedure";
 export type {
   ProcedureInputOptions,
   ProcedureInputTarget,

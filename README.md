@@ -109,7 +109,7 @@ remain lightweight descriptive annotations rather than a policy system.
 
 ```ts
 // app/_rpc/route-procedure.ts
-import { procedure, type ProcedureOnError } from "rpc4next/server";
+import { createRouteProcedure, type ProcedureOnError } from "rpc4next/server";
 
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
@@ -129,10 +129,8 @@ const onError = ((error, { response }) => {
   });
 }) satisfies ProcedureOnError;
 
-export const appRouteProcedure = procedure.defaults({
-  route: {
-    onError,
-  },
+export const appRouteProcedure = createRouteProcedure({
+  onError,
 });
 ```
 
@@ -177,8 +175,8 @@ Notes:
 - method terminals return an object keyed by the matching Next.js export name, such as `{ GET }` or `{ POST }`
 - generated sibling `route-contract.ts` files are the recommended params source for procedure routes
 - input contracts consume Standard Schema V1-compatible schemas directly
-- route handlers can receive project-level error handling from a reusable preset such as `procedure.defaults({ route: { onError } })`; bare `procedure` routes still pass `onError` directly to method terminals
-- route-specific presets expose route response helpers and method terminals; page-specific presets expose page helpers and terminal `.page(...)`
+- route handlers receive project-level error handling from `createRouteProcedure({ onError })`; bare `procedure` routes still pass `onError` directly to method terminals
+- choose `createRouteProcedure(...)` for route presets and `createPageProcedure(...)` for page presets; terminal `.page(...)` remains the page-render adapter
 - route presets such as `appRouteProcedure`, guarded route presets such as `guardedRouteProcedure`, and validator-stage customization all build on this path
 
 `procedure` input contracts validate request input and return typed `400` JSON
@@ -341,31 +339,29 @@ they reach the route handler.
 
 Default validation error responses include the `BAD_REQUEST` code and message,
 but do not expose raw schema issues in `details`. If your app needs shared
-validation details, configure `procedure.defaults({ route: { onValidationError }
-})` and explicitly choose a sanitized shape. A route-local
+validation details, configure `createRouteProcedure({ onError, onValidationError })`
+and explicitly choose a sanitized shape. A route-local
 `onValidationError(...)` on a specific input contract can still override that
 shared default for custom branches.
 
 ```ts
-export const appRouteProcedure = procedure.defaults({
-  route: {
-    onError,
-    onValidationError: ({ issues, response, target }) =>
-      response.error("BAD_REQUEST", {
-        message: "Validation failed.",
-        details: {
-          target,
-          issues: issues.map(({ message, path }) => ({ message, path })),
-        },
-      }),
-  },
+export const appRouteProcedure = createRouteProcedure({
+  onError,
+  onValidationError: ({ issues, response, target }) =>
+    response.error("BAD_REQUEST", {
+      message: "Validation failed.",
+      details: {
+        target,
+        issues: issues.map(({ message, path }) => ({ message, path })),
+      },
+    }),
 });
 ```
 
 For page procedures, validation failures do not produce JSON error envelopes.
 They flow through page rendering instead. Use
-`procedure.defaults({ page: { onValidationError } })` when you want shared
-validation UI for pages, or keep using `page.onError` for the generic fallback.
+`createPageProcedure({ onError, onValidationError })` when you want shared
+validation UI for pages, or keep using `onError` for the generic fallback.
 
 ### `rpc4next init` Layout
 
@@ -590,9 +586,15 @@ render data, not for returning HTTP responses.
 
 ```tsx
 // app/photo/[id]/page.tsx
-import { procedure } from "rpc4next/server";
+import { createPageProcedure } from "rpc4next/server";
 import { z } from "zod";
 import { routeContract } from "./route-contract";
+
+const pageProcedure = createPageProcedure({
+  onError: (error) => {
+    throw error;
+  },
+});
 
 const paramsSchema = z.object({
   id: z.string(),
@@ -602,7 +604,7 @@ const pageDataSchema = z.object({
   id: z.string(),
 });
 
-export default procedure
+export default pageProcedure
   .forRoute(routeContract)
   .params(paramsSchema)
   .output(pageDataSchema)
@@ -631,7 +633,7 @@ When no page-specific data fetch is needed, render from the validated query or
 params directly:
 
 ```tsx
-export default procedure
+export default pageProcedure
   .forRoute(routeContract)
   .query(querySchema)
   .page(({ query }) => <Page initialMonth={query.month} />);
@@ -640,7 +642,7 @@ export default procedure
 When the page needs work before render, return that data from `.handle()`:
 
 ```tsx
-export default procedure
+export default pageProcedure
   .forRoute(routeContract)
   .params(paramsSchema)
   .query(querySchema)
@@ -653,14 +655,12 @@ export default procedure
 ```
 
 If a page should have project-level error handling or shared page middleware,
-use a page default:
+start from `createPageProcedure(...)`:
 
 ```tsx
-const pageProcedure = procedure.defaults({
-  page: {
-    onError: (error) => {
-      throw error;
-    },
+const pageProcedure = createPageProcedure({
+  onError: (error) => {
+    throw error;
   },
 });
 
@@ -686,13 +686,12 @@ export default pageProcedure
 ```
 
 Method terminals are the HTTP adapter. `.page(...)` is the page-render adapter.
-When `procedure.defaults({ route: { onError } })` is used, later middleware and
-handlers receive `response` helpers and the handled procedure exposes method
-terminals. When `procedure.defaults({ page: { onError } })` is used,
-later middleware and handlers receive `page.redirect(...)` and
-`page.notFound()`, and the handled procedure exposes `.page(...)`.
-The un-defaulted `procedure` builder can still feed either adapter, but the
-terminal adapter decides which inputs and return values are valid.
+When `createRouteProcedure({ onError })` is used, later middleware and handlers
+receive `response` helpers and the handled procedure exposes method terminals.
+When `createPageProcedure({ onError })` is used, later middleware and handlers
+receive `page.redirect(...)` and `page.notFound()`, and the handled procedure
+exposes `.page(...)`. The un-defaulted `procedure` builder can still feed either
+adapter, but app presets should choose the factory first.
 
 ### Middleware
 
@@ -781,7 +780,7 @@ type.
 
 Unexpected failures should still be thrown as normal exceptions. Route method
 terminals require `onError(error, context)` for that fallback path. For project-level
-reuse, prefer `procedure.defaults({ route: { onError } })` and export a shared
+reuse, prefer `createRouteProcedure({ onError })` and export a shared
 `appRouteProcedure` preset from `app/_rpc/route-procedure`.
 
 Input validation adds a typed `BAD_REQUEST` response when validation fails.
@@ -790,7 +789,7 @@ response. Other known error codes are only inferred when your handler or
 middleware returns them.
 
 ```ts
-import { procedure, type ProcedureOnError } from "rpc4next/server";
+import { createRouteProcedure, procedure, type ProcedureOnError } from "rpc4next/server";
 import { routeContract } from "./route-contract";
 
 const getErrorMessage = (error: unknown) =>
@@ -811,10 +810,8 @@ const onError = ((error, { response }) => {
   });
 }) satisfies ProcedureOnError;
 
-const appRouteProcedure = procedure.defaults({
-  route: {
-    onError,
-  },
+const appRouteProcedure = createRouteProcedure({
+  onError,
 });
 
 const guardedProcedure = procedure.forRoute(routeContract).handle(async ({ response }) => {
