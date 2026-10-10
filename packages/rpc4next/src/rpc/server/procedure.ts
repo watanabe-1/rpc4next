@@ -361,6 +361,16 @@ export type ProcedureMiddlewareContext<
 
 type ProcedureRouteTerminalResult = Response | NextResponse | ProcedureResult;
 
+type PageIncompatibleTerminalResult<TResult> =
+  | Extract<Awaited<TResult>, Response | NextResponse>
+  | Extract<Awaited<TResult>, { redirect: string }>;
+
+type HasPageIncompatibleTerminalResult<TResult> = [
+  PageIncompatibleTerminalResult<TResult>,
+] extends [never]
+  ? false
+  : true;
+
 type ProcedurePageMiddlewareResult<TContextExtension extends object = Record<never, never>> =
   | undefined
   | { ctx: TContextExtension };
@@ -685,47 +695,28 @@ export type Procedure<
   THandler,
   TMiddlewareTerminalResult
 > &
-  (ExtractProcedureAdapterMode<TDefaults> extends "page"
-    ? {
-        page: ProcedureNextPageMethod<
-          TDefinition,
-          TContext,
-          TOutput,
-          THandler,
-          TDefaults,
-          TErrorCatalog,
-          TMiddlewareTerminalResult
-        >;
-      }
-    : ExtractProcedureAdapterMode<TDefaults> extends "route"
-      ? ProcedureRouteTerminalMethods<
-          TDefinition,
-          TContext,
-          TOutput,
-          THandler,
-          TDefaults,
-          TErrorCatalog,
-          TMiddlewareTerminalResult
-        >
-      : ProcedureRouteTerminalMethods<
-          TDefinition,
-          TContext,
-          TOutput,
-          THandler,
-          TDefaults,
-          TErrorCatalog,
-          TMiddlewareTerminalResult
-        > & {
-          page: ProcedureNextPageMethod<
-            TDefinition,
-            TContext,
-            TOutput,
-            THandler,
-            TDefaults,
-            TErrorCatalog,
-            TMiddlewareTerminalResult
-          >;
-        });
+  Omit<
+    ProcedureRouteTerminalMethods<
+      TDefinition,
+      TContext,
+      TOutput,
+      THandler,
+      TDefaults,
+      TErrorCatalog,
+      TMiddlewareTerminalResult
+    > & {
+      page: ProcedureNextPageMethod<
+        TDefinition,
+        TContext,
+        TOutput,
+        THandler,
+        TDefaults,
+        TErrorCatalog,
+        TMiddlewareTerminalResult
+      >;
+    },
+    UnavailableProcedureTerminalKeys<TDefinition, TDefaults, THandler, TMiddlewareTerminalResult>
+  >;
 
 type HasProcedureOutput<TDefinition extends ProcedureDefinition> = TDefinition extends {
   output: ProcedureOutputContract;
@@ -804,6 +795,89 @@ type HasProcedureInput<TDefinition extends ProcedureDefinition> = TDefinition ex
   ? true
   : false;
 
+type HasProcedureBodyInput<TDefinition extends ProcedureDefinition> =
+  HasProcedureInputContractTarget<TDefinition, "json"> extends true
+    ? true
+    : HasProcedureInputContractTarget<TDefinition, "formData"> extends true
+      ? true
+      : false;
+
+type IsProcedurePageTerminalAvailable<
+  TDefinition extends ProcedureDefinition,
+  TDefaults,
+  THandler,
+  TMiddlewareTerminalResult,
+> =
+  ExtractProcedureAdapterMode<TDefaults> extends "route"
+    ? false
+    : HasProcedureRoute<TDefinition> extends true
+      ? HasBoundRouteParams<TDefinition> extends true
+        ? HasValidatedParams<TDefinition> extends true
+          ? IsProcedurePageInputAndResultCompatible<
+              TDefinition,
+              THandler,
+              TMiddlewareTerminalResult
+            >
+          : false
+        : IsProcedurePageInputAndResultCompatible<TDefinition, THandler, TMiddlewareTerminalResult>
+      : false;
+
+type IsProcedurePageInputAndResultCompatible<
+  TDefinition extends ProcedureDefinition,
+  THandler,
+  TMiddlewareTerminalResult,
+> =
+  HasProcedureBodyInput<TDefinition> extends true
+    ? false
+    : HasPageIncompatibleTerminalResult<
+          THandler extends (...args: never[]) => infer TResult ? TResult : never
+        > extends true
+      ? false
+      : HasPageIncompatibleTerminalResult<TMiddlewareTerminalResult> extends true
+        ? false
+        : true;
+
+type UnavailableProcedureRouteTerminalKeys<TDefinition extends ProcedureDefinition, TDefaults> =
+  ExtractProcedureAdapterMode<TDefaults> extends "page"
+    ? keyof ProcedureRouteTerminalMethods<
+        EmptyProcedureDefinition,
+        Record<never, never>,
+        unknown,
+        ProcedureHandler,
+        undefined,
+        DefaultRpcErrorCatalog,
+        never
+      >
+    : HasProcedureRoute<TDefinition> extends true
+      ? HasProcedureBodyInput<TDefinition> extends true
+        ? "get" | "head"
+        : never
+      : keyof ProcedureRouteTerminalMethods<
+          EmptyProcedureDefinition,
+          Record<never, never>,
+          unknown,
+          ProcedureHandler,
+          undefined,
+          DefaultRpcErrorCatalog,
+          never
+        >;
+
+type UnavailableProcedureTerminalKeys<
+  TDefinition extends ProcedureDefinition,
+  TDefaults,
+  THandler,
+  TMiddlewareTerminalResult,
+> =
+  | UnavailableProcedureRouteTerminalKeys<TDefinition, TDefaults>
+  | (IsProcedurePageTerminalAvailable<
+      TDefinition,
+      TDefaults,
+      THandler,
+      TMiddlewareTerminalResult
+    > extends true
+      ? never
+      : "page");
+
 type HasProcedureConfiguration<
   TDefinition extends ProcedureDefinition,
   TDefaults,
@@ -827,7 +901,9 @@ type UsedProcedureBuilderMethodKeys<
   | (true extends HasProcedureConfiguration<TDefinition, TDefaults, THasMiddleware>
       ? "errors"
       : never)
-  | (ExtractProcedureAdapterMode<TDefaults> extends "route" ? "page" : never)
+  | (IsProcedurePageTerminalAvailable<TDefinition, TDefaults, never, never> extends true
+      ? never
+      : "page")
   | (HasProcedureRoute<TDefinition> extends true ? "forRoute" : never)
   | (HasProcedureOutput<TDefinition> extends true ? "output" : never)
   | (HasProcedureInputContractTarget<TDefinition, "params"> extends true ? "params" : never)
@@ -1564,20 +1640,8 @@ const createProcedureBuilder = <
     };
   };
 
-  return {
-    errors: withErrors,
-    defaults: withDefaults,
-    meta: withMeta,
-    forRoute: withRoute,
-    params: withParams,
-    query: withQuery,
-    json: withJson,
-    formData: withFormData,
-    headers: withHeaders,
-    cookies: withCookies,
-    output: withOutput,
-    use: withMiddleware,
-    page: ((render: unknown, options: unknown) => {
+  const createPageTerminal = () =>
+    ((render: unknown, options: unknown) => {
       const pageProcedure = {
         definition,
         errorCatalog: resolvedErrorCatalog,
@@ -1596,7 +1660,22 @@ const createProcedureBuilder = <
       TDefaults,
       TErrorCatalog,
       TMiddlewareTerminalResult
-    >,
+    >;
+
+  return {
+    errors: withErrors,
+    defaults: withDefaults,
+    meta: withMeta,
+    forRoute: withRoute,
+    params: withParams,
+    query: withQuery,
+    json: withJson,
+    formData: withFormData,
+    headers: withHeaders,
+    cookies: withCookies,
+    output: withOutput,
+    use: withMiddleware,
+    page: createPageTerminal(),
     handle: (...args) => {
       const handledProcedure = {
         definition,
