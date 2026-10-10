@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.14.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.13.0...rpc4next-v0.14.0) (2026-10-10)
+
+
+### Features
+
+* Add typed RPC test client with generated route manifests ([#635](https://github.com/watanabe-1/rpc4next/issues/635)) ([3d7af80](https://github.com/watanabe-1/rpc4next/commit/3d7af80edf9b9cc072fad35a954ed2512ecfcc56))
+* **client:** Add reusable RPC type inference utilities ([#634](https://github.com/watanabe-1/rpc4next/issues/634)) ([b704a95](https://github.com/watanabe-1/rpc4next/commit/b704a95e653bd2b180db4028a2e5d8d913e66b99))
+* **rpc4next:** Introduce route and page procedure factories ([#630](https://github.com/watanabe-1/rpc4next/issues/630)) ([e752cec](https://github.com/watanabe-1/rpc4next/commit/e752cec41a8a420520c79fee985138ffb9c07918))
+
+
+### Bug Fixes
+
+* **rpc4next:** Hide incompatible procedure terminal methods ([#633](https://github.com/watanabe-1/rpc4next/issues/633)) ([3197d40](https://github.com/watanabe-1/rpc4next/commit/3197d40585c6aa94004f800ebf7584bdb1e54eb1))
+
 ## [0.13.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.12.0...rpc4next-v0.13.0) (2026-10-09)
 
 ### ⚠ BREAKING CHANGES
