@@ -12,6 +12,12 @@ const writeJson = (file: string, obj: unknown) =>
 
 const mkdirp = (p: string) => fs.mkdirSync(p, { recursive: true });
 
+type TestPackageJson = {
+  dependencies: Record<string, unknown>;
+  peerDependencies: Record<string, unknown>;
+  optionalDependencies: Record<string, unknown>;
+};
+
 describe("replaceWorkspaceDepsFromManifest", () => {
   let tmpDir: string | null = null;
 
@@ -57,7 +63,7 @@ describe("replaceWorkspaceDepsFromManifest", () => {
 
     const res = replaceWorkspaceDepsFromManifest({ repoRoot: tmpDir });
 
-    const core = readJson<any>(path.join(pCore, "package.json"));
+    const core = readJson<TestPackageJson>(path.join(pCore, "package.json"));
     expect(core.dependencies["rpc4next-shared"]).toBe("^1.7.3");
     expect(core.peerDependencies["rpc4next-shared"]).toBe("^1.7.3");
     expect(core.optionalDependencies["rpc4next-shared"]).toBe("~1.7.3");
@@ -91,7 +97,7 @@ describe("replaceWorkspaceDepsFromManifest", () => {
 
     const res = replaceWorkspaceDepsFromManifest({ repoRoot: tmpDir });
 
-    const core = readJson<any>(path.join(pCore, "package.json"));
+    const core = readJson<TestPackageJson>(path.join(pCore, "package.json"));
     expect(core.dependencies["some-other-pkg"]).toBe("workspace:*");
     expect(res.updatedFiles.length).toBe(0);
     expect(res.changes.length).toBe(0);
@@ -132,7 +138,7 @@ describe("replaceWorkspaceDepsFromManifest", () => {
         "rpc4next-shared": "workspace:",
         "non-workspace": "^1.0.0",
         // Intentionally invalid type to hit runtime guard.
-        "non-string": 123 as any,
+        "non-string": 123,
       },
     });
 
@@ -142,7 +148,7 @@ describe("replaceWorkspaceDepsFromManifest", () => {
       defaultRange: "~",
     });
 
-    const core = readJson<any>(path.join(pCore, "package.json"));
+    const core = readJson<TestPackageJson>(path.join(pCore, "package.json"));
     expect(core.dependencies["rpc4next-shared"]).toBe("~1.7.3");
     expect(core.optionalDependencies["rpc4next-shared"]).toBe("~1.7.3");
     expect(core.optionalDependencies["non-workspace"]).toBe("^1.0.0");
@@ -185,7 +191,7 @@ describe("replaceWorkspaceDepsFromManifest", () => {
       defaultRange: "~",
     });
 
-    const core = readJson<any>(path.join(pCore, "package.json"));
+    const core = readJson<TestPackageJson>(path.join(pCore, "package.json"));
     expect(core.dependencies["rpc4next-shared"]).toBe("~1.7.3");
     expect(res.changes.map((c) => `${c.depName}:${c.from}->${c.to}`)).toEqual([
       "rpc4next-shared:workspace:weird->~1.7.3",
@@ -220,7 +226,7 @@ describe("replaceWorkspaceDepsFromManifest", () => {
 
     const res = runCli(tmpDir);
 
-    const core = readJson<any>(path.join(pCore, "package.json"));
+    const core = readJson<TestPackageJson>(path.join(pCore, "package.json"));
     expect(core.dependencies["rpc4next-shared"]).toBe("^1.7.3");
     expect(res.updatedFiles.length).toBe(1);
   });
@@ -255,7 +261,7 @@ describe("replaceWorkspaceDepsFromManifest", () => {
 
     const res = runCli(tmpDir, ".github/release-please/.release-please-manifest.json");
 
-    const core = readJson<any>(path.join(pCore, "package.json"));
+    const core = readJson<TestPackageJson>(path.join(pCore, "package.json"));
     expect(core.dependencies["rpc4next-shared"]).toBe("^1.7.3");
     expect(res.updatedFiles.length).toBe(1);
   });

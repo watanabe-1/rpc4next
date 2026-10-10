@@ -1,10 +1,12 @@
-type CancellableDebounced<T extends (...args: any[]) => Promise<void> | void> = ((
+type CancellableDebounced<T extends (...args: never[]) => Promise<void> | void> = ((
   ...args: Parameters<T>
 ) => void) & {
   cancel: () => void;
 };
 
-export const debounceOnceRunningWithTrailing = <T extends (...args: any[]) => Promise<void> | void>(
+export const debounceOnceRunningWithTrailing = <
+  T extends (...args: never[]) => Promise<void> | void,
+>(
   func: T,
   delay: number,
 ): CancellableDebounced<T> => {

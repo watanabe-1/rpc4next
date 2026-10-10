@@ -21,6 +21,10 @@ export type ReplaceResult = {
   }>;
 };
 
+type PackageJson = Record<string, unknown> & {
+  name: string;
+} & Partial<Record<NonNullable<ReplaceOptions["depFields"]>[number], Record<string, unknown>>>;
+
 const readJson = <T>(file: string): T => JSON.parse(fs.readFileSync(file, "utf8"));
 
 const writeJson = (file: string, obj: unknown) =>
@@ -55,12 +59,12 @@ export function replaceWorkspaceDepsFromManifest(options: ReplaceOptions): Repla
 
   for (const dir of packageDirs) {
     const pkgPath = path.join(repoRoot, dir, "package.json");
-    const pkg = readJson<any>(pkgPath);
+    const pkg = readJson<PackageJson>(pkgPath);
 
     let changed = false;
 
     for (const field of depFields) {
-      const deps: Record<string, string> | undefined = pkg[field];
+      const deps = pkg[field];
       if (!deps) continue;
 
       for (const [depName, spec] of Object.entries(deps)) {
@@ -80,12 +84,12 @@ export function replaceWorkspaceDepsFromManifest(options: ReplaceOptions): Repla
 
         const next = `${prefix}${version}`;
 
-        options.logger?.(`[replace] ${pkg.name}: ${field}.${depName} ${deps[depName]} -> ${next}`);
+        options.logger?.(`[replace] ${pkg.name}: ${field}.${depName} ${spec} -> ${next}`);
 
         result.changes.push({
           packageName: pkg.name,
           depName,
-          from: deps[depName],
+          from: spec,
           to: next,
         });
         deps[depName] = next;

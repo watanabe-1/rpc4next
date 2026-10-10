@@ -50,6 +50,18 @@ import type { InferSchemaInput, InferSchemaOutput } from "./schema-inference";
 import type { StandardSchemaV1 } from "./standard-schema";
 import type { Params, Query, ResponseHelpers } from "./types";
 
+// oxlint-disable-next-line typescript/no-explicit-any -- Procedure error handlers must preserve user-defined error catalog variance.
+type AnyProcedureOnError<TErrorCatalog extends RpcErrorCatalog = any> = ProcedureOnError<
+  // oxlint-disable-next-line typescript/no-explicit-any -- Procedure callbacks intentionally accept any user result type.
+  any,
+  TErrorCatalog
+>;
+
+// oxlint-disable-next-line typescript/no-explicit-any -- Validation hooks accept arbitrary target/value/result combinations from user schemas.
+type AnyProcedureValidationErrorHandler<TErrorCatalog extends RpcErrorCatalog = any> =
+  // oxlint-disable-next-line typescript/no-explicit-any -- Validation hooks intentionally accept arbitrary user schema shapes.
+  ProcedureValidationErrorHandler<any, any, any, TErrorCatalog>;
+
 export type ProcedureAdapterMode = "neutral" | "route" | "page";
 
 export type ProcedurePageHelpers = {
@@ -95,7 +107,7 @@ type ExtractProcedureMiddlewareContextExtension<TMiddleware> =
     : Record<never, never>;
 
 type ExtractProcedureMiddlewareTerminalResult<TMiddleware> = TMiddleware extends (
-  ...args: any[]
+  ...args: never[]
 ) => infer TResult
   ? Extract<Awaited<TResult>, Response | NextResponse | ProcedureResult>
   : never;
@@ -446,10 +458,9 @@ type ProcedureNextRouteMethod<
   TMethod extends HttpMethod,
 > = <
   TValidateOutput extends boolean = false,
-  TOnError extends ProcedureOnError<any, any> = ExtractProcedureSharedRouteOnError<TDefaults>,
-  TOnValidationError extends
-    | ProcedureValidationErrorHandler<any, any, any, TErrorCatalog>
-    | undefined = ExtractProcedureSharedRouteOnValidationError<TDefaults>,
+  TOnError extends AnyProcedureOnError = ExtractProcedureSharedRouteOnError<TDefaults>,
+  TOnValidationError extends AnyProcedureValidationErrorHandler | undefined =
+    ExtractProcedureSharedRouteOnValidationError<TDefaults>,
 >(
   ...args: ProcedureNextRouteTerminalArgs<
     Procedure<
@@ -1790,6 +1801,7 @@ export function createRouteProcedure(
       >
     | undefined
   >,
+  // oxlint-disable-next-line typescript/no-explicit-any -- Overload implementation must cover specialized route procedure builder return types.
 ): any {
   const errorCatalog =
     options.errors === undefined ? defaultRpcErrorCatalog : defineRpcErrors(options.errors);
@@ -1846,6 +1858,7 @@ export function createPageProcedure(
     ProcedurePageOnError,
     ProcedurePageOnValidationError | undefined
   >,
+  // oxlint-disable-next-line typescript/no-explicit-any -- Overload implementation must cover specialized page procedure builder return types.
 ): any {
   return createProcedureBuilder<
     EmptyProcedureDefinition,
