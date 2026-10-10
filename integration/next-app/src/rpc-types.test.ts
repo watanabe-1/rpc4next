@@ -1,7 +1,11 @@
+import type { UseMutationOptions, UseQueryOptions } from "@tanstack/react-query";
 import {
   createRpcClient,
   type ErrorResponseCode,
   type ErrorResponsePayload,
+  type InferRpcErrorCode,
+  type InferRpcRequestType,
+  type InferRpcResponseType,
   type RpcFilePayload,
   RpcResponseError,
   type SuccessfulResponsePayload,
@@ -227,6 +231,265 @@ describe("integration next-app generated RPC type coverage", () => {
     void _procedureSubmitArgFromExpected;
     void _procedureFormDataArgFromActual;
     void _procedureFormDataArgFromExpected;
+  });
+
+  it("exports compact RPC inference utility types", () => {
+    type CreatePostInput = InferRpcRequestType<typeof client.api.posts.$post>;
+    type ExpectedCreatePostInput = {
+      url?: {
+        hash?: string;
+      };
+      body: {
+        json: {
+          title: string;
+        };
+      };
+    };
+    const _createPostInputFromActual: ExpectedCreatePostInput = {} as CreatePostInput;
+    const _createPostInputFromExpected: CreatePostInput = {} as ExpectedCreatePostInput;
+
+    type ProcedureContractGet = ReturnType<
+      (typeof client.api)["procedure-contract"]["_userId"]
+    >["$get"];
+    type OptionalProcedureInput = InferRpcRequestType<ProcedureContractGet>;
+    expectTypeOf<OptionalProcedureInput>().toEqualTypeOf<
+      | {
+          url?: {
+            query?: IncludePostsQuery;
+            hash?: string;
+          };
+        }
+      | undefined
+    >();
+
+    type CreatePostPayload = InferRpcResponseType<typeof client.api.posts.$post>;
+    type ExpectedCreatePostPayload = {
+      ok: true;
+      title: string;
+    };
+    const _createPostPayloadFromActual: ExpectedCreatePostPayload = {} as CreatePostPayload;
+    const _createPostPayloadFromExpected: CreatePostPayload = {} as ExpectedCreatePostPayload;
+
+    type CreatePostPromisePayload = InferRpcResponseType<ReturnType<typeof client.api.posts.$post>>;
+    expectTypeOf<CreatePostPromisePayload>().toEqualTypeOf<CreatePostPayload>();
+
+    type GuardedGet = ReturnType<(typeof client.api)["procedure-guarded"]["_userId"]>["$get"];
+    type GuardedError = InferRpcResponseType<GuardedGet, "error">;
+    type GuardedErrorCode = InferRpcErrorCode<GuardedGet>;
+    expectTypeOf<GuardedErrorCode>().toEqualTypeOf<
+      "BAD_REQUEST" | "INTERNAL_SERVER_ERROR" | "UNAUTHORIZED" | "FORBIDDEN" | "PLAN_REQUIRED"
+    >();
+    expectTypeOf<
+      Extract<
+        GuardedError,
+        {
+          error: {
+            code: "PLAN_REQUIRED";
+          };
+        }
+      >
+    >().toExtend<{
+      error: {
+        code: "PLAN_REQUIRED";
+        message: string;
+        details?: {
+          reason: "plan_upgrade_required";
+        };
+      };
+    }>();
+
+    type GuardedOkResponse = InferRpcResponseType<GuardedGet, 200, "response">;
+    expectTypeOf<GuardedOkResponse>().toExtend<
+      TypedNextResponse<
+        {
+          ok: true;
+          userId: string;
+          includeDrafts: boolean;
+          role: "reader" | "editor";
+          organizationId: string;
+          plan: "pro" | "enterprise";
+          source: "procedure-guarded";
+          requestId: string;
+          traceId: string;
+        },
+        200,
+        "application/json"
+      >
+    >();
+    type GuardedBadRequestResponse = InferRpcResponseType<GuardedGet, 400, "response">;
+    expectTypeOf<GuardedBadRequestResponse>().toExtend<
+      TypedNextResponse<
+        {
+          error: {
+            code: "BAD_REQUEST";
+            message: string;
+            details?: unknown;
+          };
+        },
+        400,
+        "application/json"
+      >
+    >();
+    type GuardedInternalErrorResponse = InferRpcResponseType<GuardedGet, 500, "response">;
+    expectTypeOf<GuardedInternalErrorResponse>().toExtend<
+      TypedNextResponse<
+        {
+          error: {
+            code: "INTERNAL_SERVER_ERROR";
+            message: string;
+            details?: unknown;
+          };
+        },
+        500,
+        "application/json"
+      >
+    >();
+    expectTypeOf<InferRpcResponseType<GuardedGet, 200>>().toEqualTypeOf<{
+      ok: true;
+      userId: string;
+      includeDrafts: boolean;
+      role: "reader" | "editor";
+      organizationId: string;
+      plan: "pro" | "enterprise";
+      source: "procedure-guarded";
+      requestId: string;
+      traceId: string;
+    }>();
+    expectTypeOf<InferRpcResponseType<GuardedGet, 400>>().toExtend<{
+      error: {
+        code: "BAD_REQUEST";
+        message: string;
+        details?: unknown;
+      };
+    }>();
+    expectTypeOf<InferRpcResponseType<GuardedGet, 500>>().toExtend<{
+      error: {
+        code: "INTERNAL_SERVER_ERROR";
+        message: string;
+        details?: unknown;
+      };
+    }>();
+
+    type SearchQuery = InferRpcRequestType<typeof client.patterns.search.$url, "query">;
+    expectTypeOf<SearchQuery>().toEqualTypeOf<SearchPageQuery>();
+    type GuardedQuery = InferRpcRequestType<GuardedGet, "query">;
+    expectTypeOf<GuardedQuery>().toEqualTypeOf<IncludeDraftsQuery>();
+    type CreatePostJson = InferRpcRequestType<typeof client.api.posts.$post, "json">;
+    expectTypeOf<CreatePostJson>().toEqualTypeOf<{ title: string }>();
+    type ProcedureFormData = InferRpcRequestType<
+      (typeof client.api)["procedure-form-data"]["$post"],
+      "formData"
+    >;
+    expectTypeOf<ProcedureFormData>().toEqualTypeOf<FormData>();
+    type RequestMetaHeaders = InferRpcRequestType<
+      (typeof client.api)["request-meta"]["$get"],
+      "headers"
+    >;
+    expectTypeOf<RequestMetaHeaders>().toEqualTypeOf<{
+      "x-integration-test": string;
+    }>();
+    type RequestMetaCookies = InferRpcRequestType<
+      (typeof client.api)["request-meta"]["$get"],
+      "cookies"
+    >;
+    expectTypeOf<RequestMetaCookies>().toEqualTypeOf<{
+      session: string;
+    }>();
+
+    void _createPostInputFromActual;
+    void _createPostInputFromExpected;
+    void _createPostPayloadFromActual;
+    void _createPostPayloadFromExpected;
+  });
+
+  it("aligns compact response inference with unwrap payloads", async () => {
+    const guardedPayload = await client.api["procedure-guarded"]
+      ._userId("procedure-user")
+      .$get({
+        requestHeaders: {
+          headers: {
+            "x-demo-user": "procedure-user",
+            "x-demo-role": "editor",
+          },
+        },
+      })
+      .unwrap();
+    type GuardedGet = ReturnType<(typeof client.api)["procedure-guarded"]["_userId"]>["$get"];
+    expectTypeOf<typeof guardedPayload>().toEqualTypeOf<InferRpcResponseType<GuardedGet>>();
+    expectTypeOf<typeof guardedPayload>().toEqualTypeOf<{
+      ok: true;
+      userId: string;
+      includeDrafts: boolean;
+      role: "reader" | "editor";
+      organizationId: string;
+      plan: "pro" | "enterprise";
+      source: "procedure-guarded";
+      requestId: string;
+      traceId: string;
+    }>();
+
+    type CreatePostMutationInput = InferRpcRequestType<typeof client.api.posts.$post>;
+    expectTypeOf<
+      Parameters<typeof client.api.posts.$post>[0]
+    >().toEqualTypeOf<CreatePostMutationInput>();
+    const createPostPayload = await client.api.posts
+      .$post({
+        body: { json: { title: "integration type test" } },
+      })
+      .unwrap();
+    type CreatePostPayload = InferRpcResponseType<typeof client.api.posts.$post>;
+    type ExpectedCreatePostMutationPayload = {
+      ok: true;
+      title: string;
+    };
+    const _createPostMutationPayloadFromActual: ExpectedCreatePostMutationPayload =
+      createPostPayload;
+    const _createPostMutationPayloadFromExpected: CreatePostPayload =
+      {} as ExpectedCreatePostMutationPayload;
+    expectTypeOf<typeof createPostPayload>().toEqualTypeOf<CreatePostPayload>();
+
+    void _createPostMutationPayloadFromActual;
+    void _createPostMutationPayloadFromExpected;
+  });
+
+  it("types React Query options from generated RPC methods", () => {
+    type GuardedGet = ReturnType<(typeof client.api)["procedure-guarded"]["_userId"]>["$get"];
+    type GuardedPayload = InferRpcResponseType<GuardedGet>;
+    type CreatePostInput = InferRpcRequestType<typeof client.api.posts.$post>;
+    type CreatePostPayload = InferRpcResponseType<typeof client.api.posts.$post>;
+
+    const _guardedQueryOptions = {
+      queryKey: ["guarded", "procedure-user"] as const,
+      queryFn: () =>
+        client.api["procedure-guarded"]
+          ._userId("procedure-user")
+          .$get({
+            requestHeaders: {
+              headers: {
+                "x-demo-user": "procedure-user",
+                "x-demo-role": "editor",
+              },
+            },
+          })
+          .unwrap(),
+    } satisfies UseQueryOptions<GuardedPayload>;
+
+    const _createPostMutationOptions = {
+      mutationFn: (input) => client.api.posts.$post(input).unwrap(),
+      onSuccess: (payload) => {
+        expectTypeOf(payload).toEqualTypeOf<CreatePostPayload>();
+      },
+    } satisfies UseMutationOptions<CreatePostPayload, Error, CreatePostInput>;
+
+    expectTypeOf<
+      Awaited<ReturnType<typeof _guardedQueryOptions.queryFn>>
+    >().toEqualTypeOf<GuardedPayload>();
+    expectTypeOf<
+      Parameters<typeof _createPostMutationOptions.mutationFn>[0]
+    >().toEqualTypeOf<CreatePostInput>();
+    expectTypeOf<
+      Awaited<ReturnType<typeof _createPostMutationOptions.mutationFn>>
+    >().toEqualTypeOf<CreatePostPayload>();
   });
 
   it("infers the generated response types for integration routes", async () => {

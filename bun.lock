@@ -26,6 +26,7 @@
     "integration/next-app": {
       "name": "@integration/next-app",
       "dependencies": {
+        "@tanstack/react-query": "^5.104.1",
         "react": "^19.3.0",
         "react-dom": "^19.3.0",
         "rpc4next": "workspace:*",
@@ -370,6 +371,10 @@
     "@rolldown/pluginutils": ["@rolldown/pluginutils@1.0.1", "", {}, "sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw=="],
 
     "@swc/helpers": ["@swc/helpers@0.5.23", "", { "dependencies": { "tslib": "^2.8.0" } }, "sha512-5lSsMOTXURePglDfvuAQUqkGek9Hg2kksOYay2m0+XR++b2NWYL/4sWyuvVBIs8oKnJaxkdi9whaL/sqN13afw=="],
+
+    "@tanstack/query-core": ["@tanstack/query-core@5.104.1", "", {}, "sha512-TiRghcrGkUTE+M4JBxvpPSpBhxvIzQairw+cksrHYGr+2uwC77yW1SY9nYxnYRYOppvucf8rEg6b5byoz4rTpw=="],
+
+    "@tanstack/react-query": ["@tanstack/react-query@5.104.1", "", { "dependencies": { "@tanstack/query-core": "5.104.1" }, "peerDependencies": { "react": "^18 || ^19" } }, "sha512-Zz70EgjahNI7aCz8BZxM3vUGU44ycxEAzMuCUjLeA7SVhhOkg3ZgPjPJPvHjs6Rmky/dtmnu1WzjGHNHmhCoZQ=="],
 
     "@types/chai": ["@types/chai@5.2.2", "", { "dependencies": { "@types/deep-eql": "*" } }, "sha512-8kB30R7Hwqf40JPiKhVzodJs2Qc1ZJ5zuT3uzw5Hq/dhNCl3G3l83jfpdI1e20BP348+fV7VIL/+FxaXkqBmWg=="],
 

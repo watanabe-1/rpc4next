@@ -1,4 +1,5 @@
 import type { ContentType } from "../lib/content-type-types";
+import type { SuccessfulHttpStatusCode } from "../lib/http-status-code-types";
 import type { RpcErrorEnvelope } from "../server/error";
 import type { TypedNextResponse } from "../server/types";
 
@@ -15,8 +16,25 @@ type BodyParserResponseLike<TJsonPayload = unknown> = {
   clone?: () => BodyParserResponseLike<TJsonPayload>;
 };
 
-type SuccessfulResponse<TResponse> = Extract<TResponse, { readonly ok: true }>;
-type ErrorResponse<TResponse> = Extract<TResponse, { readonly ok: false }>;
+type SuccessfulResponse<TResponse> =
+  TResponse extends TypedNextResponse<unknown, infer TStatus, ContentType>
+    ? TStatus extends SuccessfulHttpStatusCode
+      ? TResponse
+      : never
+    : Extract<TResponse, { readonly ok: true }>;
+type ErrorResponse<TResponse> =
+  TResponse extends TypedNextResponse<unknown, infer TStatus, ContentType>
+    ? TStatus extends SuccessfulHttpStatusCode
+      ? never
+      : TResponse
+    : Extract<TResponse, { readonly ok: false }>;
+type RpcResponseSource<TMethodOrResponsePromise> = TMethodOrResponsePromise extends {
+  (...args: infer _TArgs): infer TResponsePromise;
+}
+  ? Awaited<TResponsePromise>
+  : TMethodOrResponsePromise extends RpcResponsePromise<infer TResponse>
+    ? Awaited<TResponse>
+    : Awaited<TMethodOrResponsePromise>;
 
 type JsonContentType = "application/json" | `${string}+json`;
 type XmlContentType = "application/xml" | `application/${string}+xml`;
@@ -68,6 +86,160 @@ export type ErrorResponsePayload<TResponse> = [ErrorResponse<Awaited<TResponse>>
 
 export type ErrorResponseCode<TResponse> =
   ErrorResponsePayload<TResponse> extends RpcErrorEnvelope<infer TCode, unknown> ? TCode : never;
+
+type RpcRequestInput<TMethod> = TMethod extends { (...args: infer TArgs): unknown }
+  ? TArgs extends []
+    ? undefined
+    : TArgs[0]
+  : never;
+
+type RpcResponseByStatus<
+  TMethodOrResponsePromise,
+  TStatus extends number,
+  TResponse = RpcResponseSource<TMethodOrResponsePromise>,
+> = TResponse extends { readonly status: infer TResponseStatus }
+  ? TStatus extends TResponseStatus
+    ? TResponse
+    : never
+  : never;
+
+type RpcPayloadByStatus<TMethodOrResponsePromise, TStatus extends number> = ParsedPayload<
+  RpcResponseByStatus<TMethodOrResponsePromise, TStatus>
+>;
+
+type RpcSuccessPayload<TMethodOrResponsePromise> = SuccessfulResponsePayload<
+  RpcResponseSource<TMethodOrResponsePromise>
+>;
+
+type RpcErrorPayload<TMethodOrResponsePromise> = ErrorResponsePayload<
+  RpcResponseSource<TMethodOrResponsePromise>
+>;
+
+type RpcErrorCode<TMethodOrResponsePromise> = ErrorResponseCode<
+  RpcResponseSource<TMethodOrResponsePromise>
+>;
+
+type RpcRequestInferTarget = "input" | "query" | "json" | "formData" | "headers" | "cookies";
+type RpcResponseInferStatus = number | "success" | "error";
+type RpcResponseInferSelect = "payload" | "response";
+
+type ExtractQueryInput<TInput> =
+  NonNullable<TInput> extends { query?: infer TQuery }
+    ? TQuery
+    : NonNullable<TInput> extends { query: infer TQuery }
+      ? TQuery
+      : NonNullable<TInput> extends { url?: infer TUrl }
+        ? ExtractQueryInput<TUrl>
+        : NonNullable<TInput> extends { url: infer TUrl }
+          ? ExtractQueryInput<TUrl>
+          : never;
+
+type ExtractJsonInput<TInput> =
+  NonNullable<TInput> extends {
+    body?: {
+      json?: infer TJson;
+    };
+  }
+    ? TJson
+    : NonNullable<TInput> extends {
+          body: {
+            json: infer TJson;
+          };
+        }
+      ? TJson
+      : never;
+
+type ExtractFormDataInput<TInput> =
+  NonNullable<TInput> extends {
+    body?: {
+      formData?: infer TFormData;
+    };
+  }
+    ? TFormData
+    : NonNullable<TInput> extends {
+          body: {
+            formData: infer TFormData;
+          };
+        }
+      ? TFormData
+      : never;
+
+type ExtractHeadersInput<TInput> =
+  NonNullable<TInput> extends {
+    requestHeaders?: {
+      headers?: infer THeaders;
+    };
+  }
+    ? THeaders
+    : NonNullable<TInput> extends {
+          requestHeaders: {
+            headers: infer THeaders;
+          };
+        }
+      ? THeaders
+      : never;
+
+type ExtractCookiesInput<TInput> =
+  NonNullable<TInput> extends {
+    requestHeaders?: {
+      cookies?: infer TCookies;
+    };
+  }
+    ? TCookies
+    : NonNullable<TInput> extends {
+          requestHeaders: {
+            cookies: infer TCookies;
+          };
+        }
+      ? TCookies
+      : never;
+
+type RpcQueryInput<TMethodOrUrl> = TMethodOrUrl extends {
+  (...args: infer TArgs): unknown;
+}
+  ? ExtractQueryInput<TArgs[0]>
+  : ExtractQueryInput<TMethodOrUrl>;
+
+type RpcJsonInput<TMethod> = ExtractJsonInput<RpcRequestInput<TMethod>>;
+
+type RpcFormDataInput<TMethod> = ExtractFormDataInput<RpcRequestInput<TMethod>>;
+
+type RpcHeadersInput<TMethod> = ExtractHeadersInput<RpcRequestInput<TMethod>>;
+
+type RpcCookiesInput<TMethod> = ExtractCookiesInput<RpcRequestInput<TMethod>>;
+
+export type InferRpcRequestType<
+  TMethodOrUrl,
+  TTarget extends RpcRequestInferTarget = "input",
+> = TTarget extends "input"
+  ? RpcRequestInput<TMethodOrUrl>
+  : TTarget extends "query"
+    ? RpcQueryInput<TMethodOrUrl>
+    : TTarget extends "json"
+      ? RpcJsonInput<TMethodOrUrl>
+      : TTarget extends "formData"
+        ? RpcFormDataInput<TMethodOrUrl>
+        : TTarget extends "headers"
+          ? RpcHeadersInput<TMethodOrUrl>
+          : TTarget extends "cookies"
+            ? RpcCookiesInput<TMethodOrUrl>
+            : never;
+
+export type InferRpcResponseType<
+  TMethodOrResponsePromise,
+  TStatus extends RpcResponseInferStatus = "success",
+  TSelect extends RpcResponseInferSelect = "payload",
+> = TStatus extends "success"
+  ? RpcSuccessPayload<TMethodOrResponsePromise>
+  : TStatus extends "error"
+    ? RpcErrorPayload<TMethodOrResponsePromise>
+    : TStatus extends number
+      ? TSelect extends "response"
+        ? RpcResponseByStatus<TMethodOrResponsePromise, TStatus>
+        : RpcPayloadByStatus<TMethodOrResponsePromise, TStatus>
+      : never;
+
+export type InferRpcErrorCode<TMethodOrResponsePromise> = RpcErrorCode<TMethodOrResponsePromise>;
 
 type RpcErrorCodeFromPayload<TPayload> =
   TPayload extends RpcErrorEnvelope<infer TCode, unknown> ? TCode : string;

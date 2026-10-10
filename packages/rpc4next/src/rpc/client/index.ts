@@ -3,6 +3,9 @@ export { matchRpcResponseError, RpcResponseError } from "./response";
 export type {
   ErrorResponseCode,
   ErrorResponsePayload,
+  InferRpcErrorCode,
+  InferRpcRequestType,
+  InferRpcResponseType,
   RpcErrorHandlers,
   RpcFilePayload,
   RpcResponsePromise,
