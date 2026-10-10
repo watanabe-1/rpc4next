@@ -1255,12 +1255,12 @@ describe("procedure builder type definitions", () => {
       return undefined;
     });
 
-    routeProcedure
-      .handle(() => ({
-        status: 204 as const,
-      }))
-      // @ts-expect-error route defaults should expose method terminals only
-      .page(() => null);
+    const handledRouteProcedure = routeProcedure.handle(() => ({
+      status: 204 as const,
+    }));
+
+    // @ts-expect-error route defaults should expose method terminals only
+    void handledRouteProcedure.page;
 
     const pageProcedure = createPageProcedure({
       onError: () => null,
@@ -1310,16 +1310,84 @@ describe("procedure builder type definitions", () => {
       redirect: "/login",
     }));
 
-    pageProcedure
+    const handledPageProcedure = pageProcedure
       .forRoute(guardedUserRouteContract)
       .params(userIdSchema)
       .handle(() => ({
         body: {
           ok: true as const,
         },
-      }))
-      // @ts-expect-error page defaults should expose page only
-      .get();
+      }));
+
+    // @ts-expect-error page defaults should expose page only
+    void handledPageProcedure.get;
+
+    expect(true).toBe(true);
+  });
+
+  it("hides terminal methods that do not match the procedure shape from types", () => {
+    const routeProcedure = createRouteProcedure({
+      onError: defaultProcedureOnError,
+    });
+    const handledRouteProcedure = routeProcedure.handle(() => ({
+      status: 204 as const,
+    }));
+
+    // @ts-expect-error route procedure builders should not expose page()
+    void routeProcedure.page;
+    // @ts-expect-error route procedures should not expose page()
+    void handledRouteProcedure.page;
+
+    const handledBoundRouteProcedure = routeProcedure
+      .forRoute(staticPageRouteContract)
+      .handle(() => ({
+        status: 204 as const,
+      }));
+
+    void handledBoundRouteProcedure.get;
+
+    const pageProcedure = createPageProcedure({
+      onError: () => null,
+    });
+    const handledPageProcedure = pageProcedure.handle(() => ({
+      body: {
+        ok: true as const,
+      },
+    }));
+
+    void pageProcedure.forRoute(staticPageRouteContract).page;
+    // @ts-expect-error unbound page procedures should not expose page()
+    void handledPageProcedure.page;
+    // @ts-expect-error page procedures should not expose method terminals
+    void handledPageProcedure.get;
+
+    const handledBoundPageProcedure = pageProcedure
+      .forRoute(staticPageRouteContract)
+      .handle(() => ({
+        body: {
+          ok: true as const,
+        },
+      }));
+
+    void handledBoundPageProcedure.page;
+    // @ts-expect-error page procedures should not expose method terminals
+    void handledBoundPageProcedure.get;
+
+    const formDataProcedure = procedure
+      .forRoute(guardedUserRouteContract)
+      .params(userIdSchema)
+      .formData(avatarSchema)
+      .handle(({ formData }) => ({
+        body: {
+          avatar: formData.avatar,
+        },
+      }));
+
+    void formDataProcedure.post;
+    // @ts-expect-error formData procedures should not expose page()
+    void formDataProcedure.page;
+    // @ts-expect-error formData procedures should not expose GET
+    void formDataProcedure.get;
 
     expect(true).toBe(true);
   });
