@@ -160,7 +160,7 @@ gets the same trace logging, validated auth headers, typed
 `UNAUTHORIZED`/`FORBIDDEN` responses, and `ctx.viewer`/`ctx.organization`/
 `ctx.traceId` before its handler can reach protected data.
 
-The procedure fixtures also cover the later design phases that made the procedure path complete enough to recommend by default. `app/api/procedure-invalid-output/route.ts` demonstrates opt-in runtime output enforcement with a Standard Schema output contract. `app/api/procedure-defaults-error/route.ts` shows project-level `procedure.defaults({ route: { onError } })` usage through `appRouteProcedure`, while `app/_rpc/route-procedure.ts` and `app/_rpc/page-procedure.ts` keep route and page presets separate. `app/api/procedure-validation-branch/route.ts` shows validator-stage customization through `procedure.query(schema, { onValidationError(...) { ... } })`. `app/api/error-demo/route.ts` shows a route-local `onError` override on top of the shared route preset, and `app/_rpc/errors.ts` shows generic `Error` mapping in a shared route `onError` implementation.
+The procedure fixtures also cover the later design phases that made the procedure path complete enough to recommend by default. `app/api/procedure-invalid-output/route.ts` demonstrates opt-in runtime output enforcement with a Standard Schema output contract. `app/api/procedure-defaults-error/route.ts` shows project-level `createRouteProcedure({ onError })` usage through `appRouteProcedure`, while `app/_rpc/route-procedure.ts` and `app/_rpc/page-procedure.ts` keep route and page presets separate. `app/api/procedure-validation-branch/route.ts` shows validator-stage customization through `procedure.query(schema, { onValidationError(...) { ... } })`. `app/api/error-demo/route.ts` shows a route-local `onError` override on top of the shared route preset, and `app/_rpc/errors.ts` shows generic `Error` mapping in a shared route `onError` implementation.
 
 Procedure-backed pages use `appPageProcedure` and terminate with `.page(...)`
 instead of a route method terminal. `app/photo/[id]/page.tsx` demonstrates validated
@@ -172,7 +172,7 @@ into generated `$url({ query })` types while the page itself validates
 data fetching or preparation before render; that returned `body` becomes
 `data` in `.page(...)`. HTTP response helpers and raw `Response` values are
 reserved for route procedures. When a shared preset is page-specific, prefer
-`procedure.defaults({ page: { onError } })` so later middleware and handlers
+`createPageProcedure({ onError })` so later middleware and handlers
 receive page helpers such as `page.redirect(...)` and `page.notFound()` instead
 of route response helpers. Those page helpers throw Next.js navigation
 interrupts and do not return at runtime, but examples still use
@@ -192,7 +192,7 @@ branches, and
 branch on top.
 `app/_rpc/errors.ts` defines the project catalog with `defineRpcErrors(...)`,
 and `app/_rpc/route-procedure.ts` binds it with
-`procedure.errors(appRpcErrors)`. The shared validation handler uses
+`createRouteProcedure({ errors: appRpcErrors })`. The shared validation handler uses
 `createRpcValidationErrorHandler()` so input failures keep the recommended
 `BAD_REQUEST` envelope shape across route procedures.
 

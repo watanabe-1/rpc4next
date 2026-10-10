@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import { createNextRoute as basecreateNextRoute } from "./next-route";
 import { defaultProcedureOnError } from "./on-error";
-import { procedure } from "./procedure";
+import { createRouteProcedure, procedure } from "./procedure";
 import type { ProcedureRouteContract } from "./procedure-types";
 
 const createNextRoute = <
@@ -282,19 +282,17 @@ describe("createNextRoute zod integration", () => {
     ).toContain(">0");
   });
 
-  it("uses shared validation error handling from procedure defaults", async () => {
-    const appProcedure = procedure.defaults({
-      route: {
-        onError: defaultProcedureOnError,
-        onValidationError: ({ issues, response, target }) =>
-          response.error("BAD_REQUEST", {
-            message: "Shared validation failed.",
-            details: {
-              target,
-              issues: issues.map(({ message, path }) => ({ message, path })),
-            },
-          }),
-      },
+  it("uses shared validation error handling from createRouteProcedure", async () => {
+    const appProcedure = createRouteProcedure({
+      onError: defaultProcedureOnError,
+      onValidationError: ({ issues, response, target }) =>
+        response.error("BAD_REQUEST", {
+          message: "Shared validation failed.",
+          details: {
+            target,
+            issues: issues.map(({ message, path }) => ({ message, path })),
+          },
+        }),
     });
 
     const { GET: route } = appProcedure
@@ -331,15 +329,13 @@ describe("createNextRoute zod integration", () => {
     });
   });
 
-  it("lets route-local validation error handling override procedure defaults", async () => {
-    const appProcedure = procedure.defaults({
-      route: {
-        onError: defaultProcedureOnError,
-        onValidationError: ({ response }) =>
-          response.text("shared-validation", {
-            status: 409,
-          }),
-      },
+  it("lets route-local validation error handling override createRouteProcedure defaults", async () => {
+    const appProcedure = createRouteProcedure({
+      onError: defaultProcedureOnError,
+      onValidationError: ({ response }) =>
+        response.text("shared-validation", {
+          status: 409,
+        }),
     });
 
     const { GET: route } = appProcedure

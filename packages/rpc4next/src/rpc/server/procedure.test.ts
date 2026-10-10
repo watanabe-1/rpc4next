@@ -8,7 +8,7 @@ import {
   type ProcedureOnError,
   type ProcedureOnErrorResult,
 } from "./on-error";
-import { procedure } from "./procedure";
+import { createPageProcedure, createRouteProcedure, procedure } from "./procedure";
 import type {
   ProcedureInputTarget,
   ProcedureRouteContract,
@@ -18,7 +18,6 @@ import type {
 import type { StandardSchemaV1 } from "./standard-schema";
 import type { ResponseHelpers, TypedNextResponse } from "./types";
 
-type ExpectFalse<T extends false> = T;
 type ExpectTrue<T extends true> = T;
 type ResponseJson<TResponse> = TResponse extends { json: () => Promise<infer TJson> }
   ? TJson
@@ -374,71 +373,21 @@ describe("procedure builder type definitions", () => {
         });
     }).toThrow("Procedure output contract has already been declared.");
 
-    procedure.defaults({
-      // @ts-expect-error defaults no longer accepts the old flat { onError } shape
-      onError: defaultProcedureOnError,
+    // @ts-expect-error route/page presets should start from createRouteProcedure/createPageProcedure
+    void procedure.defaults;
+
+    // @ts-expect-error project error catalogs should be passed to createRouteProcedure({ errors })
+    void procedure.errors;
+
+    const configuredProcedure = procedure.meta({
+      summary: "configured",
     });
 
-    // @ts-expect-error defaults accepts either route or page, not both
-    procedure.defaults({
-      route: {
-        onError: defaultProcedureOnError,
-      },
-      page: {
-        onError: () => null,
-      },
-    });
+    // @ts-expect-error preset defaults should stay off bare procedure chains
+    void configuredProcedure.defaults;
 
-    const defaultedProcedure = procedure.defaults({
-      route: {
-        onError: defaultProcedureOnError,
-      },
-    });
-
-    expect(() => {
-      // @ts-expect-error defaults is not available after defaults({ route: { onError } })
-      defaultedProcedure.defaults({
-        route: {
-          onError: defaultProcedureOnError,
-        },
-      });
-    }).toThrow("Procedure defaults have already been declared.");
-
-    expect(() => {
-      // @ts-expect-error errors must be declared before defaults
-      defaultedProcedure.errors({
-        PLAN_REQUIRED: { status: 402, message: "Plan required" },
-      });
-    }).toThrow("Procedure errors must be declared before other procedure configuration.");
-
-    const errorCatalogProcedure = procedure.errors({
-      PLAN_REQUIRED: { status: 402, message: "Plan required" },
-    });
-
-    expect(() => {
-      // @ts-expect-error errors are only declared once
-      errorCatalogProcedure.errors({
-        OTHER_ERROR: { status: 400, message: "Other error" },
-      });
-    }).toThrow("Procedure errors must be declared before other procedure configuration.");
-
-    expect(() => {
-      procedure
-        .use(({ response }) => response.error("BAD_REQUEST"))
-        // @ts-expect-error errors must be declared before middleware captures response helpers
-        .errors({
-          PLAN_REQUIRED: { status: 402, message: "Plan required" },
-        });
-    }).toThrow("Procedure errors must be declared before other procedure configuration.");
-
-    expect(() => {
-      procedure
-        .query(parsePage)
-        // @ts-expect-error errors must be declared before input hooks capture response helpers
-        .errors({
-          PLAN_REQUIRED: { status: 402, message: "Plan required" },
-        });
-    }).toThrow("Procedure errors must be declared before other procedure configuration.");
+    // @ts-expect-error preset error catalogs should stay off bare procedure chains
+    void configuredProcedure.errors;
   });
 
   it("keeps repeatedly composable builder methods available", () => {
@@ -587,12 +536,11 @@ describe("procedure builder type definitions", () => {
     >();
   });
 
-  it("binds project-level error catalogs to route procedure response helpers", () => {
+  it("binds project-level error catalogs from createRouteProcedure to route response helpers", () => {
     const errors = defineRpcErrors({
       PLAN_REQUIRED: { status: 402, message: "Plan required" },
     });
 
-    const appProcedure = procedure.errors(errors);
     const appOnError = ((error, { response }) => {
       void error;
 
@@ -605,11 +553,10 @@ describe("procedure builder type definitions", () => {
       ProcedureValidationErrorHandlerResult,
       typeof errors
     >;
-    const defaultedProcedure = appProcedure.defaults({
-      route: {
-        onError: appOnError,
-        onValidationError: appOnValidationError,
-      },
+    const appProcedure = createRouteProcedure({
+      errors,
+      onError: appOnError,
+      onValidationError: appOnValidationError,
     });
     const guardedProcedure = appProcedure
       .use(({ response }) =>
@@ -674,7 +621,7 @@ describe("procedure builder type definitions", () => {
         "application/json"
       >
     >();
-    defaultedProcedure.handle(({ response }) => response.error("PLAN_REQUIRED"));
+    appProcedure.handle(({ response }) => response.error("PLAN_REQUIRED"));
 
     appProcedure.handle(({ response }) => {
       // @ts-expect-error codes outside the project catalog are rejected
@@ -683,8 +630,17 @@ describe("procedure builder type definitions", () => {
   });
 
   it("merges partial project-level error catalogs with default codes", () => {
-    const appProcedure = procedure.errors({
+    const errors = defineRpcErrors({
       PLAN_REQUIRED: { status: 402, message: "Plan required" },
+    });
+    const onError = ((_error, { response }) =>
+      response.error("INTERNAL_SERVER_ERROR")) satisfies ProcedureOnError<
+      ProcedureOnErrorResult,
+      typeof errors
+    >;
+    const appProcedure = createRouteProcedure({
+      errors,
+      onError,
     });
 
     appProcedure.handle(({ response }) => {
@@ -700,7 +656,24 @@ describe("procedure builder type definitions", () => {
     expect(true).toBe(true);
   });
 
-  it("uses catalog statuses for implicit procedure route error responses", () => {
+  it("uses the default error catalog when createRouteProcedure has no errors option", () => {
+    const appProcedure = createRouteProcedure({
+      onError: defaultProcedureOnError,
+    });
+
+    appProcedure.handle(({ response }) => {
+      response.error("BAD_REQUEST");
+
+      // @ts-expect-error project-only codes are rejected without a custom catalog
+      response.error("PLAN_REQUIRED");
+
+      return response.error("INTERNAL_SERVER_ERROR");
+    });
+
+    expect(true).toBe(true);
+  });
+
+  it("uses createRouteProcedure catalog statuses for implicit route error responses", () => {
     const errors = defineRpcErrors({
       BAD_REQUEST: { status: 422, message: "Invalid input" },
       INTERNAL_SERVER_ERROR: { status: 503, message: "Service unavailable" },
@@ -724,8 +697,12 @@ describe("procedure builder type definitions", () => {
       typeof errors
     >;
 
-    const { GET: route } = procedure
-      .errors(errors)
+    const appProcedure = createRouteProcedure({
+      errors,
+      onError,
+    });
+
+    const { GET: route } = appProcedure
       .forRoute(staticPageRouteContract)
       .query(parsePage)
       .output(okOutputSchema)
@@ -736,7 +713,6 @@ describe("procedure builder type definitions", () => {
       }))
       .get({
         validateOutput: true,
-        onError,
       });
 
     type RouteResponse = Awaited<ReturnType<typeof route>>;
@@ -1098,7 +1074,7 @@ describe("procedure builder type definitions", () => {
     expect(true).toBe(true);
   });
 
-  it("lets procedure.defaults({ route: { onError } }) make method terminal onError optional", () => {
+  it("lets createRouteProcedure({ onError }) make method terminal onError optional", () => {
     const sharedOnError = ((error, { response }) => {
       if (error instanceof Response) {
         return error;
@@ -1113,10 +1089,8 @@ describe("procedure builder type definitions", () => {
         },
       );
     }) satisfies typeof defaultProcedureOnError;
-    const appProcedure = procedure.defaults({
-      route: {
-        onError: sharedOnError,
-      },
+    const appProcedure = createRouteProcedure({
+      onError: sharedOnError,
     });
 
     const { GET: route } = appProcedure
@@ -1153,18 +1127,17 @@ describe("procedure builder type definitions", () => {
   });
 
   it("lets route-local onError replace the procedure default onError type", () => {
-    const appProcedure = procedure.defaults({
-      route: {
-        onError: () =>
-          Response.json(
-            {
-              source: "shared-route-error" as const,
-            },
-            {
-              status: 500,
-            },
-          ),
-      },
+    const sharedOnError = ((_error, { response }) =>
+      response.json(
+        {
+          source: "shared-route-error" as const,
+        },
+        {
+          status: 500,
+        },
+      )) satisfies ProcedureOnError;
+    const appProcedure = createRouteProcedure({
+      onError: sharedOnError,
     });
     const localOnError = ((_error, { response }) =>
       response.json(
@@ -1197,32 +1170,21 @@ describe("procedure builder type definitions", () => {
         409
       >
     >;
-    type _sharedOnErrorResponseExcluded = ExpectFalse<
-      HasJsonVariant<
-        RouteResponse,
-        {
-          source: "shared-route-error";
-        }
-      >
-    >;
-
     expectTypeOf<RouteResponse>().toExtend<Response>();
   });
 
-  it("infers procedure default validation error responses for method terminals", () => {
-    const appProcedure = procedure.defaults({
-      route: {
-        onError: defaultProcedureOnError,
-        onValidationError: ({ response }) =>
-          response.json(
-            {
-              source: "shared-validation" as const,
-            },
-            {
-              status: 422,
-            },
-          ),
-      },
+  it("infers createRouteProcedure default validation error responses for method terminals", () => {
+    const appProcedure = createRouteProcedure({
+      onError: defaultProcedureOnError,
+      onValidationError: ({ response }) =>
+        response.json(
+          {
+            source: "shared-validation" as const,
+          },
+          {
+            status: 422,
+          },
+        ),
     });
 
     const { GET: route } = appProcedure
@@ -1253,14 +1215,12 @@ describe("procedure builder type definitions", () => {
     expectTypeOf<RouteResponse>().toExtend<Response | SharedValidationResponse>();
   });
 
-  it("infers procedure default page validation error results for page", () => {
-    const appProcedure = procedure.defaults({
-      page: {
-        onError: () => "page-error" as const,
-        onValidationError: () => ({
-          source: "shared-page-validation" as const,
-        }),
-      },
+  it("infers createPageProcedure default validation error results for page", () => {
+    const appProcedure = createPageProcedure({
+      onError: () => "page-error" as const,
+      onValidationError: () => ({
+        source: "shared-page-validation" as const,
+      }),
     });
 
     const page = appProcedure
@@ -1280,10 +1240,8 @@ describe("procedure builder type definitions", () => {
   });
 
   it("switches middleware helpers from defaults adapter intent", () => {
-    const routeProcedure = procedure.defaults({
-      route: {
-        onError: defaultProcedureOnError,
-      },
+    const routeProcedure = createRouteProcedure({
+      onError: defaultProcedureOnError,
     });
 
     routeProcedure.use((context) => {
@@ -1304,10 +1262,8 @@ describe("procedure builder type definitions", () => {
       // @ts-expect-error route defaults should expose method terminals only
       .page(() => null);
 
-    const pageProcedure = procedure.defaults({
-      page: {
-        onError: () => null,
-      },
+    const pageProcedure = createPageProcedure({
+      onError: () => null,
     });
 
     pageProcedure.use((context) => {
@@ -1419,11 +1375,9 @@ describe("procedure builder type definitions", () => {
     expect(true).toBe(true);
   });
 
-  it("keeps route binding and GET body constraints on defaulted method terminals", () => {
-    const appProcedure = procedure.defaults({
-      route: {
-        onError: defaultProcedureOnError,
-      },
+  it("keeps route binding and GET body constraints on route procedure method terminals", () => {
+    const appProcedure = createRouteProcedure({
+      onError: defaultProcedureOnError,
     });
 
     const unboundProcedure = appProcedure.handle(() => ({

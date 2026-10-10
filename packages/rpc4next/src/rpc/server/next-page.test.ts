@@ -4,7 +4,7 @@ import {
   createNextPage as basecreateNextPage,
   type ProcedurePageOnValidationError,
 } from "./next-page";
-import { procedure } from "./procedure";
+import { createPageProcedure, procedure } from "./procedure";
 import type { ProcedureRouteContract } from "./procedure-types";
 import type { StandardSchemaV1 } from "./standard-schema";
 
@@ -196,17 +196,15 @@ describe("createNextPage", () => {
     expect(onError).toHaveBeenCalledTimes(1);
   });
 
-  it("uses page validation error handling from procedure defaults", async () => {
+  it("uses page validation error handling from createPageProcedure", async () => {
     const onValidationError = (({ issues, target }) => ({
       source: "shared-page-validation" as const,
       target,
       messages: issues.map((issue) => issue.message),
     })) satisfies ProcedurePageOnValidationError;
-    const appProcedure = procedure.defaults({
-      page: {
-        onError: () => "page-error",
-        onValidationError,
-      },
+    const appProcedure = createPageProcedure({
+      onError: () => "page-error",
+      onValidationError,
     });
     const render = vi.fn<() => string>(() => "rendered");
 
@@ -230,14 +228,12 @@ describe("createNextPage", () => {
     expect(render).not.toHaveBeenCalled();
   });
 
-  it("lets page-local validation error handling override procedure defaults", async () => {
+  it("lets page-local validation error handling override createPageProcedure defaults", async () => {
     const onValidationError = (({ target }) =>
       `local-${target}-validation`) satisfies ProcedurePageOnValidationError;
-    const appProcedure = procedure.defaults({
-      page: {
-        onError: () => "page-error",
-        onValidationError: () => "shared-page-validation",
-      },
+    const appProcedure = createPageProcedure({
+      onError: () => "page-error",
+      onValidationError: () => "shared-page-validation",
     });
 
     const page = appProcedure
@@ -404,11 +400,9 @@ describe("createNextPage", () => {
     );
   });
 
-  it("lets page defaults provide page terminal onError", async () => {
-    const appProcedure = procedure.defaults({
-      page: {
-        onError: () => "default-page-error",
-      },
+  it("lets createPageProcedure provide page terminal onError", async () => {
+    const appProcedure = createPageProcedure({
+      onError: () => "default-page-error",
     });
 
     const page = appProcedure
@@ -433,12 +427,9 @@ describe("createNextPage", () => {
 
   it("rethrows page navigation interrupts before page onError", async () => {
     const onError = vi.fn<() => string>(() => "swallowed-navigation-interrupt");
-    const page = procedure
-      .defaults({
-        page: {
-          onError,
-        },
-      })
+    const page = createPageProcedure({
+      onError,
+    })
       .forRoute(pageRouteContract)
       .params(paramsSchema)
       .handle(({ page }) => {
