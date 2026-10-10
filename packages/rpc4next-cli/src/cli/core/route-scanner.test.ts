@@ -233,7 +233,7 @@ describe("route-scanner", () => {
         },
       });
 
-      const { pathStructure, imports, paramsTypes } = scanAppDir(
+      const { pathStructure, imports, paramsTypes, routeManifests } = scanAppDir(
         tmpPath("output"),
         tmpPath("testApp"),
       );
@@ -263,6 +263,13 @@ describe("route-scanner", () => {
         {
           paramsType: '{ "id": string }',
           dirPath: tmpPosixPath("testApp", "api", "users", "[id]"),
+          pathname: "/api/users/[id]",
+        },
+      ]);
+      expect(routeManifests).toStrictEqual([
+        {
+          fullPath: tmpPosixPath("testApp", "api", "users", "[id]", "route.ts"),
+          methods: ["GET", "HEAD", "POST", "PUT", "DELETE", "PATCH"],
           pathname: "/api/users/[id]",
         },
       ]);

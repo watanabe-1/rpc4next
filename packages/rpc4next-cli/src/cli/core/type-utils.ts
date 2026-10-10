@@ -24,6 +24,14 @@ export const createImport = (type: string, path: string, importAlias?: string) =
     : `import type { ${type} } from ${createStringLiteral(path)}${STATEMENT_TERMINATOR}`;
 };
 
+export const createValueImport = (name: string, path: string, importAlias?: string) => {
+  if (!name || !path) return "";
+
+  return importAlias
+    ? `import { ${name} as ${importAlias} } from ${createStringLiteral(path)}${STATEMENT_TERMINATOR}`
+    : `import { ${name} } from ${createStringLiteral(path)}${STATEMENT_TERMINATOR}`;
+};
+
 export const createDefaultImport = (path: string, importAlias: string) => {
   if (!path || !importAlias) return "";
 

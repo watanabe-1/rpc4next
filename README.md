@@ -259,6 +259,10 @@ the mismatch at `createRpcClient<PathStructure>(...)` so stale generated files d
 not silently keep compiling.
 Use `--check` in CI to fail when `src/generated/rpc.ts` or generated route
 contract files are stale.
+The CLI also writes a test-only route manifest next to the generated client type,
+such as `src/generated/rpc-test-routes.ts` for `src/generated/rpc.ts`. This file
+imports route handlers directly, so keep it in server-side test code and out of
+browser client code.
 
 ### 4. Create a Client
 
@@ -292,6 +296,35 @@ export const createServerRpcClient = async () => {
   return createRpcClient<PathStructure>(`${protocol}://${host}`);
 };
 ```
+
+For route-handler tests, use `createRpcTestClient` to call your exported
+`GET`/`POST` functions directly. This keeps the generated typed client in the
+test path without starting Next.js, MSW, or another mock HTTP server:
+
+```ts
+import { createRpcTestClient } from "rpc4next/client/test";
+import type { PathStructure } from "../generated/rpc";
+import { testRoutes } from "../generated/rpc-test-routes";
+
+const rpc = createRpcTestClient<PathStructure>(testRoutes);
+
+const response = await rpc.api.users._userId("123").$get();
+```
+
+The generated test route manifest is built from the same `app/**/route.ts`
+scanner that produces `PathStructure`, so tests do not hand-pair arbitrary
+handlers with arbitrary pathnames.
+
+`createRpcTestClient` does not run the Next.js router, middleware, rewrites, or
+runtime. It infers route params from the matched test route pathname by default,
+so dynamic segments such as `[userId]` receive the value from the typed client
+URL. Those params are test-only values inferred by rpc4next, not values produced
+by the real Next.js runtime, so they can differ from what Next.js would provide
+in an application.
+
+The RPC client still builds the URL, request method, query string, headers,
+cookies, and body; the test client dispatches that request to the matching
+handler in-process.
 
 ### 5. Call Routes
 

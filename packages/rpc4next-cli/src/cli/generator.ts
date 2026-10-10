@@ -8,12 +8,20 @@ import {
   generatedParamsFilesCache,
 } from "./core/cache.js";
 import {
+  generateTestRouteManifest,
   generatePathStructure,
   ROUTE_CONTRACT_GENERATED_MARKER,
 } from "./core/generate-path-structure.js";
 import { relativeFromRoot } from "./core/path-utils.js";
 import { padMessage } from "./logger.js";
 import type { Logger } from "./types.js";
+
+const createTestRoutesOutputPath = (outputPath: string) => {
+  const parsed = path.posix.parse(outputPath);
+  const extension = parsed.ext || ".ts";
+
+  return path.posix.join(parsed.dir, `${parsed.name}-test-routes${extension}`);
+};
 
 const writeFileIfChanged = (filePath: string, nextContent: string): boolean => {
   if (fs.existsSync(filePath)) {
@@ -140,7 +148,11 @@ export const checkGenerated = ({
   try {
     logger.info("Checking generated types...", { event: "check" });
 
-    const { pathStructure, paramsTypes } = generatePathStructure(outputPath, baseDir);
+    const {
+      pathStructure,
+      paramsTypes,
+      routeManifests = [],
+    } = generatePathStructure(outputPath, baseDir);
     let isCurrent = true;
 
     if (!isFileContentCurrent(outputPath, pathStructure)) {
@@ -172,6 +184,16 @@ export const checkGenerated = ({
       }
     }
 
+    const testRoutesOutputPath = createTestRoutesOutputPath(outputPath);
+    const testRouteManifest = generateTestRouteManifest(testRoutesOutputPath, routeManifests);
+
+    if (!isFileContentCurrent(testRoutesOutputPath, testRouteManifest)) {
+      logger.error(
+        `Generated test route manifest is stale: ${relativeFromRoot(testRoutesOutputPath)}`,
+      );
+      isCurrent = false;
+    }
+
     if (isCurrent) {
       logger.success("Generated files are up to date.");
     }
@@ -198,7 +220,11 @@ export const generate = ({
   try {
     logger.info("Generating types...", { event: "generate" });
 
-    const { pathStructure, paramsTypes } = generatePathStructure(outputPath, baseDir);
+    const {
+      pathStructure,
+      paramsTypes,
+      routeManifests = [],
+    } = generatePathStructure(outputPath, baseDir);
 
     if (writeFileIfChanged(outputPath, pathStructure)) {
       logger.success(
@@ -261,6 +287,31 @@ export const generate = ({
           },
         );
       }
+    }
+
+    const testRoutesOutputPath = createTestRoutesOutputPath(outputPath);
+    const testRouteManifest = generateTestRouteManifest(testRoutesOutputPath, routeManifests);
+
+    if (writeFileIfChanged(testRoutesOutputPath, testRouteManifest)) {
+      logger.success(
+        padMessage(
+          "Test route manifest",
+          relativeFromRoot(testRoutesOutputPath),
+          SUCCESS_SEPARATOR,
+          SUCCESS_PAD_LENGTH,
+        ),
+        { indentLevel: SUCCESS_INDENT_LEVEL },
+      );
+    } else {
+      logger.info(
+        padMessage(
+          "Unchanged test routes",
+          relativeFromRoot(testRoutesOutputPath),
+          SUCCESS_SEPARATOR,
+          SUCCESS_PAD_LENGTH,
+        ),
+        { indentLevel: SUCCESS_INDENT_LEVEL },
+      );
     }
   } finally {
     if (!preserveCache) {

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { CATCH_ALL_PREFIX, DYNAMIC_PREFIX, OPTIONAL_CATCH_ALL_PREFIX } from "rpc4next-shared";
+import type { HttpMethod } from "rpc4next-shared";
 
 import { END_POINT_FILE_NAMES } from "../constants.js";
 import type { EndPointFileNames } from "../types.js";
@@ -18,6 +19,12 @@ type ImportObj = {
 type ParamsType = {
   paramsType: string;
   dirPath: string;
+  pathname: string;
+};
+
+export type RouteManifest = {
+  fullPath: string;
+  methods: HttpMethod[];
   pathname: string;
 };
 
@@ -40,6 +47,7 @@ type ScanResult = {
   pathStructure: string;
   imports: ImportObj[];
   paramsTypes: ParamsType[];
+  routeManifests?: RouteManifest[];
 };
 
 type ScanContext = {
@@ -55,6 +63,7 @@ type ScanAccumulator = {
   imports: ImportObj[];
   typeFragments: string[];
   paramsTypes: ParamsType[];
+  routeManifests: RouteManifest[];
 };
 
 const endPointFileNames = new Set(END_POINT_FILE_NAMES);
@@ -125,6 +134,7 @@ const createEmptyScanAccumulator = (): ScanAccumulator => ({
   imports: [],
   typeFragments: [],
   paramsTypes: [],
+  routeManifests: [],
 });
 
 const isIgnoredDirectory = (dirName: string): boolean => {
@@ -289,6 +299,14 @@ const appendEndpointFile = (
     accumulator.typeFragments.push(type);
   });
 
+  if (routes.length > 0) {
+    accumulator.routeManifests.push({
+      fullPath,
+      methods: routes.map(({ exportName }) => exportName),
+      pathname: toRoutePathname(context.rootDir, fullPath),
+    });
+  }
+
   accumulator.typeFragments.push(TYPE_RPC_ENDPOINT);
   appendParamsType(
     accumulator,
@@ -391,6 +409,7 @@ const appendChildDirectory = (
     return;
   }
 
+  accumulator.routeManifests.push(...(childResult.routeManifests ?? []));
   accumulator.imports.push(...childResult.imports);
 
   if (isFlattenDir) {
@@ -462,6 +481,7 @@ export const scanAppDir = (
     ),
     imports: accumulator.imports,
     paramsTypes: accumulator.paramsTypes,
+    routeManifests: accumulator.routeManifests,
   };
 
   scanAppDirCache.set(cacheKey, result);

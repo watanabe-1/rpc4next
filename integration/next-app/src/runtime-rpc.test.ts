@@ -1,7 +1,9 @@
 import { createRpcClient } from "rpc4next/client";
+import { createRpcTestClient } from "rpc4next/client/test";
 import { describe, expect, it } from "vitest";
 
 import type { PathStructure } from "./generated/rpc";
+import { testRoutes } from "./generated/rpc-test-routes";
 
 type UrlExpectation = {
   path: string;
@@ -308,6 +310,68 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
       );
       expect(calls[0]?.init?.method).toBe("POST");
       expect(calls[0]?.init?.body).toBe('{"title":"runtime test"}');
+    });
+  });
+
+  describe("generated test routes", () => {
+    const client = createRpcTestClient<PathStructure>(testRoutes, { baseUrl });
+
+    it("dispatches generated dynamic routes to the matching Next.js handler", async () => {
+      const payload = await client.api.users._userId("generated-user").$get().unwrap();
+
+      expect(payload).toEqual({
+        ok: true,
+        userId: "generated-user",
+        includePosts: false,
+      });
+    });
+
+    it("passes generated route params, query, and request headers to procedure handlers", async () => {
+      const payload = await client.api["procedure-guarded"]._userId("procedure-user").$get({
+        url: { query: { includeDrafts: "true" } },
+        requestHeaders: {
+          headers: {
+            "x-demo-user": "procedure-user",
+            "x-demo-role": "editor",
+            "x-demo-org": "integration-org",
+            "x-demo-plan": "enterprise",
+            "x-trace-id": "trace-integration-generated-routes",
+          },
+        },
+      });
+
+      await expect(payload.json()).resolves.toEqual({
+        ok: true,
+        userId: "procedure-user",
+        includeDrafts: true,
+        role: "editor",
+        organizationId: "integration-org",
+        plan: "enterprise",
+        source: "procedure-guarded",
+        requestId: "guarded:procedure-user",
+        traceId: "trace-integration-generated-routes",
+      });
+    });
+
+    it("dispatches generated POST routes with typed JSON request bodies", async () => {
+      const payload = await client.api.posts
+        .$post({
+          body: { json: { title: "generated route body" } },
+        })
+        .unwrap();
+
+      expect(payload).toEqual({
+        ok: true,
+        title: "generated route body",
+      });
+    });
+
+    it("returns method errors from generated routes that do not expose the requested method", async () => {
+      const postsRoute = client.api.posts as unknown as { $get: () => Promise<Response> };
+      const response = await postsRoute.$get();
+
+      expect(response.status).toBe(405);
+      expect(response.headers.get("allow")).toBe("POST");
     });
   });
 });
