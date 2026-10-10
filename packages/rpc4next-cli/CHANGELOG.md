@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.9.0...rpc4next-cli-v0.10.0) (2026-10-10)
+
+
+### Features
+
+* Add typed RPC test client with generated route manifests ([#635](https://github.com/watanabe-1/rpc4next/issues/635)) ([3d7af80](https://github.com/watanabe-1/rpc4next/commit/3d7af80edf9b9cc072fad35a954ed2512ecfcc56))
+* **rpc4next:** Introduce route and page procedure factories ([#630](https://github.com/watanabe-1/rpc4next/issues/630)) ([e752cec](https://github.com/watanabe-1/rpc4next/commit/e752cec41a8a420520c79fee985138ffb9c07918))
+
 ## [0.9.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.8.2...rpc4next-cli-v0.9.0) (2026-10-09)
 
 ### ⚠ BREAKING CHANGES
