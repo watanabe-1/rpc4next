@@ -23,7 +23,15 @@ const createTestRoutesOutputPath = (outputPath: string) => {
   return path.posix.join(parsed.dir, `${parsed.name}-test-routes${extension}`);
 };
 
-const writeFileIfChanged = (filePath: string, nextContent: string): boolean => {
+const resolveTestRoutesOutputPath = (outputPath: string, testRoutesOutputPath?: string) => {
+  return testRoutesOutputPath ?? createTestRoutesOutputPath(outputPath);
+};
+
+const writeFileIfChanged = (
+  filePath: string,
+  nextContent: string,
+  options: { ensureParentDir?: boolean } = {},
+): boolean => {
   if (fs.existsSync(filePath)) {
     const currentContent = fs.readFileSync(filePath, "utf8");
 
@@ -32,6 +40,9 @@ const writeFileIfChanged = (filePath: string, nextContent: string): boolean => {
     }
   }
 
+  if (options.ensureParentDir) {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  }
   fs.writeFileSync(filePath, nextContent);
 
   return true;
@@ -138,11 +149,13 @@ export const checkGenerated = ({
   baseDir,
   outputPath,
   paramsFileName,
+  testRoutesOutputPath: configuredTestRoutesOutputPath,
   logger,
 }: {
   baseDir: string;
   outputPath: string;
   paramsFileName: string | null;
+  testRoutesOutputPath?: string;
   logger: Logger;
 }): boolean => {
   try {
@@ -184,7 +197,10 @@ export const checkGenerated = ({
       }
     }
 
-    const testRoutesOutputPath = createTestRoutesOutputPath(outputPath);
+    const testRoutesOutputPath = resolveTestRoutesOutputPath(
+      outputPath,
+      configuredTestRoutesOutputPath,
+    );
     const testRouteManifest = generateTestRouteManifest(testRoutesOutputPath, routeManifests);
 
     if (!isFileContentCurrent(testRoutesOutputPath, testRouteManifest)) {
@@ -208,12 +224,14 @@ export const generate = ({
   baseDir,
   outputPath,
   paramsFileName,
+  testRoutesOutputPath: configuredTestRoutesOutputPath,
   logger,
   preserveCache = false,
 }: {
   baseDir: string;
   outputPath: string;
   paramsFileName: string | null;
+  testRoutesOutputPath?: string;
   logger: Logger;
   preserveCache?: boolean;
 }) => {
@@ -289,10 +307,17 @@ export const generate = ({
       }
     }
 
-    const testRoutesOutputPath = createTestRoutesOutputPath(outputPath);
+    const testRoutesOutputPath = resolveTestRoutesOutputPath(
+      outputPath,
+      configuredTestRoutesOutputPath,
+    );
     const testRouteManifest = generateTestRouteManifest(testRoutesOutputPath, routeManifests);
 
-    if (writeFileIfChanged(testRoutesOutputPath, testRouteManifest)) {
+    if (
+      writeFileIfChanged(testRoutesOutputPath, testRouteManifest, {
+        ensureParentDir: configuredTestRoutesOutputPath !== undefined,
+      })
+    ) {
       logger.success(
         padMessage(
           "Test route manifest",

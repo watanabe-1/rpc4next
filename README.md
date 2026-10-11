@@ -218,7 +218,8 @@ You can also configure the CLI with `rpc4next.config.json`:
 {
   "baseDir": "app",
   "outputPath": "src/generated/rpc.ts",
-  "paramsFile": "route-contract.ts"
+  "paramsFile": "route-contract.ts",
+  "testRoutesOutputPath": "src/generated/rpc-test-routes.ts"
 }
 ```
 
@@ -262,7 +263,9 @@ contract files are stale.
 The CLI also writes a test-only route manifest next to the generated client type,
 such as `src/generated/rpc-test-routes.ts` for `src/generated/rpc.ts`. This file
 imports route handlers directly, so keep it in server-side test code and out of
-browser client code.
+browser client code. Set `testRoutesOutputPath` in `rpc4next.config.json` to
+place that manifest somewhere else; when it is omitted, the CLI keeps deriving
+the manifest path from `outputPath`.
 
 ### 4. Create a Client
 

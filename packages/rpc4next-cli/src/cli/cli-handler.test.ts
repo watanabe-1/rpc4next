@@ -54,6 +54,25 @@ describe("handleCli", () => {
     });
   });
 
+  it("should call generate with custom test route manifest path", () => {
+    const options: CliOptions = {
+      paramsFile: "params.json",
+      testRoutesOutputPath: "test/generated/rpc-test-routes.ts",
+    };
+
+    const result = handleCli(baseDir, outputPath, options, logger);
+
+    expect(result).toBe(0);
+    expect(generatorModule.generate).toHaveBeenCalledWith({
+      baseDir: expect.stringContaining("/testDir"),
+      outputPath: expect.stringContaining("/outputDir"),
+      paramsFileName: "params.json",
+      testRoutesOutputPath: expect.stringContaining("/test/generated/rpc-test-routes.ts"),
+      logger,
+      preserveCache: false,
+    });
+  });
+
   it("should call checkGenerated with resolved paths when check option is true", () => {
     const options: CliOptions = { paramsFile: "params.json", check: true };
     vi.mocked(generatorModule.checkGenerated).mockReturnValue(true);
@@ -68,6 +87,25 @@ describe("handleCli", () => {
       logger,
     });
     expect(generatorModule.generate).not.toHaveBeenCalled();
+  });
+
+  it("should call checkGenerated with custom test route manifest path", () => {
+    const options: CliOptions = {
+      check: true,
+      testRoutesOutputPath: "test/generated/rpc-test-routes.ts",
+    };
+    vi.mocked(generatorModule.checkGenerated).mockReturnValue(true);
+
+    const result = handleCli(baseDir, outputPath, options, logger);
+
+    expect(result).toBe(0);
+    expect(generatorModule.checkGenerated).toHaveBeenCalledWith({
+      baseDir: expect.stringContaining("/testDir"),
+      outputPath: expect.stringContaining("/outputDir"),
+      paramsFileName: null,
+      testRoutesOutputPath: expect.stringContaining("/test/generated/rpc-test-routes.ts"),
+      logger,
+    });
   });
 
   it("should return 1 when checkGenerated reports stale files", () => {
@@ -137,6 +175,69 @@ describe("handleCli", () => {
       expect(result).toBe(1);
       expect(logger.error).toHaveBeenCalledWith(
         "Error: outputPath must be inside the current working directory.",
+      );
+      expect(generatorModule.generate).not.toHaveBeenCalled();
+    } finally {
+      existsSpy.mockRestore();
+      realpathSpy.mockRestore();
+    }
+  });
+
+  it("should reject testRoutesOutputPath outside the current working directory", () => {
+    const options: CliOptions = {
+      testRoutesOutputPath: path.resolve(process.cwd(), "..", "rpc-test-routes.ts"),
+    };
+
+    const result = handleCli(baseDir, outputPath, options, logger);
+
+    expect(result).toBe(1);
+    expect(logger.error).toHaveBeenCalledWith(
+      "Error: testRoutesOutputPath must be inside the current working directory.",
+    );
+    expect(generatorModule.generate).not.toHaveBeenCalled();
+  });
+
+  it("should reject testRoutesOutputPath matching outputPath", () => {
+    const options: CliOptions = {
+      testRoutesOutputPath: outputPath,
+    };
+
+    const result = handleCli(baseDir, outputPath, options, logger);
+
+    expect(result).toBe(1);
+    expect(logger.error).toHaveBeenCalledWith(
+      "Error: testRoutesOutputPath must be different from outputPath.",
+    );
+    expect(generatorModule.generate).not.toHaveBeenCalled();
+  });
+
+  it("should reject testRoutesOutputPath that resolves to outputPath through a symlink", () => {
+    const symlinkTestRoutesOutputPath = path.resolve(
+      process.cwd(),
+      "linked-output",
+      "rpc-test-routes.ts",
+    );
+    const realOutputPath = path.resolve(process.cwd(), "outputDir");
+    const options: CliOptions = {
+      testRoutesOutputPath: symlinkTestRoutesOutputPath,
+    };
+    const existsSpy = vi.spyOn(fs, "existsSync").mockReturnValue(true);
+    const realpathSpy = vi.spyOn(fs.realpathSync, "native").mockImplementation((filePath) => {
+      const resolvedPath = path.resolve(String(filePath));
+
+      if (resolvedPath === symlinkTestRoutesOutputPath) {
+        return realOutputPath;
+      }
+
+      return resolvedPath;
+    });
+
+    try {
+      const result = handleCli(baseDir, outputPath, options, logger);
+
+      expect(result).toBe(1);
+      expect(logger.error).toHaveBeenCalledWith(
+        "Error: testRoutesOutputPath must be different from outputPath.",
       );
       expect(generatorModule.generate).not.toHaveBeenCalled();
     } finally {

@@ -10,7 +10,7 @@ This package is the real Next.js integration fixture for `rpc4next`. Use it to v
 
 This workspace resolves `rpc4next` imports to the monorepo source via `tsconfig.json` paths, so scanner and runtime changes are testable before rebuilding package `dist/`.
 It still depends on built workspace artifacts for packages such as `rpc4next-shared`, so a fresh clone needs one root build before starting the app or using the built CLI entrypoint.
-Generated files are committed here so CLI output diffs stay reviewable in Git, including `src/generated/rpc.ts` and `app/**/route-contract.ts`.
+Generated files are committed here so CLI output diffs stay reviewable in Git, including `src/generated/rpc.ts`, `src/generated/rpc-test-routes.ts`, and `app/**/route-contract.ts`.
 The local `rpc4next.config.json` keeps generator commands short by pinning `baseDir`, `outputPath`, and `paramsFile`.
 
 ## Quick start

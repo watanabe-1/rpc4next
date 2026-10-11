@@ -7,6 +7,7 @@ export interface CliConfig {
   baseDir?: string;
   outputPath?: string;
   paramsFile?: string;
+  testRoutesOutputPath?: string;
 }
 
 const isNonEmptyString = (value: unknown): value is string =>
@@ -48,6 +49,13 @@ export const loadCliConfig = (cwd = process.cwd()): CliConfig => {
       throw new Error(`${CONFIG_FILE_NAME} field "paramsFile" must be a string.`);
     }
     config.paramsFile = raw.paramsFile;
+  }
+
+  if ("testRoutesOutputPath" in raw) {
+    if (!isNonEmptyString(raw.testRoutesOutputPath)) {
+      throw new Error(`${CONFIG_FILE_NAME} field "testRoutesOutputPath" must be a string.`);
+    }
+    config.testRoutesOutputPath = raw.testRoutesOutputPath;
   }
 
   return config;
