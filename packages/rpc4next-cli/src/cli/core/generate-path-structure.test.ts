@@ -175,7 +175,10 @@ describe("generatePathStructure", () => {
       },
     ]);
 
+    expect(manifest).toContain('import "rpc4next/server-only";');
     expect(manifest).toContain('import type { RpcTestRoute } from "rpc4next/client/test";');
+    expect(manifest).toContain("rpc4next-test-routes-client-bundle-leak-sentinel");
+    expect(manifest).toContain("__rpc4nextTestRouteManifestBundleSentinel");
     expect(manifest).toContain("import { GET as Route_");
     expect(manifest).toContain("import { POST as Route_");
     expect(manifest).toContain('pathname: "/api/users/[userId]"');
