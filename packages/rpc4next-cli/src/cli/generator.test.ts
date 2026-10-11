@@ -261,6 +261,42 @@ describe("generate", () => {
     });
   });
 
+  it("writes the test route manifest to a configured output path", () => {
+    const tmpDir = makeTempDir();
+    const output = path.join(tmpDir, "src", "generated", "rpc.ts");
+    const defaultTestRoutesOutputPath = path.join(tmpDir, "src", "generated", "rpc-test-routes.ts");
+    const customTestRoutesOutputPath = path.join(tmpDir, "test", "generated", "routes.ts");
+
+    try {
+      writeTree(tmpDir, {
+        src: {
+          generated: {},
+        },
+      });
+
+      vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
+        pathStructure: "generated-type-content",
+        paramsTypes: [],
+        routeManifests: [],
+      });
+
+      generate({
+        baseDir,
+        outputPath: output,
+        paramsFileName: null,
+        testRoutesOutputPath: customTestRoutesOutputPath,
+        logger,
+      });
+
+      expect(fs.readFileSync(customTestRoutesOutputPath, "utf8")).toBe(
+        generatePathStructure.generateTestRouteManifest(customTestRoutesOutputPath, []),
+      );
+      expect(fs.existsSync(defaultTestRoutesOutputPath)).toBe(false);
+    } finally {
+      cleanupTempDir(tmpDir);
+    }
+  });
+
   it("writes only new or changed params files when paramsFileName is provided", () => {
     vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
       pathStructure: "generated-type-content",
@@ -699,6 +735,39 @@ describe("checkGenerated", () => {
       `Generated path structure is stale: ${path.relative(process.cwd(), outputPath)}`,
     );
     expect(logger.success).not.toHaveBeenCalled();
+  });
+
+  it("checks the test route manifest at a configured output path", () => {
+    const customTestRoutesOutputPath = "test/generated/routes-for-tests.ts";
+    vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
+      pathStructure: "generated-type-content",
+      paramsTypes: [],
+      routeManifests: [],
+    });
+    vi.spyOn(fs, "existsSync").mockReturnValue(true);
+    vi.spyOn(fs, "readFileSync").mockImplementation((filePath) => {
+      if (filePath === outputPath) {
+        return "generated-type-content";
+      }
+
+      if (filePath === customTestRoutesOutputPath) {
+        return generatePathStructure.generateTestRouteManifest(customTestRoutesOutputPath, []);
+      }
+
+      return "";
+    });
+
+    const result = checkGenerated({
+      baseDir,
+      outputPath,
+      paramsFileName: null,
+      testRoutesOutputPath: customTestRoutesOutputPath,
+      logger,
+    });
+
+    expect(result).toBe(true);
+    expect(fs.readFileSync).toHaveBeenCalledWith(customTestRoutesOutputPath, "utf8");
+    expect(fs.readFileSync).not.toHaveBeenCalledWith(testRoutesOutputPath, "utf8");
   });
 
   it("returns false when params files are missing or should be removed", () => {

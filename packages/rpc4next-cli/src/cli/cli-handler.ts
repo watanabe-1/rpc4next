@@ -11,6 +11,7 @@ const handleGenerateSafely = (
   baseDir: string,
   outputPath: string,
   paramsFileName: string | null,
+  testRoutesOutputPath: string | undefined,
   logger: Logger,
   preserveCache = false,
 ): ExitCode => {
@@ -19,6 +20,7 @@ const handleGenerateSafely = (
       baseDir,
       outputPath,
       paramsFileName,
+      ...(testRoutesOutputPath ? { testRoutesOutputPath } : {}),
       logger,
       preserveCache,
     });
@@ -39,6 +41,7 @@ const handleCheckSafely = (
   baseDir: string,
   outputPath: string,
   paramsFileName: string | null,
+  testRoutesOutputPath: string | undefined,
   logger: Logger,
 ): ExitCode => {
   try {
@@ -46,6 +49,7 @@ const handleCheckSafely = (
       baseDir,
       outputPath,
       paramsFileName,
+      ...(testRoutesOutputPath ? { testRoutesOutputPath } : {}),
       logger,
     })
       ? EXIT_SUCCESS
@@ -102,6 +106,19 @@ const getRealPathForContainment = (resolvedPath: string): string => {
   return path.resolve(fs.realpathSync.native(currentPath), ...segments);
 };
 
+const normalizePathForComparison = (filePath: string): string => {
+  const normalizedPath = path.normalize(filePath);
+
+  return process.platform === "win32" ? normalizedPath.toLowerCase() : normalizedPath;
+};
+
+const isSameFilePath = (leftPath: string, rightPath: string): boolean => {
+  return (
+    normalizePathForComparison(getRealPathForContainment(leftPath)) ===
+    normalizePathForComparison(getRealPathForContainment(rightPath))
+  );
+};
+
 export const handleCli = (
   baseDir: string,
   outputPath: string,
@@ -110,8 +127,14 @@ export const handleCli = (
 ): ExitCode => {
   const resolvedBaseDirNative = path.resolve(baseDir);
   const resolvedOutputPathNative = path.resolve(outputPath);
+  const resolvedTestRoutesOutputPathNative = options.testRoutesOutputPath
+    ? path.resolve(options.testRoutesOutputPath)
+    : undefined;
   const resolvedBaseDir = toPosixPath(resolvedBaseDirNative);
   const resolvedOutputPath = toPosixPath(resolvedOutputPathNative);
+  const resolvedTestRoutesOutputPath = resolvedTestRoutesOutputPathNative
+    ? toPosixPath(resolvedTestRoutesOutputPathNative)
+    : undefined;
 
   const paramsFileName = typeof options.paramsFile === "string" ? options.paramsFile : null;
 
@@ -123,6 +146,21 @@ export const handleCli = (
 
   if (!isWithinCwd(resolvedOutputPathNative)) {
     logger.error("Error: outputPath must be inside the current working directory.");
+
+    return EXIT_FAILURE;
+  }
+
+  if (resolvedTestRoutesOutputPathNative && !isWithinCwd(resolvedTestRoutesOutputPathNative)) {
+    logger.error("Error: testRoutesOutputPath must be inside the current working directory.");
+
+    return EXIT_FAILURE;
+  }
+
+  if (
+    resolvedTestRoutesOutputPathNative &&
+    isSameFilePath(resolvedTestRoutesOutputPathNative, resolvedOutputPathNative)
+  ) {
+    logger.error("Error: testRoutesOutputPath must be different from outputPath.");
 
     return EXIT_FAILURE;
   }
@@ -146,7 +184,13 @@ export const handleCli = (
   }
 
   if (options.check) {
-    return handleCheckSafely(resolvedBaseDir, resolvedOutputPath, paramsFileName, logger);
+    return handleCheckSafely(
+      resolvedBaseDir,
+      resolvedOutputPath,
+      paramsFileName,
+      resolvedTestRoutesOutputPath,
+      logger,
+    );
   }
 
   if (options.watch) {
@@ -154,7 +198,14 @@ export const handleCli = (
       resolvedBaseDir,
       () => {
         // Watch mode keeps scan caches warm and invalidates changed paths in the watcher.
-        handleGenerateSafely(resolvedBaseDir, resolvedOutputPath, paramsFileName, logger, true);
+        handleGenerateSafely(
+          resolvedBaseDir,
+          resolvedOutputPath,
+          paramsFileName,
+          resolvedTestRoutesOutputPath,
+          logger,
+          true,
+        );
       },
       logger,
     );
@@ -162,5 +213,11 @@ export const handleCli = (
     return EXIT_SUCCESS;
   }
 
-  return handleGenerateSafely(resolvedBaseDir, resolvedOutputPath, paramsFileName, logger);
+  return handleGenerateSafely(
+    resolvedBaseDir,
+    resolvedOutputPath,
+    paramsFileName,
+    resolvedTestRoutesOutputPath,
+    logger,
+  );
 };

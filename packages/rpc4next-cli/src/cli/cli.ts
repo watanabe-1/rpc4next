@@ -180,6 +180,9 @@ export const runCli = (argv: string[], logger: Logger = createLogger()) => {
       // - true: specified without filename
       // - string: specified with filename
       ...(paramsFile !== undefined ? { paramsFile } : {}),
+      ...(config.testRoutesOutputPath !== undefined
+        ? { testRoutesOutputPath: config.testRoutesOutputPath }
+        : {}),
     } as CliOptions;
 
     // Match your current behavior:

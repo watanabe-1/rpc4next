@@ -68,6 +68,7 @@ describe("runCli", () => {
       baseDir: "app",
       outputPath: "src/generated/rpc.ts",
       paramsFile: "params.ts",
+      testRoutesOutputPath: "test/generated/rpc-test-routes.ts",
     });
 
     runCli(["node", "cli"]);
@@ -80,6 +81,7 @@ describe("runCli", () => {
         watch: false,
         check: false,
         paramsFile: "params.ts",
+        testRoutesOutputPath: "test/generated/rpc-test-routes.ts",
       },
       mockLogger,
     );
