@@ -19,7 +19,10 @@
     "dist"
   ],
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/rpc/server-only.js",
+    "./dist/rpc/server/index.js"
+  ],
   "exports": {
     "./client": {
       "import": {
@@ -49,6 +52,16 @@
       "default": {
         "types": "./dist/rpc/client/test.d.ts",
         "default": "./dist/rpc/client/test.js"
+      }
+    },
+    "./server-only": {
+      "import": {
+        "types": "./dist/rpc/server-only.d.ts",
+        "default": "./dist/rpc/server-only.js"
+      },
+      "default": {
+        "types": "./dist/rpc/server-only.d.ts",
+        "default": "./dist/rpc/server-only.js"
       }
     },
     "./server": {

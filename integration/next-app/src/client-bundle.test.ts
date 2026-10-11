@@ -9,6 +9,7 @@ const execFileAsync = promisify(execFile);
 const workspaceRoot = path.resolve(import.meta.dirname, "..");
 const clientStaticDir = path.join(workspaceRoot, ".next", "static");
 const routeSourceLeakSentinel = "rpc4next-client-bundle-route-source-leak-sentinel";
+const testRouteManifestLeakSentinel = "rpc4next-test-routes-client-bundle-leak-sentinel";
 const helperOnlyBundleSentinels = ["$match", "http://dummy", "(?:/(.*))?"] as const;
 const shouldRunClientBundleTest = process.env.RPC4NEXT_RUN_CLIENT_BUNDLE_TEST === "1";
 
@@ -84,6 +85,25 @@ describe.skipIf(!shouldRunClientBundleTest)("client production bundle", () => {
         const source = await fs.readFile(file, "utf8");
 
         if (source.includes(routeSourceLeakSentinel)) {
+          leakedFiles.push(path.relative(workspaceRoot, file));
+        }
+      }),
+    );
+
+    expect(leakedFiles).toStrictEqual([]);
+  }, 180_000);
+
+  it("does not include generated test route manifest code", async () => {
+    const clientFiles = await collectJavaScriptFiles(clientStaticDir);
+    expect(clientFiles.length).toBeGreaterThan(0);
+
+    const leakedFiles: string[] = [];
+
+    await Promise.all(
+      clientFiles.map(async (file) => {
+        const source = await fs.readFile(file, "utf8");
+
+        if (source.includes(testRouteManifestLeakSentinel)) {
           leakedFiles.push(path.relative(workspaceRoot, file));
         }
       }),
