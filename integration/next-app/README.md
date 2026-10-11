@@ -44,7 +44,7 @@ Use these files as entry points, depending on what you want to understand:
 - Procedure-backed page with params and runtime output validation: `app/photo/[id]/page.tsx`
 - Procedure-backed page with typed search params: `app/patterns/search/page.tsx`
 - Procedure-first walkthrough page: `app/procedure-examples/page.tsx`
-- Response promise unwrap examples: `app/response-unwrap/page.tsx`
+- Typed Response handling and unwrap convenience examples: `app/response-unwrap/page.tsx`
 - Typed client setup: `src/lib/rpc-client.ts`
 - Generated output shape: `src/generated/rpc.ts`
 - Generated sibling route contract: `app/api/procedure-contract/[userId]/route-contract.ts`
@@ -198,11 +198,14 @@ and `app/_rpc/route-procedure.ts` binds it with
 
 `app/response-unwrap/page.tsx` demonstrates the client side of that contract.
 Expected application errors are handled through typed `Response` branches with
-`response.ok`, while `unwrap()` remains the convenience path for code that only
-needs the parsed success payload and can send non-2xx responses through
-`RpcResponseError`. For compile-time assertions around generated error unions,
-see the `ErrorResponsePayload` and `ErrorResponseCode` coverage in
-`src/rpc-types.test.ts`.
+`response.ok`, `response.status`, and `response.json()`. Calling
+`response.json()` without an `ok` branch is allowed, but the inferred payload is
+the endpoint's success/error union; branch on `response.ok` or `response.status`
+first when the UI needs a success-only payload. `unwrap()` remains a convenience
+path for code that only needs the parsed success payload and can send non-2xx
+responses through `RpcResponseError`. For compile-time assertions around
+generated error unions, see the `ErrorResponsePayload` and `ErrorResponseCode`
+coverage in `src/rpc-types.test.ts`.
 
 `onError` is still required for bare route procedures, but this fixture provides
 it through the shared `appRouteProcedure` default. It is the fallback for unexpected
