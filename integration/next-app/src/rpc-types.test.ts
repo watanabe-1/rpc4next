@@ -10,7 +10,12 @@ import {
   RpcResponseError,
   type SuccessfulResponsePayload,
 } from "rpc4next/client";
-import type { ContentType, HttpStatusCode, TypedNextResponse } from "rpc4next/server";
+import type {
+  ContentType,
+  HttpStatusCode,
+  RpcErrorEnvelope,
+  TypedNextResponse,
+} from "rpc4next/server";
 import { describe, expectTypeOf, it } from "vitest";
 
 import type { PathStructure } from "./generated/rpc";
@@ -450,6 +455,61 @@ describe("integration next-app generated RPC type coverage", () => {
 
     void _createPostMutationPayloadFromActual;
     void _createPostMutationPayloadFromExpected;
+  });
+
+  it("keeps typed response JSON readable before and after narrowing", () => {
+    type GuardedGet = ReturnType<(typeof client.api)["procedure-guarded"]["_userId"]>["$get"];
+    type GuardedResponse = Awaited<ReturnType<GuardedGet>>;
+    type GuardedSuccessPayload = InferRpcResponseType<GuardedGet>;
+    type GuardedErrorPayload = InferRpcResponseType<GuardedGet, "error">;
+    type GuardedForbiddenPayload = InferRpcResponseType<GuardedGet, 403>;
+    type ExpectedGuardedForbiddenPayload =
+      | RpcErrorEnvelope<
+          "FORBIDDEN",
+          {
+            reason: "suspended_account";
+          }
+        >
+      | RpcErrorEnvelope<
+          "FORBIDDEN",
+          {
+            reason: "editor_only";
+          }
+        >;
+
+    expectTypeOf<ResponseJson<GuardedResponse>>().toExtend<
+      GuardedSuccessPayload | GuardedErrorPayload
+    >();
+    expectTypeOf<GuardedForbiddenPayload>().toEqualTypeOf<ExpectedGuardedForbiddenPayload>();
+
+    const _assertResponseNarrowing = async (response: GuardedResponse): Promise<void> => {
+      const unbranchedPayload = await response.json();
+      const _unbranchedPayload: GuardedSuccessPayload | GuardedErrorPayload = unbranchedPayload;
+
+      if (response.status === 403) {
+        const payload = await response.json();
+        const _forbiddenPayload: GuardedForbiddenPayload = payload;
+        expectTypeOf<typeof payload>().toEqualTypeOf<ExpectedGuardedForbiddenPayload>();
+        void _forbiddenPayload;
+
+        return;
+      }
+
+      if (!response.ok) {
+        const payload = await response.json();
+        const _errorPayload: GuardedErrorPayload = payload;
+        void _errorPayload;
+
+        return;
+      }
+
+      const payload = await response.json();
+      const _successPayload: GuardedSuccessPayload = payload;
+      void _successPayload;
+      void _unbranchedPayload;
+    };
+
+    void _assertResponseNarrowing;
   });
 
   it("types React Query options from generated RPC methods", () => {
