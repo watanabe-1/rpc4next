@@ -27,9 +27,14 @@ type GeneratedPathStructure = {
   routeManifests?: readonly RouteManifest[];
 };
 
+type GenerateTestRouteManifestOptions = {
+  includeBundleLeakSentinel?: boolean;
+};
+
 export const generateTestRouteManifest = (
   outputPath: string,
   routeManifests: readonly RouteManifest[],
+  options: GenerateTestRouteManifestOptions = {},
 ) => {
   const imports = routeManifests.flatMap(({ fullPath, methods }) => {
     const importPath = createRelativeImportPath(outputPath, fullPath);
@@ -51,6 +56,14 @@ export const generateTestRouteManifest = (
       NEWLINE,
     );
   });
+  const bundleLeakSentinel = options.includeBundleLeakSentinel
+    ? [
+        `const testRouteManifestBundleSentinel = ${createStringLiteral(TEST_ROUTE_MANIFEST_BUNDLE_SENTINEL)};`,
+        "(globalThis as unknown as Record<string, string>).__rpc4nextTestRouteManifestBundleSentinel =",
+        "  testRouteManifestBundleSentinel;",
+        "",
+      ]
+    : [];
 
   return [
     ROUTE_CONTRACT_GENERATED_MARKER,
@@ -59,10 +72,7 @@ export const generateTestRouteManifest = (
     'import type { RpcTestRoute } from "rpc4next/client/test";',
     imports.length > 0 ? imports.join(NEWLINE) : "",
     "",
-    `const testRouteManifestBundleSentinel = ${createStringLiteral(TEST_ROUTE_MANIFEST_BUNDLE_SENTINEL)};`,
-    "(globalThis as unknown as Record<string, string>).__rpc4nextTestRouteManifestBundleSentinel =",
-    "  testRouteManifestBundleSentinel;",
-    "",
+    ...bundleLeakSentinel,
     "export const testRoutes = [",
     routes.join(NEWLINE),
     "] as const satisfies readonly RpcTestRoute[];",

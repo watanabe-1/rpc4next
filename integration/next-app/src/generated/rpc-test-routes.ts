@@ -24,10 +24,6 @@ import { GET as Route_51699d0ddf6cb282 } from "../../app/api/redirect-me/route";
 import { GET as Route_ca30a42868300079 } from "../../app/api/request-meta/route";
 import { GET as Route_311676d043ba0020 } from "../../app/api/users/[userId]/route";
 
-const testRouteManifestBundleSentinel = "rpc4next-test-routes-client-bundle-leak-sentinel";
-(globalThis as unknown as Record<string, string>).__rpc4nextTestRouteManifestBundleSentinel =
-  testRouteManifestBundleSentinel;
-
 export const testRoutes = [
   {
     pathname: "/api/client-bundle-leak-sentinel",
