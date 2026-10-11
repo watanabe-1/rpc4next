@@ -34,7 +34,12 @@ export default appPageProcedure.forRoute(routeContract).page(async () => {
   const manualResponse = await serverRpcClient.api["procedure-contract"]._userId("demo-user").$get({
     url: { query: { includePosts: "true" } },
   });
-  const manualPayload = await manualResponse.json();
+  const manualPayload = manualResponse.ok
+    ? await manualResponse.json()
+    : {
+        status: manualResponse.status,
+        payload: await manualResponse.json(),
+      };
 
   const expectedErrorResponse = await serverRpcClient.api["procedure-defaults-error"].$get({
     url: { query: { mode: "deny" } },
@@ -121,7 +126,7 @@ if (!response.ok) {
       result: formatPayload(expectedErrorPayload),
     },
     {
-      title: "Response promise unwrap",
+      title: "Unwrap convenience path",
       route: "/api/procedure-contract/[userId]",
       code: `const body = await rpc.api["procedure-contract"]
   ._userId("demo-user")
@@ -156,7 +161,7 @@ console.log(file.contentType);`,
       }),
     },
     {
-      title: "Unwrap error fallback",
+      title: "Unwrap error fallback path",
       route: "/api/procedure-defaults-error",
       code: `try {
   await rpc.api["procedure-defaults-error"]
@@ -177,10 +182,10 @@ console.log(file.contentType);`,
 
   return (
     <main>
-      <h1>Response unwrap examples</h1>
+      <h1>Typed Response handling examples</h1>
       <p>
-        This page compares typed Response handling for expected application errors with{" "}
-        <code>unwrap()</code> for code that only needs the parsed success payload.
+        Expected application errors use typed <code>Response</code> branches. <code>unwrap()</code>{" "}
+        is the convenience path for code that only needs the parsed success payload.
       </p>
       {examples.map((example) => (
         <section key={example.title}>

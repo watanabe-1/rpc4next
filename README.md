@@ -436,38 +436,51 @@ option, such as `{ init: { credentials: "include" } }`.
 
 ### 6. Handle Typed Responses
 
-Client methods still return typed `Response` objects, so existing
-`response.ok`, `response.status`, and `response.json()` narrowing continues to
-work. This is the recommended path when UI code needs to branch on expected
-application errors such as validation failures, authorization failures, or
-business-rule conflicts:
+Client methods still return typed, fetch-compatible `Response` objects. Await
+`$get()`, `$post()`, and the other method terminals just like `fetch`, then
+branch with `response.ok`, `response.status`, and `response.json()`. This is the
+recommended path when UI code needs to handle expected application errors such
+as validation failures, authorization failures, or business-rule conflicts:
 
 ```ts
 const response = await rpc.api.users._userId("123").$get({
   url: { query: { includePosts: "true" } },
 });
 
+if (response.status === 400) {
+  const error = await response.json();
+  showValidationMessage(error.error.message);
+  return;
+}
+
+if (response.status === 401) {
+  showSignInPrompt();
+  return;
+}
+
 if (!response.ok) {
   const error = await response.json();
-
-  switch (error.error.code) {
-    case "BAD_REQUEST":
-      showValidationMessage(error.error.message);
-      break;
-    case "UNAUTHORIZED":
-      showSignInPrompt();
-      break;
-    case "INTERNAL_SERVER_ERROR":
-      showRetryMessage();
-      break;
-  }
-
+  showRetryMessage(error.error.message);
   return;
 }
 
 const body = await response.json();
 renderUser(body);
 ```
+
+You can call `response.json()` without an `ok` branch. That is valid and does
+not produce a compile error, but the payload type is the full success/error
+union for that endpoint:
+
+```ts
+const response = await rpc.api.users._userId("123").$get();
+const body = await response.json();
+// body is the success/error response body union.
+```
+
+When you want to treat the result as the success payload, narrow the response
+first with `response.ok` or a status check, then call `response.json()` in that
+branch.
 
 When application code only needs the parsed success body and non-2xx responses
 can follow the exception path, call `unwrap()` on the RPC response promise. It
@@ -507,9 +520,10 @@ return response.error("FORBIDDEN", {
 });
 ```
 
-TypeScript does not type thrown values from a `catch` block, so `unwrap()` is not
-the primary API for fine-grained UI branching on known errors. Use the typed
-`Response` path above when the UI needs exhaustive, endpoint-specific handling.
+TypeScript does not type thrown values from a `catch` block as
+endpoint-specific error unions, so `unwrap()` is not the primary API for
+fine-grained UI branching on known errors. Use the typed `Response` path above
+when the UI needs exhaustive, endpoint-specific handling.
 
 Non-JSON error bodies are also handled safely. `unwrap()` parses JSON when
 possible, reads text responses for `text/*`, XML, and YAML media types, and
@@ -585,34 +599,30 @@ type CreatedPostResponse = InferRpcResponseType<typeof client.api.posts.$post, 2
 type PostErrorPayload = InferRpcResponseType<typeof client.api.posts.$post, "error">;
 ```
 
-Error payload and code helpers let UI branches follow the endpoint definition,
+Error payload and code helpers can be used with typed `Response` branches,
 including custom error catalogs:
 
 ```ts
-import {
-  matchRpcResponseError,
-  RpcResponseError,
-  type InferRpcErrorCode,
-} from "rpc4next/client";
+import type { InferRpcErrorCode, InferRpcResponseType } from "rpc4next/client";
 
-type GuardedErrorCode = InferRpcErrorCode<
-  ReturnType<typeof client.api["procedure-guarded"]._userId>["$get"]
->;
+type GuardedGet = ReturnType<typeof client.api["procedure-guarded"]._userId>["$get"];
+type GuardedErrorCode = InferRpcErrorCode<GuardedGet>;
+type GuardedForbidden = InferRpcResponseType<GuardedGet, 403>;
 
 async function loadGuarded(userId: string) {
-  try {
-    return await client.api["procedure-guarded"]._userId(userId).$get().unwrap();
-  } catch (error) {
-    if (error instanceof RpcResponseError) {
-      return matchRpcResponseError(error, {
-        FORBIDDEN: () => "Permission denied",
-        BAD_REQUEST: () => "Invalid input",
-        INTERNAL_SERVER_ERROR: () => "Server error",
-      });
-    }
+  const response = await client.api["procedure-guarded"]._userId(userId).$get();
 
-    throw error;
+  if (response.status === 403) {
+    const error: GuardedForbidden = await response.json();
+    return error.error.message;
   }
+
+  if (!response.ok) {
+    const error = await response.json();
+    return error.error.code satisfies GuardedErrorCode;
+  }
+
+  return response.json();
 }
 ```
 
