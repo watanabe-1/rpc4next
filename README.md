@@ -4,6 +4,10 @@
 
 `rpc4next` is a lightweight, type-safe RPC layer for Next.js App Router projects.
 It scans your existing `app/**` files, generates a `PathStructure` type, and lets you call route handlers through a typed client without introducing a custom server framework.
+Think of it as a typed `fetch` replacement for your own App Router endpoints:
+you still get familiar `Response` objects, `response.ok`, `response.status`,
+and `response.json()`, but path params, query strings, request bodies, and
+response payloads are inferred from your routes.
 
 It is inspired by Hono RPC and Pathpida:
 
@@ -345,6 +349,9 @@ const response = await rpc.api.users._userId("123").$get({
 
 const data = await response.json();
 ```
+
+The client method is deliberately fetch-like: awaiting it gives you a typed
+`Response`, so existing `fetch` control flow maps directly to rpc4next.
 
 For JSON request bodies:
 
