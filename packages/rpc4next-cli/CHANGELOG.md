@@ -2,19 +2,17 @@
 
 ## [0.10.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.9.0...rpc4next-cli-v0.10.0) (2026-10-11)
 
-
 ### Features
 
-* Add typed RPC test client with generated route manifests ([#635](https://github.com/watanabe-1/rpc4next/issues/635)) ([3d7af80](https://github.com/watanabe-1/rpc4next/commit/3d7af80edf9b9cc072fad35a954ed2512ecfcc56))
-* **cli:** Support custom test route manifest output paths ([#638](https://github.com/watanabe-1/rpc4next/issues/638)) ([cc3df8d](https://github.com/watanabe-1/rpc4next/commit/cc3df8d8f3606eab1d577f228c9179d7af93b978))
-* **rpc4next:** Introduce route and page procedure factories ([#630](https://github.com/watanabe-1/rpc4next/issues/630)) ([e752cec](https://github.com/watanabe-1/rpc4next/commit/e752cec41a8a420520c79fee985138ffb9c07918))
-
+- Add typed RPC test client with generated route manifests ([#635](https://github.com/watanabe-1/rpc4next/issues/635)) ([3d7af80](https://github.com/watanabe-1/rpc4next/commit/3d7af80edf9b9cc072fad35a954ed2512ecfcc56))
+- **cli:** Support custom test route manifest output paths ([#638](https://github.com/watanabe-1/rpc4next/issues/638)) ([cc3df8d](https://github.com/watanabe-1/rpc4next/commit/cc3df8d8f3606eab1d577f228c9179d7af93b978))
+- **rpc4next:** Introduce route and page procedure factories ([#630](https://github.com/watanabe-1/rpc4next/issues/630)) ([e752cec](https://github.com/watanabe-1/rpc4next/commit/e752cec41a8a420520c79fee985138ffb9c07918))
 
 ### Bug Fixes
 
-* **cli:** Add generated marker to path structure output ([#639](https://github.com/watanabe-1/rpc4next/issues/639)) ([9470cbe](https://github.com/watanabe-1/rpc4next/commit/9470cbe6c7994ae35aa74e66deb767391fc3d97d))
-* **cli:** Exclude bundle leak sentinels from generated manifests ([#637](https://github.com/watanabe-1/rpc4next/issues/637)) ([67fb0d5](https://github.com/watanabe-1/rpc4next/commit/67fb0d515f81f0c8482c83adc93627aa65155a81))
-* **cli:** Prevent test route manifests from leaking into client bundles ([#636](https://github.com/watanabe-1/rpc4next/issues/636)) ([b6d1dac](https://github.com/watanabe-1/rpc4next/commit/b6d1dac5dd3a7d58e5292cd54e4f39031639ed54))
+- **cli:** Add generated marker to path structure output ([#639](https://github.com/watanabe-1/rpc4next/issues/639)) ([9470cbe](https://github.com/watanabe-1/rpc4next/commit/9470cbe6c7994ae35aa74e66deb767391fc3d97d))
+- **cli:** Exclude bundle leak sentinels from generated manifests ([#637](https://github.com/watanabe-1/rpc4next/issues/637)) ([67fb0d5](https://github.com/watanabe-1/rpc4next/commit/67fb0d515f81f0c8482c83adc93627aa65155a81))
+- **cli:** Prevent test route manifests from leaking into client bundles ([#636](https://github.com/watanabe-1/rpc4next/issues/636)) ([b6d1dac](https://github.com/watanabe-1/rpc4next/commit/b6d1dac5dd3a7d58e5292cd54e4f39031639ed54))
 
 ## [0.9.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.8.2...rpc4next-cli-v0.9.0) (2026-10-09)
 
