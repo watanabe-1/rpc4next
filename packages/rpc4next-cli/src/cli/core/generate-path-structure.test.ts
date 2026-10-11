@@ -79,7 +79,11 @@ describe("generatePathStructure", () => {
 
     const expectedTypeDefinition = `export type PathStructure = ${TYPE_RPC_GENERATED_PATH_STRUCTURE}<{ home: ${TYPE_RPC_ENDPOINT}, user: { id: ${TYPE_KEY_PARAMS} }, ${TYPE_KEY_QUERY}}, ${RPC4NEXT_GENERATED_SCHEMA_VERSION}>${STATEMENT_TERMINATOR}`;
 
-    expect(pathStructure).toBe(`${expectedImports}${NEWLINE}${NEWLINE}${expectedTypeDefinition}`);
+    expect(pathStructure).toBe(
+      [ROUTE_CONTRACT_GENERATED_MARKER, "", expectedImports, "", expectedTypeDefinition].join(
+        NEWLINE,
+      ),
+    );
     expect(paramsTypes).toStrictEqual([
       {
         paramsType: [
@@ -116,7 +120,9 @@ describe("generatePathStructure", () => {
     const expectedImports = `import type { ${TYPE_RPC_GENERATED_PATH_STRUCTURE} ,${TYPE_RPC_ENDPOINT} } from "${RPC4NEXT_CLIENT_IMPORT_PATH}"${STATEMENT_TERMINATOR}${NEWLINE}${NEWLINE}`;
     const expectedTypeDefinition = `export type PathStructure = ${TYPE_RPC_GENERATED_PATH_STRUCTURE}<{ dashboard: ${TYPE_RPC_ENDPOINT} }, ${RPC4NEXT_GENERATED_SCHEMA_VERSION}>${STATEMENT_TERMINATOR}`;
 
-    expect(pathStructure).toBe(`${expectedImports}${NEWLINE}${expectedTypeDefinition}`);
+    expect(pathStructure).toBe(
+      [ROUTE_CONTRACT_GENERATED_MARKER, "", expectedImports, expectedTypeDefinition].join(NEWLINE),
+    );
     expect(paramsTypes).toStrictEqual([]);
   });
 

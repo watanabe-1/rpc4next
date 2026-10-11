@@ -125,7 +125,14 @@ export const generatePathStructure = (
   });
 
   return {
-    pathStructure: `${keyTypesImportStr}${NEWLINE}${importsStr}${NEWLINE}${NEWLINE}${pathStructureType}`,
+    pathStructure: [
+      ROUTE_CONTRACT_GENERATED_MARKER,
+      "",
+      keyTypesImportStr,
+      importsStr,
+      "",
+      pathStructureType,
+    ].join(NEWLINE),
     paramsTypes: dirParamsTypes,
     routeManifests,
   };
