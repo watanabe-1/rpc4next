@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 
 import { createRpcTestPageClient, type RpcTestPage, type RpcTestPageHandler } from "./test";
 import type { PageRouteMarker, ParamsKey, RpcEndpoint, RpcGeneratedPathStructure } from "./types";
@@ -8,11 +8,13 @@ const loadTestPage = (page: RpcTestPageHandler) => async () => ({ default: page 
 const pageWithQuery = async (_props: {
   searchParams?: Promise<{ q?: string; tag?: string | string[] }>;
 }) => undefined;
+const pageWithResult = async () => ({ route: "typed" as const });
 
 type TestPathStructure = RpcGeneratedPathStructure<{
   feed: RpcEndpoint;
   missing: RpcEndpoint;
   search: PageRouteMarker<typeof pageWithQuery> & RpcEndpoint;
+  typed: PageRouteMarker<typeof pageWithResult> & RpcEndpoint;
   photo: {
     _id: RpcEndpoint & Record<ParamsKey, { id: string }>;
   };
@@ -109,5 +111,16 @@ describe("createRpcTestPageClient", () => {
     await expect(pageClient.missing.$render()).rejects.toThrow(
       'No rpc4next test page matched "/missing".',
     );
+  });
+
+  it("infers the generated page return type for render results", () => {
+    const pageClient = createRpcTestPageClient<TestPathStructure>([
+      {
+        pathname: "/typed",
+        load: loadTestPage(pageWithResult),
+      },
+    ]);
+
+    expectTypeOf(pageClient.typed.$render()).toEqualTypeOf<Promise<{ route: "typed" }>>();
   });
 });

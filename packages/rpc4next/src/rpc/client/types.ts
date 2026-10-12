@@ -60,6 +60,9 @@ export type RpcGeneratedPathStructure<
 };
 type RpcGeneratedSchemaKey = typeof rpc4nextGeneratedSchemaSymbol;
 
+export declare const rpc4nextPageRouteSymbol: unique symbol;
+type RpcPageRouteKey = typeof rpc4nextPageRouteSymbol;
+
 export type ParamsKey = "__params";
 type HasParamsMarker = Record<ParamsKey, unknown>;
 export type QueryKey = "__query";
@@ -334,8 +337,18 @@ export type InferPageQuery<TPage> =
 
 export type PageQueryInput<TPage> = InferPageQuery<TPage>;
 
-export type PageRouteMarker<TPage> =
-  IsNever<InferPageQuery<TPage>> extends true ? unknown : Record<QueryKey, InferPageQuery<TPage>>;
+export type PageRouteMarker<TPage> = { readonly [rpc4nextPageRouteSymbol]: TPage } & (IsNever<
+  InferPageQuery<TPage>
+> extends true
+  ? unknown
+  : Record<QueryKey, InferPageQuery<TPage>>);
+
+export type InferPageRenderResult<T> =
+  T extends Record<RpcPageRouteKey, infer TPage>
+    ? TPage extends (...args: never[]) => infer TResult
+      ? Awaited<TResult>
+      : unknown
+    : unknown;
 
 type PathProxyAsFunction<T> = {
   $url: (...args: UrlArgs<T, InferQuery<T>>) => UrlResult<T>;
@@ -357,7 +370,7 @@ export type DynamicPathProxyAsFunction<T> = Omit<
           ? ParamFunction<T[K], [value: string | number]>
           : DynamicPathProxyAsFunction<T[K]>;
   },
-  QueryKey | ParamsKey | RpcGeneratedSchemaKey
+  QueryKey | ParamsKey | RpcGeneratedSchemaKey | RpcPageRouteKey
 >;
 
 export type DynamicPathProxyAsProperty<T> = Omit<
@@ -366,7 +379,7 @@ export type DynamicPathProxyAsProperty<T> = Omit<
       ? DynamicPathProxyAsProperty<T[K]>
       : DynamicPathProxyAsProperty<T[K]>;
   },
-  QueryKey | ParamsKey | RpcGeneratedSchemaKey
+  QueryKey | ParamsKey | RpcGeneratedSchemaKey | RpcPageRouteKey
 >;
 
 export type RpcProxyHandler = (

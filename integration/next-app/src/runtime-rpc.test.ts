@@ -393,6 +393,20 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
       });
     });
 
+    it("returns the page error result when generated page procedure validation fails", async () => {
+      await expect(
+        pageClient["procedure-page-meta"].$render({
+          url: { query: { tab: "invalid" as unknown as "comments" } },
+          init: {
+            headers: {
+              "x-page-test-user": "alice",
+              cookie: "session=abc",
+            },
+          },
+        }),
+      ).resolves.toBe("page-helper-error");
+    });
+
     it("renders generated dynamic pages through the generated path chain", async () => {
       const result = await pageClient.photo._id("photo-1").$render();
 

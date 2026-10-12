@@ -6,6 +6,7 @@ import type { ProcedureRouteContract } from "../server/procedure-types";
 import { makeCreateRpc } from "./rpc";
 import { createRpcClient } from "./rpc-client";
 import type {
+  InferPageRenderResult,
   ParamsKey,
   PathParamsInput,
   QueryKey,
@@ -13,6 +14,7 @@ import type {
   RpcEndpoint,
   RpcGeneratedPathStructure,
   rpc4nextGeneratedSchemaSymbol,
+  rpc4nextPageRouteSymbol,
   UrlOptions,
 } from "./types";
 import { createUrl } from "./url";
@@ -59,6 +61,7 @@ export type RpcTestPageRendererOptions = {
 };
 
 type RpcGeneratedSchemaKey = typeof rpc4nextGeneratedSchemaSymbol;
+type RpcPageRouteKey = typeof rpc4nextPageRouteSymbol;
 type HasQueryMarker = Record<QueryKey, unknown>;
 type AllOptional<T> = Partial<T> extends T ? true : false;
 type OptionalCatchAllKey = `_____${string}`;
@@ -76,7 +79,7 @@ type RpcTestPageRenderOptions<T, TUrlOptions = RpcTestPageRenderUrlOptions<T>> =
 type RpcTestPageRenderArgs<T, TOptions = RpcTestPageRenderOptions<T>> =
   AllOptional<TOptions> extends true ? [options?: TOptions] : [options: TOptions];
 type RpcTestPagePathProxyAsFunction<T> = {
-  $render: (...args: RpcTestPageRenderArgs<T>) => Promise<unknown>;
+  $render: (...args: RpcTestPageRenderArgs<T>) => Promise<InferPageRenderResult<T>>;
 };
 type ParamFunction<T, TParamArgs extends unknown[]> = (
   ...args: TParamArgs
@@ -92,7 +95,7 @@ export type RpcTestPageDynamicPathProxyAsFunction<T> = Omit<
           ? ParamFunction<T[K], [value: string | number]>
           : RpcTestPageDynamicPathProxyAsFunction<T[K]>;
   },
-  QueryKey | ParamsKey | RpcGeneratedSchemaKey
+  QueryKey | ParamsKey | RpcGeneratedSchemaKey | RpcPageRouteKey
 >;
 
 const DEFAULT_TEST_BASE_URL = "http://rpc4next.test";
