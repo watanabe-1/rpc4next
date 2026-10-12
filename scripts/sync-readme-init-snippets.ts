@@ -1,6 +1,4 @@
-import { spawnSync } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -48,35 +46,7 @@ const formatSnippet = (name: SnippetName, snippetSources: SnippetSources) => {
   return ["```ts", fileHeader, snippetSources[name].trimEnd(), "```"].join("\n");
 };
 
-const formatMarkdown = (cwd: string, markdown: string) => {
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "rpc4next-readme-"));
-  const tempPath = path.join(tempDir, "snippet.md");
-
-  try {
-    fs.writeFileSync(tempPath, markdown);
-
-    const result = spawnSync("oxfmt", [tempPath], {
-      cwd,
-      encoding: "utf8",
-    });
-
-    if (result.error) throw result.error;
-
-    if (result.status !== 0) {
-      throw new Error(result.stderr || result.stdout || "oxfmt failed");
-    }
-
-    return fs.readFileSync(tempPath, "utf8").trimEnd();
-  } finally {
-    fs.rmSync(tempDir, { recursive: true, force: true });
-  }
-};
-
-export const syncReadmeInitSnippets = (
-  readme: string,
-  snippetSources: SnippetSources,
-  formatBlock: (markdown: string) => string = (markdown) => markdown,
-) => {
+export const syncReadmeInitSnippets = (readme: string, snippetSources: SnippetSources) => {
   let nextReadme = readme;
 
   for (const name of snippetNames) {
@@ -89,7 +59,7 @@ export const syncReadmeInitSnippets = (
     }
 
     const block = [start, "", formatSnippet(name, snippetSources), "", end].join("\n");
-    nextReadme = nextReadme.replace(pattern, formatBlock(block));
+    nextReadme = nextReadme.replace(pattern, block);
   }
 
   return nextReadme;
@@ -101,9 +71,7 @@ export const runCli = async (cwd = process.cwd(), args = process.argv.slice(2)) 
   const readmePath = path.join(cwd, "README.md");
   const readme = fs.readFileSync(readmePath, "utf8");
   const snippetSources = await loadInitTemplateSnippets(cwd);
-  const nextReadme = syncReadmeInitSnippets(readme, snippetSources, (block) =>
-    formatMarkdown(cwd, block),
-  );
+  const nextReadme = syncReadmeInitSnippets(readme, snippetSources);
 
   if (args.includes("--check")) {
     if (nextReadme !== readme) {
