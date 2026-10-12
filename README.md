@@ -111,18 +111,25 @@ typed server authoring path is `procedure` with method terminal APIs such as
 output, and reusable builder composition explicit. Optional `meta(...)` values
 remain lightweight descriptive annotations rather than a policy system.
 
-```ts
-// app/_rpc/route-procedure.ts
-import { createRouteProcedure, type ProcedureOnError } from "rpc4next/server";
+<!-- rpc4next-init-template:start RPC_ERRORS -->
 
-const getErrorMessage = (error: unknown) =>
+```ts
+// app/_rpc/errors.ts
+import { createRpcValidationErrorHandler, defineRpcErrors } from "rpc4next/server";
+import type {
+  ProcedureInputTarget,
+  ProcedureOnError,
+  ProcedureOnErrorResult,
+  ProcedureValidationErrorHandler,
+  ProcedureValidationErrorHandlerResult,
+} from "rpc4next/server";
+
+export const appRpcErrors = defineRpcErrors({});
+
+export const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
 
-const onError = ((error, { response }) => {
-  if (error instanceof Response) {
-    return error;
-  }
-
+export const routeOnError = ((error, { response }) => {
   console.error("[rpc4next] Unexpected procedure error", {
     message: getErrorMessage(error),
     error,
@@ -131,12 +138,41 @@ const onError = ((error, { response }) => {
   return response.error("INTERNAL_SERVER_ERROR", {
     message: "Internal server error",
   });
-}) satisfies ProcedureOnError;
+}) satisfies ProcedureOnError<ProcedureOnErrorResult, typeof appRpcErrors>;
+
+export const routeOnValidationError = createRpcValidationErrorHandler<
+  ProcedureInputTarget,
+  typeof appRpcErrors
+>() satisfies ProcedureValidationErrorHandler<
+  ProcedureInputTarget,
+  unknown,
+  ProcedureValidationErrorHandlerResult,
+  typeof appRpcErrors
+>;
+
+export const pageOnError = () => {
+  throw new Error("Unhandled rpc4next page procedure error.");
+};
+```
+
+<!-- rpc4next-init-template:end RPC_ERRORS -->
+
+<!-- rpc4next-init-template:start ROUTE_PROCEDURE -->
+
+```ts
+// app/_rpc/route-procedure.ts
+import { createRouteProcedure } from "rpc4next/server";
+
+import { appRpcErrors, routeOnError, routeOnValidationError } from "./errors";
 
 export const appRouteProcedure = createRouteProcedure({
-  onError,
+  errors: appRpcErrors,
+  onError: routeOnError,
+  onValidationError: routeOnValidationError,
 });
 ```
+
+<!-- rpc4next-init-template:end ROUTE_PROCEDURE -->
 
 ```ts
 // app/api/users/[userId]/route.ts
@@ -180,7 +216,7 @@ Notes:
 - method terminals return an object keyed by the matching Next.js export name, such as `{ GET }` or `{ POST }`
 - generated sibling `route-contract.ts` files are the recommended params source for procedure routes
 - input contracts consume Standard Schema V1-compatible schemas directly
-- route handlers receive project-level error handling from `createRouteProcedure({ onError })`; bare `procedure` routes still pass `onError` directly to method terminals
+- route handlers receive project-level error and validation handling from `createRouteProcedure({ errors, onError, onValidationError })`; bare `procedure` routes still pass `onError` directly to method terminals
 - choose `createRouteProcedure(...)` for route presets and `createPageProcedure(...)` for page presets; terminal `.page(...)` remains the page-render adapter
 - route presets such as `appRouteProcedure`, guarded route presets such as `guardedRouteProcedure`, and validator-stage customization all build on this path
 
@@ -190,6 +226,53 @@ validation stage, use `onValidationError(...)` on the relevant input contract.
 For known application errors that clients should branch on, return
 `response.error(...)` from the procedure handler or middleware. Those returned
 error responses are preserved in the generated client response union.
+
+Pages use their own shared preset from `rpc4next init`. Keep route and page
+procedures separate because they adapt to different Next.js surfaces: route
+procedures expose HTTP response helpers and method terminals, while page
+procedures expose page navigation helpers and terminate with `.page(...)`.
+
+<!-- rpc4next-init-template:start PAGE_PROCEDURE -->
+
+```ts
+// app/_rpc/page-procedure.ts
+import { createPageProcedure } from "rpc4next/server";
+
+import { pageOnError } from "./errors";
+
+export const appPageProcedure = createPageProcedure({
+  onError: pageOnError,
+});
+```
+
+<!-- rpc4next-init-template:end PAGE_PROCEDURE -->
+
+```tsx
+// app/photo/[id]/page.tsx
+import { z } from "zod";
+
+import { appPageProcedure } from "../../_rpc/page-procedure";
+import { routeContract } from "./route-contract";
+
+const paramsSchema = z.object({
+  id: z.string().min(1),
+});
+
+export default appPageProcedure
+  .forRoute(routeContract)
+  .params(paramsSchema)
+  .handle(async ({ params }) => ({
+    body: {
+      id: params.id,
+    },
+  }))
+  .page(({ data }) => <div>photo:{data.id}</div>);
+```
+
+Use `appPageProcedure` for shared page defaults such as generic page error
+handling, validation UI, or reusable page middleware. If a page only needs
+validated `params` or `query`, `.handle(...)` is optional and `.page(...)` can
+render directly from the validated inputs.
 
 ### 3. Generate `PathStructure`
 
