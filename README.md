@@ -223,7 +223,7 @@ You can also configure the CLI with `rpc4next.config.json`:
   "baseDir": "app",
   "outputPath": "src/generated/rpc.ts",
   "paramsFile": "route-contract.ts",
-  "testRoutesOutputPath": "src/generated/rpc-test-routes.ts"
+  "testManifestOutputPath": "src/generated/rpc-test-manifest.ts"
 }
 ```
 
@@ -264,10 +264,10 @@ the mismatch at `createRpcClient<PathStructure>(...)` so stale generated files d
 not silently keep compiling.
 Use `--check` in CI to fail when `src/generated/rpc.ts` or generated route
 contract files are stale.
-The CLI also writes a test-only route manifest next to the generated client type,
-such as `src/generated/rpc-test-routes.ts` for `src/generated/rpc.ts`. This file
-imports route handlers directly, so keep it in server-side test code and out of
-browser client code. Set `testRoutesOutputPath` in `rpc4next.config.json` to
+The CLI also writes a test-only manifest next to the generated client type,
+such as `src/generated/rpc-test-manifest.ts` for `src/generated/rpc.ts`. This file
+loads route handlers and pages directly, so keep it in server-side test code and out of
+browser client code. Set `testManifestOutputPath` in `rpc4next.config.json` to
 place that manifest somewhere else; when it is omitted, the CLI keeps deriving
 the manifest path from `outputPath`.
 
@@ -311,16 +311,16 @@ test path without starting Next.js, MSW, or another mock HTTP server:
 ```ts
 import { createRpcTestClient } from "rpc4next/client/test";
 import type { PathStructure } from "../generated/rpc";
-import { testRoutes } from "../generated/rpc-test-routes";
+import { testRoutes } from "../generated/rpc-test-manifest";
 
 const rpc = createRpcTestClient<PathStructure>(testRoutes);
 
 const response = await rpc.api.users._userId("123").$get();
 ```
 
-The generated test route manifest is built from the same `app/**/route.ts`
-scanner that produces `PathStructure`, so tests do not hand-pair arbitrary
-handlers with arbitrary pathnames.
+The generated test manifest is built from the same App Router scanner that
+produces `PathStructure`, so tests do not hand-pair arbitrary handlers or pages
+with arbitrary pathnames.
 
 `createRpcTestClient` does not run the Next.js router, middleware, rewrites, or
 runtime. It infers route params from the matched test route pathname by default,
@@ -332,6 +332,32 @@ in an application.
 The RPC client still builds the URL, request method, query string, headers,
 cookies, and body; the test client dispatches that request to the matching
 handler in-process.
+
+For page procedure tests, use `createRpcTestPageClient` with the generated
+`PathStructure` and `testPages` manifest:
+
+```ts
+import { createRpcTestPageClient } from "rpc4next/client/test";
+import type { PathStructure } from "../generated/rpc";
+import { testPages } from "../generated/rpc-test-manifest";
+
+const pages = createRpcTestPageClient<PathStructure>(testPages);
+
+await pages.photo._id("photo-1").$render({
+  url: { query: { tab: "comments" } },
+  init: {
+    headers: {
+      "x-test-user": "alice",
+      cookie: "session=abc",
+    },
+  },
+});
+```
+
+This page helper supplies request headers and cookies only to rpc4next page
+procedure `.headers()` / `.cookies()` validation. It does not recreate the full
+Next.js request async context, so user code that imports and calls
+`next/headers` directly is outside its guarantees.
 
 ### 5. Call Routes
 

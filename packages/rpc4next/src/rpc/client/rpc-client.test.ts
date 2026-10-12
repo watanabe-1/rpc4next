@@ -14,7 +14,7 @@ import { createNextRoute } from "../server/next-route";
 import { defaultProcedureOnError } from "../server/on-error";
 import type { SuccessfulResponsePayload } from "./response";
 import { createRpcClient } from "./rpc-client";
-import { createRpcTestClient } from "./test";
+import { createRpcTestClient, type RpcTestRouteModule } from "./test";
 import type { ParamsKey, QueryKey, RpcEndpoint, RpcGeneratedPathStructure } from "./types";
 
 const staticRouteContract = {
@@ -66,6 +66,8 @@ const { DELETE: _delete_1 } = createNextRoute(
     ),
   { method: "DELETE", onError: defaultProcedureOnError },
 );
+
+const loadTestRoute = (routeModule: RpcTestRouteModule) => async () => routeModule;
 
 type PathStructure = RpcGeneratedPathStructure<
   RpcEndpoint & {
@@ -249,12 +251,15 @@ describe("createRpcClient", () => {
           {
             pathname: "/api/hoge/[foo]",
             params: {},
-            GET: async (request, segmentData) =>
-              NextResponse.json({
-                method: request.method,
-                pathname: request.nextUrl.pathname,
-                params: await segmentData.params,
-              }),
+            methods: ["GET"],
+            load: loadTestRoute({
+              GET: async (request, segmentData) =>
+                NextResponse.json({
+                  method: request.method,
+                  pathname: request.nextUrl.pathname,
+                  params: await segmentData.params,
+                }),
+            }),
           },
         ],
         { baseUrl: "http://rpc4next.local" },
@@ -290,31 +295,43 @@ describe("createRpcClient", () => {
         [
           {
             pathname: "/api/users/[...parts]",
-            GET: async (_request, segmentData) =>
-              NextResponse.json({
-                route: "catch-all",
-                params: await segmentData.params,
-              }),
+            methods: ["GET"],
+            load: loadTestRoute({
+              GET: async (_request, segmentData) =>
+                NextResponse.json({
+                  route: "catch-all",
+                  params: await segmentData.params,
+                }),
+            }),
           },
           {
             pathname: "/api/users/[userId]",
-            GET: async (_request, segmentData) =>
-              NextResponse.json({
-                route: "dynamic",
-                params: await segmentData.params,
-              }),
+            methods: ["GET"],
+            load: loadTestRoute({
+              GET: async (_request, segmentData) =>
+                NextResponse.json({
+                  route: "dynamic",
+                  params: await segmentData.params,
+                }),
+            }),
           },
           {
             pathname: "/api/users/me",
-            GET: async () => NextResponse.json({ route: "static" }),
+            methods: ["GET"],
+            load: loadTestRoute({
+              GET: async () => NextResponse.json({ route: "static" }),
+            }),
           },
           {
             pathname: "/api/docs/[[...parts]]",
-            GET: async (_request, segmentData) =>
-              NextResponse.json({
-                route: "optional-catch-all",
-                params: await segmentData.params,
-              }),
+            methods: ["GET"],
+            load: loadTestRoute({
+              GET: async (_request, segmentData) =>
+                NextResponse.json({
+                  route: "optional-catch-all",
+                  params: await segmentData.params,
+                }),
+            }),
           },
         ],
         { baseUrl: "http://rpc4next.local" },
@@ -342,10 +359,13 @@ describe("createRpcClient", () => {
         [
           {
             pathname: "/api/hoge/[foo]",
-            GET: async (_request, segmentData) =>
-              NextResponse.json({
-                params: await segmentData.params,
-              }),
+            methods: ["GET"],
+            load: loadTestRoute({
+              GET: async (_request, segmentData) =>
+                NextResponse.json({
+                  params: await segmentData.params,
+                }),
+            }),
           },
         ],
         { baseUrl: "http://rpc4next.local" },
@@ -362,10 +382,13 @@ describe("createRpcClient", () => {
           {
             pathname: "/api/hoge/[foo]",
             params: { foo: "override" },
-            GET: async (_request, segmentData) =>
-              NextResponse.json({
-                params: await segmentData.params,
-              }),
+            methods: ["GET"],
+            load: loadTestRoute({
+              GET: async (_request, segmentData) =>
+                NextResponse.json({
+                  params: await segmentData.params,
+                }),
+            }),
           },
         ],
         { baseUrl: "http://rpc4next.local" },

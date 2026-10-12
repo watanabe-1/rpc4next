@@ -28,6 +28,11 @@ export type RouteManifest = {
   pathname: string;
 };
 
+export type PageManifest = {
+  fullPath: string;
+  pathname: string;
+};
+
 type RouteType = {
   isDynamic: boolean;
   isCatchAll: boolean;
@@ -47,6 +52,7 @@ type ScanResult = {
   pathStructure: string;
   imports: ImportObj[];
   paramsTypes: ParamsType[];
+  pageManifests?: PageManifest[];
   routeManifests?: RouteManifest[];
 };
 
@@ -63,6 +69,7 @@ type ScanAccumulator = {
   imports: ImportObj[];
   typeFragments: string[];
   paramsTypes: ParamsType[];
+  pageManifests: PageManifest[];
   routeManifests: RouteManifest[];
 };
 
@@ -134,6 +141,7 @@ const createEmptyScanAccumulator = (): ScanAccumulator => ({
   imports: [],
   typeFragments: [],
   paramsTypes: [],
+  pageManifests: [],
   routeManifests: [],
 });
 
@@ -285,12 +293,19 @@ const appendEndpointFile = (
   context: Pick<ScanContext, "output" | "params" | "rootDir">,
   fullPath: string,
 ) => {
-  const { query: queryDef, routes } = scanEndpointFile(context.output, fullPath);
+  const { page: pageDef, query: queryDef, routes } = scanEndpointFile(context.output, fullPath);
 
   if (queryDef) {
     const { importStatement, importPath, type } = queryDef;
     accumulator.imports.push({ statement: importStatement, path: importPath });
     accumulator.typeFragments.push(type);
+  }
+
+  if (pageDef) {
+    accumulator.pageManifests.push({
+      fullPath,
+      pathname: toRoutePathname(context.rootDir, fullPath),
+    });
   }
 
   routes.forEach((routeDef) => {
@@ -410,6 +425,7 @@ const appendChildDirectory = (
   }
 
   accumulator.routeManifests.push(...(childResult.routeManifests ?? []));
+  accumulator.pageManifests.push(...(childResult.pageManifests ?? []));
   accumulator.imports.push(...childResult.imports);
 
   if (isFlattenDir) {
@@ -481,6 +497,7 @@ export const scanAppDir = (
     ),
     imports: accumulator.imports,
     paramsTypes: accumulator.paramsTypes,
+    pageManifests: accumulator.pageManifests,
     routeManifests: accumulator.routeManifests,
   };
 

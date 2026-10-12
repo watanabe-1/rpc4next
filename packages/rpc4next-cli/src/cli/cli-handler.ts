@@ -11,7 +11,7 @@ const handleGenerateSafely = (
   baseDir: string,
   outputPath: string,
   paramsFileName: string | null,
-  testRoutesOutputPath: string | undefined,
+  testManifestOutputPath: string | undefined,
   logger: Logger,
   preserveCache = false,
 ): ExitCode => {
@@ -20,7 +20,7 @@ const handleGenerateSafely = (
       baseDir,
       outputPath,
       paramsFileName,
-      ...(testRoutesOutputPath ? { testRoutesOutputPath } : {}),
+      ...(testManifestOutputPath ? { testManifestOutputPath } : {}),
       logger,
       preserveCache,
     });
@@ -41,7 +41,7 @@ const handleCheckSafely = (
   baseDir: string,
   outputPath: string,
   paramsFileName: string | null,
-  testRoutesOutputPath: string | undefined,
+  testManifestOutputPath: string | undefined,
   logger: Logger,
 ): ExitCode => {
   try {
@@ -49,7 +49,7 @@ const handleCheckSafely = (
       baseDir,
       outputPath,
       paramsFileName,
-      ...(testRoutesOutputPath ? { testRoutesOutputPath } : {}),
+      ...(testManifestOutputPath ? { testManifestOutputPath } : {}),
       logger,
     })
       ? EXIT_SUCCESS
@@ -127,13 +127,13 @@ export const handleCli = (
 ): ExitCode => {
   const resolvedBaseDirNative = path.resolve(baseDir);
   const resolvedOutputPathNative = path.resolve(outputPath);
-  const resolvedTestRoutesOutputPathNative = options.testRoutesOutputPath
-    ? path.resolve(options.testRoutesOutputPath)
+  const resolvedTestManifestOutputPathNative = options.testManifestOutputPath
+    ? path.resolve(options.testManifestOutputPath)
     : undefined;
   const resolvedBaseDir = toPosixPath(resolvedBaseDirNative);
   const resolvedOutputPath = toPosixPath(resolvedOutputPathNative);
-  const resolvedTestRoutesOutputPath = resolvedTestRoutesOutputPathNative
-    ? toPosixPath(resolvedTestRoutesOutputPathNative)
+  const resolvedTestManifestOutputPath = resolvedTestManifestOutputPathNative
+    ? toPosixPath(resolvedTestManifestOutputPathNative)
     : undefined;
 
   const paramsFileName = typeof options.paramsFile === "string" ? options.paramsFile : null;
@@ -150,17 +150,17 @@ export const handleCli = (
     return EXIT_FAILURE;
   }
 
-  if (resolvedTestRoutesOutputPathNative && !isWithinCwd(resolvedTestRoutesOutputPathNative)) {
-    logger.error("Error: testRoutesOutputPath must be inside the current working directory.");
+  if (resolvedTestManifestOutputPathNative && !isWithinCwd(resolvedTestManifestOutputPathNative)) {
+    logger.error("Error: testManifestOutputPath must be inside the current working directory.");
 
     return EXIT_FAILURE;
   }
 
   if (
-    resolvedTestRoutesOutputPathNative &&
-    isSameFilePath(resolvedTestRoutesOutputPathNative, resolvedOutputPathNative)
+    resolvedTestManifestOutputPathNative &&
+    isSameFilePath(resolvedTestManifestOutputPathNative, resolvedOutputPathNative)
   ) {
-    logger.error("Error: testRoutesOutputPath must be different from outputPath.");
+    logger.error("Error: testManifestOutputPath must be different from outputPath.");
 
     return EXIT_FAILURE;
   }
@@ -188,7 +188,7 @@ export const handleCli = (
       resolvedBaseDir,
       resolvedOutputPath,
       paramsFileName,
-      resolvedTestRoutesOutputPath,
+      resolvedTestManifestOutputPath,
       logger,
     );
   }
@@ -202,7 +202,7 @@ export const handleCli = (
           resolvedBaseDir,
           resolvedOutputPath,
           paramsFileName,
-          resolvedTestRoutesOutputPath,
+          resolvedTestManifestOutputPath,
           logger,
           true,
         );
@@ -217,7 +217,7 @@ export const handleCli = (
     resolvedBaseDir,
     resolvedOutputPath,
     paramsFileName,
-    resolvedTestRoutesOutputPath,
+    resolvedTestManifestOutputPath,
     logger,
   );
 };

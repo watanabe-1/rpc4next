@@ -24,7 +24,7 @@ describe("generate", () => {
 
   const baseDir = "test/base";
   const outputPath = "test/output/types.ts";
-  const testRoutesOutputPath = "test/output/types-test-routes.ts";
+  const testManifestOutputPath = "test/output/types-test-manifest.ts";
   const paramsFileName = "params.ts";
 
   beforeEach(() => {
@@ -198,8 +198,8 @@ describe("generate", () => {
 
     vi.spyOn(fs, "existsSync").mockReturnValue(true);
     vi.spyOn(fs, "readFileSync").mockImplementation((filePath) => {
-      if (filePath === testRoutesOutputPath) {
-        return generatePathStructure.generateTestRouteManifest(testRoutesOutputPath, []);
+      if (filePath === testManifestOutputPath) {
+        return generatePathStructure.generateTestManifest(testManifestOutputPath, []);
       }
 
       return "generated-type-content";
@@ -261,11 +261,16 @@ describe("generate", () => {
     });
   });
 
-  it("writes the test route manifest to a configured output path", () => {
+  it("writes the test manifest to a configured output path", () => {
     const tmpDir = makeTempDir();
     const output = path.join(tmpDir, "src", "generated", "rpc.ts");
-    const defaultTestRoutesOutputPath = path.join(tmpDir, "src", "generated", "rpc-test-routes.ts");
-    const customTestRoutesOutputPath = path.join(tmpDir, "test", "generated", "routes.ts");
+    const defaultTestManifestOutputPath = path.join(
+      tmpDir,
+      "src",
+      "generated",
+      "rpc-test-manifest.ts",
+    );
+    const customTestManifestOutputPath = path.join(tmpDir, "test", "generated", "routes.ts");
 
     try {
       writeTree(tmpDir, {
@@ -284,14 +289,14 @@ describe("generate", () => {
         baseDir,
         outputPath: output,
         paramsFileName: null,
-        testRoutesOutputPath: customTestRoutesOutputPath,
+        testManifestOutputPath: customTestManifestOutputPath,
         logger,
       });
 
-      expect(fs.readFileSync(customTestRoutesOutputPath, "utf8")).toBe(
-        generatePathStructure.generateTestRouteManifest(customTestRoutesOutputPath, []),
+      expect(fs.readFileSync(customTestManifestOutputPath, "utf8")).toBe(
+        generatePathStructure.generateTestManifest(customTestManifestOutputPath, []),
       );
-      expect(fs.existsSync(defaultTestRoutesOutputPath)).toBe(false);
+      expect(fs.existsSync(defaultTestManifestOutputPath)).toBe(false);
     } finally {
       cleanupTempDir(tmpDir);
     }
@@ -664,7 +669,7 @@ describe("checkGenerated", () => {
 
   const baseDir = "test/base";
   const outputPath = "test/output/types.ts";
-  const testRoutesOutputPath = "test/output/types-test-routes.ts";
+  const testManifestOutputPath = "test/output/types-test-manifest.ts";
   const paramsFileName = "params.ts";
 
   beforeEach(() => {
@@ -690,8 +695,8 @@ describe("checkGenerated", () => {
         return "params-type";
       }
 
-      if (filePath === testRoutesOutputPath) {
-        return generatePathStructure.generateTestRouteManifest(testRoutesOutputPath, []);
+      if (filePath === testManifestOutputPath) {
+        return generatePathStructure.generateTestManifest(testManifestOutputPath, []);
       }
 
       return "";
@@ -737,8 +742,8 @@ describe("checkGenerated", () => {
     expect(logger.success).not.toHaveBeenCalled();
   });
 
-  it("checks the test route manifest at a configured output path", () => {
-    const customTestRoutesOutputPath = "test/generated/routes-for-tests.ts";
+  it("checks the test manifest at a configured output path", () => {
+    const customTestManifestOutputPath = "test/generated/routes-for-tests.ts";
     vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
       pathStructure: "generated-type-content",
       paramsTypes: [],
@@ -750,8 +755,8 @@ describe("checkGenerated", () => {
         return "generated-type-content";
       }
 
-      if (filePath === customTestRoutesOutputPath) {
-        return generatePathStructure.generateTestRouteManifest(customTestRoutesOutputPath, []);
+      if (filePath === customTestManifestOutputPath) {
+        return generatePathStructure.generateTestManifest(customTestManifestOutputPath, []);
       }
 
       return "";
@@ -761,13 +766,13 @@ describe("checkGenerated", () => {
       baseDir,
       outputPath,
       paramsFileName: null,
-      testRoutesOutputPath: customTestRoutesOutputPath,
+      testManifestOutputPath: customTestManifestOutputPath,
       logger,
     });
 
     expect(result).toBe(true);
-    expect(fs.readFileSync).toHaveBeenCalledWith(customTestRoutesOutputPath, "utf8");
-    expect(fs.readFileSync).not.toHaveBeenCalledWith(testRoutesOutputPath, "utf8");
+    expect(fs.readFileSync).toHaveBeenCalledWith(customTestManifestOutputPath, "utf8");
+    expect(fs.readFileSync).not.toHaveBeenCalledWith(testManifestOutputPath, "utf8");
   });
 
   it("returns false when params files are missing or should be removed", () => {
