@@ -22,6 +22,7 @@ type ScanDefinition<T extends ImportAliasName> = {
 };
 
 type QueryScanDefinition = ScanDefinition<(typeof QUERY_TYPES)[number] | "Page">;
+type PageScanDefinition = ScanDefinition<"Page">;
 
 const buildDefinition = <T extends ImportAliasName>(
   outputFile: string,
@@ -65,30 +66,32 @@ export const scanEndpointFile = (
   outputFile: string,
   inputFile: string,
 ): {
+  page?: PageScanDefinition;
   query?: QueryScanDefinition;
   routes: ScanDefinition<HttpMethod>[];
 } => {
   const fileContents = fs.readFileSync(inputFile, "utf8");
 
   const queryExport = findQueryExport(fileContents);
+  const page = isPageFile(inputFile)
+    ? (() => {
+        const relativeImportPath = createRelativeImportPath(outputFile, inputFile);
+        const importAlias = createImportAlias(relativeImportPath, "Page");
+
+        return {
+          importName: importAlias,
+          importPath: relativeImportPath,
+          importStatement: createDefaultImport(relativeImportPath, importAlias),
+          type: `${TYPE_PAGE_ROUTE_MARKER}<typeof ${importAlias}>`,
+          exportName: "Page" as const,
+        };
+      })()
+    : undefined;
   const query = queryExport
     ? buildDefinition(outputFile, inputFile, queryExport, (_, importAlias) =>
         createRecodeType(TYPE_KEY_QUERY, importAlias),
       )
-    : isPageFile(inputFile)
-      ? (() => {
-          const relativeImportPath = createRelativeImportPath(outputFile, inputFile);
-          const importAlias = createImportAlias(relativeImportPath, "Page");
-
-          return {
-            importName: importAlias,
-            importPath: relativeImportPath,
-            importStatement: createDefaultImport(relativeImportPath, importAlias),
-            type: `${TYPE_PAGE_ROUTE_MARKER}<typeof ${importAlias}>`,
-            exportName: "Page" as const,
-          };
-        })()
-      : undefined;
+    : page;
 
   const routes = HTTP_METHODS_EXCLUDE_OPTIONS.filter((method) =>
     hasRouteExport(fileContents, method),
@@ -99,6 +102,7 @@ export const scanEndpointFile = (
   );
 
   return {
+    ...(page ? { page } : {}),
     ...(query ? { query } : {}),
     routes,
   };

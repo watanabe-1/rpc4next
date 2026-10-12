@@ -14,7 +14,7 @@ import {
 } from "./constants.js";
 import {
   generatePathStructure,
-  generateTestRouteManifest,
+  generateTestManifest,
   ROUTE_CONTRACT_GENERATED_MARKER,
 } from "./generate-path-structure.js";
 
@@ -168,12 +168,12 @@ describe("generatePathStructure", () => {
     expect(paramsTypes[0].paramsType).toContain('  pathname: "/\\"quoted",');
   });
 
-  it("generates a test route manifest from scanned route files", () => {
+  it("generates a test manifest from scanned route files", () => {
     tmpDir = makeTempDir();
 
-    const outputPath = path.join(tmpDir, "src", "generated", "rpc-test-routes.ts");
+    const outputPath = path.join(tmpDir, "src", "generated", "rpc-test-manifest.ts");
     const routePath = path.join(tmpDir, "app", "api", "users", "[userId]", "route.ts");
-    const manifest = generateTestRouteManifest(outputPath, [
+    const manifest = generateTestManifest(outputPath, [
       {
         fullPath: routePath,
         methods: ["GET", "POST"],
@@ -182,20 +182,51 @@ describe("generatePathStructure", () => {
     ]);
 
     expect(manifest).toContain('import "rpc4next/server-only";');
-    expect(manifest).toContain('import type { RpcTestRoute } from "rpc4next/client/test";');
-    expect(manifest).not.toContain("rpc4next-test-routes-client-bundle-leak-sentinel");
+    expect(manifest).toContain(
+      'import type { RpcTestPage, RpcTestPageModule, RpcTestRoute, RpcTestRouteModule } from "rpc4next/client/test";',
+    );
+    expect(manifest).not.toContain("rpc4next-test-manifest-client-bundle-leak-sentinel");
     expect(manifest).not.toContain("__rpc4nextTestRouteManifestBundleSentinel");
-    expect(manifest).toContain("import { GET as Route_");
-    expect(manifest).toContain("import { POST as Route_");
+    expect(manifest).toContain('methods: ["GET", "POST"]');
+    expect(manifest).toContain('load: () => import("');
     expect(manifest).toContain('pathname: "/api/users/[userId]"');
     expect(manifest).toContain("] as const satisfies readonly RpcTestRoute[];");
+    expect(manifest).toContain("] as const satisfies readonly RpcTestPage[];");
+  });
+
+  it("generates a test page manifest from scanned page files", () => {
+    tmpDir = makeTempDir();
+
+    const outputPath = path.join(tmpDir, "src", "generated", "rpc-test-manifest.ts");
+    const pagePath = path.join(tmpDir, "app", "photo", "[id]", "page.tsx");
+    const manifest = generateTestManifest(
+      outputPath,
+      [
+        {
+          fullPath: path.join(tmpDir, "app", "api", "users", "route.ts"),
+          methods: ["GET"],
+          pathname: "/api/users",
+        },
+      ],
+      [
+        {
+          fullPath: pagePath,
+          pathname: "/photo/[id]",
+        },
+      ],
+    );
+
+    expect(manifest).toContain("export const testRoutes = [");
+    expect(manifest).toContain("export const testPages = [");
+    expect(manifest).toContain('pathname: "/photo/[id]"');
+    expect(manifest).toContain('load: () => import("');
   });
 
   it("can include a bundle leak sentinel for library bundle tests", () => {
     tmpDir = makeTempDir();
 
-    const outputPath = path.join(tmpDir, "src", "generated", "rpc-test-routes.ts");
-    const manifest = generateTestRouteManifest(
+    const outputPath = path.join(tmpDir, "src", "generated", "rpc-test-manifest.ts");
+    const manifest = generateTestManifest(
       outputPath,
       [
         {
@@ -207,7 +238,7 @@ describe("generatePathStructure", () => {
       { includeBundleLeakSentinel: true },
     );
 
-    expect(manifest).toContain("rpc4next-test-routes-client-bundle-leak-sentinel");
+    expect(manifest).toContain("rpc4next-test-manifest-client-bundle-leak-sentinel");
     expect(manifest).toContain("__rpc4nextTestRouteManifestBundleSentinel");
   });
 });

@@ -8,7 +8,7 @@ import {
   generatedParamsFilesCache,
 } from "./core/cache.js";
 import {
-  generateTestRouteManifest,
+  generateTestManifest,
   generatePathStructure,
   ROUTE_CONTRACT_GENERATED_MARKER,
 } from "./core/generate-path-structure.js";
@@ -16,15 +16,15 @@ import { relativeFromRoot } from "./core/path-utils.js";
 import { padMessage } from "./logger.js";
 import type { Logger } from "./types.js";
 
-const createTestRoutesOutputPath = (outputPath: string) => {
+const createTestManifestOutputPath = (outputPath: string) => {
   const parsed = path.posix.parse(outputPath);
   const extension = parsed.ext || ".ts";
 
-  return path.posix.join(parsed.dir, `${parsed.name}-test-routes${extension}`);
+  return path.posix.join(parsed.dir, `${parsed.name}-test-manifest${extension}`);
 };
 
-const resolveTestRoutesOutputPath = (outputPath: string, testRoutesOutputPath?: string) => {
-  return testRoutesOutputPath ?? createTestRoutesOutputPath(outputPath);
+const resolveTestManifestOutputPath = (outputPath: string, testManifestOutputPath?: string) => {
+  return testManifestOutputPath ?? createTestManifestOutputPath(outputPath);
 };
 
 const writeFileIfChanged = (
@@ -149,19 +149,20 @@ export const checkGenerated = ({
   baseDir,
   outputPath,
   paramsFileName,
-  testRoutesOutputPath: configuredTestRoutesOutputPath,
+  testManifestOutputPath: configuredTestManifestOutputPath,
   logger,
 }: {
   baseDir: string;
   outputPath: string;
   paramsFileName: string | null;
-  testRoutesOutputPath?: string;
+  testManifestOutputPath?: string;
   logger: Logger;
 }): boolean => {
   try {
     logger.info("Checking generated types...", { event: "check" });
 
     const {
+      pageManifests = [],
       pathStructure,
       paramsTypes,
       routeManifests = [],
@@ -197,16 +198,18 @@ export const checkGenerated = ({
       }
     }
 
-    const testRoutesOutputPath = resolveTestRoutesOutputPath(
+    const testManifestOutputPath = resolveTestManifestOutputPath(
       outputPath,
-      configuredTestRoutesOutputPath,
+      configuredTestManifestOutputPath,
     );
-    const testRouteManifest = generateTestRouteManifest(testRoutesOutputPath, routeManifests);
+    const testManifest = generateTestManifest(
+      testManifestOutputPath,
+      routeManifests,
+      pageManifests,
+    );
 
-    if (!isFileContentCurrent(testRoutesOutputPath, testRouteManifest)) {
-      logger.error(
-        `Generated test route manifest is stale: ${relativeFromRoot(testRoutesOutputPath)}`,
-      );
+    if (!isFileContentCurrent(testManifestOutputPath, testManifest)) {
+      logger.error(`Generated test manifest is stale: ${relativeFromRoot(testManifestOutputPath)}`);
       isCurrent = false;
     }
 
@@ -224,14 +227,14 @@ export const generate = ({
   baseDir,
   outputPath,
   paramsFileName,
-  testRoutesOutputPath: configuredTestRoutesOutputPath,
+  testManifestOutputPath: configuredTestManifestOutputPath,
   logger,
   preserveCache = false,
 }: {
   baseDir: string;
   outputPath: string;
   paramsFileName: string | null;
-  testRoutesOutputPath?: string;
+  testManifestOutputPath?: string;
   logger: Logger;
   preserveCache?: boolean;
 }) => {
@@ -239,6 +242,7 @@ export const generate = ({
     logger.info("Generating types...", { event: "generate" });
 
     const {
+      pageManifests = [],
       pathStructure,
       paramsTypes,
       routeManifests = [],
@@ -307,21 +311,25 @@ export const generate = ({
       }
     }
 
-    const testRoutesOutputPath = resolveTestRoutesOutputPath(
+    const testManifestOutputPath = resolveTestManifestOutputPath(
       outputPath,
-      configuredTestRoutesOutputPath,
+      configuredTestManifestOutputPath,
     );
-    const testRouteManifest = generateTestRouteManifest(testRoutesOutputPath, routeManifests);
+    const testManifest = generateTestManifest(
+      testManifestOutputPath,
+      routeManifests,
+      pageManifests,
+    );
 
     if (
-      writeFileIfChanged(testRoutesOutputPath, testRouteManifest, {
-        ensureParentDir: configuredTestRoutesOutputPath !== undefined,
+      writeFileIfChanged(testManifestOutputPath, testManifest, {
+        ensureParentDir: configuredTestManifestOutputPath !== undefined,
       })
     ) {
       logger.success(
         padMessage(
-          "Test route manifest",
-          relativeFromRoot(testRoutesOutputPath),
+          "Test manifest",
+          relativeFromRoot(testManifestOutputPath),
           SUCCESS_SEPARATOR,
           SUCCESS_PAD_LENGTH,
         ),
@@ -330,8 +338,8 @@ export const generate = ({
     } else {
       logger.info(
         padMessage(
-          "Unchanged test routes",
-          relativeFromRoot(testRoutesOutputPath),
+          "Unchanged test manifest",
+          relativeFromRoot(testManifestOutputPath),
           SUCCESS_SEPARATOR,
           SUCCESS_PAD_LENGTH,
         ),

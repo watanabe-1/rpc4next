@@ -31,7 +31,7 @@ describe("loadCliConfig", () => {
         baseDir: "app",
         outputPath: "src/generated/rpc.ts",
         paramsFile: "params.ts",
-        testRoutesOutputPath: "test/generated/rpc-test-routes.ts",
+        testManifestOutputPath: "test/generated/rpc-test-manifest.ts",
       }),
     );
 
@@ -39,7 +39,7 @@ describe("loadCliConfig", () => {
       baseDir: "app",
       outputPath: "src/generated/rpc.ts",
       paramsFile: "params.ts",
-      testRoutesOutputPath: "test/generated/rpc-test-routes.ts",
+      testManifestOutputPath: "test/generated/rpc-test-manifest.ts",
     });
   });
 
@@ -114,14 +114,14 @@ describe("loadCliConfig", () => {
     );
   });
 
-  it("throws for invalid testRoutesOutputPath values", () => {
+  it("throws for invalid testManifestOutputPath values", () => {
     const cwd = makeTempDir("rpc4next-config-");
     tempDirs.push(cwd);
 
-    fs.writeFileSync(getConfigPath(cwd), JSON.stringify({ testRoutesOutputPath: 1 }));
+    fs.writeFileSync(getConfigPath(cwd), JSON.stringify({ testManifestOutputPath: 1 }));
 
     expect(() => loadCliConfig(cwd)).toThrow(
-      'rpc4next.config.json field "testRoutesOutputPath" must be a string.',
+      'rpc4next.config.json field "testManifestOutputPath" must be a string.',
     );
   });
 

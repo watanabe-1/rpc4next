@@ -45,6 +45,7 @@ import type Page_14a3d277b7c2ce94 from "../../app/patterns/search/page";
 import type Page_ec4d53d56d2cdbe0 from "../../app/photo/[id]/comments/[commentId]/page";
 import type Page_17fbe6f0abbd0030 from "../../app/photo/[id]/page";
 import type Page_6fe4147621bd043b from "../../app/procedure-examples/page";
+import type Page_d2a7341cc304c4d8 from "../../app/procedure-page-meta/page";
 import type Page_e14cc8f4edef5d4a from "../../app/response-unwrap/page";
 
 export type PathStructure = RpcGeneratedPathStructure<PageRouteMarker<typeof Page_5f11bc234a1e0c67> & RpcEndpoint & {
@@ -113,5 +114,6 @@ export type PathStructure = RpcGeneratedPathStructure<PageRouteMarker<typeof Pag
     }
   },
   "procedure-examples": PageRouteMarker<typeof Page_6fe4147621bd043b> & RpcEndpoint,
+  "procedure-page-meta": PageRouteMarker<typeof Page_d2a7341cc304c4d8> & RpcEndpoint,
   "response-unwrap": PageRouteMarker<typeof Page_e14cc8f4edef5d4a> & RpcEndpoint
 }, 1>;

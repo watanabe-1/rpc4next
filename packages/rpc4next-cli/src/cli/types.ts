@@ -6,7 +6,7 @@ export interface CliOptions {
   watch?: boolean;
   check?: boolean;
   paramsFile?: true | string;
-  testRoutesOutputPath?: string;
+  testManifestOutputPath?: string;
 }
 
 type LogOptions = {

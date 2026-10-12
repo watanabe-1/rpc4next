@@ -1,12 +1,24 @@
-import { describe, expect, expectTypeOf, it, vi } from "vitest";
+import { NextRequest } from "next/server";
+import { beforeEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 
 import {
   createNextPage as basecreateNextPage,
   type ProcedurePageOnValidationError,
 } from "./next-page";
+import { runWithRpcPageTestRequest } from "./page-test-request-context";
 import { createPageProcedure, procedure } from "./procedure";
 import type { ProcedureRouteContract } from "./procedure-types";
 import type { StandardSchemaV1 } from "./standard-schema";
+
+const nextHeadersMock = vi.hoisted(() => ({
+  cookies: vi.fn<() => Promise<{ getAll: () => Array<{ name: string; value: string }> }>>(),
+  headers: vi.fn<() => Promise<Headers>>(),
+}));
+
+vi.mock("next/headers", () => ({
+  cookies: nextHeadersMock.cookies,
+  headers: nextHeadersMock.headers,
+}));
 
 describe("createNextPage", () => {
   const pageRouteContract = {
@@ -99,6 +111,51 @@ describe("createNextPage", () => {
     },
   };
 
+  const headersSchema: StandardSchemaV1<Record<string, string>, { "x-page-test-user": string }> = {
+    "~standard": {
+      version: 1,
+      vendor: "rpc4next-test",
+      types: {
+        input: {} as Record<string, string>,
+        output: {} as { "x-page-test-user": string },
+      },
+      validate: (value) => {
+        const headers =
+          typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+        const user = headers["x-page-test-user"];
+
+        return typeof user === "string"
+          ? { value: { "x-page-test-user": user } }
+          : { issues: [{ message: "missing user header" }] };
+      },
+    },
+  };
+
+  const cookiesSchema: StandardSchemaV1<Record<string, string>, { session: string }> = {
+    "~standard": {
+      version: 1,
+      vendor: "rpc4next-test",
+      types: {
+        input: {} as Record<string, string>,
+        output: {} as { session: string },
+      },
+      validate: (value) => {
+        const cookies =
+          typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+        const session = cookies.session;
+
+        return typeof session === "string"
+          ? { value: { session } }
+          : { issues: [{ message: "missing session cookie" }] };
+      },
+    },
+  };
+
+  beforeEach(() => {
+    nextHeadersMock.headers.mockReset();
+    nextHeadersMock.cookies.mockReset();
+  });
+
   it("renders procedure body data for page props", async () => {
     const page = basecreateNextPage(
       procedure
@@ -152,6 +209,76 @@ describe("createNextPage", () => {
         searchParams: Promise.resolve({ tab: "comments" }),
       }),
     ).resolves.toBe("photo-1:comments");
+  });
+
+  it("reads validated headers and cookies from the page test request context", async () => {
+    const page = procedure
+      .forRoute(pageRouteContract)
+      .params(paramsSchema)
+      .headers(headersSchema)
+      .cookies(cookiesSchema)
+      .handle(({ cookies, headers, params }) => ({
+        body: {
+          id: params.id,
+          session: cookies.session,
+          user: headers["x-page-test-user"],
+        },
+      }))
+      .page(({ data }) => data);
+
+    const request = new NextRequest("http://rpc4next.test/photo/photo-1", {
+      headers: {
+        "x-page-test-user": "alice",
+        cookie: "session=abc",
+      },
+    });
+
+    await expect(
+      runWithRpcPageTestRequest(request, () =>
+        page({
+          params: Promise.resolve({ id: "photo-1" }),
+        }),
+      ),
+    ).resolves.toEqual({
+      id: "photo-1",
+      session: "abc",
+      user: "alice",
+    });
+    expect(nextHeadersMock.headers).not.toHaveBeenCalled();
+    expect(nextHeadersMock.cookies).not.toHaveBeenCalled();
+  });
+
+  it("falls back to next/headers when no page test request context exists", async () => {
+    nextHeadersMock.headers.mockResolvedValue(new Headers({ "x-page-test-user": "next" }));
+    nextHeadersMock.cookies.mockResolvedValue({
+      getAll: () => [{ name: "session", value: "cookie-store" }],
+    });
+
+    const page = procedure
+      .forRoute(pageRouteContract)
+      .params(paramsSchema)
+      .headers(headersSchema)
+      .cookies(cookiesSchema)
+      .handle(({ cookies, headers, params }) => ({
+        body: {
+          id: params.id,
+          session: cookies.session,
+          user: headers["x-page-test-user"],
+        },
+      }))
+      .page(({ data }) => data);
+
+    await expect(
+      page({
+        params: Promise.resolve({ id: "photo-1" }),
+      }),
+    ).resolves.toEqual({
+      id: "photo-1",
+      session: "cookie-store",
+      user: "next",
+    });
+    expect(nextHeadersMock.headers).toHaveBeenCalledTimes(1);
+    expect(nextHeadersMock.cookies).toHaveBeenCalledTimes(1);
   });
 
   it("passes validated params and query alongside handled page data", async () => {

@@ -281,14 +281,14 @@ describe("route-scanner", () => {
           page: {
             "[user]": {
               home: {
-                "page.tsx": "export function Home() {};",
+                "page.tsx": "export default procedure.page(() => null);",
               },
             },
           },
         },
       });
 
-      const { pathStructure } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      const { pageManifests, pathStructure } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(pathStructure).equals(`{
   "page": {
     "_user": {
@@ -296,6 +296,12 @@ describe("route-scanner", () => {
     }
   }
 }`);
+      expect(pageManifests).toStrictEqual([
+        {
+          fullPath: tmpPosixPath("testApp", "page", "[user]", "home", "page.tsx"),
+          pathname: "/page/[user]/home",
+        },
+      ]);
     });
 
     it("should generate path structure with query type", () => {

@@ -1,9 +1,9 @@
 import { createRpcClient } from "rpc4next/client";
-import { createRpcTestClient } from "rpc4next/client/test";
+import { createRpcTestClient, createRpcTestPageClient } from "rpc4next/client/test";
 import { describe, expect, it } from "vitest";
 
 import type { PathStructure } from "./generated/rpc";
-import { testRoutes } from "./generated/rpc-test-routes";
+import { testPages, testRoutes } from "./generated/rpc-test-manifest";
 
 type UrlExpectation = {
   path: string;
@@ -315,6 +315,7 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
 
   describe("generated test routes", () => {
     const client = createRpcTestClient<PathStructure>(testRoutes, { baseUrl });
+    const pageClient = createRpcTestPageClient<PathStructure>(testPages, { baseUrl });
 
     it("dispatches generated dynamic routes to the matching Next.js handler", async () => {
       const payload = await client.api.users._userId("generated-user").$get().unwrap();
@@ -372,6 +373,34 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
 
       expect(response.status).toBe(405);
       expect(response.headers.get("allow")).toBe("POST");
+    });
+
+    it("renders generated page procedures with request headers and cookies", async () => {
+      const result = await pageClient["procedure-page-meta"].$render({
+        url: { query: { tab: "comments" } },
+        init: {
+          headers: {
+            "x-page-test-user": "alice",
+            cookie: "session=abc",
+          },
+        },
+      });
+
+      expect(result).toMatchObject({
+        props: {
+          children: "page-meta:alice:abc:comments",
+        },
+      });
+    });
+
+    it("renders generated dynamic pages through the generated path chain", async () => {
+      const result = await pageClient.photo._id("photo-1").$render();
+
+      expect(result).toMatchObject({
+        props: {
+          children: ["photo:", "photo-1"],
+        },
+      });
     });
   });
 });

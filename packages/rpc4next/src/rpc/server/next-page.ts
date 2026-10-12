@@ -4,6 +4,7 @@ import { NextRequest } from "next/server";
 
 import { searchParamsToObject } from "../lib/search-params";
 import type { RpcErrorCatalog } from "./error";
+import { getRpcPageTestRequest } from "./page-test-request-context";
 import type { ProcedureMiddleware, ProcedureMiddlewareResult, ProcedureResult } from "./procedure";
 import { attachProcedureDefinition } from "./procedure-definition";
 import { executePipeline, isProcedureResult } from "./procedure-internals";
@@ -365,9 +366,23 @@ const entriesToNullPrototypeObject = <TValue>(
   return result;
 };
 
-const readHeaders = async () => entriesToNullPrototypeObject((await getHeaders()).entries());
+const readHeaders = async () => {
+  const request = getRpcPageTestRequest();
+  if (request) {
+    return entriesToNullPrototypeObject(request.headers.entries());
+  }
+
+  return entriesToNullPrototypeObject((await getHeaders()).entries());
+};
 
 const readCookies = async () => {
+  const request = getRpcPageTestRequest();
+  if (request) {
+    return entriesToNullPrototypeObject(
+      request.cookies.getAll().map((cookie) => [cookie.name, cookie.value] as const),
+    );
+  }
+
   const cookieStore = await getCookies();
 
   return entriesToNullPrototypeObject(
