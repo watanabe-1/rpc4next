@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.10.0...rpc4next-cli-v0.11.0) (2026-10-12)
+
+
+### Features
+
+* Add page procedure testing support ([#643](https://github.com/watanabe-1/rpc4next/issues/643)) ([c55a569](https://github.com/watanabe-1/rpc4next/commit/c55a5690d6feea3c874b523cf1a58119af319c7f))
+
 ## [0.10.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.9.0...rpc4next-cli-v0.10.0) (2026-10-11)
 
 ### Features
