@@ -40,16 +40,15 @@ export const routeOnError = ((error, { response }) => {
   });
 }) satisfies ProcedureOnError<ProcedureOnErrorResult, typeof appRpcErrors>;
 
-export const routeOnValidationError =
-  createRpcValidationErrorHandler<
-    ProcedureInputTarget,
-    typeof appRpcErrors
-  >() satisfies ProcedureValidationErrorHandler<
-    ProcedureInputTarget,
-    unknown,
-    ProcedureValidationErrorHandlerResult,
-    typeof appRpcErrors
-  >;
+export const routeOnValidationError = createRpcValidationErrorHandler<
+  ProcedureInputTarget,
+  typeof appRpcErrors
+>() satisfies ProcedureValidationErrorHandler<
+  ProcedureInputTarget,
+  unknown,
+  ProcedureValidationErrorHandlerResult,
+  typeof appRpcErrors
+>;
 
 export const pageOnError = () => {
   throw new Error("Unhandled rpc4next page procedure error.");
