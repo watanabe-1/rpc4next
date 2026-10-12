@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.14.0...rpc4next-v0.15.0) (2026-10-12)
+
+### Features
+
+- Add page procedure testing support ([#643](https://github.com/watanabe-1/rpc4next/issues/643)) ([c55a569](https://github.com/watanabe-1/rpc4next/commit/c55a5690d6feea3c874b523cf1a58119af319c7f))
+- **rpc:** Infer page render result types in test clients ([#645](https://github.com/watanabe-1/rpc4next/issues/645)) ([5150134](https://github.com/watanabe-1/rpc4next/commit/515013400638c1fa8267a3d5102dc29aa682b764))
+
 ## [0.14.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.13.0...rpc4next-v0.14.0) (2026-10-11)
 
 ### Features
