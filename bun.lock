@@ -36,12 +36,11 @@
         "@types/react": "^19.3.0",
         "@types/react-dom": "^19.3.0",
         "rpc4next-cli": "workspace:*",
-        "typescript": "^6.0.3",
       },
     },
     "packages/rpc4next": {
       "name": "rpc4next",
-      "version": "0.13.0",
+      "version": "0.14.0",
       "dependencies": {
         "rpc4next-shared": "workspace:*",
         "server-only": "^0.0.1",
@@ -52,7 +51,7 @@
     },
     "packages/rpc4next-cli": {
       "name": "rpc4next-cli",
-      "version": "0.9.0",
+      "version": "0.10.0",
       "bin": {
         "rpc4next": "dist/index.js",
       },
@@ -699,8 +698,6 @@
     "yargs-parser": ["yargs-parser@22.0.0", "", {}, "sha512-rwu/ClNdSMpkSrUb+d6BRsSkLUq1fmfsY6TOpYzTwvwkg1/NRG85KBy3kq++A8LKQwX6lsu+aWad+2khvuXrqw=="],
 
     "zod": ["zod@4.6.5", "", {}, "sha512-v5l/aFXZQeai4awLbOpSoHecE9UiMrnfx75tEXLjNonXVARxQ5mOeipTjROUchszUNCqnE+hqAMujRsRHsut2Q=="],
-
-    "@integration/next-app/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
 
     "@jridgewell/trace-mapping/@jridgewell/sourcemap-codec": ["@jridgewell/sourcemap-codec@1.5.0", "", {}, "sha512-gv3ZRaISU3fjPAgNsriBRqGWQL6quFx04YMPW/zD8XMLsU32mhCCbfbO6KZFLjvYpCZ8zyDEgqsgf+PwPaM7GQ=="],
 
