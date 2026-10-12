@@ -141,6 +141,7 @@ export const appRouteProcedure = createRouteProcedure({
 ```ts
 // app/api/users/[userId]/route.ts
 import { z } from "zod";
+
 import { appRouteProcedure } from "../../../_rpc/route-procedure";
 import { routeContract } from "./route-contract";
 
@@ -276,6 +277,7 @@ the manifest path from `outputPath`.
 ```ts
 // src/lib/rpc-client.ts
 import { createRpcClient } from "rpc4next/client";
+
 import type { PathStructure } from "../generated/rpc";
 
 export const rpc = createRpcClient<PathStructure>("");
@@ -289,6 +291,7 @@ creating the client:
 ```ts
 import { headers } from "next/headers";
 import { createRpcClient } from "rpc4next/client";
+
 import type { PathStructure } from "../generated/rpc";
 
 export const createServerRpcClient = async () => {
@@ -310,6 +313,7 @@ test path without starting Next.js, MSW, or another mock HTTP server:
 
 ```ts
 import { createRpcTestClient } from "rpc4next/client/test";
+
 import type { PathStructure } from "../generated/rpc";
 import { testRoutes } from "../generated/rpc-test-manifest";
 
@@ -338,6 +342,7 @@ For page procedure tests, use `createRpcTestPageClient` with the generated
 
 ```ts
 import { createRpcTestPageClient } from "rpc4next/client/test";
+
 import type { PathStructure } from "../generated/rpc";
 import { testPages } from "../generated/rpc-test-manifest";
 
@@ -725,6 +730,7 @@ Example:
 
 ```ts
 import { z } from "zod";
+
 import { appRouteProcedure } from "../../../_rpc/route-procedure";
 import { routeContract } from "./route-contract";
 
@@ -784,6 +790,7 @@ render data, not for returning HTTP responses.
 // app/photo/[id]/page.tsx
 import { createPageProcedure } from "rpc4next/server";
 import { z } from "zod";
+
 import { routeContract } from "./route-contract";
 
 const pageProcedure = createPageProcedure({
@@ -986,6 +993,7 @@ middleware returns them.
 
 ```ts
 import { createRouteProcedure, procedure, type ProcedureOnError } from "rpc4next/server";
+
 import { routeContract } from "./route-contract";
 
 const getErrorMessage = (error: unknown) =>

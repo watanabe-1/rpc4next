@@ -57,6 +57,15 @@ jobs:
             bun add "next@$NEXT_VERSION"
           fi
 
+      # Next.js 15.0.0 cannot use the repository's TypeScript 7 dependency.
+      # Remove this block when Next.js 15.0.0 is no longer in the support matrix.
+      - name: Install TypeScript for Next.js 15
+        if: matrix.next-version == '15.0.0'
+        shell: bash
+        run: |
+          rm -f bun.lockb bun.lock
+          bun add --cwd integration/next-app --dev "typescript@6.0.3"
+
       - name: Install Playwright browser dependencies (Linux)
         if: runner.os == 'Linux'
         shell: bash
@@ -74,6 +83,7 @@ jobs:
           node -v
           bun -v
           bunx next --version
+          bun --cwd integration/next-app tsc --version
 
       - name: Build (all packages)
         shell: bash
