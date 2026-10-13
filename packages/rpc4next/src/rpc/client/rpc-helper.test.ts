@@ -2,11 +2,12 @@ import type { HttpMethod } from "rpc4next-shared";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { z } from "zod";
 
-import { type ProcedureRouteContract, procedure } from "../server";
+import { procedure } from "../server";
+import type { ProcedureRouteContract } from "../server/generated";
 import { createNextRoute as basecreateNextRoute } from "../server/next-route";
 import { defaultProcedureOnError } from "../server/on-error";
+import type { ParamsKey, QueryKey, RpcEndpoint, RpcGeneratedPathStructure } from "./generated";
 import { createRpcHelper } from "./rpc-helper";
-import type { ParamsKey, QueryKey, RpcEndpoint, RpcGeneratedPathStructure } from "./types";
 
 const queryRouteContract = {
   pathname: "/api/query",

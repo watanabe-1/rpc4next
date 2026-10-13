@@ -34,6 +34,16 @@
         "default": "./dist/rpc/client/index.js"
       }
     },
+    "./client/generated": {
+      "import": {
+        "types": "./dist/rpc/client/generated.d.ts",
+        "default": "./dist/rpc/client/generated.js"
+      },
+      "default": {
+        "types": "./dist/rpc/client/generated.d.ts",
+        "default": "./dist/rpc/client/generated.js"
+      }
+    },
     "./client/helper": {
       "import": {
         "types": "./dist/rpc/client/rpc-helper.d.ts",
@@ -54,6 +64,16 @@
         "default": "./dist/rpc/client/test.js"
       }
     },
+    "./client/test/generated": {
+      "import": {
+        "types": "./dist/rpc/client/test-generated.d.ts",
+        "default": "./dist/rpc/client/test-generated.js"
+      },
+      "default": {
+        "types": "./dist/rpc/client/test-generated.d.ts",
+        "default": "./dist/rpc/client/test-generated.js"
+      }
+    },
     "./server-only": {
       "import": {
         "types": "./dist/rpc/server-only.d.ts",
@@ -72,6 +92,16 @@
       "default": {
         "types": "./dist/rpc/server/index.d.ts",
         "default": "./dist/rpc/server/index.js"
+      }
+    },
+    "./server/generated": {
+      "import": {
+        "types": "./dist/rpc/server/generated.d.ts",
+        "default": "./dist/rpc/server/generated.js"
+      },
+      "default": {
+        "types": "./dist/rpc/server/generated.d.ts",
+        "default": "./dist/rpc/server/generated.js"
       }
     }
   },

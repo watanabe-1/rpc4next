@@ -4,8 +4,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanupTempDir, makeTempDir } from "../../test-helpers/tmp-dir.js";
 import {
   NEWLINE,
+  RPC4NEXT_CLIENT_TEST_GENERATED_IMPORT_PATH,
   RPC4NEXT_GENERATED_SCHEMA_VERSION,
   RPC4NEXT_CLIENT_IMPORT_PATH,
+  RPC4NEXT_SERVER_GENERATED_IMPORT_PATH,
   STATEMENT_TERMINATOR,
   TYPE_KEY_PARAMS,
   TYPE_KEY_QUERY,
@@ -89,7 +91,7 @@ describe("generatePathStructure", () => {
         paramsType: [
           ROUTE_CONTRACT_GENERATED_MARKER,
           "",
-          'import type { ProcedureRouteContract } from "rpc4next/server";',
+          `import type { ProcedureRouteContract } from "${RPC4NEXT_SERVER_GENERATED_IMPORT_PATH}";`,
           "",
           'export type Params = { "hoge": string };',
           'export type RouteContract = ProcedureRouteContract<"/demo/[hoge]/bar", Params>;',
@@ -183,7 +185,7 @@ describe("generatePathStructure", () => {
 
     expect(manifest).toContain('import "rpc4next/server-only";');
     expect(manifest).toContain(
-      'import type { RpcTestPage, RpcTestPageModule, RpcTestRoute, RpcTestRouteModule } from "rpc4next/client/test";',
+      `import type { RpcTestPage, RpcTestPageModule, RpcTestRoute, RpcTestRouteModule } from "${RPC4NEXT_CLIENT_TEST_GENERATED_IMPORT_PATH}";`,
     );
     expect(manifest).not.toContain("rpc4next-test-manifest-client-bundle-leak-sentinel");
     expect(manifest).not.toContain("__rpc4nextTestRouteManifestBundleSentinel");

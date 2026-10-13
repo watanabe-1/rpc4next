@@ -116,13 +116,7 @@ remain lightweight descriptive annotations rather than a policy system.
 ```ts
 // app/_rpc/errors.ts
 import { createRpcValidationErrorHandler, defineRpcErrors } from "rpc4next/server";
-import type {
-  ProcedureInputTarget,
-  ProcedureOnError,
-  ProcedureOnErrorResult,
-  ProcedureValidationErrorHandler,
-  ProcedureValidationErrorHandlerResult,
-} from "rpc4next/server";
+import type { InputTarget, RouteOnError, RouteValidationErrorHandler } from "rpc4next/server";
 
 export const appRpcErrors = defineRpcErrors({});
 
@@ -138,17 +132,12 @@ export const routeOnError = ((error, { response }) => {
   return response.error("INTERNAL_SERVER_ERROR", {
     message: "Internal server error",
   });
-}) satisfies ProcedureOnError<ProcedureOnErrorResult, typeof appRpcErrors>;
+}) satisfies RouteOnError<typeof appRpcErrors>;
 
 export const routeOnValidationError = createRpcValidationErrorHandler<
-  ProcedureInputTarget,
+  InputTarget,
   typeof appRpcErrors
->() satisfies ProcedureValidationErrorHandler<
-  ProcedureInputTarget,
-  unknown,
-  ProcedureValidationErrorHandlerResult,
-  typeof appRpcErrors
->;
+>() satisfies RouteValidationErrorHandler<typeof appRpcErrors>;
 
 export const pageOnError = () => {
   throw new Error("Unhandled rpc4next page procedure error.");
@@ -1075,7 +1064,7 @@ response. Other known error codes are only inferred when your handler or
 middleware returns them.
 
 ```ts
-import { createRouteProcedure, procedure, type ProcedureOnError } from "rpc4next/server";
+import { createRouteProcedure, procedure, type RouteOnError } from "rpc4next/server";
 
 import { routeContract } from "./route-contract";
 
@@ -1095,7 +1084,7 @@ const onError = ((error, { response }) => {
   return response.error("INTERNAL_SERVER_ERROR", {
     message: "Internal server error",
   });
-}) satisfies ProcedureOnError;
+}) satisfies RouteOnError;
 
 const appRouteProcedure = createRouteProcedure({
   onError,

@@ -6,16 +6,16 @@ import { afterAll, afterEach, beforeAll, describe, expect, expectTypeOf, it } fr
 import {
   type ContentType,
   type HttpStatusCode,
-  type ProcedureRouteContract,
   procedure,
   type TypedNextResponse,
 } from "../server";
+import type { ProcedureRouteContract } from "../server/generated";
 import { createNextRoute } from "../server/next-route";
 import { defaultProcedureOnError } from "../server/on-error";
+import type { ParamsKey, QueryKey, RpcEndpoint, RpcGeneratedPathStructure } from "./generated";
 import type { SuccessfulResponsePayload } from "./response";
 import { createRpcClient } from "./rpc-client";
 import { createRpcTestClient, type RpcTestRouteModule } from "./test";
-import type { ParamsKey, QueryKey, RpcEndpoint, RpcGeneratedPathStructure } from "./types";
 
 const staticRouteContract = {
   pathname: "/api/hoge",

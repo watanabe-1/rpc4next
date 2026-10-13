@@ -12,14 +12,4 @@ export type {
   SuccessfulJsonPayload,
   SuccessfulResponsePayload,
 } from "./response";
-export type {
-  InferPageQuery,
-  PageQueryInput,
-  PageRouteMarker,
-  ParamsKey,
-  ProcedureQueryInput,
-  QueryKey,
-  RpcEndpoint,
-  RpcGeneratedPathStructure,
-  RpcGeneratedSchemaVersion,
-} from "./types";
+export type { InferPageQuery, PageQueryInput } from "./types";

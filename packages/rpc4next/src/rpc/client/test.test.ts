@@ -1,7 +1,12 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 
+import type {
+  PageRouteMarker,
+  ParamsKey,
+  RpcEndpoint,
+  RpcGeneratedPathStructure,
+} from "./generated";
 import { createRpcTestPageClient, type RpcTestPage, type RpcTestPageHandler } from "./test";
-import type { PageRouteMarker, ParamsKey, RpcEndpoint, RpcGeneratedPathStructure } from "./types";
 
 const loadTestPage = (page: RpcTestPageHandler) => async () => ({ default: page });
 
