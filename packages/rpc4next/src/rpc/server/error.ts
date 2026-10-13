@@ -1,5 +1,6 @@
 import type { HttpStatusCode } from "../lib/http-status-code-types";
 
+/** HTTP status codes that rpc4next error envelopes may use. */
 export type RpcErrorStatusCode = Extract<
   HttpStatusCode,
   | 400
@@ -44,11 +45,13 @@ export type RpcErrorStatusCode = Extract<
   | 511
 >;
 
+/** Describes one application error code and the HTTP status it maps to. */
 export type RpcErrorCatalogEntry<TStatus extends RpcErrorStatusCode = RpcErrorStatusCode> = {
   status: TStatus;
   message?: string;
 };
 
+/** Map of application error codes to their default HTTP status and message. */
 export type RpcErrorCatalog = Record<string, RpcErrorCatalogEntry>;
 
 const DEFAULT_RPC_ERROR_CATALOG = {
@@ -62,26 +65,37 @@ const DEFAULT_RPC_ERROR_CATALOG = {
   INTERNAL_SERVER_ERROR: { status: 500, message: "Internal server error" },
 } as const satisfies RpcErrorCatalog;
 
+/** Built-in rpc4next error catalog used when an app does not define its own codes. */
 export type DefaultRpcErrorCatalog = typeof DEFAULT_RPC_ERROR_CATALOG;
 
+/** String union of error codes from an rpc4next error catalog. */
 export type RpcErrorCode<TCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog> = Extract<
   keyof TCatalog,
   string
 >;
 
+/** HTTP status mapped from a specific rpc4next error code. */
 export type RpcErrorStatus<
   TCode extends string = RpcErrorCode,
   TCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
 > = TCode extends keyof TCatalog ? TCatalog[TCode]["status"] : never;
 
+/** Default catalog plus app-defined overrides returned by `defineRpcErrors(...)`. */
 export type DefineRpcErrors<TCatalog extends RpcErrorCatalog> = Omit<
   DefaultRpcErrorCatalog,
   keyof TCatalog
 > &
   TCatalog;
 
+/** Built-in rpc4next error catalog. */
 export const defaultRpcErrorCatalog = DEFAULT_RPC_ERROR_CATALOG;
 
+/**
+ * Merges app-specific error codes with the default rpc4next error catalog.
+ *
+ * Use the returned value with `createRouteProcedure({ errors, onError })` so `response.error(...)`
+ * and generated client response unions know your custom codes and statuses.
+ */
 export const defineRpcErrors = <const TCatalog extends RpcErrorCatalog>(
   catalog: TCatalog,
 ): DefineRpcErrors<TCatalog> => {
@@ -101,6 +115,7 @@ const getRpcErrorCatalogEntry = <
   return catalog[code];
 };
 
+/** JSON payload shape returned by `response.error(...)`. */
 export interface RpcErrorEnvelope<TCode extends string = RpcErrorCode, TDetails = unknown> {
   error: {
     code: TCode;
@@ -109,17 +124,20 @@ export interface RpcErrorEnvelope<TCode extends string = RpcErrorCode, TDetails 
   };
 }
 
+/** Optional message and typed details for `response.error(...)`. */
 export interface RpcErrorResponseInit<TDetails = unknown> {
   message?: string;
   details?: TDetails;
 }
 
+/** Returns the HTTP status for a built-in rpc4next error code. */
 export const getDefaultRpcErrorStatus = <TCode extends RpcErrorCode>(
   code: TCode,
 ): RpcErrorStatus<TCode> => {
   return DEFAULT_RPC_ERROR_CATALOG[code].status as RpcErrorStatus<TCode>;
 };
 
+/** Returns the HTTP status for an error code in the provided catalog. */
 export const getRpcErrorStatus = <
   TCatalog extends RpcErrorCatalog,
   TCode extends RpcErrorCode<TCatalog>,
@@ -130,6 +148,7 @@ export const getRpcErrorStatus = <
   return getRpcErrorCatalogEntry(catalog, code).status as RpcErrorStatus<TCode, TCatalog>;
 };
 
+/** Creates a default-catalog rpc4next error envelope without creating a `Response`. */
 export const createRpcErrorEnvelope = <TCode extends RpcErrorCode, TDetails = unknown>(
   code: TCode,
   init: RpcErrorResponseInit<TDetails> = {},
@@ -143,6 +162,7 @@ export const createRpcErrorEnvelope = <TCode extends RpcErrorCode, TDetails = un
   };
 };
 
+/** Creates a catalog-aware rpc4next error envelope without creating a `Response`. */
 export const createRpcErrorEnvelopeFromCatalog = <
   TCatalog extends RpcErrorCatalog,
   TCode extends RpcErrorCode<TCatalog>,

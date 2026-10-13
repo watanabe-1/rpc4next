@@ -9,37 +9,28 @@ import type {
 import { createUrl } from "./url";
 
 /**
- * Creates an RPC client proxy for making HTTP requests with a strongly typed API.
+ * Creates a generated RPC client for fetch-like calls and typed URL generation.
  *
  * @example
- *   ```ts
- *   import { createRpcClient } from "./rpc";
- *   import type { PathStructure } from "./types";
+ *   ~~~ts
+ *   import { createRpcClient } from "rpc4next/client";
+ *   import type { PathStructure } from "./generated/rpc";
  *
- *   // Create an RPC client with a base URL
- *   const client = createRpcClient<PathStructure>("http://localhost:3000");
+ *   const rpc = createRpcClient<PathStructure>("");
  *
  *   // Generate a URL for a dynamic route
- *   const urlResult = client.fuga._foo("test").$url();
- *   console.log(urlResult.path); // "http://localhost:3000/fuga/test"
- *   console.log(urlResult.relativePath); // "/fuga/test"
- *   console.log(urlResult.pathname); // "/fuga/[foo]"
- *   console.log(urlResult.params); // { foo: "test" }
+ *   const url = rpc.photo._id("42").$url();
+ *   console.log(url.relativePath); // "/photo/42"
  *
  *   // Execute a GET request on a route
- *   const response = await client.api.hoge._foo("test").$get();
- *   console.log(await response.json()); // Expected response: { method: "get" }
- *   ```
- *
- *   The above example demonstrates how to generate URLs with dynamic segments and how to execute HTTP requests.
+ *   const response = await rpc.api.users._userId("123").$get();
+ *   console.log(await response.json());
+ *   ~~~
  *
  * @template T - The type defining the RPC path structure.
- * @param baseUrl - The base URL for the RPC client. This URL will be used as the root for all
- *   generated client URLs.
- * @param options - (Optional) Client options to customize the behavior of the RPC client. These
- *   options may include a custom fetch function and default request initialization options.
- * @returns An object that enables you to dynamically build client URLs and execute HTTP requests
- *   (such as GET, POST, DELETE, etc.) with full type support.
+ * @param baseUrl - Base URL for generated paths. Use `""` for same-origin browser calls.
+ * @param options - Optional custom `fetch` and default request init values.
+ * @returns A proxy whose shape mirrors the generated App Router path tree.
  */
 export const createRpcClient = makeCreateRpc((key, context) => {
   if (key === "$url") {

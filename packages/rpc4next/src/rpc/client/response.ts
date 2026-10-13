@@ -43,6 +43,12 @@ type TextContentType = `text/${string}` | XmlContentType | YamlContentType;
 type FormDataContentType = "multipart/form-data" | "application/x-www-form-urlencoded";
 type NoBodyStatus = 101 | 204 | 205 | 304;
 
+/**
+ * Parsed file download returned by `RpcResponsePromise.unwrapFile()`.
+ *
+ * Use this when an endpoint returns binary content and the caller still wants rpc4next's non-2xx
+ * error handling.
+ */
 export type RpcFilePayload<TResponse = unknown> = {
   readonly blob: Blob;
   readonly filename: string | undefined;
@@ -72,18 +78,22 @@ type ParsedPayloadByContentType<
       ? FormData
       : Blob;
 
+/** Infers the parsed success payload for a typed RPC response or response promise. */
 export type SuccessfulResponsePayload<TResponse> = [
   SuccessfulResponse<Awaited<TResponse>>,
 ] extends [never]
   ? ParsedPayload<Awaited<TResponse>>
   : ParsedPayload<SuccessfulResponse<Awaited<TResponse>>>;
 
+/** Alias for `SuccessfulResponsePayload`; kept for callers that expect JSON success bodies. */
 export type SuccessfulJsonPayload<TResponse> = SuccessfulResponsePayload<TResponse>;
 
+/** Infers the parsed non-2xx payload for a typed RPC response or response promise. */
 export type ErrorResponsePayload<TResponse> = [ErrorResponse<Awaited<TResponse>>] extends [never]
   ? never
   : ParsedPayload<ErrorResponse<Awaited<TResponse>>>;
 
+/** Infers the rpc4next error code union from a typed non-2xx error payload. */
 export type ErrorResponseCode<TResponse> =
   ErrorResponsePayload<TResponse> extends RpcErrorEnvelope<infer TCode, unknown> ? TCode : never;
 
@@ -208,6 +218,12 @@ type RpcHeadersInput<TMethod> = ExtractHeadersInput<RpcRequestInput<TMethod>>;
 
 type RpcCookiesInput<TMethod> = ExtractCookiesInput<RpcRequestInput<TMethod>>;
 
+/**
+ * Infers the input object accepted by a generated RPC method or `$url` helper.
+ *
+ * Pass a target such as `"query"`, `"json"`, `"formData"`, `"headers"`, or `"cookies"` when a form,
+ * hook, or fixture only needs one part of the request.
+ */
 export type InferRpcRequestType<
   TMethodOrUrl,
   TTarget extends RpcRequestInferTarget = "input",
@@ -225,6 +241,13 @@ export type InferRpcRequestType<
             ? RpcCookiesInput<TMethodOrUrl>
             : never;
 
+/**
+ * Infers a parsed RPC response payload.
+ *
+ * The default returns the success payload. Pass `"error"` for all error payloads, a numeric status
+ * for a status-specific payload, or `"response"` as the third generic to keep the typed `Response`
+ * branch instead of parsing it.
+ */
 export type InferRpcResponseType<
   TMethodOrResponsePromise,
   TStatus extends RpcResponseInferStatus = "success",
@@ -239,6 +262,7 @@ export type InferRpcResponseType<
         : RpcPayloadByStatus<TMethodOrResponsePromise, TStatus>
       : never;
 
+/** Infers the rpc4next error code union produced by a generated RPC method. */
 export type InferRpcErrorCode<TMethodOrResponsePromise> = RpcErrorCode<TMethodOrResponsePromise>;
 
 type RpcErrorCodeFromPayload<TPayload> =
@@ -265,6 +289,12 @@ const getRpcErrorCode = <TPayload>(
   return payload.error.code as RpcErrorCodeFromPayload<TPayload>;
 };
 
+/**
+ * Error thrown by `unwrap()` and `unwrapFile()` for non-2xx RPC responses.
+ *
+ * The original response is available on `response`; parsed error data is available on `payload`.
+ * `code` is set when the payload is an rpc4next error envelope returned by `response.error(...)`.
+ */
 export class RpcResponseError<
   TPayload = unknown,
   TResponse extends BodyParserResponseLike = BodyParserResponseLike,
@@ -288,12 +318,18 @@ export class RpcResponseError<
   }
 }
 
+/** Exhaustive handler map keyed by rpc4next error codes in a parsed error payload. */
 export type RpcErrorHandlers<TPayload, TResult> = {
   [TCode in RpcErrorCodeFromPayload<TPayload> & string]: (
     error: RpcResponseError<RpcErrorPayloadByCode<TPayload, TCode>>,
   ) => TResult;
 };
 
+/**
+ * Dispatches an `RpcResponseError` to a handler matching its rpc4next error code.
+ *
+ * The original error is rethrown when the payload has no code or no matching handler exists.
+ */
 export const matchRpcResponseError = <TPayload, TResult>(
   error: RpcResponseError<TPayload>,
   handlers: RpcErrorHandlers<TPayload, TResult>,
@@ -446,11 +482,18 @@ const parseFileResponse = async <TResponse extends BodyParserResponseLike>(
   };
 };
 
+/**
+ * Fetch-like RPC method result with convenience parsers.
+ *
+ * Await it directly to get the typed `Response`, call `unwrap()` for a parsed success payload, or
+ * call `unwrapFile()` for binary downloads.
+ */
 export type RpcResponsePromise<TResponse> = Promise<TResponse> & {
   unwrap: () => Promise<SuccessfulResponsePayload<TResponse>>;
   unwrapFile: () => Promise<RpcFilePayload<TResponse>>;
 };
 
+/** Attaches rpc4next convenience parsers to an existing response promise. */
 export const createRpcResponsePromise = <TResponse extends BodyParserResponseLike>(
   responsePromise: Promise<TResponse>,
 ): RpcResponsePromise<TResponse> => {
