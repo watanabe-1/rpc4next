@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.12.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.11.0...rpc4next-cli-v0.12.0) (2026-10-13)
+
+### ⚠ BREAKING CHANGES
+
+- **rpc4next-cli:** generate route contracts with separated public types ([#653](https://github.com/watanabe-1/rpc4next/issues/653))
+- **rpc4next:** Generated types have moved to dedicated subpaths.
+
+### Code Refactoring
+
+- **rpc4next-cli:** generate route contracts with separated public types ([#653](https://github.com/watanabe-1/rpc4next/issues/653)) ([cfeabdf](https://github.com/watanabe-1/rpc4next/commit/cfeabdf850eab51bfe1c0c063be40ceb128ef900))
+- **rpc4next:** separate generated types from public APIs ([#653](https://github.com/watanabe-1/rpc4next/issues/653)) ([cfeabdf](https://github.com/watanabe-1/rpc4next/commit/cfeabdf850eab51bfe1c0c063be40ceb128ef900))
+
 ## [0.11.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.10.0...rpc4next-cli-v0.11.0) (2026-10-12)
 
 ### Features
