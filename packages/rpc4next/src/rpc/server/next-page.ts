@@ -27,6 +27,7 @@ import type { Params, Query } from "./types";
 
 type PageSearchParams = Record<string, string | string[] | undefined>;
 
+/** Props shape passed by Next.js App Router page entries. */
 export type NextPageProps<TParams extends Params = Params> = {
   params: Promise<TParams>;
   searchParams?: Promise<PageSearchParams>;
@@ -51,6 +52,7 @@ type NextPageDataRenderContext<TProcedure extends NextPageProcedureCarrier, TDat
       }
     : Record<never, never>;
 
+/** Context passed to a procedure-backed page render callback. */
 export type NextPageRenderContext<
   TProcedure extends NextPageProcedureCarrier = HandledNextPageProcedureCarrier,
   TData = unknown,
@@ -60,6 +62,7 @@ export type NextPageRenderContext<
     ctx: TContext;
   };
 
+/** Render callback accepted by a procedure `.page(...)` terminal. */
 export type NextPageRender<
   TProcedure extends NextPageProcedureCarrier = HandledNextPageProcedureCarrier,
   TData = unknown,
@@ -67,6 +70,7 @@ export type NextPageRender<
   TResult = unknown,
 > = (context: NextPageRenderContext<TProcedure, TData, TContext>) => TResult | Promise<TResult>;
 
+/** Handles unexpected exceptions thrown while running a page procedure. */
 export type ProcedurePageOnError<TResult = unknown> = (
   error: unknown,
   context: {
@@ -75,12 +79,14 @@ export type ProcedurePageOnError<TResult = unknown> = (
   },
 ) => TResult | Promise<TResult>;
 
+/** Default page error handler, which rethrows the original error. */
 export const defaultProcedurePageOnError = ((error) => {
   throw error;
 }) satisfies ProcedurePageOnError<never>;
 
 export type DefaultProcedurePageOnError = typeof defaultProcedurePageOnError;
 
+/** Context passed to page procedure validation error handlers. */
 export type ProcedurePageOnValidationErrorContext<
   TTarget extends ProcedureInputTarget = ProcedureInputTarget,
 > = {
@@ -91,6 +97,7 @@ export type ProcedurePageOnValidationErrorContext<
   searchParams: Query;
 };
 
+/** Handles failed page procedure input validation. */
 export type ProcedurePageOnValidationError<TResult = unknown> = (
   context: ProcedurePageOnValidationErrorContext,
 ) => TResult | Promise<TResult>;
@@ -244,6 +251,7 @@ type ProcedureNextPageInputConstraint<TProcedure extends NextPageProcedureCarrie
           }
         : unknown;
 
+/** Next.js page default export produced by a procedure `.page(...)` terminal. */
 export type NextPageHandler<
   TProcedure extends NextPageProcedureCarrier = NextPageProcedureCarrier,
   TResult = unknown,
@@ -252,6 +260,7 @@ export type NextPageHandler<
   MergeProcedureDefinition<InferProcedureDefinition<TProcedure>, { method: never }>
 >;
 
+/** Runtime options for adapting a procedure to a Next.js page. */
 export type NextPageOptions<
   TOnError extends ProcedurePageOnError = ProcedurePageOnError,
   TOnValidationError extends ProcedurePageOnValidationError | undefined = undefined,
@@ -510,6 +519,7 @@ const assertPageTerminalResult = (result: Response | ProcedureResult | undefined
   };
 };
 
+/** Adapts a route-bound procedure into a Next.js App Router page handler. */
 export const createNextPage = <
   TProcedure extends NextPageProcedureCarrier,
   TResult = unknown,

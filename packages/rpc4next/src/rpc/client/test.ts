@@ -19,43 +19,53 @@ import type {
 } from "./types";
 import { createUrl } from "./url";
 
+/** Dynamic params supplied to route handlers by `createRpcTestClient`. */
 export type RpcTestRouteParams = Record<string, string | string[] | undefined>;
+/** Resolves test-only route params from the request when pathname inference is not enough. */
 export type RpcTestRouteParamsResolver = (context: {
   request: NextRequest;
   url: URL;
 }) => RpcTestRouteParams | Promise<RpcTestRouteParams>;
 
+/** Next.js route handler shape loaded by the generated rpc4next test manifest. */
 export type RpcTestRouteHandler = (
   request: NextRequest,
   segmentData: { params: Promise<RpcTestRouteParams> },
 ) => Response | Promise<Response>;
 
+/** Module shape for a route file used by the generated rpc4next test manifest. */
 export type RpcTestRouteModule = Partial<Record<HttpMethod, RpcTestRouteHandler>>;
 
+/** Route manifest entry consumed by `createRpcTestClient`. */
 export type RpcTestRoute = Pick<ProcedureRouteContract, "pathname"> & {
   load: () => Promise<RpcTestRouteModule>;
   methods: readonly HttpMethod[];
   params?: RpcTestRouteParams | RpcTestRouteParamsResolver;
 };
 
+/** Next.js page handler shape loaded by the generated rpc4next test manifest. */
 export type RpcTestPageHandler = (props: {
   params: Promise<RpcTestRouteParams>;
   searchParams?: Promise<RpcTestRouteParams>;
 }) => unknown | Promise<unknown>;
 
+/** Module shape for a page file used by the generated rpc4next test manifest. */
 export type RpcTestPageModule = {
   default: RpcTestPageHandler;
 };
 
+/** Page manifest entry consumed by `createRpcTestPageClient`. */
 export type RpcTestPage = Pick<ProcedureRouteContract, "pathname"> & {
   load: () => Promise<RpcTestPageModule>;
   params?: RpcTestRouteParams | RpcTestRouteParamsResolver;
 };
 
+/** Options for the in-process route test client. */
 export type RpcTestClientOptions = Omit<RpcClientOptions, "fetch"> & {
   baseUrl?: string;
 };
 
+/** Options for the in-process page render test client. */
 export type RpcTestPageRendererOptions = {
   baseUrl?: string;
 };
@@ -85,6 +95,7 @@ type ParamFunction<T, TParamArgs extends unknown[]> = (
   ...args: TParamArgs
 ) => RpcTestPageDynamicPathProxyAsFunction<T>;
 
+/** Generated page test proxy shape with `$render()` available at page leaves. */
 export type RpcTestPageDynamicPathProxyAsFunction<T> = Omit<
   (T extends RpcEndpoint ? RpcTestPagePathProxyAsFunction<T> : unknown) & {
     [K in keyof T]: K extends OptionalCatchAllKey
@@ -281,6 +292,13 @@ const resolveRouteParams = async (
   return route.params && Object.keys(inferredParams).length === 0 ? route.params : inferredParams;
 };
 
+/**
+ * Creates an in-process RPC client for route-handler tests.
+ *
+ * The client keeps the same generated path and input types as `createRpcClient`, but dispatches
+ * requests directly to loaded route modules instead of starting Next.js or mocking HTTP with a
+ * separate server.
+ */
 export const createRpcTestClient = <T extends RpcGeneratedPathStructure>(
   routes: readonly RpcTestRoute[],
   options: RpcTestClientOptions = {},
@@ -369,9 +387,11 @@ const createRpcTestPageRenderDispatcher = (
 };
 
 /**
- * Creates a generated-path test client for rendering rpc4next page procedures in-process. The
- * request context is intentionally limited to rpc4next page procedure .headers()/.cookies()
- * validation; user code that calls next/headers directly is outside this helper's guarantees.
+ * Creates a generated-path test client for rendering rpc4next page procedures in-process.
+ *
+ * The request context is intentionally limited to rpc4next page procedure `.headers()` /
+ * `.cookies()` validation; user code that calls `next/headers` directly is outside this helper's
+ * guarantees.
  */
 export const createRpcTestPageClient = <T extends RpcGeneratedPathStructure>(
   pages: readonly RpcTestPage[],

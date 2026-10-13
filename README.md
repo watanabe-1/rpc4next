@@ -655,6 +655,27 @@ console.log(file.filename);
 console.log(file.contentType);
 ```
 
+If you prefer a small dispatch table for rpc4next error envelopes, use
+`matchRpcResponseError(...)` inside the `RpcResponseError` branch. It rethrows
+the original error when the payload has no rpc4next code or no matching handler:
+
+```ts
+import { matchRpcResponseError, RpcResponseError } from "rpc4next/client";
+
+try {
+  await rpc.api["procedure-guarded"]._userId("123").$get().unwrap();
+} catch (error) {
+  if (error instanceof RpcResponseError) {
+    return matchRpcResponseError(error, {
+      UNAUTHORIZED: () => showSignInPrompt(),
+      FORBIDDEN: () => showAccessDenied(),
+    });
+  }
+
+  throw error;
+}
+```
+
 ### Reusable Client Types
 
 The generated client is useful beyond the exact place where you call it.
@@ -779,6 +800,24 @@ photoUrl.path;
 photoUrl.relativePath;
 photoUrl.pathname;
 photoUrl.params;
+```
+
+For route matching outside the generated client, use
+`createRpcHelper<PathStructure>()` from `rpc4next/client/helper`. It is useful in
+tests, analytics, navigation state, or middleware-like code that already has a
+concrete pathname and needs the generated params shape:
+
+```ts
+import { createRpcHelper } from "rpc4next/client/helper";
+
+import type { PathStructure } from "./generated/rpc";
+
+const rpcHelper = createRpcHelper<PathStructure>();
+const match = rpcHelper.photo._id.$match("/photo/42");
+
+if (match) {
+  match.params.id;
+}
 ```
 
 ## Server Helpers
@@ -1167,6 +1206,22 @@ const response = await rpc.api["next-native-response"].$get();
 ```
 
 For native handlers, route discovery and request typing still work, but response typing is naturally broader than when you return rpc4next's typed helpers.
+When a native handler needs a precise generated success body without moving to
+`procedure`, attach an output contract with `withOutput(output(schema), handler)`:
+
+```ts
+import { output, withOutput } from "rpc4next/server";
+import { z } from "zod";
+
+const responseSchema = z.object({
+  ok: z.literal(true),
+  source: z.literal("native"),
+});
+
+export const GET = withOutput(output(responseSchema), async () =>
+  Response.json({ ok: true, source: "native" as const }),
+);
+```
 
 See [integration/next-app/README.md](./integration/next-app/README.md) for the repository's full integration fixture coverage and route-pattern notes.
 

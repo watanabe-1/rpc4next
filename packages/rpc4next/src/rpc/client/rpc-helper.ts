@@ -3,21 +3,20 @@ import { makeCreateRpc } from "./rpc";
 import type { DynamicPathProxyAsProperty, RpcGeneratedPathStructure } from "./types";
 
 /**
- * Creates an RPC helper proxy for dynamic path matching based on a given endpoint structure.
+ * Creates an RPC helper proxy for matching concrete paths against generated routes.
  *
  * @example
- *   ```ts
- *   // Create the RPC helper
+ *   ~~~ts
+ *   import { createRpcHelper } from "rpc4next/client/helper";
+ *   import type { PathStructure } from "./generated/rpc";
+ *
  *   const rpcHelper = createRpcHelper<PathStructure>();
+ *   const match = rpcHelper.photo._id.$match("/photo/42");
+ *   console.log(match?.params.id); // "42"
  *
- *   // Use the $match method to extract dynamic parameters from a URL path
- *   const match = rpcHelper.fuga._foo.$match("/fuga/test");
- *   // Expected output: { foo: "test" }
- *
- *   // If the path does not match, it returns null
- *   const noMatch = rpcHelper.fuga._foo.$match("/hoge/test");
- *   // Expected output: null
- *   ```;
+ *   const noMatch = rpcHelper.photo._id.$match("/feed");
+ *   console.log(noMatch); // null
+ *   ~~~
  *
  * @template T - The type defining the RPC endpoint structure.
  * @returns An object that provides dynamic RPC helper methods for the defined endpoints.

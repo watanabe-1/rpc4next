@@ -91,6 +91,7 @@ export interface TypedNextResponse<
   readonly status: HttpStatus<TStatus>["status"];
 }
 
+/** Typed `response.json(...)` helper exposed to procedure handlers. */
 export type JsonResponseHelper<TJson = unknown> = [unknown] extends [TJson]
   ? <TData, TStatus extends HttpStatusCode = 200>(
       data: TData,
@@ -101,10 +102,12 @@ export type JsonResponseHelper<TJson = unknown> = [unknown] extends [TJson]
       init?: TStatus | TypedResponseInit<TStatus, "application/json">,
     ) => TypedNextResponse<TJson, TStatus, "application/json">;
 
+/** Response helpers that preserve payload, status, and content-type in generated client types. */
 export interface ResponseHelpers<
   TJson = unknown,
   TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
 > {
+  /** Creates a typed arbitrary body response. */
   body: <
     TData extends BodyInit | null,
     TContentType extends ContentType,
@@ -114,8 +117,10 @@ export interface ResponseHelpers<
     init?: TStatus | TypedResponseInit<TStatus, TContentType>,
   ) => TypedNextResponse<TData, TStatus, TContentType>;
 
+  /** Creates a typed JSON response. */
   json: JsonResponseHelper<TJson>;
 
+  /** Creates a typed plain-text response. */
   text: <TData extends string, TStatus extends HttpStatusCode = 200>(
     data: TData,
     init?: TStatus | TypedResponseInit<TStatus, "text/plain">,
@@ -130,6 +135,7 @@ export interface ResponseHelpers<
     init?: TStatus | TypedResponseInit<TStatus, "">,
   ) => TypedNextResponse<undefined, TStatus, "">;
 
+  /** Creates a typed rpc4next error envelope response from the configured error catalog. */
   error: <TCode extends RpcErrorCode<TErrorCatalog>, TDetails = unknown>(
     code: TCode,
     init?: RpcErrorResponseInit<TDetails>,
@@ -140,10 +146,13 @@ export interface ResponseHelpers<
   >;
 }
 
+/** Normalized dynamic route params used by procedure handlers. */
 export type Params = Record<string, string | string[]>;
 
+/** Normalized query params used by procedure handlers. */
 export type Query = Record<string, string | string[]>;
 
+/** Legacy route context shape used by lower-level adapters. */
 export interface RouteContext<
   TParams = Params,
   TQuery = Query,
@@ -173,6 +182,7 @@ export interface RouteContext<
 
 type ValidationTargetKey = "params" | "query" | "json" | "formData" | "headers" | "cookies";
 
+/** Input targets available for a procedure, narrowed by HTTP method where needed. */
 export type ValidationTarget<THttpMethod extends HttpMethod = HttpMethod> = THttpMethod extends
   | "GET"
   | "HEAD"
@@ -185,11 +195,13 @@ type ValidationFor<
   TSchema extends ValidationSchema,
 > = TTarget extends keyof TSchema[TDirection] ? TSchema[TDirection][TTarget] : never;
 
+/** Infers the raw input type expected by one validation target in a schema map. */
 export type ValidationInputFor<
   TTarget extends ValidationTarget,
   TSchema extends ValidationSchema,
 > = ValidationFor<"input", TTarget, TSchema>;
 
+/** Selects a validation input type only when the current target matches the expected target. */
 export type ConditionalValidationInput<
   TTarget extends ValidationTarget,
   TExpected extends ValidationTarget,

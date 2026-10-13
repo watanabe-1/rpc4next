@@ -62,8 +62,10 @@ type AnyProcedureValidationErrorHandler<TErrorCatalog extends RpcErrorCatalog = 
   // oxlint-disable-next-line typescript/no-explicit-any -- Validation hooks intentionally accept arbitrary user schema shapes.
   ProcedureValidationErrorHandler<any, any, any, TErrorCatalog>;
 
+/** Procedure adapter surface currently available to a builder. */
 export type ProcedureAdapterMode = "neutral" | "route" | "page";
 
+/** Navigation helpers available inside page procedure handlers and middleware. */
 export type ProcedurePageHelpers = {
   redirect: (url: string, type?: "replace" | "push") => never;
   notFound: () => never;
@@ -274,6 +276,12 @@ type ProcedureHandleArgs<
       : [handler: THandler & MissingBoundRouteParamsError]
     : [handler: THandler];
 
+/**
+ * Portable return shape for procedure handlers.
+ *
+ * Route procedures convert it to a typed HTTP response. Page procedures pass `body` to the page
+ * render callback as `data`.
+ */
 export type ProcedureResult<TBody = unknown> = {
   status?: HttpStatusCode;
   headers?: HeadersInit;
@@ -281,11 +289,13 @@ export type ProcedureResult<TBody = unknown> = {
   redirect?: string;
 };
 
+/** Response helpers available inside route procedure handlers. */
 export type ProcedureResponseHelpers<
   TOutput = unknown,
   TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
 > = ResponseHelpers<TOutput, TErrorCatalog>;
 
+/** Handler result for page procedures, where HTTP redirects are not allowed. */
 export type ProcedurePageResult<TBody = unknown> = Omit<ProcedureResult<TBody>, "redirect"> & {
   redirect?: never;
 };
@@ -324,6 +334,7 @@ type ProcedureValidatedContext<
       }
     : Record<never, never>);
 
+/** Context passed to a final procedure handler. */
 export type ProcedureHandlerContext<
   TValidationSchema extends ValidationSchema = ValidationSchema,
   TBoundParams = Params,
@@ -342,6 +353,7 @@ export type ProcedureHandlerContext<
         response: ProcedureResponseHelpers<TOutput, TErrorCatalog>;
       });
 
+/** Context passed to procedure middleware. */
 export type ProcedureMiddlewareContext<
   TValidationSchema extends ValidationSchema = ValidationSchema,
   TBoundParams = Params,
@@ -375,6 +387,7 @@ type ProcedurePageMiddlewareResult<TContextExtension extends object = Record<nev
   | undefined
   | { ctx: TContextExtension };
 
+/** Values middleware may return to continue, extend `ctx`, or short-circuit route procedures. */
 export type ProcedureMiddlewareResult<
   TContextExtension extends object = Record<never, never>,
   TMode extends ProcedureAdapterMode = "neutral",
@@ -382,6 +395,7 @@ export type ProcedureMiddlewareResult<
   ? ProcedurePageMiddlewareResult<TContextExtension>
   : undefined | ProcedureRouteTerminalResult | { ctx: TContextExtension };
 
+/** Values a final procedure handler may return. */
 export type ProcedureHandlerResult<
   TOutput = unknown,
   TMode extends ProcedureAdapterMode = "neutral",
@@ -399,6 +413,7 @@ type ProcedureAnyHandlerResult<TOutput = unknown> =
   | ProcedureResult<TOutput>
   | Promise<Response | NextResponse | ProcedureResult<TOutput>>;
 
+/** Middleware function for composing reusable validation, auth, logging, and context setup. */
 export type ProcedureMiddleware<
   TValidationSchema extends ValidationSchema = ValidationSchema,
   TBoundParams = Params,
@@ -418,6 +433,7 @@ export type ProcedureMiddleware<
   | Promise<ProcedureMiddlewareResult<TContextExtension, TMode>>
   | ProcedureMiddlewareResult<TContextExtension, TMode>;
 
+/** Final handler function for a procedure builder chain. */
 export type ProcedureHandler<
   TValidationSchema extends ValidationSchema = ValidationSchema,
   TBoundParams = Params,
@@ -673,6 +689,7 @@ type ProcedureBuilderNextPageMethod<
       : never)
 >;
 
+/** Handled procedure value returned by `.handle(...)`, with route and page terminal adapters. */
 export type Procedure<
   TDefinition extends ProcedureDefinition = EmptyProcedureDefinition,
   TContext extends object = Record<never, never>,
@@ -748,6 +765,7 @@ type ExtractProcedureAdapterMode<TDefaults> = TDefaults extends {
     ? "route"
     : "neutral";
 
+/** Shared defaults for route procedure presets created with `createRouteProcedure(...)`. */
 export type CreateRouteProcedureOptions<
   TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
   TOnError extends ProcedureOnError<ProcedureOnErrorResult, DefineRpcErrors<TErrorCatalog>> =
@@ -773,6 +791,7 @@ export type CreateRouteProcedureOptions<
   onValidationError?: TOnValidationError;
 };
 
+/** Shared defaults for page procedure presets created with `createPageProcedure(...)`. */
 export type CreatePageProcedureOptions<
   TOnError extends ProcedurePageOnError = ProcedurePageOnError,
   TOnValidationError extends ProcedurePageOnValidationError | undefined =
@@ -917,6 +936,7 @@ type UsedProcedureBuilderMethodKeys<
       ? "json" | "formData"
       : never);
 
+/** Chainable builder used to declare procedure input, output, middleware, and terminal adapters. */
 export type ProcedureBuilder<
   TDefinition extends ProcedureDefinition = EmptyProcedureDefinition,
   TContext extends object = Record<never, never>,
@@ -938,6 +958,7 @@ export type ProcedureBuilder<
   UsedProcedureBuilderMethodKeys<TDefinition, TDefaults, THasMiddleware, TAllowPresetMethods>
 >;
 
+/** Builder shape exposed by the bare `procedure` export. */
 export type BareProcedureBuilder = ProcedureBuilder<
   EmptyProcedureDefinition,
   Record<never, never>,
@@ -957,6 +978,7 @@ interface ProcedureBuilderMethods<
   THasMiddleware extends boolean = false,
   TAllowPresetMethods extends boolean = true,
 > {
+  /** Declares or overrides the error catalog before other builder configuration. */
   errors<const TNextErrorCatalog extends RpcErrorCatalog>(
     errorCatalog: TNextErrorCatalog,
   ): ProcedureBuilder<
@@ -969,6 +991,7 @@ interface ProcedureBuilderMethods<
     TAllowPresetMethods
   >;
 
+  /** Applies shared route and/or page defaults such as `onError` handlers. */
   defaults<const TSharedDefaults>(
     defaults: ProcedureDefaultsArg<TSharedDefaults, TErrorCatalog>,
   ): ProcedureBuilder<
@@ -981,6 +1004,7 @@ interface ProcedureBuilderMethods<
     TAllowPresetMethods
   >;
 
+  /** Attaches lightweight metadata that can be read with `getRouteMeta(...)`. */
   meta<TMeta extends RpcMeta>(
     meta: TMeta,
   ): ProcedureBuilder<
@@ -993,6 +1017,7 @@ interface ProcedureBuilderMethods<
     TAllowPresetMethods
   >;
 
+  /** Binds the builder to a generated sibling `routeContract`. */
   forRoute<TRouteContract extends ProcedureRouteContract>(
     routeContract: TRouteContract,
   ): ProcedureBuilder<
@@ -1010,6 +1035,7 @@ interface ProcedureBuilderMethods<
     TAllowPresetMethods
   >;
 
+  /** Validates dynamic route params before middleware and handlers run. */
   params<
     TSchema extends StandardSchemaV1,
     TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
@@ -1031,6 +1057,7 @@ interface ProcedureBuilderMethods<
     TAllowPresetMethods
   >;
 
+  /** Validates URL query/search params before middleware and handlers run. */
   query<
     TSchema extends StandardSchemaV1,
     TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
@@ -1052,6 +1079,7 @@ interface ProcedureBuilderMethods<
     TAllowPresetMethods
   >;
 
+  /** Validates a JSON request body. Not available for `GET`, `HEAD`, or page procedures. */
   json<
     TSchema extends StandardSchemaV1,
     TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
@@ -1073,6 +1101,7 @@ interface ProcedureBuilderMethods<
     TAllowPresetMethods
   >;
 
+  /** Validates a multipart or urlencoded `FormData` body. */
   formData<
     TSchema extends StandardSchemaV1,
     TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
@@ -1094,6 +1123,7 @@ interface ProcedureBuilderMethods<
     TAllowPresetMethods
   >;
 
+  /** Validates selected request headers. */
   headers<
     TSchema extends StandardSchemaV1,
     TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
@@ -1115,6 +1145,7 @@ interface ProcedureBuilderMethods<
     TAllowPresetMethods
   >;
 
+  /** Validates request cookies parsed from the `Cookie` header. */
   cookies<
     TSchema extends StandardSchemaV1,
     TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
@@ -1136,6 +1167,7 @@ interface ProcedureBuilderMethods<
     TAllowPresetMethods
   >;
 
+  /** Declares the success body type returned by the procedure. */
   output<TOutput>(): ProcedureBuilder<
     MergeProcedureDefinition<
       TDefinition,
@@ -1151,6 +1183,7 @@ interface ProcedureBuilderMethods<
     TAllowPresetMethods
   >;
 
+  /** Declares and optionally runtime-validates the success body schema for the procedure. */
   output<TSchema, TOutput = InferSchemaOutput<TSchema>>(
     schema: TSchema,
   ): ProcedureBuilder<
@@ -1168,6 +1201,7 @@ interface ProcedureBuilderMethods<
     TAllowPresetMethods
   >;
 
+  /** Adds middleware to the builder and carries returned `ctx` into later steps. */
   use<
     TMiddleware extends ProcedureMiddleware<
       ExtractValidationSchema<TDefinition>,
@@ -1189,6 +1223,7 @@ interface ProcedureBuilderMethods<
     TAllowPresetMethods
   >;
 
+  /** Adds the final handler, after which route method terminals become available. */
   handle<
     THandler extends ProcedureHandler<
       ExtractValidationSchema<TDefinition>,
@@ -1216,6 +1251,7 @@ interface ProcedureBuilderMethods<
     TMiddlewareTerminalResult
   >;
 
+  /** Adapts a route-bound page procedure directly to a Next.js page export. */
   page: ProcedureBuilderNextPageMethod<
     TDefinition,
     TContext,
@@ -1812,6 +1848,12 @@ const createProcedureBuilder = <
   >;
 };
 
+/**
+ * Creates a reusable route procedure preset with shared error handling.
+ *
+ * Prefer exporting one app-level preset, such as `appRouteProcedure`, and then continuing the
+ * builder chain in each `route.ts` file.
+ */
 export function createRouteProcedure<
   const TErrorCatalog extends RpcErrorCatalog,
   const TOnError extends ProcedureOnError<ProcedureOnErrorResult, DefineRpcErrors<TErrorCatalog>>,
@@ -1913,6 +1955,12 @@ export function createRouteProcedure(
   );
 }
 
+/**
+ * Creates a reusable page procedure preset with shared page error handling.
+ *
+ * Use this separately from route presets because page procedures render React output and expose
+ * page navigation helpers instead of HTTP response helpers.
+ */
 export function createPageProcedure<
   const TOnError extends ProcedurePageOnError,
   const TOnValidationError extends ProcedurePageOnValidationError,
@@ -1966,4 +2014,5 @@ const { defaults: _defaults, errors: _errors, ...bareProcedure } = internalProce
 void _defaults;
 void _errors;
 
+/** Bare procedure builder for route-local composition without shared presets. */
 export const procedure = bareProcedure as BareProcedureBuilder;

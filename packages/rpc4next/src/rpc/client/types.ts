@@ -39,6 +39,12 @@ export type TypedRequestInit<TWithoutHeaders extends keyof HttpRequestHeaders = 
       }
   );
 
+/**
+ * Options shared by generated RPC method calls.
+ *
+ * Provide `fetch` to route requests through a custom transport in tests or server runtimes. Provide
+ * `init` for default `fetch` options applied to each call unless overridden by a method call.
+ */
 export type RpcClientOptions<
   TWithoutHeaders extends "Content-Type" | "Cookie" = never,
   TWithoutInit extends "body" | "headers" | "headersInit" = never,
@@ -48,10 +54,13 @@ export type RpcClientOptions<
 };
 
 declare const __proxy: unique symbol;
+/** Marker used by generated `PathStructure` leaves that represent callable endpoints. */
 export type RpcEndpoint = { [__proxy]?: true };
 
 export declare const rpc4nextGeneratedSchemaSymbol: unique symbol;
+/** Schema version emitted by `rpc4next-cli` and checked by the runtime client types. */
 export type RpcGeneratedSchemaVersion = 1;
+/** Root type emitted by `rpc4next-cli` and passed to `createRpcClient<PathStructure>(...)`. */
 export type RpcGeneratedPathStructure<
   TPathStructure extends object = object,
   TSchemaVersion extends RpcGeneratedSchemaVersion = RpcGeneratedSchemaVersion,
@@ -63,8 +72,10 @@ type RpcGeneratedSchemaKey = typeof rpc4nextGeneratedSchemaSymbol;
 export declare const rpc4nextPageRouteSymbol: unique symbol;
 type RpcPageRouteKey = typeof rpc4nextPageRouteSymbol;
 
+/** Internal generated key carrying dynamic route parameter types. */
 export type ParamsKey = "__params";
 type HasParamsMarker = Record<ParamsKey, unknown>;
+/** Internal generated key carrying route or page query parameter types. */
 export type QueryKey = "__query";
 type HasQueryMarker = Record<QueryKey, unknown>;
 
@@ -77,10 +88,12 @@ type OptionalCatchAllKey = `${typeof OPTIONAL_CATCH_ALL_PREFIX}${string}`;
 type CatchAllKey = `${typeof CATCH_ALL_PREFIX}${string}`;
 type DynamicKey = `${typeof DYNAMIC_PREFIX}${string}`;
 
+/** Values accepted by generated dynamic path segment functions. */
 export type PathParamsInput<T = Record<string, string | number | string[] | undefined>> = T;
 
 type ExtractParams<T = unknown> = T extends HasParamsMarker ? T[ParamsKey] : Record<string, string>;
 
+/** Options accepted by generated `$url(...)` helpers. */
 export type UrlOptions<T = unknown, TQuery = unknown> = T extends HasQueryMarker
   ? AllOptional<T[QueryKey]> extends true
     ? { query?: T[QueryKey]; hash?: string }
@@ -91,6 +104,7 @@ export type UrlOptions<T = unknown, TQuery = unknown> = T extends HasQueryMarker
       ? { query?: TQuery; hash?: string }
       : { query: TQuery; hash?: string };
 
+/** Result returned by generated `$url()` helpers for pages and endpoints. */
 export type UrlResult<T = unknown> = {
   pathname: string;
   path: string;
@@ -107,7 +121,9 @@ type UrlArgs<T, TQuery, TUrlOptions = UrlOptions<T, TQuery>> =
 type UrlArgsObj<T, TQuery, TUrlOptions = UrlOptions<T, TQuery>> =
   AllOptional<TUrlOptions> extends true ? { url?: TUrlOptions } : { url: TUrlOptions };
 
+/** JSON body wrapper accepted by generated mutating RPC methods. */
 export type JsonBodyOptions<TJson = unknown> = { json: TJson };
+/** FormData body wrapper accepted by generated mutating RPC methods. */
 export type FormDataBodyOptions = { formData: FormData };
 type BodyArgsObj<TJson, TFormData> =
   IsNever<TJson> extends true
@@ -116,6 +132,7 @@ type BodyArgsObj<TJson, TFormData> =
       : { body: FormDataBodyOptions }
     : { body: JsonBodyOptions<TJson> };
 
+/** Typed request headers and cookies accepted by generated RPC methods. */
 export type RequestHeadersOptions<THeaders = unknown, TCookies = unknown> = {
   headers: THeaders;
   cookies: TCookies;
@@ -317,6 +334,7 @@ type InferQuery<T> =
       : never
     : never;
 
+/** Infers the query input declared by a procedure-backed route or page. */
 export type ProcedureQueryInput<T> =
   ExtractAttachedProcedureDefinition<T> extends {
     input: ProcedureInputContract<infer TValidationSchema>;
@@ -330,19 +348,23 @@ type PagePropsQueryInput<TPage> = TPage extends (props: infer TProps, ...args: n
     : never
   : never;
 
+/** Infers a page's query shape from its procedure contract or native page props. */
 export type InferPageQuery<TPage> =
   IsNever<ProcedureQueryInput<TPage>> extends true
     ? PagePropsQueryInput<TPage>
     : ProcedureQueryInput<TPage>;
 
+/** Alias for `InferPageQuery` for generated page `$url({ query })` call sites. */
 export type PageQueryInput<TPage> = InferPageQuery<TPage>;
 
+/** Marker attached to generated page path entries so `$url()` can infer page query types. */
 export type PageRouteMarker<TPage> = { readonly [rpc4nextPageRouteSymbol]: TPage } & (IsNever<
   InferPageQuery<TPage>
 > extends true
   ? unknown
   : Record<QueryKey, InferPageQuery<TPage>>);
 
+/** Infers the return type produced by `createRpcTestPageClient(...).$render()`. */
 export type InferPageRenderResult<T> =
   T extends Record<RpcPageRouteKey, infer TPage>
     ? TPage extends (...args: never[]) => infer TResult
@@ -360,6 +382,7 @@ type ParamFunction<T, TParamArgs extends unknown[]> = (
 
 type NonEmptyArray<T> = [T, ...T[]];
 
+/** Generated client proxy shape where dynamic segments are called as functions. */
 export type DynamicPathProxyAsFunction<T> = Omit<
   (T extends RpcEndpoint ? PathProxyAsFunction<T> : unknown) & {
     [K in keyof T]: K extends OptionalCatchAllKey
@@ -373,6 +396,7 @@ export type DynamicPathProxyAsFunction<T> = Omit<
   QueryKey | ParamsKey | RpcGeneratedSchemaKey | RpcPageRouteKey
 >;
 
+/** Generated helper proxy shape where route segments stay as properties for `$match()`. */
 export type DynamicPathProxyAsProperty<T> = Omit<
   (T extends RpcEndpoint ? PathProxyAsProperty<T> : unknown) & {
     [K in keyof T]: K extends unknown
@@ -382,6 +406,7 @@ export type DynamicPathProxyAsProperty<T> = Omit<
   QueryKey | ParamsKey | RpcGeneratedSchemaKey | RpcPageRouteKey
 >;
 
+/** Low-level extension point used by rpc4next proxy factories. */
 export type RpcProxyHandler = (
   key: string,
   context: {

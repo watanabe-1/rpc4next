@@ -53,6 +53,7 @@ Use these files as entry points, depending on what you want to understand:
 - Procedure headers/cookies route: `app/api/request-meta/route.ts`
 - Plain Next.js handler with `NextResponse.json(...)`: `app/api/next-native/[itemId]/route.ts`
 - Plain Next.js handler with `Response.json(...)`: `app/api/next-native-response/route.ts`
+- Plain handler with explicit `withOutput(...)` response typing: `app/api/explicit-output/route.ts`
 - Plain Next.js page with exported query typing: `app/patterns/native-query/page.tsx`
 - Procedure redirect helper route: `app/api/redirect-me/route.ts`
 - Route-local procedure error handler override: `app/api/error-demo/route.ts`

@@ -9,10 +9,13 @@ import type { procedureDefinitionSymbol } from "./procedure-definition";
 import type { ValidationSchema } from "./route-types";
 import type { StandardSchemaV1, StandardSchemaV1Issue } from "./standard-schema";
 
+/** Request parts that a procedure can validate with a Standard Schema contract. */
 export type ProcedureInputTarget = "params" | "query" | "json" | "formData" | "headers" | "cookies";
 
+/** Schema map accumulated by `.params()`, `.query()`, `.json()`, and related builder methods. */
 export type ProcedureInputContracts = Partial<Record<ProcedureInputTarget, StandardSchemaV1>>;
 
+/** Context passed to route procedure validation error handlers. */
 export interface ProcedureValidationErrorContext<
   TTarget extends ProcedureInputTarget = ProcedureInputTarget,
   TValue = unknown,
@@ -25,12 +28,14 @@ export interface ProcedureValidationErrorContext<
   response: ProcedureOnErrorResponse<TErrorCatalog>;
 }
 
+/** Values a route validation error handler may return to stop the request pipeline. */
 export type ProcedureValidationErrorHandlerResult =
   | undefined
   | Response
   | NextResponse
   | ProcedureResult;
 
+/** Handles a failed route procedure input validation. */
 export type ProcedureValidationErrorHandler<
   TTarget extends ProcedureInputTarget = ProcedureInputTarget,
   TValue = unknown,
@@ -51,6 +56,7 @@ export type ProcedureValidationErrorResponseMap = Partial<
 
 type EmptyProcedureValidationErrorResponseMap = Record<never, never>;
 
+/** Per-input options accepted by procedure input builder methods. */
 export interface ProcedureInputOptions<
   TTarget extends ProcedureInputTarget = ProcedureInputTarget,
   TValue = unknown,
@@ -68,6 +74,7 @@ export interface ProcedureInputOptions<
 
 export type ProcedureInputOptionMap = Partial<Record<ProcedureInputTarget, ProcedureInputOptions>>;
 
+/** Internal contract stored on a procedure after input schemas are declared. */
 export interface ProcedureInputContract<
   TValidationSchema extends ValidationSchema = ValidationSchema,
   TValidationErrorResponses extends ProcedureValidationErrorResponseMap =
@@ -79,6 +86,7 @@ export interface ProcedureInputContract<
   validationSchema?: TValidationSchema;
 }
 
+/** Internal contract stored on a procedure after `.output(...)` is declared. */
 export interface ProcedureOutputContract<TRouteResponse = unknown> {
   schema?: unknown;
   response?: TRouteResponse;
@@ -87,8 +95,10 @@ export interface ProcedureOutputContract<TRouteResponse = unknown> {
 
 export declare const procedureRouteContractBrand: unique symbol;
 
+/** Params shape emitted by generated `route-contract.ts` files. */
 export type ProcedureRouteParams = Record<string, string | string[] | undefined>;
 
+/** Generated sibling contract that binds a procedure to a concrete App Router path. */
 export type ProcedureRouteContract<
   TPathname extends string = string,
   TParams extends ProcedureRouteParams = ProcedureRouteParams,
@@ -109,6 +119,7 @@ export interface ProcedureRouteBinding<
   params: TParams;
 }
 
+/** Internal type metadata attached to procedure-backed route and page values. */
 export interface ProcedureDefinition<
   THttpMethod extends HttpMethod = HttpMethod,
   TValidationSchema extends ValidationSchema = ValidationSchema,
@@ -136,6 +147,7 @@ export type MergeProcedureDefinition<
   TExtra extends Partial<ProcedureDefinition>,
 > = Omit<TBase, keyof TExtra> & TExtra;
 
+/** Value branded with rpc4next procedure metadata for generator and client inference. */
 export type WithProcedureDefinition<
   TValue,
   TDefinition extends Partial<ProcedureDefinition> = ProcedureDefinition,
