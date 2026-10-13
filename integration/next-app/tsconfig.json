@@ -17,8 +17,13 @@
       "@/*": ["./src/*"],
       "rpc4next": ["../../packages/rpc4next/src/index.ts"],
       "rpc4next/client": ["../../packages/rpc4next/src/rpc/client/index.ts"],
+      "rpc4next/client/generated": ["../../packages/rpc4next/src/rpc/client/generated.ts"],
       "rpc4next/client/test": ["../../packages/rpc4next/src/rpc/client/test.ts"],
+      "rpc4next/client/test/generated": [
+        "../../packages/rpc4next/src/rpc/client/test-generated.ts"
+      ],
       "rpc4next/server-only": ["../../packages/rpc4next/src/rpc/server-only.ts"],
+      "rpc4next/server/generated": ["../../packages/rpc4next/src/rpc/server/generated.ts"],
       "rpc4next/server": ["../../packages/rpc4next/src/rpc/server/index.ts"],
       "rpc4next-shared": ["../../packages/rpc4next-shared/dist/index.js"],
       "rpc4next-shared/*": ["../../packages/rpc4next-shared/dist/*"]

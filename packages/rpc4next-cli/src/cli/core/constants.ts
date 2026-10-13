@@ -21,4 +21,6 @@ export const TYPE_KEYS = [
   TYPE_PAGE_ROUTE_MARKER,
 ];
 
-export const RPC4NEXT_CLIENT_IMPORT_PATH = "rpc4next/client";
+export const RPC4NEXT_CLIENT_IMPORT_PATH = "rpc4next/client/generated";
+export const RPC4NEXT_SERVER_GENERATED_IMPORT_PATH = "rpc4next/server/generated";
+export const RPC4NEXT_CLIENT_TEST_GENERATED_IMPORT_PATH = "rpc4next/client/test/generated";

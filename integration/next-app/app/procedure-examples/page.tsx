@@ -3,7 +3,7 @@ import { createRpcClient } from "rpc4next/client";
 import type {
   ContentType,
   HttpStatusCode,
-  ProcedureValidationErrorContext,
+  RouteValidationErrorContext,
   TypedNextResponse,
 } from "rpc4next/server";
 
@@ -29,7 +29,7 @@ type SharedProcedureValidationErrorResponse = TypedNextResponse<
       code: "BAD_REQUEST";
       message: string;
       details?: {
-        target: ProcedureValidationErrorContext["target"];
+        target: RouteValidationErrorContext["target"];
         issues: Array<{
           message: string;
           path: string[];

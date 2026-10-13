@@ -1,7 +1,9 @@
 import {
   NEWLINE,
+  RPC4NEXT_CLIENT_TEST_GENERATED_IMPORT_PATH,
   RPC4NEXT_GENERATED_SCHEMA_VERSION,
   RPC4NEXT_CLIENT_IMPORT_PATH,
+  RPC4NEXT_SERVER_GENERATED_IMPORT_PATH,
   STATEMENT_TERMINATOR,
   TYPE_KEYS,
   TYPE_RPC_GENERATED_PATH_STRUCTURE,
@@ -79,7 +81,10 @@ export const generateTestManifest = (
     ROUTE_CONTRACT_GENERATED_MARKER,
     "",
     'import "rpc4next/server-only";',
-    'import type { RpcTestPage, RpcTestPageModule, RpcTestRoute, RpcTestRouteModule } from "rpc4next/client/test";',
+    createImport(
+      "RpcTestPage, RpcTestPageModule, RpcTestRoute, RpcTestRouteModule",
+      RPC4NEXT_CLIENT_TEST_GENERATED_IMPORT_PATH,
+    ),
     "",
     ...bundleLeakSentinel,
     "export const testRoutes = [",
@@ -121,7 +126,7 @@ export const generatePathStructure = (
     const params = [
       ROUTE_CONTRACT_GENERATED_MARKER,
       "",
-      'import type { ProcedureRouteContract } from "rpc4next/server";',
+      createImport("ProcedureRouteContract", RPC4NEXT_SERVER_GENERATED_IMPORT_PATH),
       "",
       `export type Params = ${paramsType}${STATEMENT_TERMINATOR}`,
       `export type RouteContract = ProcedureRouteContract<${createStringLiteral(pathname)}, Params>${STATEMENT_TERMINATOR}`,

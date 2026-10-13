@@ -4,11 +4,13 @@ import { afterAll, afterEach, beforeAll, describe, expect, expectTypeOf, it } fr
 import { z } from "zod";
 
 import { searchParamsToObject } from "../lib/search-params";
-import { type ProcedureRouteContract, procedure } from "../server";
+import { procedure } from "../server";
+import type { ProcedureRouteContract } from "../server/generated";
 import { createNextRoute } from "../server/next-route";
 import { defaultProcedureOnError } from "../server/on-error";
+import type { RpcEndpoint, RpcGeneratedPathStructure } from "./generated";
 import { createRpcClient } from "./rpc-client";
-import type { RpcClientOptions, RpcEndpoint, RpcGeneratedPathStructure } from "./types";
+import type { RpcClientOptions } from "./types";
 
 const schema = z.object({
   name: z.string(),
