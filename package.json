@@ -44,7 +44,7 @@
     "esbuild": "^0.28.2",
     "fast-glob": "^3.3.3",
     "msw": "^3.0.2",
-    "next": "16.3.8",
+    "next": "16.4.0",
     "oxfmt": "^0.72.0",
     "oxlint": "^1.87.0",
     "oxlint-tsgolint": "7",
