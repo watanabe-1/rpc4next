@@ -39,7 +39,7 @@
     "@types/node": "^26.6.4",
     "@vitest/coverage-v8": "^5.0.3",
     "@vitest/ui": "^5.0.3",
-    "arktype": "^2.2.7",
+    "arktype": "^2.2.8",
     "diff2prompt": "^0.0.15",
     "esbuild": "^0.28.2",
     "fast-glob": "^3.3.3",
