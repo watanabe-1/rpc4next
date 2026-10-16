@@ -36,7 +36,7 @@
     "diff2prompt": "diff2prompt"
   },
   "devDependencies": {
-    "@types/node": "^26.6.4",
+    "@types/node": "^26.6.5",
     "@vitest/coverage-v8": "^5.0.3",
     "@vitest/ui": "^5.0.3",
     "arktype": "^2.2.8",
