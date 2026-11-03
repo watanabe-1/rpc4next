@@ -1,6 +1,6 @@
 version: 2
 updates:
-  # --- root ---
+  # --- Bun workspaces (shared root lockfile) ---
   - package-ecosystem: "bun"
     directory: "/"
     schedule:
@@ -12,54 +12,6 @@ updates:
       bun:
         patterns:
           - "*"
-
-  # --- packages/rpc4next ---
-  - package-ecosystem: "bun"
-    directory: "/packages/rpc4next"
-    schedule:
-      interval: "daily"
-    cooldown:
-      default-days: 7
-    versioning-strategy: increase
-    groups:
-      bun:
-        patterns:
-          - "*"
-    commit-message:
-      prefix: "fix"
-      include: "scope"
-
-  # --- packages/rpc4next-cli ---
-  - package-ecosystem: "bun"
-    directory: "/packages/rpc4next-cli"
-    schedule:
-      interval: "daily"
-    cooldown:
-      default-days: 7
-    versioning-strategy: increase
-    groups:
-      bun:
-        patterns:
-          - "*"
-    commit-message:
-      prefix: "fix"
-      include: "scope"
-
-  # --- packages/rpc4next-shared ---
-  - package-ecosystem: "bun"
-    directory: "/packages/rpc4next-shared"
-    schedule:
-      interval: "daily"
-    cooldown:
-      default-days: 7
-    versioning-strategy: increase
-    groups:
-      bun:
-        patterns:
-          - "*"
-    commit-message:
-      prefix: "fix"
-      include: "scope"
 
   # --- GitHub Actions (root only) ---
   - package-ecosystem: "github-actions"
