@@ -21,6 +21,11 @@ gh actions-lock
 gh actions-lock --verify
 ```
 
+Renovate tracks release-tag pins in `gh extension install ... --pin ...` commands
+in workflows and this README through a custom regex manager. It updates these
+occurrences together using GitHub Releases. The existing seven-day release-age
+requirement and patch/minor auto-merge policy apply; major updates require review.
+
 The autofix workflow enables `update-actions-lock` in the shared workflow to
 regenerate the lockfile after the usual fixes and submit the changes through
 autofix.ci. It uses the normal lock command without `--relock`, preserving existing
