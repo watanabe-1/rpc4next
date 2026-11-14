@@ -29,12 +29,12 @@ jobs:
             next-version: from-package
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
       - name: Setup toolchain
-        uses: watanabe-1/github-actions-common/actions/setup-toolchain@25793bf94b62c4948ce9742c8da78de3865822c9 # v1.1.0
+        uses: watanabe-1/github-actions-common/actions/setup-toolchain@v1.1.0
         with:
           node-version: ${{ matrix.node-version }}
           bun-version: aqua
@@ -95,7 +95,7 @@ jobs:
 
       - name: Upload Playwright HTML report
         if: failure()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: playwright-report-${{ matrix.os }}-node-${{ matrix.node-version }}-next-${{ matrix.next-version }}
           path: integration/next-app/playwright-report
