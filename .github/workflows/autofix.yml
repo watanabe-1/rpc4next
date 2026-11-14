@@ -11,10 +11,11 @@ concurrency:
 
 jobs:
   autofix:
-    uses: watanabe-1/github-actions-common/.github/workflows/autofix.yml@25793bf94b62c4948ce9742c8da78de3865822c9 # v1.1.0
+    uses: watanabe-1/github-actions-common/.github/workflows/autofix.yml@202f337fb19a680cf6ec2180192ec43460a4bd18 # v1.2.1
     permissions:
       contents: write
       pull-requests: write
     with:
       fix-command: bun run check:fix
+      update-actions-lock: true
       bun-install-mode: ${{ (startsWith(github.head_ref, 'release/') || startsWith(github.head_ref, 'release-please--')) && 'update' || 'auto' }}

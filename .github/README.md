@@ -21,6 +21,11 @@ gh actions-lock
 gh actions-lock --verify
 ```
 
+The autofix workflow enables `update-actions-lock` in the shared workflow to
+regenerate the lockfile after the usual fixes and submit the changes through
+autofix.ci. It uses the normal lock command without `--relock`, preserving existing
+locked commits.
+
 The GHA static checks workflow verifies the lockfile on pull requests and pushes
 to `main`. Dependabot updates action versions and their matching lockfile entries
 together for workflows already recorded in the lockfile.
