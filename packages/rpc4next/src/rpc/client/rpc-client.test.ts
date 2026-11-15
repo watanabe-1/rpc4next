@@ -910,7 +910,7 @@ describe("createRpcClient", () => {
       createRpcClient<RpcEndpoint>("");
 
       // @ts-expect-error generated schema version must match the runtime client
-      type StalePathStructure = RpcGeneratedPathStructure<RpcEndpoint, 0>;
+      type StalePathStructure = RpcGeneratedPathStructure<RpcEndpoint, 1>;
       void (null as unknown as StalePathStructure);
 
       const customFetch = async (_: RequestInfo | URL, __?: RequestInit) => {

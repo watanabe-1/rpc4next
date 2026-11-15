@@ -109,6 +109,66 @@ export const testRoutes = [
     methods: ["GET"],
     load: () => import("../../app/api/users/[userId]/route") as unknown as Promise<RpcTestRouteModule>,
   },
+  {
+    pathname: "/param-names/catch/four/[...____id]",
+    methods: ["GET"],
+    load: () => import("../../app/param-names/catch/four/[...____id]/route") as unknown as Promise<RpcTestRouteModule>,
+  },
+  {
+    pathname: "/param-names/catch/one/[..._id]",
+    methods: ["GET"],
+    load: () => import("../../app/param-names/catch/one/[..._id]/route") as unknown as Promise<RpcTestRouteModule>,
+  },
+  {
+    pathname: "/param-names/catch/plain/[...id]",
+    methods: ["GET"],
+    load: () => import("../../app/param-names/catch/plain/[...id]/route") as unknown as Promise<RpcTestRouteModule>,
+  },
+  {
+    pathname: "/param-names/catch/two/[...__id]",
+    methods: ["GET"],
+    load: () => import("../../app/param-names/catch/two/[...__id]/route") as unknown as Promise<RpcTestRouteModule>,
+  },
+  {
+    pathname: "/param-names/dynamic/four/[____id]",
+    methods: ["GET"],
+    load: () => import("../../app/param-names/dynamic/four/[____id]/route") as unknown as Promise<RpcTestRouteModule>,
+  },
+  {
+    pathname: "/param-names/dynamic/one/[_id]",
+    methods: ["GET"],
+    load: () => import("../../app/param-names/dynamic/one/[_id]/route") as unknown as Promise<RpcTestRouteModule>,
+  },
+  {
+    pathname: "/param-names/dynamic/plain/[id]",
+    methods: ["GET"],
+    load: () => import("../../app/param-names/dynamic/plain/[id]/route") as unknown as Promise<RpcTestRouteModule>,
+  },
+  {
+    pathname: "/param-names/dynamic/two/[__id]",
+    methods: ["GET"],
+    load: () => import("../../app/param-names/dynamic/two/[__id]/route") as unknown as Promise<RpcTestRouteModule>,
+  },
+  {
+    pathname: "/param-names/optional/four/[[...____id]]",
+    methods: ["GET"],
+    load: () => import("../../app/param-names/optional/four/[[...____id]]/route") as unknown as Promise<RpcTestRouteModule>,
+  },
+  {
+    pathname: "/param-names/optional/one/[[..._id]]",
+    methods: ["GET"],
+    load: () => import("../../app/param-names/optional/one/[[..._id]]/route") as unknown as Promise<RpcTestRouteModule>,
+  },
+  {
+    pathname: "/param-names/optional/plain/[[...id]]",
+    methods: ["GET"],
+    load: () => import("../../app/param-names/optional/plain/[[...id]]/route") as unknown as Promise<RpcTestRouteModule>,
+  },
+  {
+    pathname: "/param-names/optional/two/[[...__id]]",
+    methods: ["GET"],
+    load: () => import("../../app/param-names/optional/two/[[...__id]]/route") as unknown as Promise<RpcTestRouteModule>,
+  },
 ] as const satisfies readonly RpcTestRoute[];
 
 export const testPages = [

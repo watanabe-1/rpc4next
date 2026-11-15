@@ -56,9 +56,23 @@ describe("route-scanner", () => {
   };
 
   it.each([
-    { segment: "[_id]", key: "__id", name: "_id", type: "string" },
-    { segment: "[..._slug]", key: "____slug", name: "_slug", type: "string[]" },
-    { segment: "[[..._slug]]", key: "______slug", name: "_slug", type: "string[] | undefined" },
+    { segment: "[id]", key: "_id", name: "id", type: "string" },
+    { segment: "[...id]", key: "___id", name: "id", type: "string[]" },
+    { segment: "[[...id]]", key: "_____id", name: "id", type: "string[] | undefined" },
+    { segment: "[_id]", key: "_%5Fid", name: "_id", type: "string" },
+    { segment: "[..._id]", key: "___%5Fid", name: "_id", type: "string[]" },
+    { segment: "[[..._id]]", key: "_____%5Fid", name: "_id", type: "string[] | undefined" },
+    { segment: "[__id]", key: "_%5F%5Fid", name: "__id", type: "string" },
+    { segment: "[...__id]", key: "___%5F%5Fid", name: "__id", type: "string[]" },
+    { segment: "[[...__id]]", key: "_____%5F%5Fid", name: "__id", type: "string[] | undefined" },
+    { segment: "[____id]", key: "_%5F%5F%5F%5Fid", name: "____id", type: "string" },
+    { segment: "[...____id]", key: "___%5F%5F%5F%5Fid", name: "____id", type: "string[]" },
+    {
+      segment: "[[...____id]]",
+      key: "_____%5F%5F%5F%5Fid",
+      name: "____id",
+      type: "string[] | undefined",
+    },
   ])(
     "preserves leading underscores in keys and params types for $segment",
     ({ segment, key, name, type }) => {

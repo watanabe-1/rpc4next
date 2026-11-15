@@ -10,6 +10,10 @@ export default defineConfig({
   resolve: {
     alias: [
       {
+        find: /^rpc4next\/client\/helper$/,
+        replacement: path.resolve(workspaceRoot, "packages/rpc4next/src/rpc/client/rpc-helper.ts"),
+      },
+      {
         find: /^rpc4next\/(.*)$/,
         replacement: path.resolve(workspaceRoot, "packages/rpc4next/src/rpc/$1"),
       },

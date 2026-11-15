@@ -1,4 +1,4 @@
-import { getParamName } from "./client-utils";
+import { getParamName, isCatchAllOrOptional, isDynamic, isOptionalCatchAll } from "./client-utils";
 import type { PathParamsInput, UrlOptions, UrlResult } from "./types";
 
 /**
@@ -141,14 +141,14 @@ const buildPathFromSegments = (segments: string[]) => {
 };
 
 const getPathnameSegment = (segment: string) => {
-  if (segment.startsWith("_____")) {
-    return `[[...${segment.slice(5)}]]`;
+  if (isOptionalCatchAll(segment)) {
+    return `[[...${getParamName(segment)}]]`;
   }
-  if (segment.startsWith("___")) {
-    return `[...${segment.slice(3)}]`;
+  if (isCatchAllOrOptional(segment)) {
+    return `[...${getParamName(segment)}]`;
   }
-  if (segment.startsWith("_")) {
-    return `[${segment.slice(1)}]`;
+  if (isDynamic(segment)) {
+    return `[${getParamName(segment)}]`;
   }
 
   return safeDecodeSegment(segment);
@@ -172,7 +172,7 @@ const getPathnameSegment = (segment: string) => {
  * also produces a Next.js-style `pathname` by converting underscore-prefixed dynamic markers into
  * their bracket form.
  *
- * In addition, params keys have their internal segment marker removed (e.g. `__id` -> `_id`) in the
+ * In addition, params keys have their internal marker removed and name escapes decoded in the
  * returned `params`, preserving underscores in the original parameter name.
  *
  * @example
