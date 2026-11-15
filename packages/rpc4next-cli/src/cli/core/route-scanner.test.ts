@@ -55,6 +55,26 @@ describe("route-scanner", () => {
     return tmpDir;
   };
 
+  it.each([
+    { segment: "[_id]", key: "__id", name: "_id", type: "string" },
+    { segment: "[..._slug]", key: "____slug", name: "_slug", type: "string[]" },
+    { segment: "[[..._slug]]", key: "______slug", name: "_slug", type: "string[] | undefined" },
+  ])(
+    "preserves leading underscores in keys and params types for $segment",
+    ({ segment, key, name, type }) => {
+      setupTree({ testApp: { [segment]: { "page.tsx": "export default function Page() {}" } } });
+
+      const { pathStructure, paramsTypes } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      const paramsType = `{ "${name}": ${type} }`;
+
+      expect(pathStructure).toContain(`"${key}":`);
+      expect(pathStructure).toContain(`Record<ParamsKey, ${paramsType}>`);
+      expect(paramsTypes).toEqual([
+        { paramsType, dirPath: tmpPosixPath("testApp", segment), pathname: `/${segment}` },
+      ]);
+    },
+  );
+
   afterEach(() => {
     cleanupTempDir(tmpDir);
     tmpDir = null;

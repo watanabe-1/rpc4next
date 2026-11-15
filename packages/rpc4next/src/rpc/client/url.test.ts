@@ -3,6 +3,37 @@ import { describe, expect, it } from "vitest";
 import { createUrl } from "./url";
 
 describe("createUrl", () => {
+  it.each([
+    { key: "__id", value: "abc", name: "_id", pathname: "[_id]", path: "/users/abc" },
+    {
+      key: "____slug",
+      value: ["a/b", "c"],
+      name: "_slug",
+      pathname: "[..._slug]",
+      path: "/users/a%2Fb/c",
+    },
+    {
+      key: "______slug",
+      value: ["a/b", "c"],
+      name: "_slug",
+      pathname: "[[..._slug]]",
+      path: "/users/a%2Fb/c",
+    },
+    {
+      key: "______slug",
+      value: undefined,
+      name: "_slug",
+      pathname: "[[..._slug]]",
+      path: "/users",
+    },
+  ])("preserves the parameter name for $key ($path)", ({ key, value, name, pathname, path }) => {
+    const result = createUrl(["", "users", key], { [key]: value }, [key])();
+
+    expect(result.params).toEqual({ [name]: value });
+    expect(result.pathname).toBe(`/users/${pathname}`);
+    expect(result.relativePath).toBe(path);
+  });
+
   it("generates a URL with dynamic parameters and query/hash", () => {
     const paths = ["https://example.com", "user", "_id", "profile"];
     const params = { _id: "123" };

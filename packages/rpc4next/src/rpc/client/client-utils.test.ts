@@ -8,11 +8,28 @@ import { describe, expect, it } from "vitest";
 
 import {
   deepMerge,
+  getParamName,
   isCatchAllOrOptional,
   isDynamic,
   isHttpMethod,
   isOptionalCatchAll,
 } from "./client-utils";
+
+describe("getParamName", () => {
+  it.each([
+    ["_id", "id"],
+    ["__id", "_id"],
+    ["___slug", "slug"],
+    ["____slug", "_slug"],
+    ["_____slug", "slug"],
+    ["______slug", "_slug"],
+    ["_______slug", "__slug"],
+    ["%5Fescaped", "%5Fescaped"],
+    ["static", "static"],
+  ])("restores %s as %s", (key, name) => {
+    expect(getParamName(key)).toBe(name);
+  });
+});
 
 describe("isDynamic", () => {
   it("returns true if the string starts with DYNAMIC_PREFIX", () => {

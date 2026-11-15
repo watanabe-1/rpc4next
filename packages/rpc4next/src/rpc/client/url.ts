@@ -1,3 +1,4 @@
+import { getParamName } from "./client-utils";
 import type { PathParamsInput, UrlOptions, UrlResult } from "./types";
 
 /**
@@ -158,8 +159,8 @@ const getPathnameSegment = (segment: string) => {
  * also produces a Next.js-style `pathname` by converting underscore-prefixed dynamic markers into
  * their bracket form.
  *
- * In addition, params keys are normalized by removing leading underscores (e.g. `__id` -> `id`) in
- * the returned `params`.
+ * In addition, params keys have their internal segment marker removed (e.g. `__id` -> `_id`) in the
+ * returned `params`, preserving underscores in the original parameter name.
  *
  * @example
  *   ```ts
@@ -215,7 +216,7 @@ export const createUrl = (paths: string[], params: PathParamsInput, dynamicKeys:
   const pathname = buildPathFromSegments(pathnameSegments);
   const cleanedParams: PathParamsInput = Object.create(null);
   for (const key in params) {
-    const cleanedKey = key.replace(/^_+/, "");
+    const cleanedKey = getParamName(key);
     cleanedParams[cleanedKey] = params[key];
   }
   const basePath = baseUrl ? baseUrl.replace(/\/$/, "") : undefined;

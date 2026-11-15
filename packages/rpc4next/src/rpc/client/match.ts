@@ -1,5 +1,5 @@
 import { searchParamsToObject } from "../lib/search-params";
-import { isCatchAllOrOptional } from "./client-utils";
+import { getParamName, isCatchAllOrOptional } from "./client-utils";
 
 type ParamValue = string | string[] | undefined;
 
@@ -38,6 +38,8 @@ function safeDecode(value: string | undefined | null) {
 
 const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+const normalizeSegment = (value: string) => encodeURIComponent(safeDecode(value));
+
 /**
  * Match a URL (string) against a pre-defined path pattern array.
  *
@@ -53,7 +55,7 @@ export const matchPath = (paths: string[], dynamicKeys: string[]) => {
       ? "/"
       : normalizedSegments.reduce((acc, segment) => {
           if (!dynamicKeys.includes(segment)) {
-            return `${acc}/${escapeRegex(safeDecode(segment))}`;
+            return `${acc}/${escapeRegex(normalizeSegment(segment))}`;
           }
 
           if (segment.startsWith("_____")) {
@@ -78,7 +80,8 @@ export const matchPath = (paths: string[], dynamicKeys: string[]) => {
       return null; // Not a valid URL-ish string
     }
 
-    const pathname = url.pathname;
+    // Normalize each segment separately so encoded slashes never become path separators.
+    const pathname = url.pathname.split("/").map(normalizeSegment).join("/");
     const match = matcher.exec(pathname);
     if (!match) return null;
 
@@ -87,7 +90,7 @@ export const matchPath = (paths: string[], dynamicKeys: string[]) => {
 
     for (let i = 0; i < dynamicKeys.length; i++) {
       const keyRaw = dynamicKeys[i];
-      const paramKey = keyRaw.replace(/^_+/, ""); // keep your underscore-normalization
+      const paramKey = getParamName(keyRaw);
       const captured: string | undefined = match[i + 1];
 
       if (isCatchAllOrOptional(keyRaw)) {
