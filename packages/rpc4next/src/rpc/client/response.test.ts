@@ -1,4 +1,4 @@
-import { describe, expect, expectTypeOf, it } from "vitest";
+import { describe, expect, expectTypeOf, it, vi } from "vitest";
 
 import type { TypedNextResponse } from "../server";
 import {
@@ -44,6 +44,61 @@ describe("response promise unwrap", () => {
     });
 
     await expect(unwrapResponse(response)).resolves.toBe("plain text");
+  });
+
+  it.each([
+    "text/plain; charset=utf-8",
+    "application/xml",
+    "application/problem+xml; charset=utf-8",
+    "application/yaml",
+    "application/x-yaml",
+    "application/custom+yaml",
+    "",
+  ])("preserves successful empty text bodies for Content-Type %s", async (contentType) => {
+    const response = new Response("", {
+      status: 200,
+      headers: { "content-type": contentType },
+    });
+
+    await expect(unwrapResponse(response)).resolves.toBe("");
+  });
+
+  it("keeps the string return type for successful empty text bodies", async () => {
+    const response = new Response("", {
+      headers: { "content-type": "text/plain" },
+    }) as TypedNextResponse<string, 200, "text/plain">;
+    const payload = await unwrapResponse(response);
+
+    expectTypeOf(payload).toEqualTypeOf<string>();
+    expect(payload.toUpperCase()).toBe("");
+  });
+
+  it("returns undefined when a successful text body cannot be read", async () => {
+    const response = new Response("text", {
+      headers: { "content-type": "text/plain" },
+    });
+    vi.spyOn(response, "text").mockRejectedValue(new Error("body unavailable"));
+
+    await expect(unwrapResponse(response)).resolves.toBeUndefined();
+  });
+
+  it.each(["", "not json"])("falls back to text for invalid successful JSON %j", async (body) => {
+    const response = new Response(body, {
+      headers: { "content-type": "application/json" },
+    });
+
+    await expect(unwrapResponse(response)).resolves.toBe(body);
+  });
+
+  it("returns undefined when the JSON fallback body cannot be read", async () => {
+    const response = new Response("not json", {
+      headers: { "content-type": "application/json" },
+    });
+    const fallbackResponse = response.clone();
+    vi.spyOn(fallbackResponse, "text").mockRejectedValue(new Error("body unavailable"));
+    vi.spyOn(response, "clone").mockReturnValue(fallbackResponse);
+
+    await expect(unwrapResponse(response)).resolves.toBeUndefined();
   });
 
   it("parses successful XML and YAML application responses as text", async () => {
@@ -111,15 +166,17 @@ describe("response promise unwrap", () => {
     expect(file.filename).toBe("report 2026.pdf");
   });
 
-  it("returns undefined for successful no-body statuses", async () => {
+  it.each([204, 205])("returns undefined for successful no-body status %i", async (status) => {
     const response = new Response(null, {
-      status: 204,
+      status,
       headers: {
-        "content-type": "application/octet-stream",
+        "content-type": "text/plain",
       },
     });
+    const readBody = vi.spyOn(response, "text");
 
     await expect(unwrapResponse(response)).resolves.toBeUndefined();
+    expect(readBody).not.toHaveBeenCalled();
   });
 
   it("throws RpcResponseError with a parsed JSON payload for error responses", async () => {
@@ -211,6 +268,50 @@ describe("response promise unwrap", () => {
       payload: undefined,
       response: unreadableResponse,
     });
+  });
+
+  it.each(["text/plain", "application/xml", "application/x-yaml", "application/json", ""])(
+    "preserves errors with empty or unreadable bodies for Content-Type %s",
+    async (contentType) => {
+      for (const unreadable of [false, true]) {
+        for (const unwrap of [unwrapResponse, unwrapFileResponse]) {
+          const response = new Response("", {
+            status: 502,
+            statusText: "Bad Gateway",
+            headers: { "content-type": contentType },
+          });
+          // Invalid JSON is read from a clone after JSON parsing fails.
+          const fallbackResponse = response.clone();
+          vi.spyOn(response, "clone").mockReturnValue(fallbackResponse);
+          if (unreadable) {
+            vi.spyOn(response, "text").mockRejectedValue(new Error("body unavailable"));
+            vi.spyOn(fallbackResponse, "text").mockRejectedValue(new Error("body unavailable"));
+          }
+
+          const error = await unwrap(response).catch((caught: unknown) => caught);
+
+          expect(error).toBeInstanceOf(RpcResponseError);
+          expect(error).toMatchObject({
+            status: 502,
+            statusText: "Bad Gateway",
+            payload: undefined,
+            response,
+          });
+          expect((error as RpcResponseError).response).toBe(response);
+        }
+      }
+    },
+  );
+
+  it("preserves the text fallback for invalid JSON error bodies", async () => {
+    const response = new Response("not json", {
+      status: 502,
+      headers: { "content-type": "application/json" },
+    });
+    const error = await unwrapResponse(response).catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(RpcResponseError);
+    expect(error).toMatchObject({ status: 502, payload: "not json", response });
   });
 
   it("throws RpcResponseError with a parsed payload for file error responses", async () => {

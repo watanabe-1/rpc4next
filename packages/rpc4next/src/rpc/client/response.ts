@@ -379,7 +379,7 @@ const readText = async (response: BodyParserResponseLike): Promise<string | unde
   try {
     const body = await response.text();
 
-    return body === "" ? undefined : body;
+    return !response.ok && body === "" ? undefined : body;
   } catch {
     return undefined;
   }
