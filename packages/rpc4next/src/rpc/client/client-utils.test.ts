@@ -89,6 +89,50 @@ describe("deepMerge", () => {
     expect(result).toEqual({ a: 2 });
   });
 
+  it("should overwrite AbortSignals while recursively merging plain init objects", () => {
+    const defaultSignal = new AbortController().signal;
+    const signal = new AbortController().signal;
+    const target = { init: { signal: defaultSignal, cache: "no-cache" } };
+    const source = { init: { signal, mode: "cors" } };
+
+    const result = deepMerge(target, source);
+
+    expect(result.init.signal).toBe(signal);
+    expect(result.init.cache).toBe("no-cache");
+    expect(result.init.mode).toBe("cors");
+    expect(target.init.signal).toBe(defaultSignal);
+  });
+
+  it("should preserve a default AbortSignal when no override is supplied", () => {
+    const signal = new AbortController().signal;
+
+    const result = deepMerge({ init: { signal } }, { init: { cache: "no-cache" } });
+
+    expect(result.init.signal).toBe(signal);
+    expect(result.init.cache).toBe("no-cache");
+  });
+
+  it("should overwrite class instances with the source instance", () => {
+    class Options {
+      constructor(public value: string) {}
+    }
+    const source = new Options("source");
+
+    const result = deepMerge({ options: new Options("target") }, { options: source });
+
+    expect(result.options).toBe(source);
+  });
+
+  it("should recursively merge objects with null prototypes", () => {
+    const target = Object.assign(Object.create(null), { nested: { a: 1, b: 2 } });
+    const source = Object.assign(Object.create(null), { nested: { b: 3, c: 4 } });
+
+    const result = deepMerge({ options: target }, { options: source });
+
+    expect(result.options).toEqual({ nested: { a: 1, b: 3, c: 4 } });
+    expect(Object.getPrototypeOf(result.options)).toBeNull();
+  });
+
   it("should handle arrays by overwriting them", () => {
     const target = { arr: [1, 2, 3] };
     const source = { arr: [4, 5] };
