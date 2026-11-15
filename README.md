@@ -337,6 +337,15 @@ the mismatch at `createRpcClient<PathStructure>(...)` so stale generated files d
 not silently keep compiling.
 Use `--check` in CI to fail when `src/generated/rpc.ts` or generated route
 contract files are stale.
+
+Generated schema version 2 escapes `_` as `%5F` and `%` as `%25` in parameter
+names inside client keys. For example, `[__id]` uses `client["_%5F%5Fid"]("value")`;
+`$url()` and `$match()` preserve the original `__id` name. Dynamic, catch-all,
+and optional catch-all markers remain `_`, `___`, and `_____`. Names without
+underscores or percent signs and static route keys are unchanged. Upgrade
+`rpc4next` and `rpc4next-cli` together, regenerate with `bunx rpc4next`, and
+update calls using escaped keys. Version 1 output must be regenerated because
+its keys cannot distinguish names such as `[__id]` and `[...id]`.
 The CLI also writes a test-only manifest next to the generated client type,
 such as `src/generated/rpc-test-manifest.ts` for `src/generated/rpc.ts`. This file
 loads route handlers and pages directly, so keep it in server-side test code and out of

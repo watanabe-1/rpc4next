@@ -16,4 +16,5 @@
 //
 // See: https://nodejs.org/api/esm.html#mandatory-file-extensions
 export * from "./constants.js";
+export * from "./route-param.js";
 export * from "./types.js";

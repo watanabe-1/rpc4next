@@ -1,5 +1,6 @@
 import {
   CATCH_ALL_PREFIX,
+  decodeRouteParamName,
   DYNAMIC_PREFIX,
   HTTP_METHOD_FUNC_KEYS,
   OPTIONAL_CATCH_ALL_PREFIX,
@@ -23,7 +24,7 @@ export const getParamName = (key: string) => {
     key.startsWith(prefix),
   );
 
-  return prefix ? key.slice(prefix.length) : key;
+  return prefix ? decodeRouteParamName(key.slice(prefix.length)) : key;
 };
 
 const httpMethods: Set<HttpMethodFuncKey> = new Set(HTTP_METHOD_FUNC_KEYS);

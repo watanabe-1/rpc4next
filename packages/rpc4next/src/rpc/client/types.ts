@@ -59,7 +59,7 @@ export type RpcEndpoint = { [__proxy]?: true };
 
 export declare const rpc4nextGeneratedSchemaSymbol: unique symbol;
 /** Schema version emitted by `rpc4next-cli` and checked by the runtime client types. */
-export type RpcGeneratedSchemaVersion = 1;
+export type RpcGeneratedSchemaVersion = 2;
 /** Root type emitted by `rpc4next-cli` and passed to `createRpcClient<PathStructure>(...)`. */
 export type RpcGeneratedPathStructure<
   TPathStructure extends object = object,

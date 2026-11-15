@@ -1,6 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
-import { CATCH_ALL_PREFIX, DYNAMIC_PREFIX, OPTIONAL_CATCH_ALL_PREFIX } from "rpc4next-shared";
+import {
+  CATCH_ALL_PREFIX,
+  DYNAMIC_PREFIX,
+  encodeRouteParamName,
+  OPTIONAL_CATCH_ALL_PREFIX,
+} from "rpc4next-shared";
 import type { HttpMethod } from "rpc4next-shared";
 
 import { END_POINT_FILE_NAMES } from "../constants.js";
@@ -233,7 +238,7 @@ const extractParamInfo = (
         ? DYNAMIC_PREFIX
         : "";
 
-  return { paramName: param, keyName: `${prefix}${param}` };
+  return { paramName: param, keyName: prefix ? `${prefix}${encodeRouteParamName(param)}` : param };
 };
 
 const appendParamsType = (

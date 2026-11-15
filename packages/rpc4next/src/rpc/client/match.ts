@@ -1,5 +1,5 @@
 import { searchParamsToObject } from "../lib/search-params";
-import { getParamName, isCatchAllOrOptional } from "./client-utils";
+import { getParamName, isCatchAllOrOptional, isOptionalCatchAll } from "./client-utils";
 
 type ParamValue = string | string[] | undefined;
 
@@ -58,10 +58,10 @@ export const matchPath = (paths: string[], dynamicKeys: string[]) => {
             return `${acc}/${escapeRegex(normalizeSegment(segment))}`;
           }
 
-          if (segment.startsWith("_____")) {
+          if (isOptionalCatchAll(segment)) {
             return `${acc}(?:/(.*))?`;
           }
-          if (segment.startsWith("___")) {
+          if (isCatchAllOrOptional(segment)) {
             return `${acc}/([^/]+(?:/[^/]+)*)`;
           }
 

@@ -17,6 +17,7 @@
       "@/*": ["./src/*"],
       "rpc4next": ["../../packages/rpc4next/src/index.ts"],
       "rpc4next/client": ["../../packages/rpc4next/src/rpc/client/index.ts"],
+      "rpc4next/client/helper": ["../../packages/rpc4next/src/rpc/client/rpc-helper.ts"],
       "rpc4next/client/generated": ["../../packages/rpc4next/src/rpc/client/generated.ts"],
       "rpc4next/client/test": ["../../packages/rpc4next/src/rpc/client/test.ts"],
       "rpc4next/client/test/generated": [

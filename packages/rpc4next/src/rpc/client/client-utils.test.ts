@@ -18,6 +18,12 @@ import {
 describe("getParamName", () => {
   it.each([
     ["_id", "id"],
+    ["_%5Fid", "_id"],
+    ["_%5F%5Fid", "__id"],
+    ["_%5F%5F%5F%5Fid", "____id"],
+    ["___%5F%5Fid", "__id"],
+    ["_____%5F%5Fid", "__id"],
+    ["_%255Fid", "%5Fid"],
     ["__id", "_id"],
     ["___slug", "slug"],
     ["____slug", "_slug"],

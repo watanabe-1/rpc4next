@@ -4,6 +4,8 @@ declare module "rpc4next-shared" {
   export const OPTIONAL_CATCH_ALL_PREFIX: "_____";
   export const CATCH_ALL_PREFIX: "___";
   export const DYNAMIC_PREFIX: "_";
+  export function encodeRouteParamName(name: string): string;
+  export function decodeRouteParamName(name: string): string;
   export const HTTP_METHODS_EXCLUDE_OPTIONS: readonly [
     "GET",
     "HEAD",

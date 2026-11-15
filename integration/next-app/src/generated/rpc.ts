@@ -28,6 +28,18 @@ import type { GET as GET_b6e4799d411d6efe } from "../../app/api/users/[userId]/r
 import type Page_38c066c7ee3c5334 from "../../app/e2e-client/page";
 import type Page_f20ba6bf73502dc1 from "../../app/feed/page";
 import type Page_5f11bc234a1e0c67 from "../../app/page";
+import type { GET as GET_96406ebb4b111221 } from "../../app/param-names/catch/four/[...____id]/route";
+import type { GET as GET_66a653af25c0d6ac } from "../../app/param-names/catch/one/[..._id]/route";
+import type { GET as GET_c92fa6d4f8c0670d } from "../../app/param-names/catch/plain/[...id]/route";
+import type { GET as GET_6b728dc6978bfcc1 } from "../../app/param-names/catch/two/[...__id]/route";
+import type { GET as GET_6e6369577e1a513d } from "../../app/param-names/dynamic/four/[____id]/route";
+import type { GET as GET_928ddd6db4a8b981 } from "../../app/param-names/dynamic/one/[_id]/route";
+import type { GET as GET_59a01c7e53284807 } from "../../app/param-names/dynamic/plain/[id]/route";
+import type { GET as GET_9327205a494c20d2 } from "../../app/param-names/dynamic/two/[__id]/route";
+import type { GET as GET_aa19e4950161a356 } from "../../app/param-names/optional/four/[[...____id]]/route";
+import type { GET as GET_964ed4355776626b } from "../../app/param-names/optional/one/[[..._id]]/route";
+import type { GET as GET_138c83ffc826e117 } from "../../app/param-names/optional/plain/[[...id]]/route";
+import type { GET as GET_39c5e780947ad293 } from "../../app/param-names/optional/two/[[...__id]]/route";
 import type Page_ce69f0ecf7424845 from "../../app/patterns/(grouped)/reports/page";
 import type Page_96ecf6fa8566fbe4 from "../../app/patterns/%5Fescaped/page";
 import type Page_68eb0f7249e31d28 from "../../app/patterns/%E3%81%ZZ/page";
@@ -93,6 +105,50 @@ export type PathStructure = RpcGeneratedPathStructure<PageRouteMarker<typeof Pag
   },
   "e2e-client": PageRouteMarker<typeof Page_38c066c7ee3c5334> & RpcEndpoint,
   "feed": PageRouteMarker<typeof Page_f20ba6bf73502dc1> & RpcEndpoint,
+  "param-names": {
+    "catch": {
+      "four": {
+        "___%5F%5F%5F%5Fid": { "$get": typeof GET_96406ebb4b111221 } & RpcEndpoint & Record<ParamsKey, { "____id": string[] }>
+      },
+      "one": {
+        "___%5Fid": { "$get": typeof GET_66a653af25c0d6ac } & RpcEndpoint & Record<ParamsKey, { "_id": string[] }>
+      },
+      "plain": {
+        "___id": { "$get": typeof GET_c92fa6d4f8c0670d } & RpcEndpoint & Record<ParamsKey, { "id": string[] }>
+      },
+      "two": {
+        "___%5F%5Fid": { "$get": typeof GET_6b728dc6978bfcc1 } & RpcEndpoint & Record<ParamsKey, { "__id": string[] }>
+      }
+    },
+    "dynamic": {
+      "four": {
+        "_%5F%5F%5F%5Fid": { "$get": typeof GET_6e6369577e1a513d } & RpcEndpoint & Record<ParamsKey, { "____id": string }>
+      },
+      "one": {
+        "_%5Fid": { "$get": typeof GET_928ddd6db4a8b981 } & RpcEndpoint & Record<ParamsKey, { "_id": string }>
+      },
+      "plain": {
+        "_id": { "$get": typeof GET_59a01c7e53284807 } & RpcEndpoint & Record<ParamsKey, { "id": string }>
+      },
+      "two": {
+        "_%5F%5Fid": { "$get": typeof GET_9327205a494c20d2 } & RpcEndpoint & Record<ParamsKey, { "__id": string }>
+      }
+    },
+    "optional": {
+      "four": {
+        "_____%5F%5F%5F%5Fid": { "$get": typeof GET_aa19e4950161a356 } & RpcEndpoint & Record<ParamsKey, { "____id": string[] | undefined }>
+      },
+      "one": {
+        "_____%5Fid": { "$get": typeof GET_964ed4355776626b } & RpcEndpoint & Record<ParamsKey, { "_id": string[] | undefined }>
+      },
+      "plain": {
+        "_____id": { "$get": typeof GET_138c83ffc826e117 } & RpcEndpoint & Record<ParamsKey, { "id": string[] | undefined }>
+      },
+      "two": {
+        "_____%5F%5Fid": { "$get": typeof GET_39c5e780947ad293 } & RpcEndpoint & Record<ParamsKey, { "__id": string[] | undefined }>
+      }
+    }
+  },
   "patterns": PageRouteMarker<typeof Page_8636af1013bbed4a> & RpcEndpoint & {
     "reports": PageRouteMarker<typeof Page_ce69f0ecf7424845> & RpcEndpoint,
     "%5Fescaped": PageRouteMarker<typeof Page_96ecf6fa8566fbe4> & RpcEndpoint,
@@ -137,4 +193,4 @@ export type PathStructure = RpcGeneratedPathStructure<PageRouteMarker<typeof Pag
     "a/b": PageRouteMarker<typeof Page_973b333cc1d2f7e2> & RpcEndpoint,
     "a?b": PageRouteMarker<typeof Page_234e166249ac19be> & RpcEndpoint
   }
-}, 1>;
+}, 2>;

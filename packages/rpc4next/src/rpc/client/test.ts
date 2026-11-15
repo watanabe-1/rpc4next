@@ -1,5 +1,11 @@
 import { NextRequest } from "next/server";
-import { HTTP_METHODS, type HttpMethod } from "rpc4next-shared";
+import {
+  HTTP_METHODS,
+  type HttpMethod,
+  type OPTIONAL_CATCH_ALL_PREFIX,
+  type CATCH_ALL_PREFIX,
+  type DYNAMIC_PREFIX,
+} from "rpc4next-shared";
 
 import { runWithRpcPageTestRequest } from "../server/page-test-request-context";
 import type { ProcedureRouteContract } from "../server/procedure-types";
@@ -74,9 +80,9 @@ type RpcGeneratedSchemaKey = typeof rpc4nextGeneratedSchemaSymbol;
 type RpcPageRouteKey = typeof rpc4nextPageRouteSymbol;
 type HasQueryMarker = Record<QueryKey, unknown>;
 type AllOptional<T> = Partial<T> extends T ? true : false;
-type OptionalCatchAllKey = `_____${string}`;
-type CatchAllKey = `___${string}`;
-type DynamicKey = `_${string}`;
+type OptionalCatchAllKey = `${typeof OPTIONAL_CATCH_ALL_PREFIX}${string}`;
+type CatchAllKey = `${typeof CATCH_ALL_PREFIX}${string}`;
+type DynamicKey = `${typeof DYNAMIC_PREFIX}${string}`;
 type NonEmptyArray<T> = [T, ...T[]];
 type RpcTestPageRenderUrlOptions<T> = T extends HasQueryMarker
   ? AllOptional<T[QueryKey]> extends true
