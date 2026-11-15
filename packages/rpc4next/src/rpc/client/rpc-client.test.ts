@@ -216,6 +216,41 @@ describe("createRpcClient", () => {
   });
 
   describe("customFetch behavior", () => {
+    it.each([true, false])(
+      "preserves a valid AbortSignal with a method override: %s",
+      async (override) => {
+        const defaultController = new AbortController();
+        const methodController = new AbortController();
+        const controller = override ? methodController : defaultController;
+        let capturedInit: RequestInit | undefined;
+        let capturedRequest: Request | undefined;
+        const customFetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+          capturedInit = init;
+          capturedRequest = new Request(input, init);
+
+          return new Response("ok");
+        };
+        const client = createRpcClient<PathStructure>("http://rpc4next.local", {
+          fetch: customFetch,
+          init: { signal: defaultController.signal },
+        });
+
+        const response = await client.api.hoge.$delete(
+          undefined,
+          override ? { init: { signal: methodController.signal } } : undefined,
+        );
+
+        expect(response.status).toBe(200);
+        expect(capturedInit?.signal).toBe(controller.signal);
+        expect(capturedRequest).toBeInstanceOf(Request);
+        expect(capturedRequest?.url).toBe("http://rpc4next.local/api/hoge");
+        expect(capturedRequest?.method).toBe("DELETE");
+        expect(capturedRequest?.signal.aborted).toBe(false);
+        controller.abort();
+        expect(capturedRequest?.signal.aborted).toBe(true);
+      },
+    );
+
     it("can call a Next.js route handler directly without starting a mock server", async () => {
       const routeFetch = async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = new URL(input instanceof Request ? input.url : input);

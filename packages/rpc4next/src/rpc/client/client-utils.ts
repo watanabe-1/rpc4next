@@ -23,7 +23,11 @@ export const isHttpMethod = (value: string): value is HttpMethodFuncKey =>
   httpMethods.has(value as HttpMethodFuncKey);
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  if (typeof value !== "object" || value === null) return false;
+
+  const prototype = Object.getPrototypeOf(value);
+
+  return prototype === Object.prototype || prototype === null;
 };
 
 export const deepMerge = <T extends object, U extends object>(target: T, source: U): T & U => {
