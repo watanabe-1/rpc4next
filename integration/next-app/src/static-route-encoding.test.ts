@@ -1,0 +1,69 @@
+import path from "node:path";
+import { createRpcClient } from "rpc4next/client";
+import type { RpcEndpoint, RpcGeneratedPathStructure } from "rpc4next/client/generated";
+import { afterEach, describe, expect, it } from "vitest";
+
+import {
+  scanAppDirCache,
+  visitedDirsCache,
+} from "../../../packages/rpc4next-cli/src/cli/core/cache.js";
+import { scanAppDir } from "../../../packages/rpc4next-cli/src/cli/core/route-scanner.js";
+import {
+  cleanupTempDir,
+  makeTempDir,
+  writeTree,
+} from "../../../packages/rpc4next-cli/src/test-helpers/tmp-dir.js";
+
+let tmpDir: string | undefined;
+
+describe("scanned static route keys and generated URLs", () => {
+  afterEach(() => {
+    cleanupTempDir(tmpDir);
+    tmpDir = undefined;
+    scanAppDirCache.clear();
+    visitedDirsCache.clear();
+  });
+
+  it.each([
+    ["a%23b", "a#b", "a%23b", "a#b"],
+    ["a%3Fb", "a?b", "a%3Fb", "a?b"],
+    ["100%25", "100%", "100%25", "100%"],
+    ["a%20b", "a b", "a%20b", "a b"],
+    ["日本語", "日本語", "%E6%97%A5%E6%9C%AC%E8%AA%9E", "日本語"],
+    ["%E6%97%A5%E6%9C%AC%E8%AA%9E", "日本語", "%E6%97%A5%E6%9C%AC%E8%AA%9E", "日本語"],
+    ["a%2Fb", "a/b", "a%2Fb", "a/b"],
+    ["a%2523b", "a%2523b", "a%2523b", "a%23b"],
+    ["a%252Fb", "a%252Fb", "a%252Fb", "a%2Fb"],
+    ["%5Fescaped", "%5Fescaped", "_escaped", "_escaped"],
+    ["%E3%81%ZZ", "%E3%81%ZZ", "%E3%81%ZZ", "%E3%81%ZZ"],
+    ["%E0%A4%A", "%E0%A4%A", "%E0%A4%A", "%E0%A4%A"],
+  ])(
+    "builds the URL from the scanned %s directory",
+    (directory, expectedKey, encoded, pathname) => {
+      tmpDir = makeTempDir();
+      writeTree(tmpDir, {
+        app: { [directory]: { "page.tsx": "export default function Page() {}" } },
+      });
+
+      const scan = scanAppDir(path.join(tmpDir, "rpc.ts"), path.join(tmpDir, "app"));
+      const keys = [...scan.pathNode.children.keys()];
+      expect(keys).toEqual([expectedKey]);
+      expect(scan.pathStructure).toContain(`${JSON.stringify(expectedKey)}:`);
+
+      const client = createRpcClient<RpcGeneratedPathStructure & Record<string, RpcEndpoint>>(
+        "https://example.com",
+      );
+      const result = client[keys[0]].$url({ hash: "section" });
+      expect(result).toEqual({
+        path: `https://example.com/${encoded}#section`,
+        relativePath: `/${encoded}#section`,
+        pathname: `/${pathname}`,
+        params: {},
+      });
+      const parsed = new URL(result.path);
+      expect(parsed.pathname).toBe(`/${encoded}`);
+      expect(parsed.search).toBe("");
+      expect(parsed.hash).toBe("#section");
+    },
+  );
+});

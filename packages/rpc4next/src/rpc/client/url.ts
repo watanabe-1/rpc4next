@@ -120,6 +120,19 @@ const decodeUnreservedPathSegment = (value: string) =>
     return /[A-Za-z0-9\-._~]/.test(char) ? char : encoded;
   });
 
+const encodeStaticSegment = (value: string) => {
+  // Keep existing escapes, including legacy malformed encoded segments, while
+  // escaping raw URL delimiters. A bare percent is data rather than an escape.
+  const preservesMalformedEncoding =
+    /%[0-9A-Fa-f]{2}/.test(value) && safeDecodeSegment(value) === value;
+  const encoded = encodeURIComponent(value).replace(
+    preservesMalformedEncoding ? /%25/g : /%25(?=[0-9A-Fa-f]{2})/g,
+    "%",
+  );
+
+  return decodeUnreservedPathSegment(encoded);
+};
+
 const buildPathFromSegments = (segments: string[]) => {
   const joined = segments.join("/");
   const withLeadingSlash = joined ? `/${joined}` : "/";
@@ -191,7 +204,7 @@ export const createUrl = (paths: string[], params: PathParamsInput, dynamicKeys:
     pathnameSegments.push(getPathnameSegment(segment));
 
     if (!dynamicKeys.includes(segment)) {
-      routeSegments.push(decodeUnreservedPathSegment(segment));
+      routeSegments.push(encodeStaticSegment(segment));
 
       continue;
     }

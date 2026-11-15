@@ -4,6 +4,29 @@ import { createRpcClient } from "rpc4next/client";
 import type { PathStructure } from "../src/generated/rpc";
 
 test.describe("integration next-app e2e", () => {
+  for (const [key, encoded, label] of [
+    ["a#b", "a%23b", "hash"],
+    ["a?b", "a%3Fb", "question"],
+    ["100%", "100%25", "percent"],
+    ["a b", "a%20b", "space"],
+    ["日本語", "%E6%97%A5%E6%9C%AC%E8%AA%9E", "unicode"],
+    ["a/b", "a%2Fb", "slash"],
+    ["a%2523b", "a%2523b", "encoded-hash"],
+  ] as const) {
+    test(`generated static URL reaches the ${label} page`, async ({ page }) => {
+      const client = createRpcClient<PathStructure>("http://127.0.0.1:3100");
+      const url = client["static-encoding"][key].$url({ hash: "section" });
+
+      expect(url.relativePath).toBe(`/static-encoding/${encoded}#section`);
+      const response = await page.goto(url.path);
+      expect(response?.status()).toBe(200);
+      await expect(page.getByText(`static-encoding:${label}`, { exact: true })).toBeVisible();
+      expect(new URL(page.url()).pathname).toBe(`/static-encoding/${encoded}`);
+      expect(new URL(page.url()).search).toBe("");
+      expect(new URL(page.url()).hash).toBe("#section");
+    });
+  }
+
   test("home page renders generated rpc url", async ({ page }) => {
     await page.goto("/");
 
@@ -211,10 +234,11 @@ test.describe("integration next-app e2e", () => {
     await expect(page.getByText("analytics-default")).toBeVisible();
     await expect(page.getByText("team-default")).toBeVisible();
 
-    await page.goto("/patterns/_escaped");
+    const client = createRpcClient<PathStructure>("http://127.0.0.1:3100");
+    await page.goto(client.patterns["%5Fescaped"].$url().relativePath);
     await expect(page.getByText("escaped-underscore-pattern")).toBeVisible();
 
-    await page.goto("/patterns/%E3%81%ZZ");
+    await page.goto(client.patterns["%E3%81%ZZ"].$url().relativePath);
     await expect(page.getByText("malformed-encoded-pattern")).toBeVisible();
   });
 

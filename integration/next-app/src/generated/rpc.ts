@@ -49,6 +49,13 @@ import type Page_17fbe6f0abbd0030 from "../../app/photo/[id]/page";
 import type Page_6fe4147621bd043b from "../../app/procedure-examples/page";
 import type Page_d2a7341cc304c4d8 from "../../app/procedure-page-meta/page";
 import type Page_e14cc8f4edef5d4a from "../../app/response-unwrap/page";
+import type Page_79655d0ab49e4d46 from "../../app/static-encoding/%E6%97%A5%E6%9C%AC%E8%AA%9E/page";
+import type Page_0abc5ba00a7184a9 from "../../app/static-encoding/100%25/page";
+import type Page_973b333cc1d2f7e2 from "../../app/static-encoding/a%2Fb/page";
+import type Page_234e166249ac19be from "../../app/static-encoding/a%3Fb/page";
+import type Page_324946a79516dad9 from "../../app/static-encoding/a%20b/page";
+import type Page_c185f68f0a37fc78 from "../../app/static-encoding/a%23b/page";
+import type Page_a70df18ea09ed2b4 from "../../app/static-encoding/a%2523b/page";
 
 export type PathStructure = RpcGeneratedPathStructure<PageRouteMarker<typeof Page_5f11bc234a1e0c67> & RpcEndpoint & {
   "users": Record<QueryKey, Query_1c5da6b14413cdb4> & RpcEndpoint & {
@@ -120,5 +127,14 @@ export type PathStructure = RpcGeneratedPathStructure<PageRouteMarker<typeof Pag
   },
   "procedure-examples": PageRouteMarker<typeof Page_6fe4147621bd043b> & RpcEndpoint,
   "procedure-page-meta": PageRouteMarker<typeof Page_d2a7341cc304c4d8> & RpcEndpoint,
-  "response-unwrap": PageRouteMarker<typeof Page_e14cc8f4edef5d4a> & RpcEndpoint
+  "response-unwrap": PageRouteMarker<typeof Page_e14cc8f4edef5d4a> & RpcEndpoint,
+  "static-encoding": {
+    "日本語": PageRouteMarker<typeof Page_79655d0ab49e4d46> & RpcEndpoint,
+    "100%": PageRouteMarker<typeof Page_0abc5ba00a7184a9> & RpcEndpoint,
+    "a b": PageRouteMarker<typeof Page_324946a79516dad9> & RpcEndpoint,
+    "a#b": PageRouteMarker<typeof Page_c185f68f0a37fc78> & RpcEndpoint,
+    "a%2523b": PageRouteMarker<typeof Page_a70df18ea09ed2b4> & RpcEndpoint,
+    "a/b": PageRouteMarker<typeof Page_973b333cc1d2f7e2> & RpcEndpoint,
+    "a?b": PageRouteMarker<typeof Page_234e166249ac19be> & RpcEndpoint
+  }
 }, 1>;

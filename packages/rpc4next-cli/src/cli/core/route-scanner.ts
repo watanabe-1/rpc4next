@@ -114,7 +114,9 @@ const safeDecodeSegment = (entryName: string): string => {
 const getStaticSegmentKey = (entryName: string): string => {
   const decoded = safeDecodeSegment(entryName);
 
-  return decoded.startsWith("_") ? entryName : decoded;
+  // The client accepts encoded static keys too. Preserve the original spelling
+  // when decoding would leave an escape that the client could decode again.
+  return decoded.startsWith("_") || /%[0-9A-Fa-f]{2}/.test(decoded) ? entryName : decoded;
 };
 
 const getDirectoryMeta = (entryName: string) => {
