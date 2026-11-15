@@ -294,7 +294,9 @@ const toRoutePathname = (baseDir: string, fullPath: string): string => {
         return meta.segmentName;
       }
 
-      return safeDecodeSegment(meta.segmentName);
+      // Encode each static segment independently so decoded slashes, percent
+      // escapes and brackets cannot become route separators or parameters.
+      return encodeURIComponent(safeDecodeSegment(meta.segmentName));
     })
     .filter((segment): segment is string => segment !== null);
 

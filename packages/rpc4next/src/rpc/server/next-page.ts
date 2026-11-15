@@ -337,16 +337,28 @@ const createPageRequest = (
   params: Params,
   searchParams: Query,
 ): NextRequest => {
-  const path = (pathname ?? "/").replace(
-    /\[\[\.\.\.([^\]]+)\]\]|\[\.\.\.([^\]]+)\]|\[([^\]]+)\]/g,
-    (
-      _match,
-      optionalCatchAll: string | undefined,
-      catchAll: string | undefined,
-      dynamic: string | undefined,
-    ) => encodePathValue(params[optionalCatchAll ?? catchAll ?? dynamic ?? ""]),
-  );
-  const url = new URL(path, "http://localhost");
+  const path = (pathname ?? "/")
+    .split("/")
+    .map((segment) => {
+      const match = /^\[\[\.\.\.([^\]]+)\]\]$|^\[\.\.\.([^\]]+)\]$|^\[([^\]]+)\]$/.exec(segment);
+      if (match) {
+        return encodePathValue(params[match[1] ?? match[2] ?? match[3] ?? ""]);
+      }
+
+      // Contracts contain encoded static segments. Decode exactly once before
+      // encoding, also accepting raw static text in manually supplied contracts.
+      let value = segment;
+      try {
+        value = decodeURIComponent(segment);
+      } catch {
+        // A malformed escape is literal segment data.
+      }
+
+      return encodeURIComponent(value);
+    })
+    .join("/");
+  const url = new URL("http://localhost");
+  url.pathname = path;
 
   for (const [key, value] of Object.entries(searchParams)) {
     const values = Array.isArray(value) ? value : [value];

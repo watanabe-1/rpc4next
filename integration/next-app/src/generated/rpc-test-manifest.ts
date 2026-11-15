@@ -201,7 +201,7 @@ export const testPages = [
     load: () => import("../../app/patterns/%5Fescaped/page") as unknown as Promise<RpcTestPageModule>,
   },
   {
-    pathname: "/patterns/%E3%81%ZZ",
+    pathname: "/patterns/%25E3%2581%25ZZ",
     load: () => import("../../app/patterns/%E3%81%ZZ/page") as unknown as Promise<RpcTestPageModule>,
   },
   {
@@ -277,31 +277,31 @@ export const testPages = [
     load: () => import("../../app/response-unwrap/page") as unknown as Promise<RpcTestPageModule>,
   },
   {
-    pathname: "/static-encoding/日本語",
+    pathname: "/static-encoding/%E6%97%A5%E6%9C%AC%E8%AA%9E",
     load: () => import("../../app/static-encoding/%E6%97%A5%E6%9C%AC%E8%AA%9E/page") as unknown as Promise<RpcTestPageModule>,
   },
   {
-    pathname: "/static-encoding/100%",
+    pathname: "/static-encoding/100%25",
     load: () => import("../../app/static-encoding/100%25/page") as unknown as Promise<RpcTestPageModule>,
   },
   {
-    pathname: "/static-encoding/a b",
+    pathname: "/static-encoding/a%20b",
     load: () => import("../../app/static-encoding/a%20b/page") as unknown as Promise<RpcTestPageModule>,
   },
   {
-    pathname: "/static-encoding/a#b",
+    pathname: "/static-encoding/a%23b",
     load: () => import("../../app/static-encoding/a%23b/page") as unknown as Promise<RpcTestPageModule>,
   },
   {
-    pathname: "/static-encoding/a%23b",
+    pathname: "/static-encoding/a%2523b",
     load: () => import("../../app/static-encoding/a%2523b/page") as unknown as Promise<RpcTestPageModule>,
   },
   {
-    pathname: "/static-encoding/a/b",
+    pathname: "/static-encoding/a%2Fb",
     load: () => import("../../app/static-encoding/a%2Fb/page") as unknown as Promise<RpcTestPageModule>,
   },
   {
-    pathname: "/static-encoding/a?b",
+    pathname: "/static-encoding/a%3Fb",
     load: () => import("../../app/static-encoding/a%3Fb/page") as unknown as Promise<RpcTestPageModule>,
   },
 ] as const satisfies readonly RpcTestPage[];

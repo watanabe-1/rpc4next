@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, expectTypeOf, it, vi } from "vitest";
+import { z } from "zod";
 
 import {
   createNextPage as basecreateNextPage,
@@ -155,6 +156,82 @@ describe("createNextPage", () => {
   beforeEach(() => {
     nextHeadersMock.headers.mockReset();
     nextHeadersMock.cookies.mockReset();
+  });
+
+  it.each([
+    ["a?b", "a%3Fb"],
+    ["a#b", "a%23b"],
+    ["100%", "100%25"],
+    ["a b", "a%20b"],
+    ["日本語", "%E6%97%A5%E6%9C%AC%E8%AA%9E"],
+    ["a%2Fb", "a%2Fb"],
+    ["a%2523b", "a%2523b"],
+    ["a%252Fb", "a%252Fb"],
+    ["%5Bid%5D", "%5Bid%5D"],
+    ["%E0%A4%A", "%25E0%25A4%25A"],
+  ])("keeps static segment %s separate from search params", async (segment, encoded) => {
+    const page = procedure
+      .forRoute({ pathname: `/static/${segment}`, params: {} } as ProcedureRouteContract<
+        string,
+        {}
+      >)
+      .handle(({ request }) => ({
+        body: {
+          pathname: request.nextUrl.pathname,
+          query: [...request.nextUrl.searchParams],
+          hash: request.nextUrl.hash,
+        },
+      }))
+      .page(({ data }) => data);
+
+    await expect(
+      page({
+        params: Promise.resolve({}),
+        searchParams: Promise.resolve({ tag: ["a?b", "日本語/#%"], omitted: undefined }),
+      }),
+    ).resolves.toEqual({
+      pathname: `/static/${encoded}`,
+      query: [
+        ["tag", "a?b"],
+        ["tag", "日本語/#%"],
+      ],
+      hash: "",
+    });
+    await expect(page({ params: Promise.resolve({}) })).resolves.toEqual({
+      pathname: `/static/${encoded}`,
+      query: [],
+      hash: "",
+    });
+  });
+
+  it.each([
+    ["[id]", { id: "a?b#% /日本語%2F" }, "a%3Fb%23%25%20%2F%E6%97%A5%E6%9C%AC%E8%AA%9E%252F"],
+    [
+      "[...parts]",
+      { parts: ["a/b", "a%2Fb", "?#% 日本語"] },
+      "a%2Fb/a%252Fb/%3F%23%25%20%E6%97%A5%E6%9C%AC%E8%AA%9E",
+    ],
+    ["[[...parts]]", { parts: ["a/b", "a%23b"] }, "a%2Fb/a%2523b"],
+    ["[[...parts]]", {}, ""],
+    ["[[...parts]]", { parts: [] }, ""],
+    ["[...parts]", {}, ""],
+    ["[id]", {}, ""],
+  ])("substitutes %s without decoding parameter values", async (marker, params, encoded) => {
+    const page = procedure
+      .forRoute({
+        pathname: `/static/a%2Fb/${marker}`,
+        params: {} as { id?: string; parts?: string[] },
+      } as ProcedureRouteContract<string, { id?: string; parts?: string[] }>)
+      .params(z.object({ id: z.string().optional(), parts: z.array(z.string()).optional() }))
+      .handle(({ request }) => ({
+        body: { pathname: request.nextUrl.pathname, search: request.nextUrl.search },
+      }))
+      .page(({ data }) => data);
+
+    await expect(page({ params: Promise.resolve(params) })).resolves.toEqual({
+      pathname: `/static/a%2Fb/${encoded}`,
+      search: "",
+    });
   });
 
   it("renders procedure body data for page props", async () => {

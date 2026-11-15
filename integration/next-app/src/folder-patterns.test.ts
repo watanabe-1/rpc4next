@@ -60,9 +60,9 @@ describe("integration next-app folder pattern coverage", () => {
     });
   });
 
-  it("normalizes generated route contract pathnames with the client pathname rules", () => {
+  it("encodes generated route contract static segments independently", () => {
     expect(escapedRouteContract.pathname).toBe("/patterns/_escaped");
-    expect(malformedRouteContract.pathname).toBe("/patterns/%E3%81%ZZ");
+    expect(malformedRouteContract.pathname).toBe("/patterns/%25E3%2581%25ZZ");
   });
 
   it("excludes intercepting route variants from the generated client", () => {
