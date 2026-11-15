@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import type { Params } from "./route-contract";
 
 type CatchAllPatternPageProps = {
@@ -5,7 +7,7 @@ type CatchAllPatternPageProps = {
 };
 
 export default async function CatchAllPatternPage({ params }: CatchAllPatternPageProps) {
-  const { parts } = await params;
+  const { parts } = z.object({ parts: z.array(z.string()) }).parse(await params);
 
   return <div>catch-all:{parts.join("/")}</div>;
 }

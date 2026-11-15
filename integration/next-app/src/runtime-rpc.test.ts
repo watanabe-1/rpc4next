@@ -317,6 +317,37 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
     const client = createRpcTestClient<PathStructure>(testRoutes, { baseUrl });
     const pageClient = createRpcTestPageClient<PathStructure>(testPages, { baseUrl });
 
+    it.each<{ parts: [string, ...string[]] }>([
+      { parts: ["a"] },
+      { parts: ["a", "b"] },
+      { parts: ["a/b"] },
+    ])(
+      "renders generated catch-all pages with array schema validation: $parts",
+      async ({ parts }) => {
+        await expect(
+          pageClient.patterns["catch-all"].___parts(parts).$render(),
+        ).resolves.toMatchObject({
+          props: { children: ["catch-all:", parts.join("/")] },
+        });
+      },
+    );
+
+    it.each<{ parts?: string[] }>([
+      {},
+      { parts: ["a"] },
+      { parts: ["a", "b"] },
+      { parts: ["a/b"] },
+    ])(
+      "renders generated optional catch-all pages with array schema validation: $parts",
+      async ({ parts }) => {
+        await expect(
+          pageClient.patterns["optional-catch-all"]._____parts(parts).$render(),
+        ).resolves.toMatchObject({
+          props: { children: ["optional-catch-all:", parts?.join("/") ?? "root"] },
+        });
+      },
+    );
+
     it("dispatches generated dynamic routes to the matching Next.js handler", async () => {
       const payload = await client.api.users._userId("generated-user").$get().unwrap();
 
