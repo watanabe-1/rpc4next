@@ -637,7 +637,7 @@ export const createNextPage = <
           ? await parseOutputWithSchema(outputSchema as StandardSchemaV1, data)
           : data;
 
-      return render({
+      return await render({
         ...(handler ? { data: renderedData as InferProcedureData<TProcedure> } : {}),
         params: inputResult.params,
         query: inputResult.query,

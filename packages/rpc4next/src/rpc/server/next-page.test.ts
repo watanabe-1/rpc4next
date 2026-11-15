@@ -1,3 +1,4 @@
+import { notFound, redirect } from "next/navigation";
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 
@@ -550,6 +551,119 @@ describe("createNextPage", () => {
         searchParams: Promise.resolve({ tab: "bad" }),
       }),
     ).resolves.toBe("default-page-error");
+  });
+
+  it.each(["sync", "async"] as const)(
+    "handles %s render errors with page onError",
+    async (mode) => {
+      const error = new Error("render failed");
+      const render = () => {
+        throw error;
+      };
+      const onError = vi.fn<() => "render-fallback">(() => "render-fallback");
+      const page = procedure
+        .forRoute(pageRouteContract)
+        .params(paramsSchema)
+        .page(
+          mode === "async"
+            ? async () => {
+                await Promise.resolve();
+
+                return render();
+              }
+            : render,
+          { onError },
+        );
+
+      await expect(
+        page({
+          params: Promise.resolve({ id: "photo-1" }),
+          searchParams: Promise.resolve({ tab: "comments" }),
+        }),
+      ).resolves.toBe("render-fallback");
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect(onError).toHaveBeenCalledWith(error, {
+        params: { id: "photo-1" },
+        searchParams: { tab: "comments" },
+      });
+      expectTypeOf<Awaited<ReturnType<typeof page>>>().toEqualTypeOf<"render-fallback">();
+    },
+  );
+
+  it("returns async onError fallbacks from createPageProcedure for async render errors", async () => {
+    const error = new Error("async render failed");
+    const fallback = { source: "page-error" as const };
+    const onError = vi.fn<() => Promise<typeof fallback>>(async () => {
+      await Promise.resolve();
+
+      return fallback;
+    });
+    const page = createPageProcedure({ onError })
+      .forRoute(pageRouteContract)
+      .params(paramsSchema)
+      .page(async ({ params }) => {
+        await Promise.resolve();
+        if (params.id === "photo-1") {
+          throw error;
+        }
+
+        return 42;
+      });
+
+    await expect(page({ params: Promise.resolve({ id: "photo-1" }) })).resolves.toBe(fallback);
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError).toHaveBeenCalledWith(error, {
+      params: { id: "photo-1" },
+      searchParams: {},
+    });
+    await expect(page({ params: Promise.resolve({ id: "photo-2" }) })).resolves.toBe(42);
+    expect(onError).toHaveBeenCalledTimes(1);
+    expectTypeOf<Awaited<ReturnType<typeof page>>>().toEqualTypeOf<number | typeof fallback>();
+  });
+
+  it.each(["sync", "async"] as const)("rethrows %s render errors by default", async (mode) => {
+    const error = new Error("render failed");
+    const render = () => {
+      throw error;
+    };
+    const page = procedure
+      .forRoute(pageRouteContract)
+      .params(paramsSchema)
+      .page(
+        mode === "async"
+          ? async () => {
+              await Promise.resolve();
+
+              return render();
+            }
+          : render,
+      );
+
+    await expect(page({ params: Promise.resolve({ id: "photo-1" }) })).rejects.toBe(error);
+    expectTypeOf<Awaited<ReturnType<typeof page>>>().toEqualTypeOf<never>();
+  });
+
+  it.each([
+    { name: "redirect", navigate: () => redirect("/photo/next"), digest: "NEXT_REDIRECT" },
+    { name: "notFound", navigate: () => notFound(), digest: "NEXT_HTTP_ERROR_FALLBACK;404" },
+  ])("rethrows $name from async render before page onError", async ({ navigate, digest }) => {
+    const onError = vi.fn<() => string>(() => "swallowed-navigation-interrupt");
+    const page = procedure
+      .forRoute(pageRouteContract)
+      .params(paramsSchema)
+      .page(
+        async () => {
+          await Promise.resolve();
+
+          return navigate();
+        },
+        { onError },
+      );
+
+    await expect(page({ params: Promise.resolve({ id: "photo-1" }) })).rejects.toMatchObject({
+      digest: expect.stringContaining(digest),
+    });
+    expect(onError).not.toHaveBeenCalled();
   });
 
   it("rethrows page navigation interrupts before page onError", async () => {
