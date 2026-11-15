@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.12.1](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.12.0...rpc4next-cli-v0.12.1) (2026-11-15)
+
+### Bug Fixes
+
+- **client:** Encode static route segments without double encoding ([#707](https://github.com/watanabe-1/rpc4next/issues/707)) ([057d1fa](https://github.com/watanabe-1/rpc4next/commit/057d1fa8a369d421874c2a0f115faad0ca50d393))
+- **client:** Preserve parameter names and encoded path boundaries ([#704](https://github.com/watanabe-1/rpc4next/issues/704)) ([3016687](https://github.com/watanabe-1/rpc4next/commit/301668738d06bc2a0b3af9f271bd8704bd0ff3b1))
+- **client:** Preserve underscored dynamic parameter names ([#712](https://github.com/watanabe-1/rpc4next/issues/712)) ([ca8e60f](https://github.com/watanabe-1/rpc4next/commit/ca8e60f16d875bbff942a0aa2d1628ba6599d86c))
+- **cli:** Merge shared route paths across route groups ([#700](https://github.com/watanabe-1/rpc4next/issues/700)) ([40d16b0](https://github.com/watanabe-1/rpc4next/commit/40d16b06c4775b1e9317399280b06ff1c37803c2))
+- **server:** Preserve static page route segments ([#713](https://github.com/watanabe-1/rpc4next/issues/713)) ([647f7a7](https://github.com/watanabe-1/rpc4next/commit/647f7a7acbd5bb06902a192408eaa3f582b6d2ed))
+
 ## [0.12.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.11.0...rpc4next-cli-v0.12.0) (2026-10-13)
 
 ### ⚠ BREAKING CHANGES
