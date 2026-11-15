@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRpcClient } from "rpc4next/client";
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 
 import { routeContract as escapedRouteContract } from "../app/patterns/%5Fescaped/route-contract";
 import { routeContract as malformedRouteContract } from "../app/patterns/%E3%81%ZZ/route-contract";
@@ -12,6 +12,8 @@ const workspaceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)),
 const client = createRpcClient<PathStructure>("http://127.0.0.1:3000");
 
 const fixturePaths = [
+  "app/(public)/users/page.tsx",
+  "app/(admin)/users/[id]/page.tsx",
   "app/patterns/dynamic/[category]/page.tsx",
   "app/patterns/catch-all/[...parts]/page.tsx",
   "app/patterns/optional-catch-all/[[...parts]]/page.tsx",
@@ -67,6 +69,22 @@ describe("integration next-app folder pattern coverage", () => {
     expect("@drilldown" in client.feed).toBe(false);
     expect("@modal" in client.feed).toBe(false);
     expect("(..)photo" in client.feed).toBe(false);
+  });
+
+  it("keeps parent and dynamic child URLs across route groups type safe", () => {
+    const parentUrl = client.users.$url({ query: { filter: "active" } });
+    const childUrl = client.users._id("demo-user").$url();
+
+    expect(parentUrl.relativePath).toBe("/users?filter=active");
+    expect(childUrl.relativePath).toBe("/users/demo-user");
+    expect(childUrl.params).toEqual({ id: "demo-user" });
+    expectTypeOf(client.users._id).parameter(0).toEqualTypeOf<string | number>();
+    expectTypeOf(childUrl.params).toEqualTypeOf<{ id: string }>();
+
+    // @ts-expect-error The dynamic child requires a string or number id.
+    client.users._id({});
+    // @ts-expect-error The parent query retains its declared string type.
+    client.users.$url({ query: { filter: 123 } });
   });
 
   it("flattens parallel route descendants into public generated client keys", () => {

@@ -48,7 +48,13 @@ type ParentParam = {
 
 type DirectoryMeta = ReturnType<typeof getDirectoryMeta>;
 
+export type PathStructureNode = {
+  typeFragments: string[];
+  children: Map<string, PathStructureNode>;
+};
+
 type ScanResult = {
+  pathNode: PathStructureNode;
   pathStructure: string;
   imports: ImportObj[];
   paramsTypes: ParamsType[];
@@ -65,7 +71,7 @@ type ScanContext = {
 };
 
 type ScanAccumulator = {
-  pathStructures: string[];
+  children: Map<string, PathStructureNode>;
   imports: ImportObj[];
   typeFragments: string[];
   paramsTypes: ParamsType[];
@@ -137,7 +143,7 @@ const getDirectoryMeta = (entryName: string) => {
 };
 
 const createEmptyScanAccumulator = (): ScanAccumulator => ({
-  pathStructures: [],
+  children: new Map(),
   imports: [],
   typeFragments: [],
   paramsTypes: [],
@@ -331,40 +337,32 @@ const appendEndpointFile = (
   );
 };
 
-const mergeFlattenedChildPathStructure = (
-  accumulator: ScanAccumulator,
-  childPathStructure: string,
-  fullPath: string,
-  currentIndent: string,
-) => {
-  const match = childPathStructure.match(/^\s*\{([\s\S]*)\}\s*$/);
-  const trimmedChildPathStructure = childPathStructure.trim();
+// Create merged nodes without mutating child results held in the scan cache.
+const mergeFlattenedChildPathStructure = (target: PathStructureNode, child: PathStructureNode) => {
+  target.typeFragments.push(...child.typeFragments);
 
-  if (!childPathStructure) {
-    return;
+  for (const [key, node] of child.children) {
+    const existing = target.children.get(key);
+    if (existing) {
+      const merged = {
+        typeFragments: [...existing.typeFragments],
+        children: new Map(existing.children),
+      };
+      mergeFlattenedChildPathStructure(merged, node);
+      target.children.set(key, merged);
+    } else {
+      target.children.set(key, node);
+    }
   }
-
-  if (match) {
-    accumulator.pathStructures.push(`${currentIndent}${match[1].trim()}`);
-
-    return;
-  }
-
-  if (trimmedChildPathStructure) {
-    accumulator.typeFragments.push(trimmedChildPathStructure);
-
-    return;
-  }
-
-  throw new Error(`Invalid empty child path structure in grouped/parallel route: ${fullPath}`);
 };
 
-const buildPathStructure = (
-  typeFragments: string[],
-  pathStructures: string[],
-  previousIndent: string,
-) => {
-  const typeString = typeFragments.join(" & ");
+const buildPathStructure = (node: PathStructureNode, previousIndent: string): string => {
+  const typeString = node.typeFragments.join(" & ");
+  const currentIndent = previousIndent + INDENT;
+  const pathStructures = [...node.children].map(
+    ([key, child]) =>
+      `${currentIndent}${createStringLiteral(key)}: ${buildPathStructure(child, currentIndent)}`,
+  );
   const pathStructureBody =
     pathStructures.length > 0
       ? `{${NEWLINE}${pathStructures.join(`,${NEWLINE}`)}${NEWLINE}${previousIndent}}`
@@ -429,12 +427,7 @@ const appendChildDirectory = (
   accumulator.imports.push(...childResult.imports);
 
   if (isFlattenDir) {
-    mergeFlattenedChildPathStructure(
-      accumulator,
-      childResult.pathStructure,
-      fullPath,
-      context.currentIndent,
-    );
+    mergeFlattenedChildPathStructure(accumulator, childResult.pathNode);
 
     return;
   }
@@ -447,9 +440,10 @@ const appendChildDirectory = (
   const segmentKeyName =
     meta.isDynamic || meta.isCatchAll || meta.isOptionalCatchAll ? keyName : meta.staticKeyName;
 
-  accumulator.pathStructures.push(
-    `${context.currentIndent}${createStringLiteral(segmentKeyName)}: ${childResult.pathStructure}`,
-  );
+  mergeFlattenedChildPathStructure(accumulator, {
+    typeFragments: [],
+    children: new Map([[segmentKeyName, childResult.pathNode]]),
+  });
 };
 
 export const scanAppDir = (
@@ -490,11 +484,11 @@ export const scanAppDir = (
   }
 
   const result = {
-    pathStructure: buildPathStructure(
-      accumulator.typeFragments,
-      accumulator.pathStructures,
-      context.previousIndent,
-    ),
+    pathNode: {
+      typeFragments: accumulator.typeFragments,
+      children: accumulator.children,
+    },
+    pathStructure: buildPathStructure(accumulator, context.previousIndent),
     imports: accumulator.imports,
     paramsTypes: accumulator.paramsTypes,
     pageManifests: accumulator.pageManifests,

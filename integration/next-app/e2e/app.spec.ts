@@ -1,4 +1,7 @@
 import { expect, test } from "@playwright/test";
+import { createRpcClient } from "rpc4next/client";
+
+import type { PathStructure } from "../src/generated/rpc";
 
 test.describe("integration next-app e2e", () => {
   test("home page renders generated rpc url", async ({ page }) => {
@@ -188,6 +191,15 @@ test.describe("integration next-app e2e", () => {
 
     await page.goto("/patterns/optional-catch-all/one/two");
     await expect(page.getByText("optional-catch-all:one/two")).toBeVisible();
+  });
+
+  test("shared route-group prefixes resolve parent and child generated URLs", async ({ page }) => {
+    const client = createRpcClient<PathStructure>("http://127.0.0.1:3100");
+    await page.goto(client.users.$url({ query: { filter: "active" } }).relativePath);
+    await expect(page.getByText("grouped-users:active")).toBeVisible();
+
+    await page.goto(client.users._id("demo-user").$url().relativePath);
+    await expect(page.getByText("grouped-user:demo-user")).toBeVisible();
   });
 
   test("pattern routes expose grouped and parallel branches on public urls", async ({ page }) => {
