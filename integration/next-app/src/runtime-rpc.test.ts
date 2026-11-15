@@ -317,6 +317,15 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
     const client = createRpcTestClient<PathStructure>(testRoutes, { baseUrl });
     const pageClient = createRpcTestPageClient<PathStructure>(testPages, { baseUrl });
 
+    it("renders generated Japanese and space-containing static pages", async () => {
+      await expect(pageClient["static-encoding"]["日本語"].$render()).resolves.toMatchObject({
+        props: { children: "static-encoding:unicode" },
+      });
+      await expect(pageClient["static-encoding"]["a b"].$render()).resolves.toMatchObject({
+        props: { children: "static-encoding:space" },
+      });
+    });
+
     it.each<{ parts: [string, ...string[]] }>([
       { parts: ["a"] },
       { parts: ["a", "b"] },
