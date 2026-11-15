@@ -8,7 +8,8 @@
       "description": "Update GitHub CLI extensions pinned to release tags.",
       "managerFilePatterns": [
         "/^\\.github/workflows/[^/]+\\.ya?ml$/",
-        "/^(?:\\.github/)?README\\.md$/"
+        "/^README\\.md$/",
+        "/^\\.github/ACTIONS\\.md$/"
       ],
       "matchStrings": [
         "gh extension install (?<depName>[\\w.-]+/gh-[\\w.-]+) --pin (?<currentValue>v?\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?)"

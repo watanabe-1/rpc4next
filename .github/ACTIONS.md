@@ -22,7 +22,7 @@ gh actions-lock --verify
 ```
 
 Renovate tracks release-tag pins in `gh extension install ... --pin ...` commands
-in workflows and this README through a custom regex manager. It updates these
+in workflows and this document through a custom regex manager. It updates these
 occurrences together using GitHub Releases. The existing seven-day release-age
 requirement and patch/minor auto-merge policy apply; major updates require review.
 
