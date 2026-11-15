@@ -15,6 +15,34 @@ describe("createRouteContext", () => {
   const mockParams = { id: "123" };
   const mockSearchParamsObject = { q: "test" };
 
+  it.each(["Headers", "tuples"])("preserves cookies in all response helpers with %s", (format) => {
+    const cookies = [
+      "session=abc; Path=/; Expires=Wed, 21 Oct 2037 07:28:00 GMT; HttpOnly",
+      "theme=dark; Path=/; Expires=Thu, 22 Oct 2037 07:28:00 GMT",
+    ];
+    const tuples: [string, string][] = [
+      ["Set-Cookie", cookies[0]],
+      ["set-cookie", cookies[1]],
+      ["X-Custom", "value"],
+      ["content-type", "application/custom"],
+    ];
+    const headersInit = format === "Headers" ? new Headers(tuples) : tuples;
+    const helpers = createResponseHelpers();
+    const responses = [
+      helpers.body("body", { headersInit }),
+      helpers.json({ ok: true }, { headersInit }),
+      helpers.text("text", { headersInit }),
+      helpers.redirect("http://localhost/next", { headersInit }),
+    ];
+
+    for (const response of responses) {
+      expect(response.headers.getSetCookie()).toEqual(cookies);
+      expect(response.headers.get("x-custom")).toBe("value");
+    }
+    expect(responses[2].headers.get("content-type")).toBe("text/plain");
+    expect(new Headers(headersInit).get("content-type")).toBe("application/custom");
+  });
+
   it("creates catalog-bound typed error responses", async () => {
     const errors = defineRpcErrors({
       PLAN_REQUIRED: { status: 402, message: "Plan required" },
