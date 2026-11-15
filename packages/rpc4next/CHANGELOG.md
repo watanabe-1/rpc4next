@@ -2,19 +2,18 @@
 
 ## [0.16.1](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.16.0...rpc4next-v0.16.1) (2026-11-15)
 
-
 ### Bug Fixes
 
-* **client:** Encode static route segments without double encoding ([#707](https://github.com/watanabe-1/rpc4next/issues/707)) ([057d1fa](https://github.com/watanabe-1/rpc4next/commit/057d1fa8a369d421874c2a0f115faad0ca50d393))
-* **client:** Normalize static segments in test route matching ([#709](https://github.com/watanabe-1/rpc4next/issues/709)) ([b3c13bf](https://github.com/watanabe-1/rpc4next/commit/b3c13bfc97d6ece36dad98da52c4dfc008c6f31f))
-* **client:** Preserve AbortSignal instances during deep merge ([#702](https://github.com/watanabe-1/rpc4next/issues/702)) ([e0334bf](https://github.com/watanabe-1/rpc4next/commit/e0334bf88569a5d9fd892eb0d70702709fa5bf3e))
-* **client:** Preserve catch-all arrays in test clients ([#708](https://github.com/watanabe-1/rpc4next/issues/708)) ([3c68b50](https://github.com/watanabe-1/rpc4next/commit/3c68b5021a3e4d3c8203218da5c7d4d9a457de1e))
-* **client:** Preserve empty successful text responses ([#710](https://github.com/watanabe-1/rpc4next/issues/710)) ([90852a1](https://github.com/watanabe-1/rpc4next/commit/90852a1a1a349f740cd561c25b4fcd01cb09675f))
-* **client:** Preserve parameter names and encoded path boundaries ([#704](https://github.com/watanabe-1/rpc4next/issues/704)) ([3016687](https://github.com/watanabe-1/rpc4next/commit/301668738d06bc2a0b3af9f271bd8704bd0ff3b1))
-* **client:** Preserve underscored dynamic parameter names ([#712](https://github.com/watanabe-1/rpc4next/issues/712)) ([ca8e60f](https://github.com/watanabe-1/rpc4next/commit/ca8e60f16d875bbff942a0aa2d1628ba6599d86c))
-* **server:** Handle async page render errors with onError ([#703](https://github.com/watanabe-1/rpc4next/issues/703)) ([5efd1a8](https://github.com/watanabe-1/rpc4next/commit/5efd1a889b469a3a4cc68f49db5afd3966c30142))
-* **server:** Preserve multiple Set-Cookie response headers ([#711](https://github.com/watanabe-1/rpc4next/issues/711)) ([1def83f](https://github.com/watanabe-1/rpc4next/commit/1def83faed79fb0fa7b8547979d9528a7b328312))
-* **server:** Preserve static page route segments ([#713](https://github.com/watanabe-1/rpc4next/issues/713)) ([647f7a7](https://github.com/watanabe-1/rpc4next/commit/647f7a7acbd5bb06902a192408eaa3f582b6d2ed))
+- **client:** Encode static route segments without double encoding ([#707](https://github.com/watanabe-1/rpc4next/issues/707)) ([057d1fa](https://github.com/watanabe-1/rpc4next/commit/057d1fa8a369d421874c2a0f115faad0ca50d393))
+- **client:** Normalize static segments in test route matching ([#709](https://github.com/watanabe-1/rpc4next/issues/709)) ([b3c13bf](https://github.com/watanabe-1/rpc4next/commit/b3c13bfc97d6ece36dad98da52c4dfc008c6f31f))
+- **client:** Preserve AbortSignal instances during deep merge ([#702](https://github.com/watanabe-1/rpc4next/issues/702)) ([e0334bf](https://github.com/watanabe-1/rpc4next/commit/e0334bf88569a5d9fd892eb0d70702709fa5bf3e))
+- **client:** Preserve catch-all arrays in test clients ([#708](https://github.com/watanabe-1/rpc4next/issues/708)) ([3c68b50](https://github.com/watanabe-1/rpc4next/commit/3c68b5021a3e4d3c8203218da5c7d4d9a457de1e))
+- **client:** Preserve empty successful text responses ([#710](https://github.com/watanabe-1/rpc4next/issues/710)) ([90852a1](https://github.com/watanabe-1/rpc4next/commit/90852a1a1a349f740cd561c25b4fcd01cb09675f))
+- **client:** Preserve parameter names and encoded path boundaries ([#704](https://github.com/watanabe-1/rpc4next/issues/704)) ([3016687](https://github.com/watanabe-1/rpc4next/commit/301668738d06bc2a0b3af9f271bd8704bd0ff3b1))
+- **client:** Preserve underscored dynamic parameter names ([#712](https://github.com/watanabe-1/rpc4next/issues/712)) ([ca8e60f](https://github.com/watanabe-1/rpc4next/commit/ca8e60f16d875bbff942a0aa2d1628ba6599d86c))
+- **server:** Handle async page render errors with onError ([#703](https://github.com/watanabe-1/rpc4next/issues/703)) ([5efd1a8](https://github.com/watanabe-1/rpc4next/commit/5efd1a889b469a3a4cc68f49db5afd3966c30142))
+- **server:** Preserve multiple Set-Cookie response headers ([#711](https://github.com/watanabe-1/rpc4next/issues/711)) ([1def83f](https://github.com/watanabe-1/rpc4next/commit/1def83faed79fb0fa7b8547979d9528a7b328312))
+- **server:** Preserve static page route segments ([#713](https://github.com/watanabe-1/rpc4next/issues/713)) ([647f7a7](https://github.com/watanabe-1/rpc4next/commit/647f7a7acbd5bb06902a192408eaa3f582b6d2ed))
 
 ## [0.16.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.15.0...rpc4next-v0.16.0) (2026-10-13)
 
