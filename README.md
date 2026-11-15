@@ -1,6 +1,11 @@
 # rpc4next
 
-[![Ask DeepWiki](https://img.shields.io/badge/Ask-DeepWiki-blue)](https://deepwiki.com/watanabe-1/rpc4next)
+<a href="https://deepwiki.com/watanabe-1/rpc4next">
+  <picture>
+    <source srcset="https://img.shields.io/badge/Ask-DeepWiki-blue">
+    <img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki">
+  </picture>
+</a>
 
 `rpc4next` is a lightweight, type-safe RPC layer for Next.js App Router projects.
 It scans your existing `app/**` files, generates a `PathStructure` type, and lets you call route handlers through a typed client without introducing a custom server framework.
