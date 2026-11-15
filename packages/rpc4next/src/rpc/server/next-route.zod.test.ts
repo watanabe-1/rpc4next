@@ -738,6 +738,45 @@ describe("createNextRoute zod integration", () => {
     });
   });
 
+  it.each(["Headers", "tuples"])(
+    "preserves cookies after output parsing with %s",
+    async (format) => {
+      const cookies = [
+        "session=abc; Path=/; Expires=Wed, 21 Oct 2037 07:28:00 GMT; HttpOnly",
+        "theme=dark; Path=/; Expires=Thu, 22 Oct 2037 07:28:00 GMT",
+      ];
+      const tuples: [string, string][] = [
+        ["Set-Cookie", cookies[0]],
+        ["set-cookie", cookies[1]],
+      ];
+      const headersInit = format === "Headers" ? new Headers(tuples) : tuples;
+
+      for (const kind of ["json", "text", "body"] as const) {
+        const route = createNextRoute(
+          procedure
+            .forRoute(staticRouteContract)
+            .output(z.string().transform((value) => value.toUpperCase()))
+            .handle(async ({ response }) => {
+              if (kind === "json") return response.json("draft-post", { headersInit });
+              if (kind === "text") return response.text("draft-post", { headersInit });
+
+              return response.body("draft-post", { headersInit });
+            }),
+          { method: "GET", validateOutput: true },
+        );
+        const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+          params: Promise.resolve({}),
+        });
+
+        expect(response.status).toBe(200);
+        expect(response.headers.getSetCookie()).toEqual(cookies);
+        await expect(kind === "json" ? response.json() : response.text()).resolves.toBe(
+          "DRAFT-POST",
+        );
+      }
+    },
+  );
+
   it("replaces response.json payloads with parsed output values", async () => {
     const route = createNextRoute(
       procedure

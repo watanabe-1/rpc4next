@@ -53,3 +53,23 @@ export const normalizeHeaders = (headers?: HeadersInit): Record<string, string> 
 
   return result;
 };
+
+/** Preserves separate Set-Cookie values while keeping other header normalization unchanged. */
+export const normalizeResponseHeaders = (headers?: HeadersInit): Headers => {
+  const result = new Headers(normalizeHeaders(headers));
+  const cookies =
+    headers instanceof Headers
+      ? headers.getSetCookie()
+      : Array.isArray(headers)
+        ? headers.filter(([key]) => key.toLowerCase() === "set-cookie").map(([, value]) => value)
+        : undefined;
+
+  if (cookies) {
+    result.delete("set-cookie");
+    for (const cookie of cookies) {
+      result.append("set-cookie", cookie);
+    }
+  }
+
+  return result;
+};

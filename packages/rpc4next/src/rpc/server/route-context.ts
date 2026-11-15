@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import type { ContentType } from "../lib/content-type-types";
-import { normalizeHeaders } from "../lib/headers";
+import { normalizeResponseHeaders } from "../lib/headers";
 import type { HttpStatusCode, RedirectionHttpStatusCode } from "../lib/http-status-code-types";
 import { searchParamsToObject } from "../lib/search-params";
 import { createRpcErrorEnvelopeFromCatalog, defineRpcErrors, getRpcErrorStatus } from "./error";
@@ -58,14 +58,14 @@ const isHttpStatusCode = (value: unknown): value is HttpStatusCode => {
 
 const resolvedHeaders = (
   init?: HttpStatusCode | TypedResponseInit<HttpStatusCode, ContentType>,
-) => {
+): ResponseInit | undefined => {
   if (!init) return init;
 
   if (isHttpStatusCode(init)) {
     return { status: init };
   }
 
-  const headers = init.headers ?? normalizeHeaders(init.headersInit);
+  const headers = normalizeResponseHeaders(init.headers ?? init.headersInit);
 
   const { headers: _headers, headersInit: _headersInit, ...initWithoutHeaders } = init;
 
@@ -74,7 +74,7 @@ const resolvedHeaders = (
     headers,
   };
 
-  return resolvedInit as TypedResponseInit<HttpStatusCode, ContentType>;
+  return resolvedInit;
 };
 
 export const createResponseHelpers = <
@@ -127,11 +127,13 @@ export const createResponseHelpers = <
       init?: TStatus | TypedResponseInit<TStatus, "text/plain">,
     ) => {
       const resolvedInit = resolvedHeaders(init);
+      const headers = new Headers(resolvedInit?.headers);
+      headers.set("Content-Type", "text/plain");
 
       return attachResponseHelperMetadata(
         new NextResponse<TData>(data, {
           ...resolvedInit,
-          headers: { ...resolvedInit?.headers, "Content-Type": "text/plain" },
+          headers,
         }) as TypedNextResponse<TData, TStatus, "text/plain">,
         {
           kind: "text",
