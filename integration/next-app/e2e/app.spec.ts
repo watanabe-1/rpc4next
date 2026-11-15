@@ -27,6 +27,23 @@ test.describe("integration next-app e2e", () => {
     });
   }
 
+  test("page procedure separates the static question mark from repeated query keys", async ({
+    page,
+  }) => {
+    await page.goto("/static-encoding/a%3Fb?tag=first&tag=a%3Fb%23%25#section");
+
+    await expect(page.getByTestId("page-request")).toHaveText(
+      JSON.stringify({
+        pathname: "/static-encoding/a%3Fb",
+        searchParams: [
+          ["tag", "first"],
+          ["tag", "a?b#%"],
+        ],
+        hash: "",
+      }),
+    );
+  });
+
   test("home page renders generated rpc url", async ({ page }) => {
     await page.goto("/");
 

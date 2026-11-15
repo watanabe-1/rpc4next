@@ -3,9 +3,9 @@
 import type { ProcedureRouteContract } from "rpc4next/server/generated";
 
 export type Params = {};
-export type RouteContract = ProcedureRouteContract<"/static-encoding/100%", Params>;
+export type RouteContract = ProcedureRouteContract<"/static-encoding/100%25", Params>;
 
 export const routeContract = {
-  pathname: "/static-encoding/100%",
+  pathname: "/static-encoding/100%25",
   params: {} as Params,
 } as RouteContract;

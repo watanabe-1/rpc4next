@@ -794,7 +794,7 @@ describe("route-scanner", () => {
 }`);
     });
 
-    it("should keep malformed encoded static segments in canonical route contract pathnames", () => {
+    it("should encode malformed static segments in canonical route contract pathnames", () => {
       setupTree({
         testApp: {
           patterns: {
@@ -811,7 +811,7 @@ describe("route-scanner", () => {
         {
           paramsType: "{}",
           dirPath: tmpPosixPath("testApp", "patterns", "%E0%A4%A"),
-          pathname: "/patterns/%E0%A4%A",
+          pathname: "/patterns/%25E0%25A4%25A",
         },
       ]);
     });
@@ -838,7 +838,7 @@ describe("route-scanner", () => {
         {
           paramsType: "{}",
           dirPath: tmpPosixPath("testApp", "patterns", "%22quoted"),
-          pathname: '/patterns/"quoted',
+          pathname: "/patterns/%22quoted",
         },
       ]);
     });

@@ -1,6 +1,7 @@
 import path from "node:path";
 import { createRpcClient } from "rpc4next/client";
 import type { RpcEndpoint, RpcGeneratedPathStructure } from "rpc4next/client/generated";
+import { procedure } from "rpc4next/server";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
@@ -13,6 +14,13 @@ import {
   makeTempDir,
   writeTree,
 } from "../../../packages/rpc4next-cli/src/test-helpers/tmp-dir.js";
+import { routeContract as unicodeContract } from "../app/static-encoding/%E6%97%A5%E6%9C%AC%E8%AA%9E/route-contract";
+import { routeContract as percentContract } from "../app/static-encoding/100%25/route-contract";
+import { routeContract as slashContract } from "../app/static-encoding/a%2Fb/route-contract";
+import { routeContract as questionContract } from "../app/static-encoding/a%3Fb/route-contract";
+import { routeContract as spaceContract } from "../app/static-encoding/a%20b/route-contract";
+import { routeContract as hashContract } from "../app/static-encoding/a%23b/route-contract";
+import { routeContract as encodedHashContract } from "../app/static-encoding/a%2523b/route-contract";
 
 let tmpDir: string | undefined;
 
@@ -49,6 +57,7 @@ describe("scanned static route keys and generated URLs", () => {
       const keys = [...scan.pathNode.children.keys()];
       expect(keys).toEqual([expectedKey]);
       expect(scan.pathStructure).toContain(`${JSON.stringify(expectedKey)}:`);
+      expect(scan.paramsTypes[0].pathname).toBe(`/${encodeURIComponent(pathname)}`);
 
       const client = createRpcClient<RpcGeneratedPathStructure & Record<string, RpcEndpoint>>(
         "https://example.com",
@@ -66,4 +75,42 @@ describe("scanned static route keys and generated URLs", () => {
       expect(parsed.hash).toBe("#section");
     },
   );
+});
+
+describe("generated static route contracts used by page procedures", () => {
+  it.each([
+    [questionContract, "a%3Fb"],
+    [hashContract, "a%23b"],
+    [percentContract, "100%25"],
+    [spaceContract, "a%20b"],
+    [unicodeContract, "%E6%97%A5%E6%9C%AC%E8%AA%9E"],
+    [slashContract, "a%2Fb"],
+    [encodedHashContract, "a%2523b"],
+  ] as const)("constructs a request from %j", async (contract, encoded) => {
+    const page = procedure
+      .forRoute(contract)
+      .handle(({ request }) => ({
+        body: {
+          pathname: request.nextUrl.pathname,
+          searchParams: [...request.nextUrl.searchParams],
+          hash: request.nextUrl.hash,
+        },
+      }))
+      .page(({ data }) => data);
+
+    expect(contract.pathname).toBe(`/static-encoding/${encoded}`);
+    await expect(
+      page({
+        params: Promise.resolve({}),
+        searchParams: Promise.resolve({ tag: ["a?b", "#日本語/%23"] }),
+      }),
+    ).resolves.toEqual({
+      pathname: `/static-encoding/${encoded}`,
+      searchParams: [
+        ["tag", "a?b"],
+        ["tag", "#日本語/%23"],
+      ],
+      hash: "",
+    });
+  });
 });
