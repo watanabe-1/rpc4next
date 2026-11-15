@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/watanabe-1/rpc4next/compare/rpc4next-shared-v0.3.0...rpc4next-shared-v0.3.1) (2026-11-15)
+
+
+### Bug Fixes
+
+* **client:** Preserve underscored dynamic parameter names ([#712](https://github.com/watanabe-1/rpc4next/issues/712)) ([ca8e60f](https://github.com/watanabe-1/rpc4next/commit/ca8e60f16d875bbff942a0aa2d1628ba6599d86c))
+
 ## [0.3.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-shared-v0.2.0...rpc4next-shared-v0.3.0) (2026-03-05)
 
 ### Features
