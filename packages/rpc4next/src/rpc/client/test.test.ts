@@ -6,7 +6,12 @@ import type {
   RpcEndpoint,
   RpcGeneratedPathStructure,
 } from "./generated";
-import { createRpcTestPageClient, type RpcTestPage, type RpcTestPageHandler } from "./test";
+import {
+  createRpcTestClient,
+  createRpcTestPageClient,
+  type RpcTestPage,
+  type RpcTestPageHandler,
+} from "./test";
 
 const loadTestPage = (page: RpcTestPageHandler) => async () => ({ default: page });
 
@@ -30,6 +35,63 @@ type TestPathStructure = RpcGeneratedPathStructure<{
     };
   };
 }>;
+
+describe.each(["route", "page"] as const)("%s test client route params", (clientKind) => {
+  const pathnames = ["/photo/[id]", "/docs/[...parts]", "/docs/optional/[[...parts]]"];
+  const client =
+    clientKind === "route"
+      ? createRpcTestClient<TestPathStructure>(
+          pathnames.map((pathname) => ({
+            pathname,
+            methods: ["GET"],
+            load: async () => ({
+              GET: async (_request, { params }) => Response.json(await params),
+            }),
+          })),
+        )
+      : createRpcTestPageClient<TestPathStructure>(
+          pathnames.map((pathname) => ({
+            pathname,
+            load: loadTestPage(async ({ params }) => params),
+          })),
+        );
+
+  const call = async (endpoint: unknown) => {
+    if (clientKind === "page") {
+      return (endpoint as { $render: () => Promise<unknown> }).$render();
+    }
+
+    const response = await (endpoint as { $get: () => Promise<Response> }).$get();
+    expect(response.status).toBe(200);
+
+    return response.json();
+  };
+
+  it.each(["a", "a/b"])("keeps dynamic params as strings: %s", async (id) => {
+    expect(await call(client.photo._id(id))).toEqual({ id });
+  });
+
+  it.each<{ parts: [string, ...string[]] }>([
+    { parts: ["a"] },
+    { parts: ["a", "b"] },
+    { parts: ["a/b"] },
+    { parts: ["a/b", "c%2Fd"] },
+  ])("keeps catch-all params as arrays: $parts", async ({ parts }) => {
+    expect(await call(client.docs.___parts(parts))).toEqual({ parts });
+  });
+
+  it.each<{ parts?: string[] }>([
+    {},
+    { parts: ["a"] },
+    { parts: ["a", "b"] },
+    { parts: ["a/b"] },
+    { parts: ["a/b", "c%2Fd"] },
+  ])("infers optional catch-all params: $parts", async ({ parts }) => {
+    const result = await call(client.docs.optional._____parts(parts));
+    // JSON omits undefined properties in route responses.
+    expect(result).toEqual(clientKind === "route" && parts === undefined ? {} : { parts });
+  });
+});
 
 describe("createRpcTestPageClient", () => {
   it("renders a matching static page", async () => {

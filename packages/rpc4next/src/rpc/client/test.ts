@@ -169,7 +169,7 @@ const createRouteMatcher = (pathname: string) => {
 };
 
 const createRouteParamsMatcher = (pathname: string) => {
-  const params: Array<{ name: string; optional: boolean }> = [];
+  const params: Array<{ name: string; kind: "dynamic" | "catch-all" | "optional-catch-all" }> = [];
   const segments = normalizePathname(pathname).split("/").filter(Boolean);
   const pattern =
     segments.length === 0
@@ -177,21 +177,21 @@ const createRouteParamsMatcher = (pathname: string) => {
       : segments.reduce((acc, segment) => {
           const optionalCatchAll = /^\[\[\.\.\.(.+)\]\]$/.exec(segment);
           if (optionalCatchAll) {
-            params.push({ name: optionalCatchAll[1], optional: true });
+            params.push({ name: optionalCatchAll[1], kind: "optional-catch-all" });
 
             return `${acc}(?:/(.*))?`;
           }
 
           const catchAll = /^\[\.\.\.(.+)\]$/.exec(segment);
           if (catchAll) {
-            params.push({ name: catchAll[1], optional: false });
+            params.push({ name: catchAll[1], kind: "catch-all" });
 
             return `${acc}/(.+)`;
           }
 
           const dynamic = /^\[(.+)\]$/.exec(segment);
           if (dynamic) {
-            params.push({ name: dynamic[1], optional: false });
+            params.push({ name: dynamic[1], kind: "dynamic" });
 
             return `${acc}/([^/]+)`;
           }
@@ -206,22 +206,23 @@ const createRouteParamsMatcher = (pathname: string) => {
 
     const result: RpcTestRouteParams = Object.create(null);
     for (let index = 0; index < params.length; index++) {
-      const { name, optional } = params[index];
+      const { name, kind } = params[index];
       const captured = match[index + 1];
       if (captured === undefined || captured === "") {
-        if (optional) {
+        if (kind === "optional-catch-all") {
           result[name] = undefined;
         }
 
         continue;
       }
 
-      result[name] = captured.includes("/")
-        ? captured
-            .split("/")
-            .map((segment) => safeDecode(segment))
-            .filter((segment): segment is string => segment !== undefined)
-        : (safeDecode(captured) ?? "");
+      result[name] =
+        kind !== "dynamic"
+          ? captured
+              .split("/")
+              .map((segment) => safeDecode(segment))
+              .filter((segment): segment is string => segment !== undefined)
+          : (safeDecode(captured) ?? "");
     }
 
     return result;
