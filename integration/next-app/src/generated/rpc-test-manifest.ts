@@ -113,6 +113,14 @@ export const testRoutes = [
 
 export const testPages = [
   {
+    pathname: "/users/[id]",
+    load: () => import("../../app/(admin)/users/[id]/page") as unknown as Promise<RpcTestPageModule>,
+  },
+  {
+    pathname: "/users",
+    load: () => import("../../app/(public)/users/page") as unknown as Promise<RpcTestPageModule>,
+  },
+  {
     pathname: "/e2e-client",
     load: () => import("../../app/e2e-client/page") as unknown as Promise<RpcTestPageModule>,
   },

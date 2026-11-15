@@ -46,6 +46,7 @@ describe("generate", () => {
     visitedDirsCache.set("/cached/app", true);
     scanAppDirCache.set("cached-scan", {
       pathStructure: "cached",
+      pathNode: { typeFragments: [], children: new Map() },
       imports: [],
       paramsTypes: [],
     });
@@ -72,6 +73,7 @@ describe("generate", () => {
     visitedDirsCache.set("/cached/app", true);
     scanAppDirCache.set("cached-scan", {
       pathStructure: "cached",
+      pathNode: { typeFragments: [], children: new Map() },
       imports: [],
       paramsTypes: [],
     });
@@ -116,6 +118,7 @@ describe("generate", () => {
     visitedDirsCache.set("/cached/app", true);
     scanAppDirCache.set("cached-scan", {
       pathStructure: "cached",
+      pathNode: { typeFragments: [], children: new Map() },
       imports: [],
       paramsTypes: [],
     });

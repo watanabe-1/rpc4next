@@ -9,12 +9,7 @@ import {
   writeTree,
 } from "../../test-helpers/tmp-dir.js";
 import type { ImportAliasName } from "./alias.js";
-import {
-  clearScanAppDirCacheAbove,
-  createScanAppDirCacheKey,
-  scanAppDirCache,
-  visitedDirsCache,
-} from "./cache.js";
+import { clearScanAppDirCacheAbove, scanAppDirCache, visitedDirsCache } from "./cache.js";
 import { toPosixPath } from "./path-utils.js";
 import { hasTargetFiles, scanAppDir } from "./route-scanner.js";
 
@@ -417,6 +412,133 @@ describe("route-scanner", () => {
 }`);
     });
 
+    it("should keep parent and child page markers under one route-group path key", () => {
+      setupTree({
+        testApp: {
+          "(public)": { users: { "page.tsx": "export default function Users() {};" } },
+          "(admin)": {
+            users: { "[id]": { "page.tsx": "export default function User() {};" } },
+          },
+        },
+      });
+
+      const { pathStructure } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(pathStructure).toBe(`{
+  "users": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & {
+    "_id": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & Record<ParamsKey, { "id": string }>
+  }
+}`);
+      expect(pathStructure.match(/"users":/g)).toHaveLength(1);
+    });
+
+    it.each([
+      ["(public)", "(admin)"],
+      ["(admin)", "(public)"],
+      ["@public", "@admin"],
+      ["@admin", "@public"],
+      ["(public)", "@admin"],
+      ["(public)", ""],
+    ])(
+      "should merge shared paths from %s and %s without losing endpoint types",
+      (parent, child) => {
+        const parentTree = {
+          users: {
+            "page.tsx":
+              "export type Query = { filter?: string }; export default function Users() {};",
+          },
+        };
+        const childTree = {
+          users: {
+            "[id]": {
+              "page.tsx": "export default function User() {};",
+              details: {
+                "route.ts": "export function GET() {}; export function POST() {};",
+              },
+            },
+          },
+        };
+        setupTree({
+          testApp: {
+            [parent]: parentTree,
+            ...(child ? { [child]: childTree } : childTree),
+          },
+        });
+
+        const { pathStructure, paramsTypes, pageManifests, routeManifests, imports } = scanAppDir(
+          tmpPath("output"),
+          tmpPath("testApp"),
+        );
+        expect(pathStructure).toBe(`{
+  "users": Record<QueryKey, Query_asmocked> & RpcEndpoint & {
+    "_id": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & Record<ParamsKey, { "id": string }> & {
+      "details": { "$get": typeof GET_asmocked } & { "$post": typeof POST_asmocked } & RpcEndpoint & Record<ParamsKey, { "id": string }>
+    }
+  }
+}`);
+        expect(pathStructure.match(/"users":/g)).toHaveLength(1);
+        expect(pageManifests?.map(({ pathname }) => pathname).sort()).toEqual([
+          "/users",
+          "/users/[id]",
+        ]);
+        expect(routeManifests).toEqual([
+          expect.objectContaining({ pathname: "/users/[id]/details", methods: ["GET", "POST"] }),
+        ]);
+        expect(paramsTypes).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ pathname: "/users", paramsType: "{}" }),
+            expect.objectContaining({ pathname: "/users/[id]", paramsType: '{ "id": string }' }),
+          ]),
+        );
+        expect(imports).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ statement: expect.stringContaining("Query_asmocked") }),
+            expect.objectContaining({ statement: expect.stringContaining("Page_asmocked") }),
+            expect.objectContaining({ statement: expect.stringContaining("GET_asmocked") }),
+            expect.objectContaining({ statement: expect.stringContaining("POST_asmocked") }),
+          ]),
+        );
+      },
+    );
+
+    it("should recursively merge shared dynamic prefixes without modifying cached branches", () => {
+      setupTree({
+        testApp: {
+          "(admin)": {
+            users: { "[id]": { posts: { "page.tsx": "export default function Posts() {};" } } },
+          },
+          "(public)": {
+            users: { "[id]": { "page.tsx": "export default function User() {};" } },
+          },
+        },
+      });
+      const result = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(result.pathStructure).toBe(`{
+  "users": {
+    "_id": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & Record<ParamsKey, { "id": string }> & {
+      "posts": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & Record<ParamsKey, { "id": string }>
+    }
+  }
+}`);
+
+      // Reuse the cached admin subtree after removing the public branch.
+      resetTree({
+        testApp: {
+          "(admin)": {
+            users: { "[id]": { posts: { "page.tsx": "export default function Posts() {};" } } },
+          },
+        },
+      });
+      clearScanAppDirCacheAbove(tmpPath("testApp", "(public)"));
+      const updated = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(updated.pathStructure).toBe(`{
+  "users": {
+    "_id": {
+      "posts": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint & Record<ParamsKey, { "id": string }>
+    }
+  }
+}`);
+    });
+
     it("should ignore non-object child path structure for grouped routes", () => {
       setupTree({
         testApp: {
@@ -470,38 +592,6 @@ describe("route-scanner", () => {
           pathname: "/group/base",
         },
       ]);
-    });
-
-    it("should throw when grouped route child path structure is empty", () => {
-      setupTree({
-        testApp: {
-          group: {
-            "(user)": {
-              "page.tsx": "export function Home() {};",
-            },
-          },
-        },
-      });
-
-      visitedDirsCache.set(tmpPath("testApp", "group", "(user)"), true);
-      scanAppDirCache.set(
-        createScanAppDirCacheKey({
-          output: tmpPath("output"),
-          input: tmpPosixPath("testApp", "group", "(user)"),
-          indent: "  ",
-          rootDir: tmpPath("testApp"),
-          parentParams: [],
-        }),
-        {
-          pathStructure: "   ",
-          imports: [],
-          paramsTypes: [],
-        },
-      );
-
-      expect(() => scanAppDir(tmpPath("output"), tmpPath("testApp"))).toThrow(
-        `Invalid empty child path structure in grouped/parallel route: ${tmpPosixPath("testApp", "group", "(user)")}`,
-      );
     });
 
     it("should flatten parallel slot descendants into the public path structure", () => {

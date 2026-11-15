@@ -100,6 +100,7 @@ describe("clearScanCaches", () => {
       }),
       {
         pathStructure: "",
+        pathNode: { typeFragments: [], children: new Map() },
         imports: [],
         paramsTypes: [],
       },
@@ -118,6 +119,7 @@ describe("clearScanAppDirCacheAbove", () => {
   beforeEach(() => {
     const blunkObj = {
       pathStructure: "",
+      pathNode: { typeFragments: [], children: new Map() },
       imports: [],
       paramsTypes: [],
     };
