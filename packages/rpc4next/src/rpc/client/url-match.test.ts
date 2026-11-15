@@ -58,7 +58,8 @@ describe("public URL and matching helpers", () => {
   it("round-trips Japanese and escaped static segments", () => {
     const url = rpc.日本語["%5Fescaped"].$url();
 
-    expect(url.relativePath).toBe("/日本語/_escaped");
+    expect(url.relativePath).toBe("/%E6%97%A5%E6%9C%AC%E8%AA%9E/_escaped");
+    expect(url.pathname).toBe("/日本語/_escaped");
     expect(helper.日本語["%5Fescaped"].$match(url.path)?.params).toEqual({});
     expect(helper.日本語["%5Fescaped"].$match(new URL(url.path).pathname)?.params).toEqual({});
   });

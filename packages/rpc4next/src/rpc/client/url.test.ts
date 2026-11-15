@@ -4,6 +4,37 @@ import { createUrl } from "./url";
 
 describe("createUrl", () => {
   it.each([
+    ["a#b", "a%23b", "a#b"],
+    ["a?b", "a%3Fb", "a?b"],
+    ["100%", "100%25", "100%"],
+    ["a b", "a%20b", "a b"],
+    ["日本語", "%E6%97%A5%E6%9C%AC%E8%AA%9E", "日本語"],
+    ["a/b", "a%2Fb", "a/b"],
+    ["a%2fb", "a%2fb", "a/b"],
+    ["a%23b", "a%23b", "a#b"],
+    ["a%2523b", "a%2523b", "a%23b"],
+    ["%61%20b", "a%20b", "a b"],
+    ["%E0%A4%A", "%E0%A4%A", "%E0%A4%A"],
+    ["%25%E3%ZZ", "%25%E3%ZZ", "%25%E3%ZZ"],
+  ])("encodes static key %s without changing URL metadata", (key, encoded, pathname) => {
+    const result = createUrl(
+      ["https://example.com/base", "static", key],
+      {},
+      [],
+    )({
+      query: { q: "value" },
+      hash: "section",
+    });
+
+    expect(result).toEqual({
+      path: `https://example.com/base/static/${encoded}?q=value#section`,
+      relativePath: `/static/${encoded}?q=value#section`,
+      pathname: `/static/${pathname}`,
+      params: {},
+    });
+  });
+
+  it.each([
     { key: "__id", value: "abc", name: "_id", pathname: "[_id]", path: "/users/abc" },
     {
       key: "____slug",
