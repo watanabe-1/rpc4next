@@ -644,10 +644,11 @@ describe("createNextPage", () => {
   });
 
   it.each([
-    { name: "redirect", navigate: () => redirect("/photo/next"), digest: "NEXT_REDIRECT" },
-    { name: "notFound", navigate: () => notFound(), digest: "NEXT_HTTP_ERROR_FALLBACK;404" },
-  ])("rethrows $name from async render before page onError", async ({ navigate, digest }) => {
+    { name: "redirect", navigate: () => redirect("/photo/next") },
+    { name: "notFound", navigate: () => notFound() },
+  ])("rethrows $name from async render before page onError", async ({ navigate }) => {
     const onError = vi.fn<() => string>(() => "swallowed-navigation-interrupt");
+    let navigationError: unknown;
     const page = procedure
       .forRoute(pageRouteContract)
       .params(paramsSchema)
@@ -655,14 +656,19 @@ describe("createNextPage", () => {
         async () => {
           await Promise.resolve();
 
-          return navigate();
+          try {
+            return navigate();
+          } catch (error) {
+            navigationError = error;
+            throw error;
+          }
         },
         { onError },
       );
 
-    await expect(page({ params: Promise.resolve({ id: "photo-1" }) })).rejects.toMatchObject({
-      digest: expect.stringContaining(digest),
-    });
+    const result = page({ params: Promise.resolve({ id: "photo-1" }) });
+    await expect(result).rejects.toBeInstanceOf(Error);
+    await expect(result).rejects.toBe(navigationError);
     expect(onError).not.toHaveBeenCalled();
   });
 
