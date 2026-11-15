@@ -124,6 +124,8 @@ const safeDecode = (value: string | undefined) => {
 
 const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+const normalizeSegment = (value: string) => encodeURIComponent(safeDecode(value) ?? "");
+
 const normalizePathname = (pathname: string) => {
   const trimmed = pathname.replace(/^\/+|\/+$/g, "");
 
@@ -196,12 +198,13 @@ const createRouteParamsMatcher = (pathname: string) => {
             return `${acc}/([^/]+)`;
           }
 
-          return `${acc}/${escapeRegex(segment)}`;
+          return `${acc}/${escapeRegex(normalizeSegment(segment))}`;
         }, "");
   const matcher = new RegExp(`^${pattern}(?:/)?$`);
 
   return (input: string): RpcTestRouteParams | null => {
-    const match = matcher.exec(input);
+    // Normalize segments separately so encoded slashes remain inside their segment.
+    const match = matcher.exec(input.split("/").map(normalizeSegment).join("/"));
     if (!match) return null;
 
     const result: RpcTestRouteParams = Object.create(null);
