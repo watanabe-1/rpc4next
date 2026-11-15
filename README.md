@@ -344,6 +344,29 @@ browser client code. Set `testManifestOutputPath` in `rpc4next.config.json` to
 place that manifest somewhere else; when it is omitted, the CLI keeps deriving
 the manifest path from `outputPath`.
 
+#### Route Export Detection
+
+The CLI detects HTTP method exports in `route.ts` using regular expressions.
+Use direct declarations such as `export async function GET(...)`,
+`export const GET = ...`, or the procedure form `export const { GET } = ...`.
+Binding lists and re-exports that keep the method name, such as `export { GET }`
+and `export { GET } from "./handler"`, are also recognized.
+
+Detection has these known limitations:
+
+- Renaming a method in an export, such as `export { GET as POST }`, can cause
+  both names to be detected, generating an import for a method that is not exported.
+  Import the implementation under a different name and use `export const POST = handler` instead.
+- Commented-out declarations and export-like text inside strings can still be
+  detected. Remove unused declarations instead of leaving commented-out exports.
+- In a declaration such as `export const GET = ..., POST = ...`, only the first
+  method is detected. Use a separate export declaration for each method.
+
+For now, these limitations are accepted and migration to syntax-based parsing
+is deferred. Keeping the scanner lightweight avoids adding a parser runtime
+dependency and its maintenance cost. Revisit this decision if these limitations
+affect common usage, and measure CLI startup and scanning time before choosing a parser.
+
 ### 4. Create a Client
 
 ```ts
