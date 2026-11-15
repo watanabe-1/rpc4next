@@ -17,6 +17,15 @@ export const isCatchAllOrOptional = (key: string) =>
 /** Returns true if the key represents an optional catch-all segment. */
 export const isOptionalCatchAll = (key: string) => key.startsWith(OPTIONAL_CATCH_ALL_PREFIX);
 
+/** Removes only the internal segment marker, preserving the original parameter name. */
+export const getParamName = (key: string) => {
+  const prefix = [OPTIONAL_CATCH_ALL_PREFIX, CATCH_ALL_PREFIX, DYNAMIC_PREFIX].find((prefix) =>
+    key.startsWith(prefix),
+  );
+
+  return prefix ? key.slice(prefix.length) : key;
+};
+
 const httpMethods: Set<HttpMethodFuncKey> = new Set(HTTP_METHOD_FUNC_KEYS);
 
 export const isHttpMethod = (value: string): value is HttpMethodFuncKey =>

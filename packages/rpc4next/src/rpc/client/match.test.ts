@@ -3,6 +3,49 @@ import { describe, expect, it } from "vitest";
 import { matchPath } from "./match";
 
 describe("matchPath", () => {
+  it.each([
+    { key: "__id", path: "/users/a%2Fb", params: { _id: "a/b" } },
+    { key: "____slug", path: "/users/a%2Fb/c", params: { _slug: ["a/b", "c"] } },
+    { key: "______slug", path: "/users/a%2Fb/c", params: { _slug: ["a/b", "c"] } },
+    { key: "______slug", path: "/users", params: { _slug: undefined } },
+  ])("preserves names and encoded segment boundaries for $key ($path)", ({ key, path, params }) => {
+    expect(matchPath(["users", key], [key])(path)).toEqual({
+      params,
+      query: {},
+      hash: undefined,
+    });
+  });
+
+  it.each(["日本語", encodeURIComponent("日本語")])(
+    "matches raw and encoded Japanese paths for %s",
+    (segment) => {
+      const matcher = matchPath([segment, "_id"], ["_id"]);
+
+      for (const pathname of ["/日本語", `/${encodeURIComponent("日本語")}`]) {
+        expect(matcher(`${pathname}/a%2fb/?tag=a&tag=b#日本語`)).toEqual({
+          params: { id: "a/b" },
+          query: { tag: ["a", "b"] },
+          hash: "日本語",
+        });
+        expect(matcher(`${pathname}/a/b`)).toBeNull();
+      }
+    },
+  );
+
+  it("matches encoded static underscores without treating them as dynamic markers", () => {
+    const matcher = matchPath(["%5Fescaped"], []);
+
+    expect(matcher("/%5fescaped")?.params).toEqual({});
+    expect(matcher("/_escaped")?.params).toEqual({});
+  });
+
+  it("preserves malformed and double-encoded dynamic values", () => {
+    const matcher = matchPath(["日本語", "__id"], ["__id"]);
+
+    expect(matcher("/日本語/%E3%81%ZZ")?.params).toEqual({ _id: "%E3%81%ZZ" });
+    expect(matcher("/日本語/%252F")?.params).toEqual({ _id: "%2F" });
+  });
+
   describe("Dynamic segments", () => {
     it("Simple dynamic segment (without trailing slash)", () => {
       const paths = ["/", "users", "_id"];
