@@ -37,7 +37,7 @@ describe("generate", () => {
 
   it("clears scan caches after non-watch generation", () => {
     vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
-      pathStructure: "generated-type-content",
+      pathStructure: `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
       paramsTypes: [],
     });
     vi.spyOn(fs, "existsSync").mockReturnValue(false);
@@ -64,7 +64,7 @@ describe("generate", () => {
 
   it("preserves scan caches during watch generation", () => {
     vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
-      pathStructure: "generated-type-content",
+      pathStructure: `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
       paramsTypes: [],
     });
     vi.spyOn(fs, "existsSync").mockReturnValue(false);
@@ -92,8 +92,10 @@ describe("generate", () => {
 
   it("preserves generated params file cache during watch generation", () => {
     vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
-      pathStructure: "generated-type-content",
-      paramsTypes: [{ paramsType: "params-type", dirPath: "dir1" }],
+      pathStructure: `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
+      paramsTypes: [
+        { paramsType: `${ROUTE_CONTRACT_GENERATED_MARKER}\nparams-type`, dirPath: "dir1" },
+      ],
     });
     vi.spyOn(fs, "existsSync").mockReturnValue(false);
     vi.spyOn(fs, "writeFileSync").mockImplementation(() => {});
@@ -138,8 +140,10 @@ describe("generate", () => {
 
   it("clears generated params file cache after non-watch generation", () => {
     vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
-      pathStructure: "generated-type-content",
-      paramsTypes: [{ paramsType: "params-type", dirPath: "dir1" }],
+      pathStructure: `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
+      paramsTypes: [
+        { paramsType: `${ROUTE_CONTRACT_GENERATED_MARKER}\nparams-type`, dirPath: "dir1" },
+      ],
     });
     vi.spyOn(fs, "existsSync").mockReturnValue(false);
     vi.spyOn(fs, "writeFileSync").mockImplementation(() => {});
@@ -157,7 +161,7 @@ describe("generate", () => {
 
   it("writes the output file when it does not exist", () => {
     vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
-      pathStructure: "generated-type-content",
+      pathStructure: `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
       paramsTypes: [],
     });
 
@@ -178,7 +182,10 @@ describe("generate", () => {
 
     expect(generatePathStructure.generatePathStructure).toHaveBeenCalledWith(outputPath, baseDir);
 
-    expect(fs.writeFileSync).toHaveBeenCalledWith(outputPath, "generated-type-content");
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      outputPath,
+      `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
+    );
     expect(fs.readFileSync).not.toHaveBeenCalled();
 
     const expectedSuccessMessage = padMessage(
@@ -195,7 +202,7 @@ describe("generate", () => {
 
   it("skips writing the output file when the content is unchanged", () => {
     vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
-      pathStructure: "generated-type-content",
+      pathStructure: `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
       paramsTypes: [],
     });
 
@@ -205,7 +212,7 @@ describe("generate", () => {
         return generatePathStructure.generateTestManifest(testManifestOutputPath, []);
       }
 
-      return "generated-type-content";
+      return `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`;
     });
     vi.spyOn(fs, "writeFileSync").mockImplementation(() => {});
 
@@ -234,12 +241,14 @@ describe("generate", () => {
 
   it("writes the output file when the existing content differs", () => {
     vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
-      pathStructure: "generated-type-content",
+      pathStructure: `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
       paramsTypes: [],
     });
 
     vi.spyOn(fs, "existsSync").mockReturnValue(true);
-    vi.spyOn(fs, "readFileSync").mockReturnValue("stale-content");
+    vi.spyOn(fs, "readFileSync").mockReturnValue(
+      `${ROUTE_CONTRACT_GENERATED_MARKER}\nstale-content`,
+    );
     vi.spyOn(fs, "writeFileSync").mockImplementation(() => {});
 
     generate({
@@ -250,7 +259,10 @@ describe("generate", () => {
     });
 
     expect(fs.readFileSync).toHaveBeenCalledWith(outputPath, "utf8");
-    expect(fs.writeFileSync).toHaveBeenCalledWith(outputPath, "generated-type-content");
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      outputPath,
+      `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
+    );
 
     const expectedSuccessMessage = padMessage(
       "Path structure type",
@@ -283,7 +295,7 @@ describe("generate", () => {
       });
 
       vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
-        pathStructure: "generated-type-content",
+        pathStructure: `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
         paramsTypes: [],
         routeManifests: [],
       });
@@ -307,11 +319,11 @@ describe("generate", () => {
 
   it("writes only new or changed params files when paramsFileName is provided", () => {
     vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
-      pathStructure: "generated-type-content",
+      pathStructure: `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
       paramsTypes: [
-        { paramsType: "params-type-1", dirPath: "dir1" },
-        { paramsType: "params-type-2", dirPath: "dir2" },
-        { paramsType: "params-type-3", dirPath: "dir3" },
+        { paramsType: `${ROUTE_CONTRACT_GENERATED_MARKER}\nparams-type-1`, dirPath: "dir1" },
+        { paramsType: `${ROUTE_CONTRACT_GENERATED_MARKER}\nparams-type-2`, dirPath: "dir2" },
+        { paramsType: `${ROUTE_CONTRACT_GENERATED_MARKER}\nparams-type-3`, dirPath: "dir3" },
       ],
     });
 
@@ -320,14 +332,14 @@ describe("generate", () => {
     });
     vi.spyOn(fs, "readFileSync").mockImplementation((filePath) => {
       if (filePath === path.join("dir2", paramsFileName)) {
-        return "params-type-2";
+        return `${ROUTE_CONTRACT_GENERATED_MARKER}\nparams-type-2`;
       }
 
       if (filePath === path.join("dir3", paramsFileName)) {
-        return "old-params-type-3";
+        return `${ROUTE_CONTRACT_GENERATED_MARKER}\nold-params-type-3`;
       }
 
-      return "";
+      return ROUTE_CONTRACT_GENERATED_MARKER;
     });
     vi.spyOn(fs, "writeFileSync").mockImplementation(() => {});
     vi.spyOn(fs, "readdirSync").mockReturnValue([]);
@@ -339,18 +351,21 @@ describe("generate", () => {
       logger,
     });
 
-    expect(fs.writeFileSync).toHaveBeenCalledWith(outputPath, "generated-type-content");
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      outputPath,
+      `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
+    );
     expect(fs.writeFileSync).toHaveBeenCalledWith(
       path.join("dir1", paramsFileName),
-      "params-type-1",
+      `${ROUTE_CONTRACT_GENERATED_MARKER}\nparams-type-1`,
     );
     expect(fs.writeFileSync).not.toHaveBeenCalledWith(
       path.join("dir2", paramsFileName),
-      "params-type-2",
+      `${ROUTE_CONTRACT_GENERATED_MARKER}\nparams-type-2`,
     );
     expect(fs.writeFileSync).toHaveBeenCalledWith(
       path.join("dir3", paramsFileName),
-      "params-type-3",
+      `${ROUTE_CONTRACT_GENERATED_MARKER}\nparams-type-3`,
     );
     expect(fs.writeFileSync).toHaveBeenCalledTimes(4);
 
@@ -377,17 +392,19 @@ describe("generate", () => {
 
   it("logs unchanged params when all params files are unchanged", () => {
     vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
-      pathStructure: "generated-type-content",
-      paramsTypes: [{ paramsType: "params-type-1", dirPath: "dir1" }],
+      pathStructure: `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
+      paramsTypes: [
+        { paramsType: `${ROUTE_CONTRACT_GENERATED_MARKER}\nparams-type-1`, dirPath: "dir1" },
+      ],
     });
 
     vi.spyOn(fs, "existsSync").mockReturnValue(true);
     vi.spyOn(fs, "readFileSync").mockImplementation((filePath) => {
       if (filePath === outputPath) {
-        return "stale-content";
+        return `${ROUTE_CONTRACT_GENERATED_MARKER}\nstale-content`;
       }
 
-      return "params-type-1";
+      return `${ROUTE_CONTRACT_GENERATED_MARKER}\nparams-type-1`;
     });
     vi.spyOn(fs, "writeFileSync").mockImplementation(() => {});
     vi.spyOn(fs, "readdirSync").mockReturnValue([]);
@@ -410,7 +427,10 @@ describe("generate", () => {
       indentLevel: SUCCESS_INDENT_LEVEL,
     });
     expect(fs.writeFileSync).toHaveBeenCalledTimes(2);
-    expect(fs.writeFileSync).toHaveBeenCalledWith(outputPath, "generated-type-content");
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      outputPath,
+      `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
+    );
   });
 
   it("removes stale generated params files outside the current scan result", () => {
@@ -437,7 +457,7 @@ describe("generate", () => {
       });
 
       vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
-        pathStructure: "generated-type-content",
+        pathStructure: `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
         paramsTypes: [
           {
             paramsType: `${ROUTE_CONTRACT_GENERATED_MARKER}\nnew-current`,
@@ -483,7 +503,7 @@ describe("generate", () => {
 
       vi.spyOn(generatePathStructure, "generatePathStructure")
         .mockReturnValueOnce({
-          pathStructure: "generated-type-content",
+          pathStructure: `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
           paramsTypes: [
             {
               paramsType: `${ROUTE_CONTRACT_GENERATED_MARKER}\ncurrent`,
@@ -496,7 +516,7 @@ describe("generate", () => {
           ],
         })
         .mockReturnValueOnce({
-          pathStructure: "generated-type-content",
+          pathStructure: `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
           paramsTypes: [
             {
               paramsType: `${ROUTE_CONTRACT_GENERATED_MARKER}\ncurrent`,
@@ -560,7 +580,7 @@ describe("generate", () => {
       );
 
       vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
-        pathStructure: "generated-type-content",
+        pathStructure: `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
         paramsTypes: [
           {
             paramsType: `${ROUTE_CONTRACT_GENERATED_MARKER}\ncurrent`,
@@ -604,7 +624,7 @@ describe("generate", () => {
       });
 
       vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
-        pathStructure: "generated-type-content",
+        pathStructure: `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
         paramsTypes: [
           {
             paramsType: `${ROUTE_CONTRACT_GENERATED_MARKER}\nnew-current`,
@@ -645,7 +665,7 @@ describe("generate", () => {
       });
 
       vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
-        pathStructure: "generated-type-content",
+        pathStructure: `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
         paramsTypes: [],
       });
 
@@ -685,24 +705,26 @@ describe("checkGenerated", () => {
 
   it("returns true when generated files are current without writing", () => {
     vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
-      pathStructure: "generated-type-content",
-      paramsTypes: [{ paramsType: "params-type", dirPath: "dir1" }],
+      pathStructure: `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
+      paramsTypes: [
+        { paramsType: `${ROUTE_CONTRACT_GENERATED_MARKER}\nparams-type`, dirPath: "dir1" },
+      ],
     });
     vi.spyOn(fs, "existsSync").mockReturnValue(true);
     vi.spyOn(fs, "readFileSync").mockImplementation((filePath) => {
       if (filePath === outputPath) {
-        return "generated-type-content";
+        return `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`;
       }
 
       if (filePath === path.join("dir1", paramsFileName)) {
-        return "params-type";
+        return `${ROUTE_CONTRACT_GENERATED_MARKER}\nparams-type`;
       }
 
       if (filePath === testManifestOutputPath) {
         return generatePathStructure.generateTestManifest(testManifestOutputPath, []);
       }
 
-      return "";
+      return ROUTE_CONTRACT_GENERATED_MARKER;
     });
     vi.spyOn(fs, "writeFileSync").mockImplementation(() => {});
     vi.spyOn(fs, "readdirSync").mockReturnValue([]);
@@ -725,11 +747,13 @@ describe("checkGenerated", () => {
 
   it("returns false when the path structure file is stale", () => {
     vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
-      pathStructure: "generated-type-content",
+      pathStructure: `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
       paramsTypes: [],
     });
     vi.spyOn(fs, "existsSync").mockReturnValue(true);
-    vi.spyOn(fs, "readFileSync").mockReturnValue("stale-content");
+    vi.spyOn(fs, "readFileSync").mockReturnValue(
+      `${ROUTE_CONTRACT_GENERATED_MARKER}\nstale-content`,
+    );
 
     const result = checkGenerated({
       baseDir,
@@ -748,21 +772,21 @@ describe("checkGenerated", () => {
   it("checks the test manifest at a configured output path", () => {
     const customTestManifestOutputPath = "test/generated/routes-for-tests.ts";
     vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
-      pathStructure: "generated-type-content",
+      pathStructure: `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
       paramsTypes: [],
       routeManifests: [],
     });
     vi.spyOn(fs, "existsSync").mockReturnValue(true);
     vi.spyOn(fs, "readFileSync").mockImplementation((filePath) => {
       if (filePath === outputPath) {
-        return "generated-type-content";
+        return `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`;
       }
 
       if (filePath === customTestManifestOutputPath) {
         return generatePathStructure.generateTestManifest(customTestManifestOutputPath, []);
       }
 
-      return "";
+      return ROUTE_CONTRACT_GENERATED_MARKER;
     });
 
     const result = checkGenerated({
@@ -796,13 +820,13 @@ describe("checkGenerated", () => {
         },
         src: {
           generated: {
-            "rpc.ts": "generated-type-content",
+            "rpc.ts": `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
           },
         },
       });
 
       vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
-        pathStructure: "generated-type-content",
+        pathStructure: `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
         paramsTypes: [
           {
             paramsType: `${ROUTE_CONTRACT_GENERATED_MARKER}\ncurrent`,
