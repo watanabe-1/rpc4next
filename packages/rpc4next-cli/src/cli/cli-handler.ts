@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { EXIT_FAILURE, EXIT_SUCCESS } from "./constants.js";
+import { assertNotNextReservedFile } from "./core/generated-file-safety.js";
 import { toPosixPath } from "./core/path-utils.js";
 import { checkGenerated, generate } from "./generator.js";
 import type { CliOptions, ExitCode, Logger } from "./types.js";
@@ -181,6 +182,16 @@ export const handleCli = (
     logger.error("Error: --check cannot be used with --watch.");
 
     return EXIT_FAILURE;
+  }
+
+  if (paramsFileName) {
+    try {
+      assertNotNextReservedFile(path.join(resolvedBaseDirNative, paramsFileName));
+    } catch (error) {
+      logger.error((error as Error).message);
+
+      return EXIT_FAILURE;
+    }
   }
 
   if (options.check) {

@@ -12,6 +12,10 @@ import {
   generatePathStructure,
   ROUTE_CONTRACT_GENERATED_MARKER,
 } from "./core/generate-path-structure.js";
+import {
+  assertNotNextReservedFile,
+  validateGeneratedTargets,
+} from "./core/generated-file-safety.js";
 import { relativeFromRoot } from "./core/path-utils.js";
 import { padMessage } from "./logger.js";
 import type { Logger } from "./types.js";
@@ -161,12 +165,27 @@ export const checkGenerated = ({
   try {
     logger.info("Checking generated types...", { event: "check" });
 
+    if (paramsFileName) {
+      assertNotNextReservedFile(path.join(baseDir, paramsFileName));
+    }
+
     const {
       pageManifests = [],
       pathStructure,
       paramsTypes,
       routeManifests = [],
     } = generatePathStructure(outputPath, baseDir);
+    const testManifestOutputPath = resolveTestManifestOutputPath(
+      outputPath,
+      configuredTestManifestOutputPath,
+    );
+    validateGeneratedTargets([
+      outputPath,
+      testManifestOutputPath,
+      ...paramsTypes.flatMap(({ dirPath }) =>
+        paramsFileName ? [path.join(dirPath, paramsFileName)] : [],
+      ),
+    ]);
     let isCurrent = true;
 
     if (!isFileContentCurrent(outputPath, pathStructure)) {
@@ -198,10 +217,6 @@ export const checkGenerated = ({
       }
     }
 
-    const testManifestOutputPath = resolveTestManifestOutputPath(
-      outputPath,
-      configuredTestManifestOutputPath,
-    );
     const testManifest = generateTestManifest(
       testManifestOutputPath,
       routeManifests,
@@ -241,12 +256,32 @@ export const generate = ({
   try {
     logger.info("Generating types...", { event: "generate" });
 
+    if (paramsFileName) {
+      assertNotNextReservedFile(path.join(baseDir, paramsFileName));
+    }
+
     const {
       pageManifests = [],
       pathStructure,
       paramsTypes,
       routeManifests = [],
     } = generatePathStructure(outputPath, baseDir);
+    const testManifestOutputPath = resolveTestManifestOutputPath(
+      outputPath,
+      configuredTestManifestOutputPath,
+    );
+    const testManifest = generateTestManifest(
+      testManifestOutputPath,
+      routeManifests,
+      pageManifests,
+    );
+    validateGeneratedTargets([
+      outputPath,
+      testManifestOutputPath,
+      ...paramsTypes.flatMap(({ dirPath }) =>
+        paramsFileName ? [path.join(dirPath, paramsFileName)] : [],
+      ),
+    ]);
 
     if (writeFileIfChanged(outputPath, pathStructure)) {
       logger.success(
@@ -310,16 +345,6 @@ export const generate = ({
         );
       }
     }
-
-    const testManifestOutputPath = resolveTestManifestOutputPath(
-      outputPath,
-      configuredTestManifestOutputPath,
-    );
-    const testManifest = generateTestManifest(
-      testManifestOutputPath,
-      routeManifests,
-      pageManifests,
-    );
 
     if (
       writeFileIfChanged(testManifestOutputPath, testManifest, {

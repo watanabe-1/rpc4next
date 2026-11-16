@@ -3,6 +3,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { cleanupTempDir, makeTempDir, writeTree } from "../../test-helpers/tmp-dir.js";
+import { ROUTE_CONTRACT_GENERATED_MARKER } from "../core/generate-path-structure.js";
 import { handleInitCommand } from "./init-command.js";
 import { INIT_TEMPLATE_FILES } from "./templates.js";
 
@@ -99,11 +100,12 @@ describe("handleInitCommand", () => {
   });
 
   it("overwrites existing files with force", () => {
+    const oldGenerated = `${ROUTE_CONTRACT_GENERATED_MARKER}\nold generated\n`;
     writeTree(process.cwd(), {
       "rpc4next.config.json": "old config\n",
       src: {
         generated: {
-          "rpc.ts": "old generated\n",
+          "rpc.ts": oldGenerated,
         },
         lib: {
           "rpc-client.ts": "old client\n",
@@ -122,7 +124,7 @@ describe("handleInitCommand", () => {
 
     expect(result).toBe(0);
     expect(fs.readFileSync("rpc4next.config.json", "utf8")).not.toBe("old config\n");
-    expect(fs.readFileSync("src/generated/rpc.ts", "utf8")).not.toBe("old generated\n");
+    expect(fs.readFileSync("src/generated/rpc.ts", "utf8")).not.toBe(oldGenerated);
     expect(fs.readFileSync("src/lib/rpc-client.ts", "utf8")).not.toBe("old client\n");
     expect(logger.info).toHaveBeenCalledWith("created src/generated/rpc.ts");
   });
