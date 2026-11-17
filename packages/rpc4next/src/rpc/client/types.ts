@@ -208,16 +208,16 @@ type InferValidationSchema<T> =
       ? TValidationSchema
       : ValidationSchema;
 
-type InferNextResponseType<T> = T extends (...args: never[]) => Promise<NextResponse<infer U>>
-  ? U
-  : never;
+type InferNextResponseType<TResponse> = TResponse extends NextResponse<infer U> ? U : unknown;
 
 type InferProcedureOutput<T> =
-  ExtractAttachedProcedureDefinition<T> extends {
-    output: ProcedureOutputContract<infer TOutput>;
-  }
-    ? TOutput
-    : never;
+  IsNever<ExtractAttachedProcedureDefinition<T>> extends true
+    ? never
+    : ExtractAttachedProcedureDefinition<T> extends {
+          output: ProcedureOutputContract<infer TOutput>;
+        }
+      ? TOutput
+      : never;
 
 type ProcedureErrorResponse<TCode extends RpcErrorCode = RpcErrorCode> = TCode extends RpcErrorCode
   ? TypedNextResponse<
@@ -237,15 +237,17 @@ type ResolveStatus<TStatus, TDefault extends HttpStatusCode> = TStatus extends H
   : TDefault;
 
 type InferProcedureValidationErrorResponse<T> =
-  ExtractAttachedProcedureDefinition<T> extends {
-    input: ProcedureInputContract<infer TValidationSchema, infer TValidationErrorResponses>;
-  }
-    ? keyof TValidationSchema["input"] extends never
-      ? never
-      :
-          | ProcedureErrorResponse<"BAD_REQUEST">
-          | InferProcedureCustomValidationErrorResponse<TValidationErrorResponses>
-    : never;
+  IsNever<ExtractAttachedProcedureDefinition<T>> extends true
+    ? never
+    : ExtractAttachedProcedureDefinition<T> extends {
+          input: ProcedureInputContract<infer TValidationSchema, infer TValidationErrorResponses>;
+        }
+      ? keyof TValidationSchema["input"] extends never
+        ? never
+        :
+            | ProcedureErrorResponse<"BAD_REQUEST">
+            | InferProcedureCustomValidationErrorResponse<TValidationErrorResponses>
+      : never;
 
 type InferProcedureCustomValidationErrorResponse<TValidationErrorResponses> =
   TValidationErrorResponses extends ProcedureValidationErrorResponseMap
@@ -279,13 +281,15 @@ type NormalizeProcedureValidationErrorResponse<TResult> = TResult extends TypedN
             : never;
 
 type InferProcedureOutputValidationErrorResponse<T> =
-  ExtractAttachedProcedureDefinition<T> extends {
-    output: {
-      runtime: true;
-    };
-  }
-    ? ProcedureErrorResponse<"INTERNAL_SERVER_ERROR">
-    : never;
+  IsNever<ExtractAttachedProcedureDefinition<T>> extends true
+    ? never
+    : ExtractAttachedProcedureDefinition<T> extends {
+          output: {
+            runtime: true;
+          };
+        }
+      ? ProcedureErrorResponse<"INTERNAL_SERVER_ERROR">
+      : never;
 
 type ReplaceSuccessResponseBody<TResponse, TOutput> =
   TResponse extends TypedNextResponse<unknown, infer TStatus, infer TContentType>
@@ -294,30 +298,27 @@ type ReplaceSuccessResponseBody<TResponse, TOutput> =
       : TResponse
     : never;
 
-type InferTypedNextResponseTypeFromOutput<T, TOutput> = T extends (
-  ...args: never[]
-) => Promise<infer TResponse>
-  ? [ReplaceSuccessResponseBody<TResponse, TOutput>] extends [never]
-    ? TypedNextResponse<TOutput, HttpStatusCode, ContentType>
-    : ReplaceSuccessResponseBody<TResponse, TOutput>
-  : TypedNextResponse<TOutput, HttpStatusCode, ContentType>;
+type InferTypedNextResponseTypeFromOutput<TResponse, TOutput> = [
+  ReplaceSuccessResponseBody<TResponse, TOutput>,
+] extends [never]
+  ? TypedNextResponse<TOutput, HttpStatusCode, ContentType>
+  : ReplaceSuccessResponseBody<TResponse, TOutput>;
 
-type InferTypedNextResponseType<T> = T extends (...args: never[]) => Promise<unknown>
+type InferTypedNextResponseTypeFromResponse<TResponse> = TResponse extends TypedNextResponse
+  ? TResponse
+  : TypedNextResponse<InferNextResponseType<TResponse>, HttpStatusCode, ContentType>;
+
+type InferTypedNextResponseType<T> = T extends (...args: never[]) => unknown
   ? IsNever<InferProcedureOutput<T>> extends true
-    ? T extends (...args: never[]) => Promise<TypedNextResponse>
-      ?
-          | Awaited<ReturnType<T>>
-          | InferProcedureValidationErrorResponse<T>
-          | InferProcedureOutputValidationErrorResponse<T>
-      :
-          | TypedNextResponse<InferNextResponseType<T>, HttpStatusCode, ContentType>
-          | InferProcedureValidationErrorResponse<T>
-          | InferProcedureOutputValidationErrorResponse<T>
-    :
-        | InferTypedNextResponseTypeFromOutput<T, InferProcedureOutput<T>>
+    ?
+        | InferTypedNextResponseTypeFromResponse<Awaited<ReturnType<T>>>
         | InferProcedureValidationErrorResponse<T>
         | InferProcedureOutputValidationErrorResponse<T>
-  : TypedNextResponse<InferNextResponseType<T>, HttpStatusCode, ContentType>;
+    :
+        | InferTypedNextResponseTypeFromOutput<Awaited<ReturnType<T>>, InferProcedureOutput<T>>
+        | InferProcedureValidationErrorResponse<T>
+        | InferProcedureOutputValidationErrorResponse<T>
+  : TypedNextResponse<never, HttpStatusCode, ContentType>;
 
 type PathProxyAsProperty<T> = {
   $match: (path: string) =>
