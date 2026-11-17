@@ -201,6 +201,18 @@ const main = async () => {
     installRootDependency(nodeModulesDir, "readdirp");
     installRootDependency(nodeModulesDir, "server-only");
 
+    installRootDependency(nodeModulesDir, "oxc-parser");
+    installRootDependency(nodeModulesDir, "@oxc-project/types");
+    const parserPackage = readJson<{ optionalDependencies?: Record<string, string> }>(
+      path.join(repoRoot, "node_modules", "oxc-parser", "package.json"),
+    );
+    // Copy only bindings installed for this platform; do not require other platforms' addons.
+    for (const dependency of Object.keys(parserPackage.optionalDependencies ?? {})) {
+      if (fs.existsSync(path.join(repoRoot, "node_modules", dependency))) {
+        installRootDependency(nodeModulesDir, dependency);
+      }
+    }
+
     await runBundlerSmoke(fixtureDir);
     runCliSmoke(fixtureDir, installedPackageDirs.get("rpc4next-cli") ?? "");
 
