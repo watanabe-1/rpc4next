@@ -86,7 +86,7 @@ export const matchPath = (paths: string[], dynamicKeys: string[]) => {
     if (!match) return null;
 
     // Build params from the capture groups, aligned with dynamicKeys order
-    const params: Record<string, ParamValue> = {};
+    const params: Record<string, ParamValue> = Object.create(null);
 
     for (let i = 0; i < dynamicKeys.length; i++) {
       const keyRaw = dynamicKeys[i];
