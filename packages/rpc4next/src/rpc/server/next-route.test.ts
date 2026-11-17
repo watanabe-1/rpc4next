@@ -1,3 +1,4 @@
+import { notFound, permanentRedirect, redirect } from "next/navigation";
 import { NextRequest, NextResponse } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
 import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
@@ -229,6 +230,72 @@ describe("createNextRoute", () => {
     await expect(response.json()).resolves.toEqual({
       success: false,
       message: "custom onError",
+    });
+  });
+
+  describe.each(["handler", "middleware"] as const)("errors from %s", (source) => {
+    it.each([
+      { name: "redirect", navigate: () => redirect("/login") },
+      { name: "permanentRedirect", navigate: () => permanentRedirect("/login") },
+      { name: "notFound", navigate: () => notFound() },
+    ])("rethrows $name before onError", async ({ navigate }) => {
+      const onError = vi.fn<() => Response>(() => new Response("unexpected", { status: 500 }));
+      let navigationError: unknown;
+      const interrupt = () => {
+        try {
+          navigate();
+        } catch (error) {
+          navigationError = error;
+          throw error;
+        }
+      };
+      const route = createNextRoute(
+        procedure
+          .forRoute(staticRouteContract)
+          .use(async () => {
+            if (source === "middleware") interrupt();
+          })
+          .handle(async ({ response }) => {
+            if (source === "handler") interrupt();
+
+            return response.text("unexpected success");
+          }),
+        { onError },
+      );
+
+      const result = route(new NextRequest("http://127.0.0.1:3000/api/test"), {
+        params: Promise.resolve({}),
+      });
+
+      await expect(result).rejects.toBeInstanceOf(Error);
+      await expect(result).rejects.toBe(navigationError);
+      expect(onError).not.toHaveBeenCalled();
+    });
+
+    it("returns the onError response for ordinary errors", async () => {
+      const error = new Error("ordinary failure");
+      const fallback = new Response("handled failure", { status: 500 });
+      const onError = vi.fn<() => Response>(() => fallback);
+      const route = createNextRoute(
+        procedure
+          .forRoute(staticRouteContract)
+          .use(async () => {
+            if (source === "middleware") throw error;
+          })
+          .handle(async () => {
+            throw error;
+          }),
+        { onError },
+      );
+
+      const response = await route(new NextRequest("http://127.0.0.1:3000/api/test"), {
+        params: Promise.resolve({}),
+      });
+
+      expect(onError).toHaveBeenCalledExactlyOnceWith(error, expect.any(Object));
+      expect(response).toBe(fallback);
+      expect(response.status).toBe(500);
+      await expect(response.text()).resolves.toBe("handled failure");
     });
   });
 

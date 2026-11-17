@@ -4,6 +4,27 @@ import { createRpcClient } from "rpc4next/client";
 import type { PathStructure } from "../src/generated/rpc";
 
 test.describe("integration next-app e2e", () => {
+  for (const [mode, status] of [
+    ["redirect", 307],
+    ["middleware-redirect", 307],
+    ["permanent-redirect", 308],
+  ] as const) {
+    test(`route procedure preserves Next.js ${mode}`, async ({ request }) => {
+      const response = await request.get(`/api/error-demo?mode=${mode}`, {
+        maxRedirects: 0,
+      });
+
+      expect(response.status()).toBe(status);
+      expect(response.headers().location).toBe("/login");
+    });
+  }
+
+  test("route procedure preserves Next.js notFound", async ({ request }) => {
+    const response = await request.get("/api/error-demo?mode=not-found");
+
+    expect(response.status()).toBe(404);
+  });
+
   for (const [key, encoded, label] of [
     ["a#b", "a%23b", "hash"],
     ["a?b", "a%3Fb", "question"],
