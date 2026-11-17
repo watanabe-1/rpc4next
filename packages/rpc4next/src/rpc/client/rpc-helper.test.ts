@@ -101,6 +101,49 @@ type PathStructure = RpcGeneratedPathStructure<
 const rpcHelper = createRpcHelper<PathStructure>();
 
 describe("createRpcHelper basic behavior", () => {
+  const prototypeParamHelper = createRpcHelper<
+    RpcGeneratedPathStructure<
+      RpcEndpoint & {
+        "_%5F%5Fproto__": RpcEndpoint & Record<ParamsKey, { __proto__: string }>;
+        "___%5F%5Fproto__": RpcEndpoint & Record<ParamsKey, { __proto__: string[] }>;
+        "_____%5F%5Fproto__": RpcEndpoint & Record<ParamsKey, { __proto__?: string[] }>;
+        _constructor: RpcEndpoint & Record<ParamsKey, { constructor: string }>;
+        _toString: RpcEndpoint & Record<ParamsKey, { toString: string }>;
+      }
+    >
+  >();
+
+  it.each([
+    { key: "_%5F%5Fproto__", path: "/a%2Fb", value: "a/b" },
+    { key: "___%5F%5Fproto__", path: "/a%2Fb/c", value: ["a/b", "c"] },
+    { key: "_____%5F%5Fproto__", path: "/a%2Fb/c", value: ["a/b", "c"] },
+    { key: "_____%5F%5Fproto__", path: "/", value: undefined },
+  ] as const)("preserves __proto__ for $key ($path)", ({ key, path, value }) => {
+    const match = prototypeParamHelper[key].$match(`${path}?tag=a%2Fb&tag=c#hello%20world`);
+
+    expect(match).not.toBeNull();
+    if (!match) throw new Error("Expected path to match");
+
+    expect(Object.hasOwn(match.params, "__proto__")).toBe(true);
+    expect(match.params.__proto__).toEqual(value);
+    expect(Object.getPrototypeOf(match.params)).toBeNull();
+    expect(match).toMatchObject({ query: { tag: ["a/b", "c"] }, hash: "hello world" });
+  });
+
+  it.each([
+    { key: "_constructor", name: "constructor" },
+    { key: "_toString", name: "toString" },
+  ] as const)("preserves $name as an own parameter", ({ key, name }) => {
+    const match = prototypeParamHelper[key].$match("/a%2Fb");
+
+    expect(match).not.toBeNull();
+    if (!match) throw new Error("Expected path to match");
+
+    expect(Object.hasOwn(match.params, name)).toBe(true);
+    expect(match.params).toEqual({ [name]: "a/b" });
+    expect(Object.getPrototypeOf(match.params)).toBeNull();
+  });
+
   it("Simple dynamic segment", () => {
     const match = rpcHelper.fuga._foo.$match("/fuga/test");
     expect(match).toEqual({

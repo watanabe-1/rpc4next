@@ -4,6 +4,36 @@ import { matchPath } from "./match";
 
 describe("matchPath", () => {
   it.each([
+    { key: "_%5F%5Fproto__", name: "__proto__", path: "/users/a%2Fb", value: "a/b" },
+    {
+      key: "___%5F%5Fproto__",
+      name: "__proto__",
+      path: "/users/a%2Fb/c",
+      value: ["a/b", "c"],
+    },
+    {
+      key: "_____%5F%5Fproto__",
+      name: "__proto__",
+      path: "/users/a%2Fb/c",
+      value: ["a/b", "c"],
+    },
+    { key: "_____%5F%5Fproto__", name: "__proto__", path: "/users", value: undefined },
+    { key: "_constructor", name: "constructor", path: "/users/a%2Fb", value: "a/b" },
+    { key: "_toString", name: "toString", path: "/users/a%2Fb", value: "a/b" },
+  ])("preserves prototype-sensitive params for $key ($path)", ({ key, name, path, value }) => {
+    const match = matchPath(["users", key], [key])(`${path}?tag=a%2Fb&tag=c#hello%20world`);
+
+    expect(match).not.toBeNull();
+    if (!match) throw new Error("Expected path to match");
+
+    expect(Object.hasOwn(match.params, name)).toBe(true);
+    expect(match.params[name]).toEqual(value);
+    expect(Object.getPrototypeOf(match.params)).toBeNull();
+    expect(match.query).toEqual({ tag: ["a/b", "c"] });
+    expect(match.hash).toBe("hello world");
+  });
+
+  it.each([
     { key: "__id", path: "/users/a%2Fb", params: { _id: "a/b" } },
     { key: "____slug", path: "/users/a%2Fb/c", params: { _slug: ["a/b", "c"] } },
     { key: "______slug", path: "/users/a%2Fb/c", params: { _slug: ["a/b", "c"] } },
