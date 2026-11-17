@@ -634,21 +634,31 @@ describe("createNextPage", () => {
   );
 
   it.each([
-    { name: "redirect", navigate: () => redirect("/photo/next"), message: "NEXT_REDIRECT" },
-    { name: "notFound", navigate: () => notFound(), message: "NEXT_HTTP_ERROR_FALLBACK;404" },
-  ])("rethrows $name from input validation hooks", async ({ navigate, message }) => {
+    { name: "redirect", navigate: () => redirect("/photo/next") },
+    { name: "notFound", navigate: () => notFound() },
+  ])("rethrows $name from input validation hooks", async ({ navigate }) => {
     const onError = vi.fn<() => string>(() => "caught");
+    let navigationError: unknown;
     const page = createPageProcedure({ onError })
       .forRoute(pageRouteContract)
       .params(paramsSchema)
-      .query(querySchema, { onValidationError: async () => navigate() })
+      .query(querySchema, {
+        onValidationError: async () => {
+          try {
+            return navigate();
+          } catch (error) {
+            navigationError = error;
+            throw error;
+          }
+        },
+      })
       .page(() => "rendered");
-    await expect(
-      page({
-        params: Promise.resolve({ id: "photo-1" }),
-        searchParams: Promise.resolve({ tab: "bad" }),
-      }),
-    ).rejects.toThrow(message);
+    const result = page({
+      params: Promise.resolve({ id: "photo-1" }),
+      searchParams: Promise.resolve({ tab: "bad" }),
+    });
+    await expect(result).rejects.toBeInstanceOf(Error);
+    await expect(result).rejects.toBe(navigationError);
     expect(onError).not.toHaveBeenCalled();
   });
 
