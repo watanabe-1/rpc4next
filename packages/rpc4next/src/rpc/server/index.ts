@@ -6,6 +6,7 @@ import type {
   ProcedurePageOnError,
   ProcedurePageOnValidationError,
   ProcedurePageOnValidationErrorContext,
+  ProcedurePageInputTarget,
 } from "./next-page";
 import type { ProcedureOnError, ProcedureOnErrorContext, ProcedureOnErrorResult } from "./on-error";
 import type { ProcedureHandler, ProcedureMiddleware } from "./procedure";
@@ -31,6 +32,10 @@ export type {
   RpcErrorStatusCode,
 } from "./error";
 export type { InferRouteMeta, RpcMeta, RpcMetaBase } from "./meta";
+export type {
+  ProcedurePageInputOptions as PageInputOptions,
+  ProcedurePageInputTarget as PageInputTarget,
+} from "./next-page";
 export type { NextPageProps } from "./next-page";
 export { output, withOutput } from "./output";
 export { createPageProcedure, createRouteProcedure, procedure } from "./procedure";
@@ -84,8 +89,9 @@ export type PageOnError<TResult = unknown> = ProcedurePageOnError<TResult>;
 export type PageValidationErrorHandler<TResult = unknown> = ProcedurePageOnValidationError<TResult>;
 
 /** Context passed to page procedure validation error callbacks. */
-export type PageValidationErrorContext<TTarget extends InputTarget = InputTarget> =
-  ProcedurePageOnValidationErrorContext<TTarget>;
+export type PageValidationErrorContext<
+  TTarget extends ProcedurePageInputTarget = ProcedurePageInputTarget,
+> = ProcedurePageOnValidationErrorContext<TTarget>;
 
 /** Render callback type accepted by the page procedure `.page(...)` terminal. */
 export type PageRender<

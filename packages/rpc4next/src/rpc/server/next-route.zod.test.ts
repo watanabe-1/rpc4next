@@ -364,6 +364,25 @@ describe("createNextRoute zod integration", () => {
     await expect(response.text()).resolves.toBe("local-validation");
   });
 
+  it("does not call shared validation hooks after an input hook returns undefined", async () => {
+    const sharedHook = vi.fn<() => Response>(() => new Response("shared", { status: 422 }));
+    const inputHook = vi.fn<() => Promise<undefined>>(async () => undefined);
+    const { GET: route } = createRouteProcedure({
+      onError: defaultProcedureOnError,
+      onValidationError: sharedHook,
+    })
+      .forRoute(staticRouteContract)
+      .query(z.object({ page: z.coerce.number().positive() }), { onValidationError: inputHook })
+      .handle(({ query }) => ({ body: query }))
+      .get();
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api/test?page=0"), {
+      params: Promise.resolve({}),
+    });
+    expect(response.status).toBe(400);
+    expect(inputHook).toHaveBeenCalledTimes(1);
+    expect(sharedHook).not.toHaveBeenCalled();
+  });
+
   it("returns default validation errors when validator-stage customization falls back", async () => {
     const onError = vi.fn<(error: unknown, context: { response: typeof NextResponse }) => Response>(
       (error: unknown, { response }) => {

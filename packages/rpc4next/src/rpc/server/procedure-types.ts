@@ -3,6 +3,7 @@ import type { HttpMethod } from "rpc4next-shared";
 
 import type { DefaultRpcErrorCatalog, RpcErrorCatalog } from "./error";
 import type { RpcMeta } from "./meta";
+import type { ProcedurePageInputOptions, ProcedurePageInputTarget } from "./next-page";
 import type { ProcedureOnErrorResponse } from "./on-error";
 import type { ProcedureResult } from "./procedure";
 import type { procedureDefinitionSymbol } from "./procedure-definition";
@@ -82,6 +83,7 @@ export interface ProcedureInputContract<
 > {
   contracts?: ProcedureInputContracts;
   options?: ProcedureInputOptionMap;
+  pageOptions?: Partial<Record<ProcedurePageInputTarget, ProcedurePageInputOptions>>;
   validationErrorResponses?: TValidationErrorResponses;
   validationSchema?: TValidationSchema;
 }

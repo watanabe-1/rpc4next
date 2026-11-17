@@ -86,12 +86,26 @@ export const defaultProcedurePageOnError = ((error) => {
 
 export type DefaultProcedurePageOnError = typeof defaultProcedurePageOnError;
 
+export type ProcedurePageInputTarget = Exclude<ProcedureInputTarget, "json" | "formData">;
+
+/** Per-input options for page procedures. `undefined` uses the normal validation error path. */
+export type ProcedurePageInputOptions<
+  TTarget extends ProcedurePageInputTarget = ProcedurePageInputTarget,
+  TValue = unknown,
+  TResult = unknown,
+> = {
+  onValidationError?: (
+    context: ProcedurePageOnValidationErrorContext<TTarget, TValue>,
+  ) => TResult | Promise<TResult>;
+};
+
 /** Context passed to page procedure validation error handlers. */
 export type ProcedurePageOnValidationErrorContext<
-  TTarget extends ProcedureInputTarget = ProcedureInputTarget,
+  TTarget extends ProcedurePageInputTarget = ProcedurePageInputTarget,
+  TValue = unknown,
 > = {
   target: TTarget;
-  value: unknown;
+  value: TValue;
   issues: readonly StandardSchemaV1Issue[];
   params: Params;
   searchParams: Query;
@@ -224,6 +238,17 @@ type ProcedureHasPageIncompatibleTerminalResult<TProcedure extends NextPageProce
   : true;
 
 type NextPageProcedureConstraint<TProcedure extends NextPageProcedureCarrier> =
+  InferProcedureDefinition<TProcedure> extends {
+    input: { routeValidationErrorTargets: infer TTargets };
+  }
+    ? [TTargets] extends [never]
+      ? NextPageRouteConstraint<TProcedure>
+      : {
+          __error__: "Route input validation hooks cannot be used by page procedures. Use createPageProcedure().";
+        }
+    : NextPageRouteConstraint<TProcedure>;
+
+type NextPageRouteConstraint<TProcedure extends NextPageProcedureCarrier> =
   ProcedureIsRouteBound<TProcedure> extends false
     ? {
         __error__: "page() only accepts procedures that were bound with forRoute(routeContract).";
@@ -251,12 +276,20 @@ type ProcedureNextPageInputConstraint<TProcedure extends NextPageProcedureCarrie
           }
         : unknown;
 
+export type InferPageInputValidationErrorResult<TDefinition> = TDefinition extends {
+  input: { pageValidationErrorResults: infer TResults };
+}
+  ? Exclude<Awaited<TResults[keyof TResults]>, undefined>
+  : never;
+
 /** Next.js page default export produced by a procedure `.page(...)` terminal. */
 export type NextPageHandler<
   TProcedure extends NextPageProcedureCarrier = NextPageProcedureCarrier,
   TResult = unknown,
 > = WithProcedureDefinition<
-  (props: NextPageProps) => Promise<TResult>,
+  (
+    props: NextPageProps,
+  ) => Promise<TResult | InferPageInputValidationErrorResult<InferProcedureDefinition<TProcedure>>>,
   MergeProcedureDefinition<InferProcedureDefinition<TProcedure>, { method: never }>
 >;
 
@@ -411,12 +444,13 @@ const readCookies = async () => {
   );
 };
 
-const parseContract = async <TTarget extends ProcedureInputTarget>(
+const parseContract = async <TTarget extends ProcedurePageInputTarget>(
   target: TTarget,
   schema: StandardSchemaV1 | undefined,
   rawValue: unknown,
   context: {
     onValidationError: ProcedurePageOnValidationError | undefined;
+    inputOptions: Partial<Record<ProcedurePageInputTarget, ProcedurePageInputOptions>>;
     params: Params;
     searchParams: Query;
   },
@@ -437,7 +471,9 @@ const parseContract = async <TTarget extends ProcedureInputTarget>(
     };
   }
 
-  const handled = await context.onValidationError?.({
+  const handled = await (
+    context.inputOptions[target]?.onValidationError ?? context.onValidationError
+  )?.({
     target,
     value: rawValue,
     issues: result.issues,
@@ -472,6 +508,7 @@ const validateProcedureInputs = async (
 
   const validationContext = {
     onValidationError,
+    inputOptions: procedureDefinition.input?.pageOptions ?? {},
     params,
     searchParams: query,
   };
@@ -565,6 +602,16 @@ export const createNextPage = <
     );
   }
 
+  if (
+    Object.values(procedure.definition.input?.options ?? {}).some(
+      (option) => option?.onValidationError,
+    )
+  ) {
+    throw new Error(
+      "Route input validation hooks cannot be used by page procedures. Use createPageProcedure().",
+    );
+  }
+
   const inputContracts = procedure.definition.input?.contracts ?? {};
   if (Object.values(inputContracts).some((schema) => !isStandardSchemaV1(schema))) {
     throw new Error("Procedure input contracts must implement Standard Schema V1.");
@@ -574,6 +621,7 @@ export const createNextPage = <
     props: NextPageProps,
   ): Promise<
     | TResult
+    | InferPageInputValidationErrorResult<InferProcedureDefinition<TProcedure>>
     | Awaited<ReturnType<TOnError>>
     | (TOnValidationError extends ProcedurePageOnValidationError
         ? Awaited<ReturnType<TOnValidationError>>
@@ -590,9 +638,11 @@ export const createNextPage = <
         onValidationError,
       );
       if (!inputResult.ok) {
-        return inputResult.result as TOnValidationError extends ProcedurePageOnValidationError
-          ? Awaited<ReturnType<TOnValidationError>>
-          : never;
+        return inputResult.result as
+          | InferPageInputValidationErrorResult<InferProcedureDefinition<TProcedure>>
+          | (TOnValidationError extends ProcedurePageOnValidationError
+              ? Awaited<ReturnType<TOnValidationError>>
+              : never);
       }
       const request = createPageRequest(
         procedure.definition.route?.pathname,
@@ -668,6 +718,7 @@ export const createNextPage = <
   return attachProcedureDefinition(pageHandler, procedure.definition) as NextPageHandler<
     TProcedure,
     | TResult
+    | InferPageInputValidationErrorResult<InferProcedureDefinition<TProcedure>>
     | Awaited<ReturnType<TOnError>>
     | (TOnValidationError extends ProcedurePageOnValidationError
         ? Awaited<ReturnType<TOnValidationError>>

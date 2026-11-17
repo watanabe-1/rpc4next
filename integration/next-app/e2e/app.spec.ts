@@ -318,6 +318,26 @@ test.describe("integration next-app e2e", () => {
     await expect(page.getByRole("button", { name: "count:2" })).toBeVisible();
   });
 
+  test("page input validation hooks render their result before shared hooks", async ({ page }) => {
+    await page.goto("/patterns/page-helpers?mode=invalid");
+    await expect(page.getByText("page-input-validation", { exact: true })).toBeVisible();
+  });
+
+  test("page input validation hooks preserve redirects and notFound", async ({ page }) => {
+    await page.goto("/patterns/page-helpers?mode=validation-redirect");
+    await expect(page).toHaveURL("/feed");
+    await expect(page.getByText("feed-page")).toBeVisible();
+    const response = await page.goto("/patterns/page-helpers?mode=validation-not-found");
+    expect(response?.status()).toBe(404);
+  });
+
+  for (const mode of ["validation-error", "validation-undefined"]) {
+    test(`page input hook ${mode} uses onError`, async ({ page }) => {
+      await page.goto(`/patterns/page-helpers?mode=${mode}`);
+      await expect(page.getByText("page-helper-error", { exact: true })).toBeVisible();
+    });
+  }
+
   test("page procedure defaults expose page navigation helpers", async ({ page }) => {
     await page.goto("/patterns/page-helpers");
     await expect(page.getByText("page-helper:render")).toBeVisible();
