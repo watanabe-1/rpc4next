@@ -42,7 +42,7 @@ This is a good fit if you want typed client calls and typed URLs from an existin
 
 ## Requirements
 
-- Node.js `>=22.0.0`
+- Node.js `>=22.0.0` for the runtime library; `>=22.22.0` for `rpc4next-cli`
 - Next.js App Router
 - Package peer dependency support in `rpc4next` and `rpc4next-cli`: Next.js `^15` or `^16`
 
@@ -360,26 +360,35 @@ the manifest path from `outputPath`.
 
 #### Route Export Detection
 
-The CLI detects HTTP method exports in `route.ts` using regular expressions.
-Use direct declarations such as `export async function GET(...)`,
-`export const GET = ...`, or the procedure form `export const { GET } = ...`.
-Binding lists and re-exports that keep the method name, such as `export { GET }`
-and `export { GET } from "./handler"`, are also recognized.
+The CLI parses `route.ts` with `oxc-parser` and detects the exported value names
+`GET`, `HEAD`, `POST`, `PUT`, `DELETE`, and `PATCH`. `OPTIONS` is excluded from
+generated client methods.
 
-Detection has these known limitations:
+Supported forms include:
 
-- Renaming a method in an export, such as `export { GET as POST }`, can cause
-  both names to be detected, generating an import for a method that is not exported.
-  Import the implementation under a different name and use `export const POST = handler` instead.
-- Commented-out declarations and export-like text inside strings can still be
-  detected. Remove unused declarations instead of leaving commented-out exports.
-- In a declaration such as `export const GET = ..., POST = ...`, only the first
-  method is detected. Use a separate export declaration for each method.
+- Function declarations, such as `export async function GET(...)`
+- Variable declarations, including type annotations and multiple bindings,
+  such as `export const GET = ..., POST = ...`
+- Destructuring, including the procedure form `export const { GET } = ...`,
+  renamed properties, nested bindings, defaults, and rest bindings
+- Export lists and aliases, such as `export { GET }` and `export { handler as POST }`
+- Explicit named re-exports, such as `export { GET } from "./handler"`
+  and `export { handler as POST } from "./handler"`
 
-For now, these limitations are accepted and migration to syntax-based parsing
-is deferred. Keeping the scanner lightweight avoids adding a parser runtime
-dependency and its maintenance cost. Revisit this decision if these limitations
-affect common usage, and measure CLI startup and scanning time before choosing a parser.
+Detection uses the public name: `export { GET as POST }` detects only `POST`.
+For destructuring, `export const { GET: handler, handler: POST } = ...` exports
+`handler` and `POST`, so only `POST` is detected as an HTTP method.
+
+Comments, string contents, and type-only exports are ignored. Local type aliases,
+interfaces, and type-only imports are also excluded when exported through a list
+without an explicit `type` modifier. A named default function alone, such as
+`export default function GET(...)`, does not export an HTTP method by name.
+
+Detection does not expand `export *` or follow imported and re-exported modules
+to determine whether their bindings are types or values. Use explicit named
+exports for handlers and `export type` or `export { type ... }` for external types.
+Input files must have valid TypeScript or TSX syntax; syntax errors stop generation
+and report the input filename.
 
 ### 4. Create a Client
 

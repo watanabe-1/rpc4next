@@ -33,12 +33,13 @@
   },
   "dependencies": {
     "chokidar": "^6.0.0",
+    "oxc-parser": "^0.158.0",
     "rpc4next-shared": "workspace:*"
   },
   "peerDependencies": {
     "next": "^15.0.0 || ^16.0.0"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.22.0"
   }
 }
