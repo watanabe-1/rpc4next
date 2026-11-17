@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import type { NextRequest, NextResponse } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
 
@@ -874,6 +875,8 @@ export const createNextRoute = <
         TOnValidationError
       >;
     } catch (error) {
+      unstable_rethrow(error);
+
       const errorResponse = createResponseHelpers<unknown, InferProcedureErrorCatalog<TProcedure>>(
         errorCatalog,
       );
