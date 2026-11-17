@@ -110,6 +110,8 @@ created commits and report the remaining work.
    sentence-case subject (ideally at most 72 characters), and no trailing period.
    Do not include the template's `Commit message:` label or Markdown backticks
    in the actual message.
+   Write the commit message in English by default, even when the conversation is
+   in another language. Follow an explicit user request for another language.
    Describe the actual behavior or purpose, not merely the files edited. Identify
    compatibility breaks and follow any repository release policy; do not invent
    issue references, trailers, or release metadata.

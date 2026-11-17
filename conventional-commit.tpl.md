@@ -37,6 +37,9 @@ Generate ALL of the following:
 
 ## Hard rules (must follow)
 
+- Write commit messages, PR titles, and PR descriptions in English by default,
+  even when the conversation is in another language. Follow an explicit user
+  request for another language.
 - Output must be EXACTLY 3 lines using the exact labels below.
 - Commit message must be a single line.
 - Prefer a scope when clear (examples: `monorepo`, `ci`, `build`, `release`, `deps`, `deps-dev`).
