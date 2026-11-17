@@ -1,3 +1,4 @@
+import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 
 import { appPageProcedure } from "../../_rpc/page-procedure";
@@ -13,7 +14,16 @@ const pageHelperOutputSchema = z.object({
 
 export default appPageProcedure
   .forRoute(routeContract)
-  .query(pageHelperQuerySchema)
+  .query(pageHelperQuerySchema, {
+    onValidationError: ({ searchParams }) => {
+      if (searchParams.mode === "validation-redirect") redirect("/feed");
+      if (searchParams.mode === "validation-not-found") notFound();
+      if (searchParams.mode === "validation-error") throw new Error("page input hook failed");
+      if (searchParams.mode === "validation-undefined") return undefined;
+
+      return <div>page-input-validation</div>;
+    },
+  })
   .output(pageHelperOutputSchema)
   .handle(({ page, query }) => {
     if (query.mode === "redirect") {
@@ -34,4 +44,6 @@ export default appPageProcedure
       },
     };
   })
-  .page(({ data }) => <div>page-helper:{data.mode}</div>);
+  .page(({ data }) => <div>page-helper:{data.mode}</div>, {
+    onValidationError: () => <div>page-shared-validation</div>,
+  });

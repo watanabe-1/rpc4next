@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 import { z } from "zod";
 
+import type { PageInputOptions, PageInputTarget, PageValidationErrorContext } from "./index";
 import {
   createNextPage as basecreateNextPage,
   type ProcedurePageOnValidationError,
@@ -455,6 +456,274 @@ describe("createNextPage", () => {
         searchParams: Promise.resolve({ tab: "bad" }),
       }),
     ).resolves.toBe("local-query-validation");
+  });
+
+  it.each(["params", "query", "headers", "cookies"] as const)(
+    "prioritizes the %s input hook and passes only page context",
+    async (target) => {
+      nextHeadersMock.headers.mockResolvedValue(new Headers({ "x-test": "raw-header" }));
+      nextHeadersMock.cookies.mockResolvedValue({
+        getAll: () => [{ name: "session", value: "raw-cookie" }],
+      });
+      const fallback = { source: "input" as const };
+      const inputHook = vi.fn<() => Promise<typeof fallback>>(async () => fallback);
+      const sharedHook = vi.fn<() => string>(() => "shared");
+      const localHook = vi.fn<() => string>(() => "local");
+      const onError = vi.fn<() => string>(() => "error");
+      const middleware = vi.fn<() => undefined>(() => undefined);
+      const render = vi.fn<() => string>(() => "rendered");
+      const builder = createPageProcedure({ onError, onValidationError: sharedHook })
+        .use(middleware)
+        .forRoute(pageRouteContract);
+      const schema = z.object({ id: z.string().min(20) });
+      const input =
+        target === "params"
+          ? builder.params(schema, { onValidationError: inputHook })
+          : builder.params(paramsSchema)[target](schema, { onValidationError: inputHook });
+      const page = input.page(render, { onValidationError: localHook });
+
+      await expect(
+        page({
+          params: Promise.resolve({ id: "photo-1" }),
+          searchParams: Promise.resolve({ tab: "bad" }),
+        }),
+      ).resolves.toBe(fallback);
+      expect(inputHook).toHaveBeenCalledExactlyOnceWith({
+        target,
+        value:
+          target === "params"
+            ? { id: "photo-1" }
+            : target === "query"
+              ? { tab: "bad" }
+              : target === "headers"
+                ? { "x-test": "raw-header" }
+                : { session: "raw-cookie" },
+        issues: expect.any(Array),
+        params: { id: "photo-1" },
+        searchParams: { tab: "bad" },
+      });
+      for (const callback of [sharedHook, localHook, onError, middleware, render]) {
+        expect(callback).not.toHaveBeenCalled();
+      }
+    },
+  );
+
+  it.each(["params", "query", "headers", "cookies"] as const)(
+    "uses the shared hook for %s when the input hook is absent",
+    async (target) => {
+      nextHeadersMock.headers.mockResolvedValue(new Headers());
+      nextHeadersMock.cookies.mockResolvedValue({ getAll: () => [] });
+      const sharedHook = vi.fn<(context: { target: string }) => string>(
+        ({ target }) => `shared-${target}`,
+      );
+      const builder = createPageProcedure({
+        onError: () => "error",
+        onValidationError: sharedHook,
+      }).forRoute(pageRouteContract);
+      const schema = z.object({ id: z.string().min(20) });
+      const input =
+        target === "params" ? builder.params(schema) : builder.params(paramsSchema)[target](schema);
+      const page = input.page(() => "rendered");
+      await expect(page({ params: Promise.resolve({ id: "photo-1" }) })).resolves.toBe(
+        `shared-${target}`,
+      );
+      expect(sharedHook).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it("does not call error hooks when all four inputs are valid", async () => {
+    nextHeadersMock.headers.mockResolvedValue(new Headers({ "x-page-test-user": "Ada" }));
+    nextHeadersMock.cookies.mockResolvedValue({
+      getAll: () => [{ name: "session", value: "token" }],
+    });
+    const hook = vi.fn<() => string>(() => "invalid");
+    const onError = vi.fn<() => string>(() => "error");
+    const page = createPageProcedure({ onError, onValidationError: hook })
+      .forRoute(pageRouteContract)
+      .params(paramsSchema, { onValidationError: hook })
+      .query(querySchema, { onValidationError: hook })
+      .headers(headersSchema, { onValidationError: hook })
+      .cookies(cookiesSchema, { onValidationError: hook })
+      .page(() => "rendered");
+    await expect(page({ params: Promise.resolve({ id: "photo-1" }) })).resolves.toBe("rendered");
+    expect(hook).not.toHaveBeenCalled();
+    expect(onError).not.toHaveBeenCalled();
+  });
+
+  it.each([null, false, 0, "", { fallback: true }])(
+    "returns defined input hook results (%j) directly",
+    async (fallback) => {
+      const page = createPageProcedure({ onError: () => "error" })
+        .forRoute(pageRouteContract)
+        .params(paramsSchema)
+        .query(querySchema, { onValidationError: () => fallback })
+        .page(() => "rendered");
+      await expect(
+        page({
+          params: Promise.resolve({ id: "photo-1" }),
+          searchParams: Promise.resolve({ tab: "bad" }),
+        }),
+      ).resolves.toBe(fallback);
+    },
+  );
+
+  it("uses the normal validation error path for undefined without calling shared hooks", async () => {
+    const sharedHook = vi.fn<() => string>(() => "shared");
+    const inputHook = vi.fn<() => Promise<undefined>>(async () => undefined);
+    const onError = vi.fn<(error: unknown) => unknown>((error) => error);
+    const page = createPageProcedure({ onError, onValidationError: sharedHook })
+      .forRoute(pageRouteContract)
+      .params(paramsSchema)
+      .query(querySchema, { onValidationError: inputHook })
+      .page(() => "rendered");
+    await expect(
+      page({
+        params: Promise.resolve({ id: "photo-1" }),
+        searchParams: Promise.resolve({ tab: "bad" }),
+      }),
+    ).resolves.toEqual(new Error("invalid tab"));
+    expect(inputHook).toHaveBeenCalledTimes(1);
+    expect(sharedHook).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledExactlyOnceWith(new Error("invalid tab"), {
+      params: { id: "photo-1" },
+      searchParams: { tab: "bad" },
+    });
+  });
+
+  it("rethrows the default validation error after an undefined input hook result", async () => {
+    const page = createPageProcedure({
+      onError: (error) => {
+        throw error;
+      },
+    })
+      .forRoute(pageRouteContract)
+      .params(paramsSchema)
+      .query(querySchema, { onValidationError: () => undefined })
+      .page(() => "rendered");
+    await expect(
+      page({
+        params: Promise.resolve({ id: "photo-1" }),
+        searchParams: Promise.resolve({ tab: "bad" }),
+      }),
+    ).rejects.toThrow("invalid tab");
+  });
+
+  it.each([false, true])(
+    "passes thrown or rejected input hook errors to onError (async: %s)",
+    async (asyncHook) => {
+      const error = new Error("input hook failed");
+      const onError = vi.fn<(error: unknown) => string>(() => "caught");
+      const sharedHook = vi.fn<() => string>(() => "shared");
+      const fail = () => {
+        throw error;
+      };
+      const page = createPageProcedure({ onError, onValidationError: sharedHook })
+        .forRoute(pageRouteContract)
+        .params(paramsSchema)
+        .query(querySchema, { onValidationError: asyncHook ? async () => fail() : fail })
+        .page(() => "rendered");
+      await expect(
+        page({
+          params: Promise.resolve({ id: "photo-1" }),
+          searchParams: Promise.resolve({ tab: "bad" }),
+        }),
+      ).resolves.toBe("caught");
+      expect(onError.mock.calls[0]?.[0]).toBe(error);
+      expect(sharedHook).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    { name: "redirect", navigate: () => redirect("/photo/next"), message: "NEXT_REDIRECT" },
+    { name: "notFound", navigate: () => notFound(), message: "NEXT_HTTP_ERROR_FALLBACK;404" },
+  ])("rethrows $name from input validation hooks", async ({ navigate, message }) => {
+    const onError = vi.fn<() => string>(() => "caught");
+    const page = createPageProcedure({ onError })
+      .forRoute(pageRouteContract)
+      .params(paramsSchema)
+      .query(querySchema, { onValidationError: async () => navigate() })
+      .page(() => "rendered");
+    await expect(
+      page({
+        params: Promise.resolve({ id: "photo-1" }),
+        searchParams: Promise.resolve({ tab: "bad" }),
+      }),
+    ).rejects.toThrow(message);
+    expect(onError).not.toHaveBeenCalled();
+  });
+
+  it("infers input hook results for builder, handled, and direct page adapters", () => {
+    expectTypeOf<PageInputTarget>().toEqualTypeOf<"params" | "query" | "headers" | "cookies">();
+    expectTypeOf<PageValidationErrorContext["target"]>().toEqualTypeOf<PageInputTarget>();
+    const queryOptions = {
+      onValidationError: () => "invalid-query" as const,
+    } satisfies PageInputOptions<"query", unknown, "invalid-query">;
+    const publicPage = createPageProcedure({ onError: () => "error" as const })
+      .forRoute(pageRouteContract)
+      .params(paramsSchema)
+      .query(querySchema, queryOptions)
+      .page(() => "rendered" as const);
+    expectTypeOf<Awaited<ReturnType<typeof publicPage>>>().toEqualTypeOf<
+      "rendered" | "error" | "invalid-query"
+    >();
+    const builder = createPageProcedure({ onError: () => "error" as const })
+      .forRoute(pageRouteContract)
+      .params(paramsSchema, {
+        onValidationError: ({ target, value, params, searchParams }) => {
+          expectTypeOf(target).toEqualTypeOf<"params">();
+          expectTypeOf(value).toEqualTypeOf<{ id: string }>();
+          expectTypeOf(params).toEqualTypeOf<Record<string, string | string[]>>();
+          expectTypeOf(searchParams).toEqualTypeOf<Record<string, string | string[]>>();
+
+          return 42 as const;
+        },
+      })
+      .query(querySchema, {
+        onValidationError: async (context) => {
+          expectTypeOf(context.target).toEqualTypeOf<"query">();
+          // @ts-expect-error page hooks do not receive route response helpers
+          expectTypeOf(context.response).toBeUnknown();
+          // @ts-expect-error page hooks do not receive a synthetic request
+          expectTypeOf(context.request).toBeUnknown();
+
+          return Math.random() > 0.5 ? (false as const) : undefined;
+        },
+      });
+    const page = builder.page(() => "rendered" as const);
+    const handled = builder.handle(() => ({ body: "data" })).page(() => "rendered" as const);
+    const direct = basecreateNextPage(
+      builder.handle(() => ({ body: "data" })),
+      () => "rendered" as const,
+    );
+    expectTypeOf<Awaited<ReturnType<typeof page>>>().toEqualTypeOf<
+      "rendered" | "error" | 42 | false
+    >();
+    expectTypeOf<Awaited<ReturnType<typeof handled>>>().toEqualTypeOf<
+      "rendered" | "error" | 42 | false
+    >();
+    expectTypeOf<Awaited<ReturnType<typeof direct>>>().toEqualTypeOf<"rendered" | 42 | false>();
+    const routeHook = procedure
+      .forRoute(pageRouteContract)
+      .params(paramsSchema)
+      .query(querySchema, {
+        onValidationError: ({ response }) => response.json({ invalid: true }),
+      });
+    expect(() => {
+      // @ts-expect-error route input hooks require a route context
+      routeHook.page(() => "rendered");
+    }).toThrow("Route input validation hooks cannot be used by page procedures.");
+    const throwingRouteHook = procedure
+      .forRoute(pageRouteContract)
+      .params(paramsSchema)
+      .query(querySchema, {
+        onValidationError: () => {
+          throw new Error("route hook");
+        },
+      });
+    expect(() => {
+      // @ts-expect-error even hooks returning never still require the route context
+      throwingRouteHook.page(() => "rendered");
+    }).toThrow("Route input validation hooks cannot be used by page procedures.");
   });
 
   it("validates page params and query once for handler and render", async () => {

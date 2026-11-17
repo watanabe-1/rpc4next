@@ -8,6 +8,8 @@ import type { RpcMeta } from "./meta";
 import {
   createNextPage as adaptProcedureToNextPage,
   type NextPageHandler,
+  type ProcedurePageInputOptions,
+  type ProcedurePageInputTarget,
   type ProcedurePageOnError,
   type ProcedurePageOnValidationError,
 } from "./next-page";
@@ -167,11 +169,16 @@ type ExtendValidationSchema<
   output: TValidationSchema["output"] & Record<TTarget, InferSchemaOutput<TSchema>>;
 };
 
+// Distinguish an absent hook from a hook that always throws (return type never).
+declare const noValidationErrorHook: unique symbol;
+type NoValidationErrorHook = typeof noValidationErrorHook;
+
 type ExtendProcedureInputDefinition<
   TDefinition extends ProcedureDefinition,
   TTarget extends ProcedureInputTarget,
   TSchema extends StandardSchemaV1,
-  TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
+  TOnValidationErrorResult = NoValidationErrorHook,
+  TDefaults = undefined,
 > = MergeProcedureDefinition<
   TDefinition,
   {
@@ -181,9 +188,83 @@ type ExtendProcedureInputDefinition<
         Record<TTarget, InferProcedureValidationErrorRouteResponse<TOnValidationErrorResult>>
     > & {
       contracts: NonNullable<TDefinition["input"]>["contracts"] & Record<TTarget, TSchema>;
+      pageValidationErrorResults: ExtractPageValidationErrorResults<TDefinition> &
+        Record<
+          TTarget,
+          ExtractProcedureAdapterMode<TDefaults> extends "page"
+            ? Exclude<TOnValidationErrorResult, NoValidationErrorHook>
+            : never
+        >;
+      routeValidationErrorTargets:
+        | ExtractRouteValidationErrorTargets<TDefinition>
+        | (ExtractProcedureAdapterMode<TDefaults> extends "page"
+            ? never
+            : [NoValidationErrorHook] extends [TOnValidationErrorResult]
+              ? never
+              : TTarget);
     };
   }
 >;
+
+type ExtractPageValidationErrorResults<TDefinition> = TDefinition extends {
+  input: { pageValidationErrorResults: infer TResults };
+}
+  ? TResults
+  : Record<never, never>;
+type ExtractRouteValidationErrorTargets<TDefinition> = TDefinition extends {
+  input: { routeValidationErrorTargets: infer TTargets };
+}
+  ? TTargets
+  : never;
+
+type BuilderInputValidationErrorResult<TDefaults> =
+  ExtractProcedureAdapterMode<TDefaults> extends "page"
+    ? unknown
+    : ProcedureValidationErrorHandlerResult | NoValidationErrorHook;
+
+type BuilderInputOptions<
+  TDefaults,
+  TTarget extends ProcedureInputTarget,
+  TValue,
+  TResult,
+  TErrorCatalog extends RpcErrorCatalog,
+> =
+  ExtractProcedureAdapterMode<TDefaults> extends "page"
+    ? ProcedurePageInputOptions<Extract<TTarget, ProcedurePageInputTarget>, TValue, TResult>
+    : ProcedureInputOptions<
+        TTarget,
+        TValue,
+        Extract<TResult, ProcedureValidationErrorHandlerResult>,
+        TErrorCatalog
+      >;
+
+// Builder mode determines the callback API; retain that distinction when storing hooks.
+const isPageInputOptions = <
+  TTarget extends ProcedureInputTarget,
+  TValue,
+  TResult,
+  TErrorCatalog extends RpcErrorCatalog,
+>(
+  defaults: unknown,
+  options:
+    | ProcedureInputOptions<
+        TTarget,
+        TValue,
+        Extract<TResult, ProcedureValidationErrorHandlerResult>,
+        TErrorCatalog
+      >
+    | ProcedurePageInputOptions<Extract<TTarget, ProcedurePageInputTarget>, TValue, TResult>
+    | undefined,
+): options is ProcedurePageInputOptions<
+  Extract<TTarget, ProcedurePageInputTarget>,
+  TValue,
+  TResult
+> =>
+  options !== undefined &&
+  typeof defaults === "object" &&
+  defaults !== null &&
+  "page" in defaults &&
+  defaults.page !== undefined;
 
 type ExtractProcedureValidationErrorResponses<TDefinition extends ProcedureDefinition> =
   TDefinition extends {
@@ -1038,17 +1119,25 @@ interface ProcedureBuilderMethods<
   /** Validates dynamic route params before middleware and handlers run. */
   params<
     TSchema extends StandardSchemaV1,
-    TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
+    TOnValidationErrorResult extends BuilderInputValidationErrorResult<TDefaults> =
+      NoValidationErrorHook,
   >(
     schema: BoundRouteParamsSchemaArg<TDefinition, TSchema>,
-    options?: ProcedureInputOptions<
+    options?: BuilderInputOptions<
+      TDefaults,
       "params",
       InferSchemaInput<TSchema>,
       TOnValidationErrorResult,
       TErrorCatalog
     >,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<TDefinition, "params", TSchema, TOnValidationErrorResult>,
+    ExtendProcedureInputDefinition<
+      TDefinition,
+      "params",
+      TSchema,
+      TOnValidationErrorResult,
+      TDefaults
+    >,
     TContext,
     TDefaults,
     TErrorCatalog,
@@ -1060,17 +1149,25 @@ interface ProcedureBuilderMethods<
   /** Validates URL query/search params before middleware and handlers run. */
   query<
     TSchema extends StandardSchemaV1,
-    TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
+    TOnValidationErrorResult extends BuilderInputValidationErrorResult<TDefaults> =
+      NoValidationErrorHook,
   >(
     schema: TSchema,
-    options?: ProcedureInputOptions<
+    options?: BuilderInputOptions<
+      TDefaults,
       "query",
       InferSchemaInput<TSchema>,
       TOnValidationErrorResult,
       TErrorCatalog
     >,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<TDefinition, "query", TSchema, TOnValidationErrorResult>,
+    ExtendProcedureInputDefinition<
+      TDefinition,
+      "query",
+      TSchema,
+      TOnValidationErrorResult,
+      TDefaults
+    >,
     TContext,
     TDefaults,
     TErrorCatalog,
@@ -1082,17 +1179,25 @@ interface ProcedureBuilderMethods<
   /** Validates a JSON request body. Not available for `GET`, `HEAD`, or page procedures. */
   json<
     TSchema extends StandardSchemaV1,
-    TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
+    TOnValidationErrorResult extends BuilderInputValidationErrorResult<TDefaults> =
+      NoValidationErrorHook,
   >(
     schema: BodyContractSchemaArg<TDefinition, "json", TSchema>,
-    options?: ProcedureInputOptions<
+    options?: BuilderInputOptions<
+      TDefaults,
       "json",
       InferSchemaInput<TSchema>,
       TOnValidationErrorResult,
       TErrorCatalog
     >,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<TDefinition, "json", TSchema, TOnValidationErrorResult>,
+    ExtendProcedureInputDefinition<
+      TDefinition,
+      "json",
+      TSchema,
+      TOnValidationErrorResult,
+      TDefaults
+    >,
     TContext,
     TDefaults,
     TErrorCatalog,
@@ -1104,17 +1209,25 @@ interface ProcedureBuilderMethods<
   /** Validates a multipart or urlencoded `FormData` body. */
   formData<
     TSchema extends StandardSchemaV1,
-    TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
+    TOnValidationErrorResult extends BuilderInputValidationErrorResult<TDefaults> =
+      NoValidationErrorHook,
   >(
     schema: BodyContractSchemaArg<TDefinition, "formData", TSchema>,
-    options?: ProcedureInputOptions<
+    options?: BuilderInputOptions<
+      TDefaults,
       "formData",
       InferSchemaInput<TSchema>,
       TOnValidationErrorResult,
       TErrorCatalog
     >,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<TDefinition, "formData", TSchema, TOnValidationErrorResult>,
+    ExtendProcedureInputDefinition<
+      TDefinition,
+      "formData",
+      TSchema,
+      TOnValidationErrorResult,
+      TDefaults
+    >,
     TContext,
     TDefaults,
     TErrorCatalog,
@@ -1126,17 +1239,25 @@ interface ProcedureBuilderMethods<
   /** Validates selected request headers. */
   headers<
     TSchema extends StandardSchemaV1,
-    TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
+    TOnValidationErrorResult extends BuilderInputValidationErrorResult<TDefaults> =
+      NoValidationErrorHook,
   >(
     schema: TSchema,
-    options?: ProcedureInputOptions<
+    options?: BuilderInputOptions<
+      TDefaults,
       "headers",
       InferSchemaInput<TSchema>,
       TOnValidationErrorResult,
       TErrorCatalog
     >,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<TDefinition, "headers", TSchema, TOnValidationErrorResult>,
+    ExtendProcedureInputDefinition<
+      TDefinition,
+      "headers",
+      TSchema,
+      TOnValidationErrorResult,
+      TDefaults
+    >,
     TContext,
     TDefaults,
     TErrorCatalog,
@@ -1148,17 +1269,25 @@ interface ProcedureBuilderMethods<
   /** Validates request cookies parsed from the `Cookie` header. */
   cookies<
     TSchema extends StandardSchemaV1,
-    TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
+    TOnValidationErrorResult extends BuilderInputValidationErrorResult<TDefaults> =
+      NoValidationErrorHook,
   >(
     schema: TSchema,
-    options?: ProcedureInputOptions<
+    options?: BuilderInputOptions<
+      TDefaults,
       "cookies",
       InferSchemaInput<TSchema>,
       TOnValidationErrorResult,
       TErrorCatalog
     >,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<TDefinition, "cookies", TSchema, TOnValidationErrorResult>,
+    ExtendProcedureInputDefinition<
+      TDefinition,
+      "cookies",
+      TSchema,
+      TOnValidationErrorResult,
+      TDefaults
+    >,
     TContext,
     TDefaults,
     TErrorCatalog,
@@ -1297,18 +1426,26 @@ const createProcedureBuilder = <
   const withInputContract = <
     TTarget extends ProcedureInputTarget,
     TSchema extends StandardSchemaV1,
-    TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
+    TOnValidationErrorResult extends BuilderInputValidationErrorResult<TDefaults> =
+      NoValidationErrorHook,
   >(
     target: TTarget,
     schema: TSchema,
-    options?: ProcedureInputOptions<
+    options?: BuilderInputOptions<
+      TDefaults,
       TTarget,
       InferSchemaInput<TSchema>,
       TOnValidationErrorResult,
       TErrorCatalog
     >,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<TDefinition, TTarget, TSchema, TOnValidationErrorResult>,
+    ExtendProcedureInputDefinition<
+      TDefinition,
+      TTarget,
+      TSchema,
+      TOnValidationErrorResult,
+      TDefaults
+    >,
     TContext,
     TDefaults,
     TErrorCatalog,
@@ -1321,12 +1458,14 @@ const createProcedureBuilder = <
         definition,
         target,
         schema,
-        options,
+        isPageInputOptions(defaults, options) ? undefined : options,
+        isPageInputOptions(defaults, options) ? options : undefined,
       ) as unknown as ExtendProcedureInputDefinition<
         TDefinition,
         TTarget,
         TSchema,
-        TOnValidationErrorResult
+        TOnValidationErrorResult,
+        TDefaults
       >,
       middlewares,
       defaults,
@@ -1430,17 +1569,25 @@ const createProcedureBuilder = <
 
   const withParams = <
     TSchema extends StandardSchemaV1,
-    TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
+    TOnValidationErrorResult extends BuilderInputValidationErrorResult<TDefaults> =
+      NoValidationErrorHook,
   >(
     schema: BoundRouteParamsSchemaArg<TDefinition, TSchema>,
-    options?: ProcedureInputOptions<
+    options?: BuilderInputOptions<
+      TDefaults,
       "params",
       InferSchemaInput<TSchema>,
       TOnValidationErrorResult,
       TErrorCatalog
     >,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<TDefinition, "params", TSchema, TOnValidationErrorResult>,
+    ExtendProcedureInputDefinition<
+      TDefinition,
+      "params",
+      TSchema,
+      TOnValidationErrorResult,
+      TDefaults
+    >,
     TContext,
     TDefaults,
     TErrorCatalog,
@@ -1453,17 +1600,25 @@ const createProcedureBuilder = <
 
   const withQuery = <
     TSchema extends StandardSchemaV1,
-    TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
+    TOnValidationErrorResult extends BuilderInputValidationErrorResult<TDefaults> =
+      NoValidationErrorHook,
   >(
     schema: TSchema,
-    options?: ProcedureInputOptions<
+    options?: BuilderInputOptions<
+      TDefaults,
       "query",
       InferSchemaInput<TSchema>,
       TOnValidationErrorResult,
       TErrorCatalog
     >,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<TDefinition, "query", TSchema, TOnValidationErrorResult>,
+    ExtendProcedureInputDefinition<
+      TDefinition,
+      "query",
+      TSchema,
+      TOnValidationErrorResult,
+      TDefaults
+    >,
     TContext,
     TDefaults,
     TErrorCatalog,
@@ -1476,17 +1631,25 @@ const createProcedureBuilder = <
 
   const withJson = <
     TSchema extends StandardSchemaV1,
-    TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
+    TOnValidationErrorResult extends BuilderInputValidationErrorResult<TDefaults> =
+      NoValidationErrorHook,
   >(
     schema: BodyContractSchemaArg<TDefinition, "json", TSchema>,
-    options?: ProcedureInputOptions<
+    options?: BuilderInputOptions<
+      TDefaults,
       "json",
       InferSchemaInput<TSchema>,
       TOnValidationErrorResult,
       TErrorCatalog
     >,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<TDefinition, "json", TSchema, TOnValidationErrorResult>,
+    ExtendProcedureInputDefinition<
+      TDefinition,
+      "json",
+      TSchema,
+      TOnValidationErrorResult,
+      TDefaults
+    >,
     TContext,
     TDefaults,
     TErrorCatalog,
@@ -1499,17 +1662,25 @@ const createProcedureBuilder = <
 
   const withFormData = <
     TSchema extends StandardSchemaV1,
-    TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
+    TOnValidationErrorResult extends BuilderInputValidationErrorResult<TDefaults> =
+      NoValidationErrorHook,
   >(
     schema: BodyContractSchemaArg<TDefinition, "formData", TSchema>,
-    options?: ProcedureInputOptions<
+    options?: BuilderInputOptions<
+      TDefaults,
       "formData",
       InferSchemaInput<TSchema>,
       TOnValidationErrorResult,
       TErrorCatalog
     >,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<TDefinition, "formData", TSchema, TOnValidationErrorResult>,
+    ExtendProcedureInputDefinition<
+      TDefinition,
+      "formData",
+      TSchema,
+      TOnValidationErrorResult,
+      TDefaults
+    >,
     TContext,
     TDefaults,
     TErrorCatalog,
@@ -1522,17 +1693,25 @@ const createProcedureBuilder = <
 
   const withHeaders = <
     TSchema extends StandardSchemaV1,
-    TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
+    TOnValidationErrorResult extends BuilderInputValidationErrorResult<TDefaults> =
+      NoValidationErrorHook,
   >(
     schema: TSchema,
-    options?: ProcedureInputOptions<
+    options?: BuilderInputOptions<
+      TDefaults,
       "headers",
       InferSchemaInput<TSchema>,
       TOnValidationErrorResult,
       TErrorCatalog
     >,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<TDefinition, "headers", TSchema, TOnValidationErrorResult>,
+    ExtendProcedureInputDefinition<
+      TDefinition,
+      "headers",
+      TSchema,
+      TOnValidationErrorResult,
+      TDefaults
+    >,
     TContext,
     TDefaults,
     TErrorCatalog,
@@ -1545,17 +1724,25 @@ const createProcedureBuilder = <
 
   const withCookies = <
     TSchema extends StandardSchemaV1,
-    TOnValidationErrorResult extends ProcedureValidationErrorHandlerResult = never,
+    TOnValidationErrorResult extends BuilderInputValidationErrorResult<TDefaults> =
+      NoValidationErrorHook,
   >(
     schema: TSchema,
-    options?: ProcedureInputOptions<
+    options?: BuilderInputOptions<
+      TDefaults,
       "cookies",
       InferSchemaInput<TSchema>,
       TOnValidationErrorResult,
       TErrorCatalog
     >,
   ): ProcedureBuilder<
-    ExtendProcedureInputDefinition<TDefinition, "cookies", TSchema, TOnValidationErrorResult>,
+    ExtendProcedureInputDefinition<
+      TDefinition,
+      "cookies",
+      TSchema,
+      TOnValidationErrorResult,
+      TDefaults
+    >,
     TContext,
     TDefaults,
     TErrorCatalog,

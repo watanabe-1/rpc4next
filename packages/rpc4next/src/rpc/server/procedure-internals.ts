@@ -3,6 +3,7 @@ import type { HttpMethod } from "rpc4next-shared";
 
 import type { DefaultRpcErrorCatalog, RpcErrorCatalog } from "./error";
 import type { RpcMeta } from "./meta";
+import type { ProcedurePageInputOptions, ProcedurePageInputTarget } from "./next-page";
 import type { ProcedureResult } from "./procedure";
 import type {
   MergeProcedureDefinition,
@@ -119,6 +120,7 @@ export const withProcedureInputContract = <
     ProcedureValidationErrorHandlerResult,
     TErrorCatalog
   >,
+  pageOptions?: ProcedurePageInputOptions<Extract<TTarget, ProcedurePageInputTarget>, TValue>,
 ): MergeProcedureDefinition<
   TDefinition,
   {
@@ -150,6 +152,10 @@ export const withProcedureInputContract = <
       options: {
         ...definition.input?.options,
         ...(options === undefined ? {} : { [target]: options }),
+      },
+      pageOptions: {
+        ...definition.input?.pageOptions,
+        ...(pageOptions === undefined ? {} : { [target]: pageOptions }),
       },
       validationErrorResponses: {
         ...definition.input?.validationErrorResponses,
