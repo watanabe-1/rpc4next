@@ -10,6 +10,7 @@ import {
 } from "../../test-helpers/tmp-dir.js";
 import type { ImportAliasName } from "./alias.js";
 import { clearScanAppDirCacheAbove, scanAppDirCache, visitedDirsCache } from "./cache.js";
+import { generatePathStructure } from "./generate-path-structure.js";
 import { toPosixPath } from "./path-utils.js";
 import { hasTargetFiles, scanAppDir } from "./route-scanner.js";
 
@@ -94,6 +95,36 @@ describe("route-scanner", () => {
     tmpDir = null;
     scanAppDirCache.clear();
     visitedDirsCache.clear();
+  });
+
+  it("generates imports only for public HTTP method exports from a valid route", () => {
+    setupTree({
+      app: {
+        "route.ts": `
+          const GET = () => new Response();
+          export { GET as POST };
+          const { PUT: helper } = { PUT: () => new Response() };
+          void helper;
+          // export const DELETE = () => new Response();
+          const text = "export const PATCH = () => new Response();";
+          void text;
+          type HEAD = () => Response;
+          export type { HEAD };
+        `,
+      },
+    });
+
+    const { pathStructure, routeManifests } = generatePathStructure(
+      tmpPath("rpc.ts"),
+      tmpPath("app"),
+    );
+
+    expect(pathStructure).toContain('import type { POST as POST_asmocked } from "./app/route";');
+    expect(pathStructure).toContain('"$post": typeof POST_asmocked');
+    for (const method of ["GET", "PUT", "DELETE", "PATCH", "HEAD"]) {
+      expect(pathStructure).not.toContain(method);
+    }
+    expect(routeManifests?.map((route) => route.methods)).toEqual([["POST"]]);
   });
 
   describe("hasTargetFiles", () => {
@@ -338,7 +369,7 @@ describe("route-scanner", () => {
         testApp: {
           query: {
             home: {
-              "page.tsx": "export type Query = {query : string;} export function Home() {};",
+              "page.tsx": "export type Query = {query : string;}; export function Home() {};",
             },
           },
         },

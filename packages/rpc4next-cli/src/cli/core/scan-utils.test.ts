@@ -255,6 +255,144 @@ describe("scanEndpointFile", () => {
     expect(result2.routes[0]?.type).toBe('{ "$put": typeof PUT_203d1825e2307ab2 }');
   });
 
+  it.each([
+    {
+      name: "an HTTP method exported under another HTTP method name",
+      source: "const GET = () => new Response(); export { GET as POST };",
+      methods: ["POST"],
+    },
+    {
+      name: "a handler exported under an HTTP method name",
+      source: "const handler = () => new Response(); export { handler as GET };",
+      methods: ["GET"],
+    },
+    {
+      name: "an HTTP method exported under a non-method name",
+      source: "const GET = () => new Response(); export { GET as handler };",
+      methods: [],
+    },
+    {
+      name: "aliased re-exports",
+      source: 'export { GET as POST, handler as PUT, DELETE as other } from "./handlers";',
+      methods: ["POST", "PUT"],
+    },
+    {
+      name: "string export names",
+      source: 'const handler = () => new Response(); export { handler as "GET" };',
+      methods: ["GET"],
+    },
+    {
+      name: "renamed destructured properties",
+      source: "export const { GET: handler, handler: POST } = handlers;",
+      methods: ["POST"],
+    },
+    {
+      name: "nested bindings, defaults, computed properties, and rest bindings",
+      source: `export const {
+        GET: { handler: POST = () => new Response() },
+        ["PUT"]: helper,
+        ...DELETE
+      } = handlers;`,
+      methods: ["POST", "DELETE"],
+    },
+    {
+      name: "array destructuring and multiple declarations",
+      source: "export const [GET, , POST = () => new Response()] = handlers, PUT = handler;",
+      methods: ["GET", "POST", "PUT"],
+    },
+    {
+      name: "line and block comments",
+      source: `// export const POST = () => new Response();
+        /* export function GET() {} */
+        export const DELETE = () => new Response();`,
+      methods: ["DELETE"],
+    },
+    {
+      name: "strings, templates, and regular expressions",
+      source: `const text = "export const POST = () => new Response();";
+        const template = \`export { GET }\`;
+        const pattern = /export const PUT =/;
+        export const DELETE = () => new Response();`,
+      methods: ["DELETE"],
+    },
+    {
+      name: "type-only export declarations and specifiers",
+      source: `type GET = () => Response;
+        type Handler = () => Response;
+        const handler = () => new Response();
+        export type { GET };
+        export { type Handler as POST, handler as PUT };
+        export type { DELETE } from "./types";
+        export { type PATCH } from "./types";`,
+      methods: ["PUT"],
+    },
+    {
+      name: "local types exported without an explicit type modifier",
+      source: "interface GET {} type Handler = () => Response; export { GET, Handler as POST };",
+      methods: [],
+    },
+    {
+      name: "type-only imports exported without an explicit type modifier",
+      source: `import type { Handler } from "./types";
+        import { type Other, handler } from "./handlers";
+        export { Handler as GET, Other as POST, handler as PUT };`,
+      methods: ["PUT"],
+    },
+    {
+      name: "a type and value sharing the same name",
+      source: "type GET = () => Response; const GET: GET = () => new Response(); export { GET };",
+      methods: ["GET"],
+    },
+    {
+      name: "a named default function",
+      source: "export default function GET() { return new Response(); }",
+      methods: [],
+    },
+    {
+      name: "a named default function also exported by name",
+      source: "export default function GET() { return new Response(); } export { GET as POST };",
+      methods: ["POST"],
+    },
+    {
+      name: "export lists preceding value declarations",
+      source: "export { handler as GET }; function handler() { return new Response(); }",
+      methods: ["GET"],
+    },
+    {
+      name: "generic function declarations and comments between tokens",
+      source: `export function GET<T>(request: T) { return new Response(); }
+        export /* comment */ const POST: () => Response = () => new Response();`,
+      methods: ["GET", "POST"],
+    },
+  ])("should detect only exported value names in $name", ({ source, methods }) => {
+    const { inputFile, outputFile, rootDir } = createPaths();
+    writeTree(rootDir, { "input.ts": source });
+
+    const result = scanEndpointFile(outputFile, inputFile);
+
+    expect(result.routes.map((route) => route.exportName)).toEqual(methods);
+  });
+
+  it("should reject syntax errors with the input filename", () => {
+    const { inputFile, outputFile, rootDir } = createPaths();
+    writeTree(rootDir, { "input.ts": "export const GET = ;" });
+
+    expect(() => scanEndpointFile(outputFile, inputFile)).toThrow(SyntaxError);
+    expect(() => scanEndpointFile(outputFile, inputFile)).toThrow(`Failed to parse ${inputFile}:`);
+  });
+
+  it("should parse TSX without detecting export text in JSX", () => {
+    const { outputFile, rootDir } = createPaths();
+    const inputFile = path.join(rootDir, "page.tsx");
+    writeTree(rootDir, {
+      "page.tsx": `export default function Page() {
+        return <div>export const POST = handler;</div>;
+      }`,
+    });
+
+    expect(scanEndpointFile(outputFile, inputFile).routes).toEqual([]);
+  });
+
   it("should skip non-matching route definitions", () => {
     const { inputFile, outputFile, rootDir } = createPaths();
     writeTree(rootDir, {

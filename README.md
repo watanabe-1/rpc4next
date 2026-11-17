@@ -42,7 +42,7 @@ This is a good fit if you want typed client calls and typed URLs from an existin
 
 ## Requirements
 
-- Node.js `>=22.0.0`
+- Node.js `>=22.0.0` for the runtime library; `>=22.22.0` for `rpc4next-cli`
 - Next.js App Router
 - Package peer dependency support in `rpc4next` and `rpc4next-cli`: Next.js `^15` or `^16`
 
