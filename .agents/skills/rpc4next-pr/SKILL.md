@@ -74,6 +74,8 @@ request for that state and must describe the remaining work.
 
 ## Compose the title and body
 
+- Write the PR title and body in English by default, even when the conversation
+  is in another language. Follow an explicit user request for another language.
 - Describe the final net change and its motivation for a reviewer without the
   conversation. Use concrete before/after behavior when helpful. Omit abandoned
   approaches, local absolute paths, and unsupported claims.
