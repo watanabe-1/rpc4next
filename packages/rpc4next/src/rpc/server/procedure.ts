@@ -361,7 +361,8 @@ type ProcedureHandleArgs<
  * Portable return shape for procedure handlers.
  *
  * Route procedures convert it to a typed HTTP response. Page procedures pass `body` to the page
- * render callback as `data`.
+ * render callback as `data`. An empty handler result produces an empty route response or undefined
+ * page data.
  */
 export type ProcedureResult<TBody = unknown> = {
   status?: HttpStatusCode;

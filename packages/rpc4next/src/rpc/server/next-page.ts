@@ -588,9 +588,7 @@ export const createNextPage = <
   const handler = procedure.handler as
     | ((
         context: InferProcedureHandlerContext<TProcedure>,
-      ) =>
-        | InferProcedureHandlerResult<TProcedure>
-        | Promise<InferProcedureHandlerResult<TProcedure>>)
+      ) => Response | ProcedureResult | Promise<Response | ProcedureResult>)
     | undefined;
   const onError = options?.onError ?? defaultProcedurePageOnError;
   const onValidationError = options?.onValidationError;
@@ -669,17 +667,12 @@ export const createNextPage = <
           ...(procedure.middlewares as unknown as readonly ((
             context: typeof executionContext,
           ) => ProcedureMiddlewareResult | Promise<ProcedureMiddlewareResult>)[]),
-          ...(handler
-            ? [
-                (context: typeof executionContext) =>
-                  handler(
-                    context as InferProcedureHandlerContext<TProcedure>,
-                  ) as InferProcedureHandlerResult<TProcedure>,
-              ]
-            : []),
         ],
         executionContext,
         {
+          handler: handler
+            ? (context) => handler(context as InferProcedureHandlerContext<TProcedure>)
+            : undefined,
           isTerminal: (value): value is Response | ProcedureResult =>
             value instanceof Response || isProcedureResult(value),
           applyResult: (context, value) => {

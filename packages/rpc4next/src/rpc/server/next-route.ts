@@ -749,7 +749,11 @@ export const createNextRoute = <
 ): NextRouteExports<TProcedure, TMethod, TValidateOutput, TOnError, TOnValidationError> => {
   const handler = procedure.handler as (
     context: InferProcedureHandlerContext<TProcedure>,
-  ) => InferProcedureHandlerResult<TProcedure> | Promise<InferProcedureHandlerResult<TProcedure>>;
+  ) =>
+    | Response
+    | NextResponse
+    | ProcedureResult
+    | Promise<Response | NextResponse | ProcedureResult>;
   const outputSchema = procedure.definition.output?.schema;
   const pipelineSteps = [
     ...(procedure.middlewares as unknown as readonly ((
@@ -758,15 +762,6 @@ export const createNextRoute = <
         InferProcedureErrorCatalog<TProcedure>
       >,
     ) => ProcedureMiddlewareResult | Promise<ProcedureMiddlewareResult>)[]),
-    (
-      context: ProcedureRouteExecutionContext<
-        InferProcedureDeclaredOutput<TProcedure>,
-        InferProcedureErrorCatalog<TProcedure>
-      >,
-    ) =>
-      handler(context as InferProcedureHandlerContext<TProcedure>) as
-        | InferProcedureHandlerResult<TProcedure>
-        | Promise<InferProcedureHandlerResult<TProcedure>>,
   ] as const;
 
   if (options.validateOutput && outputSchema !== undefined && !isStandardSchemaV1(outputSchema)) {
@@ -838,6 +833,7 @@ export const createNextRoute = <
         ProcedureMiddlewareResult | InferProcedureHandlerResult<TProcedure>,
         Response | NextResponse | ProcedureResult
       >(pipelineSteps, executionContext, {
+        handler: (context) => handler(context as InferProcedureHandlerContext<TProcedure>),
         isTerminal: (value): value is Response | NextResponse | ProcedureResult =>
           value instanceof Response || isProcedureResult(value),
         applyResult: (context, value) => {

@@ -159,6 +159,55 @@ describe("createNextPage", () => {
     nextHeadersMock.cookies.mockReset();
   });
 
+  it.each([false, true])(
+    "renders undefined data for an empty handler result (async: %s)",
+    async (asyncHandler) => {
+      const onError = vi.fn<() => string>(() => "error");
+      const handler = vi.fn<(ctx: { user: string }) => object>((ctx) => {
+        expect(ctx.user).toBe("reader");
+
+        return {};
+      });
+      const render = vi.fn<(context: { data: unknown }) => unknown>(({ data }) => data);
+      const builder = createPageProcedure({ onError })
+        .forRoute(pageRouteContract)
+        .params(paramsSchema)
+        .use(() => undefined)
+        .use(() => ({ ctx: { user: "reader" } }));
+      const page = builder
+        .handle(asyncHandler ? async ({ ctx }) => handler(ctx) : ({ ctx }) => handler(ctx))
+        .page(render);
+
+      await expect(page({ params: Promise.resolve({ id: "photo-1" }) })).resolves.toBeUndefined();
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(render).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ data: undefined }));
+      expect(onError).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([false, true])(
+    "keeps middleware-only page execution working (terminal: %s)",
+    async (terminal) => {
+      const laterMiddleware = vi.fn<() => undefined>(() => undefined);
+      const handler = vi.fn<() => { body: string }>(() => ({ body: "handler" }));
+      const builder = procedure
+        .forRoute(pageRouteContract)
+        .params(paramsSchema)
+        .use(() => undefined)
+        .use(() => ({ ctx: { user: "reader" } }))
+        .use(() => (terminal ? { body: "middleware" } : undefined))
+        .use(laterMiddleware);
+      const page = builder.page(({ ctx }) => ctx.user);
+      const handledPage = builder.handle(handler).page(({ data }) => data);
+      const props = { params: Promise.resolve({ id: "photo-1" }) };
+
+      await expect(page(props)).resolves.toBe("reader");
+      await expect(handledPage(props)).resolves.toBe(terminal ? "middleware" : "handler");
+      expect(laterMiddleware).toHaveBeenCalledTimes(terminal ? 0 : 2);
+      expect(handler).toHaveBeenCalledTimes(terminal ? 0 : 1);
+    },
+  );
+
   it.each([
     ["a?b", "a%3Fb"],
     ["a#b", "a%23b"],
