@@ -177,6 +177,7 @@ export const withProcedureInputContract = <
   >;
 };
 
+// Detect explicit middleware responses; final handlers may also return an empty result.
 export const isProcedureResult = (value: unknown): value is ProcedureResult => {
   if (typeof value !== "object" || value === null) {
     return false;
@@ -226,6 +227,7 @@ export const executePipeline = async <TContext, TResult, TTerminal extends TResu
   options: {
     isTerminal: (result: TResult) => result is TTerminal;
     applyResult?: (context: TContext, result: Exclude<TResult, TTerminal>) => void;
+    handler?: (context: TContext) => TTerminal | Promise<TTerminal>;
   },
 ): Promise<TTerminal | undefined> => {
   for (const step of steps) {
@@ -238,5 +240,5 @@ export const executePipeline = async <TContext, TResult, TTerminal extends TResu
     options.applyResult?.(context, result as Exclude<TResult, TTerminal>);
   }
 
-  return undefined;
+  return options.handler?.(context);
 };

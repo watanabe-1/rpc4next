@@ -5,7 +5,7 @@ import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 
 import { createNextRoute as basecreateNextRoute } from "./next-route";
 import { defaultProcedureOnError } from "./on-error";
-import { procedure } from "./procedure";
+import { createRouteProcedure, procedure } from "./procedure";
 import { getProcedureDefinition } from "./procedure-definition";
 import type { ProcedureRouteContract } from "./procedure-types";
 import type { StandardSchemaV1 } from "./standard-schema";
@@ -38,6 +38,78 @@ const createNextRoute = <
 };
 
 describe("createNextRoute", () => {
+  it.each([false, true])(
+    "returns an empty handler result without onError (async: %s)",
+    async (asyncHandler) => {
+      for (const [result, status] of [
+        [{}, 200],
+        [{ body: undefined }, 200],
+        [{ status: 204 as const }, 204],
+      ] as const) {
+        const onError = vi.fn<typeof defaultProcedureOnError>(defaultProcedureOnError);
+        const { GET } = createRouteProcedure({ onError })
+          .forRoute(staticRouteContract)
+          .handle(asyncHandler ? async () => result : () => result)
+          .get();
+
+        const response = await GET(new NextRequest("http://localhost/api"), {
+          params: Promise.resolve({}),
+        });
+
+        expect(response.status).toBe(status);
+        expect(response.body).toBeNull();
+        await expect(response.text()).resolves.toBe("");
+        expect(onError).not.toHaveBeenCalled();
+      }
+    },
+  );
+
+  it("continues through empty and context middleware before an empty handler result", async () => {
+    const handler = vi.fn<(ctx: { user: string }) => object>((ctx) => {
+      expect(ctx.user).toBe("reader");
+
+      return {};
+    });
+    const { GET } = createRouteProcedure({ onError: defaultProcedureOnError })
+      .forRoute(staticRouteContract)
+      .use(() => undefined)
+      .use(() => ({}))
+      .use(() => ({ ctx: { user: "reader" } }))
+      .handle(({ ctx }) => handler(ctx))
+      .get();
+
+    const response = await GET(new NextRequest("http://localhost/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toBeNull();
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([{ body: undefined }, { status: 204 as const }])(
+    "short-circuits an explicit empty middleware response %j",
+    async (result) => {
+      const laterMiddleware = vi.fn<() => undefined>(() => undefined);
+      const handler = vi.fn<() => object>(() => ({}));
+      const { GET } = createRouteProcedure({ onError: defaultProcedureOnError })
+        .forRoute(staticRouteContract)
+        .use(() => result)
+        .use(laterMiddleware)
+        .handle(handler)
+        .get();
+
+      const response = await GET(new NextRequest("http://localhost/api"), {
+        params: Promise.resolve({}),
+      });
+
+      expect(response.status).toBe("status" in result ? result.status : 200);
+      expect(response.body).toBeNull();
+      expect(laterMiddleware).not.toHaveBeenCalled();
+      expect(handler).not.toHaveBeenCalled();
+    },
+  );
+
   type EmptyParams = Record<never, never>;
 
   const staticRouteContract = {
