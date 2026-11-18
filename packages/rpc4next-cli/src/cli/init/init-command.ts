@@ -24,7 +24,7 @@ const logInitFile = (logger: Logger, status: InitFileStatus, filePath: string) =
 };
 
 const ensureParentDir = (filePath: string) => {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.mkdirSync(path.resolve(path.dirname(filePath)), { recursive: true });
 };
 
 const writeInitFile = ({

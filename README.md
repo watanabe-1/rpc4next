@@ -95,6 +95,20 @@ bunx rpc4next init
 bunx rpc4next
 ```
 
+The CLI can also be invoked explicitly with Bun after installing it locally:
+
+```bash
+bun ./node_modules/rpc4next-cli/dist/index.js init
+bun ./node_modules/rpc4next-cli/dist/index.js --check
+```
+
+`bunx rpc4next` respects the CLI's Node.js shebang and can run it on Node.js;
+the explicit `bun` command above runs the CLI itself on Bun. CI targets Bun
+1.1.0, 1.2.0, and the version in `aqua/aqua.yaml` on Linux, plus the aqua
+version on Windows. The built CLI has been verified locally on Windows with Bun
+1.1.0, 1.2.0, 1.3.9, and 1.4.4. Linux CI results are pending. These CLI checks do not establish support for running the
+Next.js server on Bun.
+
 `rpc4next init` creates:
 
 - `rpc4next.config.json`

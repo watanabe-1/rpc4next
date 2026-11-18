@@ -13,7 +13,8 @@
   "scripts": {
     "build": "bun --filter \"./packages/*\" --if-present build",
     "clean": "bun --filter \"./packages/*\" --if-present clean",
-    "typecheck": "bun run --parallel typecheck:scripts typecheck:workspaces",
+    "typecheck": "bun run --parallel typecheck:bun-tests typecheck:scripts typecheck:workspaces",
+    "typecheck:bun-tests": "bun --bun tsc -p bun-tests/tsconfig.json",
     "typecheck:scripts": "bun --bun tsc -p scripts/tsconfig.json",
     "typecheck:workspaces": "bun run --parallel --filter \"./packages/*\" --filter \"./integration/*\" --if-present typecheck",
     "lint": "bun run docs:check:init && bun run format:oxfmt:check && oxlint .",
@@ -36,6 +37,7 @@
     "diff2prompt": "diff2prompt"
   },
   "devDependencies": {
+    "@types/bun": "^1.4.4",
     "@types/node": "^26.6.6",
     "@vitest/coverage-v8": "^5.1.0",
     "@vitest/ui": "^5.1.0",
