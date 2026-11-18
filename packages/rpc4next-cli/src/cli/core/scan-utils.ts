@@ -44,10 +44,40 @@ const buildDefinition = <T extends ImportAliasName>(
   };
 };
 
-const findQueryExport = (fileContents: string) => {
-  return QUERY_TYPES.find((type) =>
-    new RegExp(`export (interface ${type} ?{|type ${type} ?=)`).test(fileContents),
-  );
+const findQueryExport = (statements: Statement[]) => {
+  const localTypes = new Set<string>();
+  const exports = new Set<string>();
+
+  for (const statement of statements) {
+    const declaration =
+      statement.type === "ExportNamedDeclaration" ? statement.declaration : statement;
+    if (
+      declaration?.type === "TSTypeAliasDeclaration" ||
+      declaration?.type === "TSInterfaceDeclaration"
+    ) {
+      localTypes.add(declaration.id.name);
+      if (statement.type === "ExportNamedDeclaration") exports.add(declaration.id.name);
+    } else if (statement.type === "ImportDeclaration") {
+      for (const specifier of statement.specifiers) localTypes.add(specifier.local.name);
+    }
+  }
+
+  for (const statement of statements) {
+    if (statement.type !== "ExportNamedDeclaration") continue;
+    for (const specifier of statement.specifiers) {
+      if (specifier.type !== "ExportSpecifier") continue;
+      const localName =
+        specifier.local.type === "Identifier" ? specifier.local.name : specifier.local.value;
+      if (!statement.source && !localTypes.has(localName)) continue;
+      exports.add(
+        specifier.exported.type === "Identifier"
+          ? specifier.exported.name
+          : specifier.exported.value,
+      );
+    }
+  }
+
+  return QUERY_TYPES.find((type) => exports.has(type));
 };
 
 const isPageFile = (inputFile: string) => /[/\\]page\.tsx$/.test(inputFile);
@@ -93,21 +123,12 @@ const collectDeclarationNames = (declaration: Statement, names: Set<string>) => 
   }
 };
 
-const findRouteExports = (fileContents: string, inputFile: string) => {
-  const result = parseSync(inputFile, fileContents, {
-    sourceType: "module",
-  });
-  if (result.errors.length) {
-    throw new SyntaxError(
-      `Failed to parse ${inputFile}: ${result.errors.map((error) => error.message).join("; ")}`,
-    );
-  }
-  const { program } = result;
+const findRouteExports = (statements: Statement[]) => {
   const localValues = new Set<string>();
   const exports = new Set<string>();
 
   // Resolve local value bindings before export lists, which may precede declarations.
-  for (const statement of program.body) {
+  for (const statement of statements) {
     if (
       statement.type === "ExportNamedDeclaration" ||
       statement.type === "ExportDefaultDeclaration"
@@ -134,7 +155,7 @@ const findRouteExports = (fileContents: string, inputFile: string) => {
     }
   }
 
-  for (const statement of program.body) {
+  for (const statement of statements) {
     if (statement.type !== "ExportNamedDeclaration" || statement.exportKind === "type") continue;
     if (statement.declaration) collectDeclarationNames(statement.declaration, exports);
     for (const specifier of statement.specifiers) {
@@ -166,7 +187,13 @@ export const scanEndpointFile = (
 } => {
   const fileContents = fs.readFileSync(inputFile, "utf8");
 
-  const queryExport = findQueryExport(fileContents);
+  const result = parseSync(inputFile, fileContents, { sourceType: "module" });
+  if (result.errors.length) {
+    throw new SyntaxError(
+      `Failed to parse ${inputFile}: ${result.errors.map((error) => error.message).join("; ")}`,
+    );
+  }
+  const queryExport = findQueryExport(result.program.body);
   const page = isPageFile(inputFile)
     ? (() => {
         const relativeImportPath = createRelativeImportPath(outputFile, inputFile);
@@ -187,7 +214,7 @@ export const scanEndpointFile = (
       )
     : page;
 
-  const routeExports = findRouteExports(fileContents, inputFile);
+  const routeExports = findRouteExports(result.program.body);
   const routes = HTTP_METHODS_EXCLUDE_OPTIONS.filter((method) =>
     hasRouteExport(routeExports, method),
   ).map((method) =>
