@@ -36,6 +36,7 @@
 - After every code change, run `bun run test`, `bun run lint`, and `bun run typecheck` from the repository root.
 - Do not consider the task complete unless all three commands pass, unless the user explicitly allows an exception.
 - Run additional relevant integration commands such as `bun run integration:next-app:generate` or `bun run integration:next-app:e2e` when the change touches that behavior.
+- When changing GitHub Actions workflows or actions, run `actionlint`, `ghalint run`, and `zizmor` from the repository root, using the versions managed by aqua. Report any checks that could not be run or that used reduced coverage, such as zizmor offline mode.
 
 ## Guardrails
 
