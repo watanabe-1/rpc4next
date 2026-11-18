@@ -69,7 +69,62 @@ jobs:
       - name: Install Playwright browser dependencies (Linux)
         if: runner.os == 'Linux'
         shell: bash
-        run: bunx playwright install --with-deps chromium
+        run: |
+          # Playwright's dry run simulates apt installation and reports missing packages.
+          sudo apt-get update
+          set +e
+          dependencies=$(bunx playwright install-deps --dry-run chromium 2>&1)
+          status=$?
+          set -e
+          printf '%s\n' "$dependencies"
+          if [ "$status" -eq 0 ]; then
+            [ "$dependencies" = "All system dependencies are installed." ] || exit 1
+          elif [ "$status" -eq 1 ]; then
+            mapfile -t lines <<< "$dependencies"
+            [[ ${lines[0]} =~ ^Missing\ system\ dependencies\ \(([0-9]+)\):$ ]] || exit 1
+            count=${BASH_REMATCH[1]}
+            packages=()
+            for line in "${lines[@]:1}"; do
+              [[ $line =~ ^\ \ ([a-z0-9][a-z0-9.+:-]*)$ ]] || exit 1
+              packages+=("${BASH_REMATCH[1]}")
+            done
+            [ "${#packages[@]}" -eq "$count" ] && [ "$count" -gt 0 ] || exit 1
+
+            echo "APT sources (runner default; no mirror switching):"
+            apt-cache policy | grep -E 'https?://' || true
+            for attempt in 1 2 3; do
+              start=$SECONDS
+              echo "Download attempt $attempt/3 started at $(date -u +%FT%TZ)"
+              # timeout runs apt and its children in a process group; only downloads
+              # are interrupted, never dpkg. APT retains completed archives.
+              if sudo timeout --kill-after=10s 90s apt-get install -y --no-install-recommends --download-only "${packages[@]}"; then
+                status=0
+              else
+                status=$?
+              fi
+              echo "Download attempt $attempt/3 ended at $(date -u +%FT%TZ) after $((SECONDS - start))s (exit $status)"
+              if [ "$status" -eq 0 ]; then
+                break
+              elif [ "$status" -ne 124 ]; then
+                echo "APT failed without a timeout; not retrying."
+                exit "$status"
+              elif [ "$attempt" -eq 3 ]; then
+                echo "Download timed out on all three attempts."
+                exit 1
+              fi
+              echo "Download timed out; retrying the same mirrors in 5 seconds."
+              sleep 5
+            done
+            # Fail rather than fetch anything not already in the apt archive cache.
+            sudo apt-get install -y --no-install-recommends --no-download "${packages[@]}"
+          else
+            echo "Playwright dependency check failed (exit $status)."
+            exit "$status"
+          fi
+          bunx playwright install-deps --dry-run chromium
+          echo "Playwright OS dependencies installed successfully."
+          bunx playwright install chromium
+          echo "Chromium installed successfully."
 
       - name: Install Playwright browser (Windows)
         if: runner.os == 'Windows'
