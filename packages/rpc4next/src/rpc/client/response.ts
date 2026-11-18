@@ -425,6 +425,20 @@ const parsePayload = async (response: BodyParserResponseLike): Promise<unknown> 
 
   const contentType = response.headers.get("content-type") ?? "";
 
+  if (response.ok) {
+    if (isJsonContentType(contentType)) {
+      return response.json();
+    }
+    if (isTextContentType(contentType) || contentType === "") {
+      return response.text();
+    }
+    if (isFormDataContentType(contentType)) {
+      return response.formData();
+    }
+
+    return response.blob();
+  }
+
   if (isJsonContentType(contentType)) {
     return readJson(response);
   }
