@@ -725,22 +725,55 @@ describe("route-scanner", () => {
         {
           dirPath: tmpPosixPath("testApp", "intercepts", "(...)intercept", "[[...optionalParts]]"),
           paramsType: '{ "optionalParts": string[] | undefined }',
-          pathname: "/intercepts/intercept/[[...optionalParts]]",
+          pathname: "/intercept/[[...optionalParts]]",
         },
         {
           dirPath: tmpPosixPath("testApp", "intercepts", "(..)(..)intercept", "[...parts]"),
           paramsType: '{ "parts": string[] }',
-          pathname: "/intercepts/intercept/[...parts]",
+          pathname: "/intercept/[...parts]",
         },
         {
           dirPath: tmpPosixPath("testApp", "intercepts", "(..)intercept", "nested", "[slug]"),
           paramsType: '{ "slug": string }',
-          pathname: "/intercepts/intercept/nested/[slug]",
+          pathname: "/intercept/nested/[slug]",
         },
         {
           dirPath: tmpPosixPath("testApp", "intercepts", "(.)intercept", "[id]"),
           paramsType: '{ "id": string }',
           pathname: "/intercepts/intercept/[id]",
+        },
+      ]);
+    });
+
+    it("resolves interception against URL segments while retaining parent params", () => {
+      setupTree({
+        testApp: {
+          "(group)": {
+            "[tenant]": {
+              feed: {
+                "@modal": {
+                  "(.)a%2Fb": { "[id]": { "page.tsx": "export default function Page() {}" } },
+                  "(..)photo": { "[id]": { "page.tsx": "export default function Page() {}" } },
+                  "(..)(..)photo": { "[id]": { "page.tsx": "export default function Page() {}" } },
+                  "(...)photo": { "[id]": { "page.tsx": "export default function Page() {}" } },
+                },
+              },
+            },
+          },
+        },
+      });
+      const result = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(result.pathStructure).toBe("");
+      expect(result.pageManifests).toEqual([]);
+      expect(
+        result.paramsTypes.map(({ pathname, paramsType }) => ({ pathname, paramsType })),
+      ).toEqual([
+        { pathname: "/photo/[id]", paramsType: '{ "tenant": string; "id": string; }' },
+        { pathname: "/photo/[id]", paramsType: '{ "tenant": string; "id": string; }' },
+        { pathname: "/[tenant]/photo/[id]", paramsType: '{ "tenant": string; "id": string; }' },
+        {
+          pathname: "/[tenant]/feed/a%2Fb/[id]",
+          paramsType: '{ "tenant": string; "id": string; }',
         },
       ]);
     });
@@ -944,7 +977,7 @@ describe("route-scanner", () => {
         {
           dirPath: tmpPosixPath("testApp", "feed", "@modal", "(..)photo", "[id]"),
           paramsType: '{ "id": string }',
-          pathname: "/feed/photo/[id]",
+          pathname: "/photo/[id]",
         },
         {
           dirPath: tmpPosixPath("testApp", "feed"),

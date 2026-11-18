@@ -280,25 +280,30 @@ const appendParamsType = (
 
 const toRoutePathname = (baseDir: string, fullPath: string): string => {
   const relativeDir = toPosixPath(path.relative(baseDir, path.dirname(fullPath)));
-  const pathnameSegments = relativeDir
-    .split("/")
-    .filter(Boolean)
-    .map((segment) => {
-      const meta = getDirectoryMeta(segment);
+  const pathnameSegments: string[] = [];
+  for (const segment of relativeDir.split("/").filter(Boolean)) {
+    const meta = getDirectoryMeta(segment);
 
-      if (meta.isGroup || meta.isParallel || meta.isPrivate) {
-        return null;
-      }
+    if (meta.isGroup || meta.isParallel || meta.isPrivate) {
+      continue;
+    }
 
-      if (meta.isDynamic || meta.isCatchAll || meta.isOptionalCatchAll) {
-        return meta.segmentName;
-      }
+    if (meta.isIntercept) {
+      const marker = INTERCEPTING_SEGMENT_PREFIXES.find((prefix) => segment.startsWith(prefix));
+      if (marker === "(...)") pathnameSegments.length = 0;
+      else if (marker === "(..)") pathnameSegments.splice(-1);
+      else if (marker === "(..)(..)")
+        pathnameSegments.splice(Math.max(0, pathnameSegments.length - 2));
+    }
+    if (meta.isDynamic || meta.isCatchAll || meta.isOptionalCatchAll) {
+      pathnameSegments.push(meta.segmentName);
+      continue;
+    }
 
-      // Encode each static segment independently so decoded slashes, percent
-      // escapes and brackets cannot become route separators or parameters.
-      return encodeURIComponent(safeDecodeSegment(meta.segmentName));
-    })
-    .filter((segment): segment is string => segment !== null);
+    // Encode each static segment independently so decoded slashes, percent
+    // escapes and brackets cannot become route separators or parameters.
+    pathnameSegments.push(encodeURIComponent(safeDecodeSegment(meta.segmentName)));
+  }
 
   return pathnameSegments.length > 0 ? `/${pathnameSegments.join("/")}` : "/";
 };
