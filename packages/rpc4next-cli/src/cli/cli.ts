@@ -3,7 +3,7 @@ import { parseArgs } from "node:util";
 
 import { handleCli } from "./cli-handler.js";
 import { loadCliConfig } from "./config.js";
-import { EXIT_FAILURE } from "./constants.js";
+import { EXIT_FAILURE, EXIT_SUCCESS } from "./constants.js";
 import { handleInitCommand } from "./init/init-command.js";
 import { createLogger } from "./logger.js";
 import type { CliOptions, Logger } from "./types.js";
@@ -185,12 +185,9 @@ export const runCli = (argv: string[], logger: Logger = createLogger()) => {
         : {}),
     } as CliOptions;
 
-    // Match your current behavior:
-    // - in non-watch mode: exit with code
-    // - in watch mode: do not exit (keep process alive)
     void Promise.resolve(handleCli(baseDir, outputPath, options, logger))
       .then((exitCode) => {
-        if (!options.watch) {
+        if (!options.watch || exitCode !== EXIT_SUCCESS) {
           process.exit(exitCode as number);
         }
       })
