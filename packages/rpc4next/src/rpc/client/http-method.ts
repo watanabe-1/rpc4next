@@ -193,6 +193,13 @@ export const httpMethod = (
       try {
         return await customFetch(urlObj.path, mergedInit);
       } catch (err) {
+        if (
+          (typeof err === "object" && err !== null && "name" in err && err.name === "AbortError") ||
+          (mergedInit.signal?.aborted && err === mergedInit.signal.reason)
+        ) {
+          throw err;
+        }
+
         // Surface method and URL for easier debugging
         const msg = err instanceof Error ? err.message : String(err);
         throw new Error(`[httpMethod] ${method} ${urlObj.path} failed: ${msg}`, {

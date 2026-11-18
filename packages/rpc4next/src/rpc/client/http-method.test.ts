@@ -284,16 +284,41 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     const paths = ["http://example.com", "api", "error"];
     const params = {};
     const dynamicKeys: string[] = [];
-    const errorMessage = "Fetch failed";
+    const error = new Error("Fetch failed");
 
     global.fetch = ((_input, _init) => {
-      return Promise.reject(new Error(errorMessage));
+      return Promise.reject(error);
     }) as typeof fetch;
 
     const defaultOptions = { init: {} };
     const requestFn = httpMethod(key, paths, params, dynamicKeys, defaultOptions);
 
-    await expect(requestFn()).rejects.toThrow(errorMessage);
+    await expect(requestFn()).rejects.toMatchObject({
+      message: "[httpMethod] GET http://example.com/api/error failed: Fetch failed",
+      cause: error,
+    });
+  });
+
+  it("preserves AbortController cancellation errors", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const requestFn = httpMethod("$get", ["http://example.com", "api"], {}, [], {
+      init: { signal: controller.signal },
+    });
+
+    await expect(requestFn()).rejects.toBe(controller.signal.reason);
+    expect(controller.signal.reason.name).toBe("AbortError");
+  });
+
+  it("preserves a custom abort reason", async () => {
+    const controller = new AbortController();
+    const reason = new Error("Cancelled by caller");
+    controller.abort(reason);
+    const requestFn = httpMethod("$get", ["http://example.com", "api"], {}, [], {
+      init: { signal: controller.signal },
+    });
+
+    await expect(requestFn()).rejects.toBe(reason);
   });
 
   it("merges default Headers instance with client headers object", async () => {
