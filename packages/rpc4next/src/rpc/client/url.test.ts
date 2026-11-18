@@ -3,6 +3,41 @@ import { describe, expect, it } from "vitest";
 import { createUrl } from "./url";
 
 describe("createUrl", () => {
+  it.each([".", ".."])('rejects dynamic segment "%s" before URL normalization', (value) => {
+    expect(new URL(`https://example.com/users/${value}/profile`).pathname).not.toBe(
+      `/users/${value}/profile`,
+    );
+    expect(() =>
+      createUrl(["https://example.com", "users", "_id", "profile"], { _id: value }, ["_id"]),
+    ).toThrow(`Invalid dynamic parameter "id": path segments cannot be "." or "..".`);
+  });
+
+  it.each(["___slug", "_____slug"])("rejects dot segments in %s arrays", (key) => {
+    for (const value of [".", ".."]) {
+      for (const parts of [
+        [value, "safe"],
+        ["safe", value],
+        ["safe", value, "more"],
+      ]) {
+        expect(() => createUrl(["", "docs", key], { [key]: parts }, [key])).toThrow(
+          'Invalid dynamic parameter "slug": path segments cannot be "." or "..".',
+        );
+      }
+    }
+  });
+
+  it.each(["_id", "___id", "_____id"])("preserves ordinary values in %s", (key) => {
+    const values = ["a.b", "...", "%2e", "a/b", "a b"];
+    const param = key === "_id" ? values.join("/") : values;
+    const result = createUrl(["", "items", key], { [key]: param }, [key])();
+
+    expect(result.relativePath).toBe(
+      key === "_id"
+        ? "/items/a.b%2F...%2F%252e%2Fa%2Fb%2Fa%20b"
+        : "/items/a.b/.../%252e/a%2Fb/a%20b",
+    );
+  });
+
   it.each([
     ["a#b", "a%23b", "a#b"],
     ["a?b", "a%3Fb", "a?b"],
