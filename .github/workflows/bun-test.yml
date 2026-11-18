@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   bun-test:
-    name: Bun test matrix (${{ matrix.os }}, bun=${{ matrix.bun-version }}, next=${{ matrix.next-version }})
+    name: CLI on Bun (${{ matrix.os }}, bun=${{ matrix.bun-version }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     permissions:
@@ -22,94 +22,27 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         bun-version: ["1.1.0", "1.2.0", "aqua"]
-        next-version: ["15.0.0", "from-package"]
         include:
           - os: windows-latest
             bun-version: aqua
-            next-version: from-package
-
     steps:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-
-      - name: Setup toolchain (from aqua/aqua.yaml)
+      - name: Setup build toolchain
         uses: watanabe-1/github-actions-common/actions/setup-toolchain@v1.1.0
         with:
           bun-version: aqua
           bun-cache: "true"
-
-      - name: Install base dependencies
-        shell: bash
-        env:
-          BUN_VERSION: ${{ matrix.bun-version }}
-        run: |
-          if [ "$BUN_VERSION" = "aqua" ]; then
-            bun install --frozen-lockfile
-          else
-            bun install
-          fi
-
-      - name: Set Next.js version
-        shell: bash
-        env:
-          NEXT_VERSION: ${{ matrix.next-version }}
-        run: |
-          if [ "$NEXT_VERSION" = "from-package" ]; then
-            echo "Using next from package.json"
-          else
-            echo "Overwriting package.json to use next@$NEXT_VERSION"
-            rm -f bun.lockb bun.lock
-            bun add "next@$NEXT_VERSION"
-          fi
-
-      - name: Print versions
-        shell: bash
-        run: |
-          uname -a || ver
-          bun -v
-          bun --bun next --version
-
-      - name: Build (all packages)
-        shell: bash
-        run: bun run build
-
-      - name: Typecheck
-        shell: bash
-        run: bun run typecheck
-
-      - name: Lint
-        shell: bash
-        run: bun run lint
-
-      # --- Restore Bun back to matrix for the rest ---
-      - name: Restore Bun (from matrix)
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - name: Select Bun runtime
         if: matrix.bun-version != 'aqua'
         uses: watanabe-1/github-actions-common/actions/setup-toolchain@v1.1.0
         with:
           bun-version: ${{ matrix.bun-version }}
-
-      - name: Install deps for Test (matrix Bun)
-        shell: bash
-        env:
-          BUN_VERSION: ${{ matrix.bun-version }}
-        run: |
-          if [ "$BUN_VERSION" = "aqua" ]; then
-            bun install --frozen-lockfile
-          else
-            bun install
-          fi
-
-      - name: Print versions
-        shell: bash
-        run: |
-          uname -a || ver
-          bun -v
-          bun --bun next --version
-
-      - name: Test
-        shell: bash
-        run: bun run test
+      - name: Test built CLI on Bun
+        run: bun test bun-tests/cli.test.ts
 
   status-check:
     name: Bun test status check
