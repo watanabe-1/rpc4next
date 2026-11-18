@@ -24,7 +24,7 @@ const baseUrl = "http://127.0.0.1:3000";
 
 const client = createRpcClient<PathStructure>(baseUrl, {
   fetch: async () =>
-    new Response(null, {
+    new Response("{}", {
       status: 200,
       headers: { "content-type": "application/json" },
     }),

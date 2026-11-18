@@ -73,32 +73,26 @@ describe("response promise unwrap", () => {
     expect(payload.toUpperCase()).toBe("");
   });
 
-  it("returns undefined when a successful text body cannot be read", async () => {
-    const response = new Response("text", {
-      headers: { "content-type": "text/plain" },
-    });
-    vi.spyOn(response, "text").mockRejectedValue(new Error("body unavailable"));
-
-    await expect(unwrapResponse(response)).resolves.toBeUndefined();
-  });
-
-  it.each(["", "not json"])("falls back to text for invalid successful JSON %j", async (body) => {
+  it.each(["", "not json"])("rejects invalid successful JSON %j", async (body) => {
     const response = new Response(body, {
       headers: { "content-type": "application/json" },
     });
 
-    await expect(unwrapResponse(response)).resolves.toBe(body);
+    await expect(unwrapResponse(response)).rejects.toBeInstanceOf(SyntaxError);
   });
 
-  it("returns undefined when the JSON fallback body cannot be read", async () => {
-    const response = new Response("not json", {
-      headers: { "content-type": "application/json" },
-    });
-    const fallbackResponse = response.clone();
-    vi.spyOn(fallbackResponse, "text").mockRejectedValue(new Error("body unavailable"));
-    vi.spyOn(response, "clone").mockReturnValue(fallbackResponse);
+  it.each([
+    ["application/json", "json"],
+    ["text/plain", "text"],
+    ["", "text"],
+    ["multipart/form-data", "formData"],
+    ["application/octet-stream", "blob"],
+  ] as const)("propagates body read failures for Content-Type %s", async (contentType, method) => {
+    const response = new Response("body", { headers: { "content-type": contentType } });
+    const failure = new Error("body unavailable");
+    vi.spyOn(response, method).mockRejectedValue(failure);
 
-    await expect(unwrapResponse(response)).resolves.toBeUndefined();
+    await expect(unwrapResponse(response)).rejects.toBe(failure);
   });
 
   it("parses successful XML and YAML application responses as text", async () => {
