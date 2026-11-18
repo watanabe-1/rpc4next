@@ -4,6 +4,7 @@ import {
   CATCH_ALL_PREFIX,
   DYNAMIC_PREFIX,
   encodeRouteParamName,
+  HTTP_METHOD_FUNC_KEYS,
   OPTIONAL_CATCH_ALL_PREFIX,
 } from "rpc4next-shared";
 import type { HttpMethod } from "rpc4next-shared";
@@ -116,12 +117,22 @@ const safeDecodeSegment = (entryName: string): string => {
   }
 };
 
+const reservedStaticKeys = new Set<string>([
+  "then",
+  "$url",
+  "$match",
+  "$render",
+  ...HTTP_METHOD_FUNC_KEYS,
+]);
+
 const getStaticSegmentKey = (entryName: string): string => {
   const decoded = safeDecodeSegment(entryName);
 
-  // Promise resolution probes `then` on every proxy, so expose this route
-  // through an encoded static key instead.
-  if (decoded === "then") return "%74hen";
+  // The proxy intercepts these keys; an encoded first character keeps the
+  // static segment distinguishable while preserving its URL spelling.
+  if (reservedStaticKeys.has(decoded)) {
+    return `%${decoded.charCodeAt(0).toString(16).toUpperCase()}${decoded.slice(1)}`;
+  }
 
   // The client accepts encoded static keys too. Preserve the original spelling
   // when decoding would leave an escape that the client could decode again.

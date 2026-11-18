@@ -169,6 +169,16 @@ export const testRoutes = [
     methods: ["GET"],
     load: () => import("../../app/param-names/optional/two/[[...__id]]/route") as unknown as Promise<RpcTestRouteModule>,
   },
+  {
+    pathname: "/reserved-routes/%24get/child",
+    methods: ["GET"],
+    load: () => import("../../app/reserved-routes/$get/child/route") as unknown as Promise<RpcTestRouteModule>,
+  },
+  {
+    pathname: "/reserved-routes/%24get",
+    methods: ["GET"],
+    load: () => import("../../app/reserved-routes/$get/route") as unknown as Promise<RpcTestRouteModule>,
+  },
 ] as const satisfies readonly RpcTestRoute[];
 
 export const testPages = [
@@ -279,6 +289,14 @@ export const testPages = [
   {
     pathname: "/procedure-page-meta",
     load: () => import("../../app/procedure-page-meta/page") as unknown as Promise<RpcTestPageModule>,
+  },
+  {
+    pathname: "/reserved-routes/%24url/child",
+    load: () => import("../../app/reserved-routes/$url/child/page") as unknown as Promise<RpcTestPageModule>,
+  },
+  {
+    pathname: "/reserved-routes/%24url",
+    load: () => import("../../app/reserved-routes/$url/page") as unknown as Promise<RpcTestPageModule>,
   },
   {
     pathname: "/response-unwrap",
