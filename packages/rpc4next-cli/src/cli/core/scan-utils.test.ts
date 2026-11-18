@@ -70,6 +70,46 @@ describe("scanEndpointFile", () => {
     expect(result.routes).toEqual([]);
   });
 
+  it.each([
+    "export\ninterface\nQuery\n{ id: number }",
+    "export\ntype\nQuery\n= { id: number }",
+    "export { Search as Query }; interface Search { id: number }",
+    "type Search = { id: number }; export type { Search as Query }",
+    "export { type Search as Query } from './types'",
+    "export type { Query } from './types'",
+    "export { Query } from './types'",
+    "import type { Search } from './types'; export type { Search as Query }",
+  ])("detects Query exported through TypeScript syntax: %s", (source) => {
+    const { inputFile, outputFile, rootDir } = createPaths();
+    writeTree(rootDir, { "input.ts": source });
+
+    expect(scanEndpointFile(outputFile, inputFile).query?.exportName).toBe("Query");
+  });
+
+  it.each([
+    "// export type Query = { id: number }\nexport const GET = () => null",
+    "const text = 'export interface Query { }'; export { text }",
+    "interface Query { id: number }; export type { Query as Other }",
+    "const Query = 1; export { Query }",
+  ])("does not detect a Query type from unrelated syntax: %s", (source) => {
+    const { inputFile, outputFile, rootDir } = createPaths();
+    writeTree(rootDir, { "input.ts": source });
+
+    expect(scanEndpointFile(outputFile, inputFile).query).toBeUndefined();
+  });
+
+  it("keeps page inference when Query only appears in a comment", () => {
+    const { outputFile, rootDir } = createPaths();
+    const inputFile = path.join(rootDir, "app", "search", "page.tsx");
+    writeTree(rootDir, {
+      "app/search/page.tsx": "// export type Query = {}\nexport default function Page() {}",
+    });
+
+    expect(scanEndpointFile(outputFile, inputFile).query?.type).toBe(
+      "PageRouteMarker<typeof Page_51d775b458cca87b>",
+    );
+  });
+
   it("should omit query when no relevant query definition exists", () => {
     const { inputFile, outputFile, rootDir } = createPaths();
     writeTree(rootDir, {
