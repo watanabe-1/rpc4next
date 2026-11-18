@@ -133,6 +133,16 @@ const encodeStaticSegment = (value: string) => {
   return decodeUnreservedPathSegment(encoded);
 };
 
+const encodeDynamicSegment = (value: string | number, key: string) => {
+  if (value === "." || value === "..") {
+    throw new Error(
+      `Invalid dynamic parameter "${getParamName(key)}": path segments cannot be "." or "..".`,
+    );
+  }
+
+  return encodeURIComponent(value);
+};
+
 const buildPathFromSegments = (segments: string[]) => {
   const joined = segments.join("/");
   const withLeadingSlash = joined ? `/${joined}` : "/";
@@ -167,6 +177,7 @@ const getPathnameSegment = (segment: string) => {
  *   URL-encoded then joined by `/`.
  * - If `params[key]` is `undefined`, the segment is removed (useful for optional segments).
  * - Otherwise, the value is URL-encoded and substituted into the segment.
+ * - Values equal to `.` or `..` throw because URL parsers resolve them as path segments.
  *
  * The returned builder optionally appends a suffix (e.g. query/hash) via `buildUrlSuffix(url)` and
  * also produces a Next.js-style `pathname` by converting underscore-prefixed dynamic markers into
@@ -216,13 +227,13 @@ export const createUrl = (paths: string[], params: PathParamsInput, dynamicKeys:
 
     if (Array.isArray(param)) {
       for (const item of param) {
-        routeSegments.push(encodeURIComponent(item));
+        routeSegments.push(encodeDynamicSegment(item, segment));
       }
 
       continue;
     }
 
-    routeSegments.push(encodeURIComponent(param));
+    routeSegments.push(encodeDynamicSegment(param, segment));
   }
 
   const dynamicPath = buildPathFromSegments(routeSegments);

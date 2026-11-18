@@ -352,6 +352,10 @@ underscores or percent signs are unchanged. Upgrade
 update calls using escaped keys. Version 1 output must be regenerated because
 its keys cannot distinguish names such as `[__id]` and `[...id]`.
 
+Dynamic route parameter values cannot be `.` or `..`, including individual
+catch-all and optional catch-all elements. URL construction throws an error for
+these values because URL parsers resolve them as path segments.
+
 A static `then` segment uses the generated key `["%74hen"]`, at any depth:
 
 ```ts
