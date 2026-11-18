@@ -70,7 +70,7 @@ jobs:
           # Playwright's dry run simulates apt installation and reports missing packages.
           sudo apt-get update
           set +e
-          dependencies=$(bun --bun playwright install-deps --dry-run chromium)
+          dependencies=$(bun --bun --cwd integration/next-app playwright install-deps --dry-run chromium)
           status=$?
           set -e
           printf '%s\n' "$dependencies"
@@ -118,15 +118,15 @@ jobs:
             echo "Playwright dependency check failed (exit $status)."
             exit "$status"
           fi
-          bun --bun playwright install-deps --dry-run chromium
+          bun --bun --cwd integration/next-app playwright install-deps --dry-run chromium
           echo "Playwright OS dependencies installed successfully."
-          bun --bun playwright install chromium
+          bun --bun --cwd integration/next-app playwright install chromium
           echo "Chromium installed successfully."
 
       - name: Install Playwright browser (Windows)
         if: runner.os == 'Windows'
         shell: bash
-        run: bun --bun playwright install chromium
+        run: bun --bun --cwd integration/next-app playwright install chromium
 
       - name: Print versions
         shell: bash
