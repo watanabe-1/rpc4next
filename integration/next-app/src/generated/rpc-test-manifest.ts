@@ -181,6 +181,14 @@ export const testPages = [
     load: () => import("../../app/(public)/users/page") as unknown as Promise<RpcTestPageModule>,
   },
   {
+    pathname: "/contexts/[tenant]/feed",
+    load: () => import("../../app/contexts/[tenant]/feed/page") as unknown as Promise<RpcTestPageModule>,
+  },
+  {
+    pathname: "/contexts/photo/[id]",
+    load: () => import("../../app/contexts/photo/[id]/page") as unknown as Promise<RpcTestPageModule>,
+  },
+  {
     pathname: "/e2e-client",
     load: () => import("../../app/e2e-client/page") as unknown as Promise<RpcTestPageModule>,
   },

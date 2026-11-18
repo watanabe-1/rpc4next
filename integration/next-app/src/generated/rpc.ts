@@ -25,6 +25,8 @@ import type { GET as GET_9e56a535c83ceae0 } from "../../app/api/procedure-valida
 import type { GET as GET_61a9f4b9fd49ccf5 } from "../../app/api/redirect-me/route";
 import type { GET as GET_fbb09db60ba2ae51 } from "../../app/api/request-meta/route";
 import type { GET as GET_b6e4799d411d6efe } from "../../app/api/users/[userId]/route";
+import type Page_0bc95f39a44bbaaa from "../../app/contexts/[tenant]/feed/page";
+import type Page_e96b36ee2078c275 from "../../app/contexts/photo/[id]/page";
 import type Page_38c066c7ee3c5334 from "../../app/e2e-client/page";
 import type Page_f20ba6bf73502dc1 from "../../app/feed/page";
 import type Page_5f11bc234a1e0c67 from "../../app/page";
@@ -101,6 +103,14 @@ export type PathStructure = RpcGeneratedPathStructure<PageRouteMarker<typeof Pag
     "request-meta": { "$get": typeof GET_fbb09db60ba2ae51 } & RpcEndpoint,
     "users": {
       "_userId": { "$get": typeof GET_b6e4799d411d6efe } & RpcEndpoint & Record<ParamsKey, { "userId": string }>
+    }
+  },
+  "contexts": {
+    "_tenant": {
+      "feed": PageRouteMarker<typeof Page_0bc95f39a44bbaaa> & RpcEndpoint & Record<ParamsKey, { "tenant": string }>
+    },
+    "photo": {
+      "_id": PageRouteMarker<typeof Page_e96b36ee2078c275> & RpcEndpoint & Record<ParamsKey, { "id": string }>
     }
   },
   "e2e-client": PageRouteMarker<typeof Page_38c066c7ee3c5334> & RpcEndpoint,

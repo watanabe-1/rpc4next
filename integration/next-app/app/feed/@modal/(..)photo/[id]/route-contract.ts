@@ -3,9 +3,9 @@
 import type { ProcedureRouteContract } from "rpc4next/server/generated";
 
 export type Params = { "id": string };
-export type RouteContract = ProcedureRouteContract<"/feed/photo/[id]", Params>;
+export type RouteContract = ProcedureRouteContract<"/photo/[id]", Params>;
 
 export const routeContract = {
-  pathname: "/feed/photo/[id]",
+  pathname: "/photo/[id]",
   params: {} as Params,
 } as RouteContract;

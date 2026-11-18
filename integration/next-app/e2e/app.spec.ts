@@ -78,6 +78,20 @@ test.describe("integration next-app e2e", () => {
     await expect(page.getByText("photo:demo-photo")).toBeVisible();
   });
 
+  test("interception retains parent params and builds the request for the target URL", async ({
+    page,
+  }) => {
+    await page.goto("/contexts/acme/feed");
+    await page.getByRole("link", { name: "Open intercepted photo" }).click();
+    await expect(page.getByTestId("intercept-result")).toHaveText(
+      JSON.stringify({
+        pathname: "/contexts/photo/demo",
+        params: { tenant: "acme", id: "demo" },
+      }),
+    );
+    await expect(page).toHaveURL(/\/contexts\/photo\/demo$/);
+  });
+
   test("nested dynamic route renders both params", async ({ page }) => {
     await page.goto("/photo/demo-photo/comments/demo-comment");
 
