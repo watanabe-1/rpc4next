@@ -33,6 +33,19 @@ describe("scanned static route keys and generated URLs", () => {
   });
 
   it.each([
+    ["then", "%74hen", "then", "then"],
+    ["$url", "%24url", "%24url", "$url"],
+    ["$get", "%24get", "%24get", "$get"],
+    ["$head", "%24head", "%24head", "$head"],
+    ["$post", "%24post", "%24post", "$post"],
+    ["$put", "%24put", "%24put", "$put"],
+    ["$delete", "%24delete", "%24delete", "$delete"],
+    ["$patch", "%24patch", "%24patch", "$patch"],
+    ["$match", "%24match", "%24match", "$match"],
+    ["$render", "%24render", "%24render", "$render"],
+    ["%24url", "%24url", "%24url", "$url"],
+    ["%2524url", "%2524url", "%2524url", "%24url"],
+    ["$options", "$options", "%24options", "$options"],
     ["a%23b", "a#b", "a%23b", "a#b"],
     ["a%3Fb", "a?b", "a%3Fb", "a?b"],
     ["100%25", "100%", "100%25", "100%"],

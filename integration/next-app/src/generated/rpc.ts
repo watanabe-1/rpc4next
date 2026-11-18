@@ -62,6 +62,10 @@ import type Page_ec4d53d56d2cdbe0 from "../../app/photo/[id]/comments/[commentId
 import type Page_17fbe6f0abbd0030 from "../../app/photo/[id]/page";
 import type Page_6fe4147621bd043b from "../../app/procedure-examples/page";
 import type Page_d2a7341cc304c4d8 from "../../app/procedure-page-meta/page";
+import type { GET as GET_a598afd861d0a3c6 } from "../../app/reserved-routes/$get/child/route";
+import type { GET as GET_349894c702267495 } from "../../app/reserved-routes/$get/route";
+import type Page_a1b876b4b91f7bfd from "../../app/reserved-routes/$url/child/page";
+import type Page_875818cff01b68ea from "../../app/reserved-routes/$url/page";
 import type Page_e14cc8f4edef5d4a from "../../app/response-unwrap/page";
 import type Page_79655d0ab49e4d46 from "../../app/static-encoding/%E6%97%A5%E6%9C%AC%E8%AA%9E/page";
 import type Page_0abc5ba00a7184a9 from "../../app/static-encoding/100%25/page";
@@ -193,6 +197,14 @@ export type PathStructure = RpcGeneratedPathStructure<PageRouteMarker<typeof Pag
   },
   "procedure-examples": PageRouteMarker<typeof Page_6fe4147621bd043b> & RpcEndpoint,
   "procedure-page-meta": PageRouteMarker<typeof Page_d2a7341cc304c4d8> & RpcEndpoint,
+  "reserved-routes": {
+    "%24get": { "$get": typeof GET_349894c702267495 } & RpcEndpoint & {
+      "child": { "$get": typeof GET_a598afd861d0a3c6 } & RpcEndpoint
+    },
+    "%24url": PageRouteMarker<typeof Page_875818cff01b68ea> & RpcEndpoint & {
+      "child": PageRouteMarker<typeof Page_a1b876b4b91f7bfd> & RpcEndpoint
+    }
+  },
   "response-unwrap": PageRouteMarker<typeof Page_e14cc8f4edef5d4a> & RpcEndpoint,
   "static-encoding": {
     "日本語": PageRouteMarker<typeof Page_79655d0ab49e4d46> & RpcEndpoint,
