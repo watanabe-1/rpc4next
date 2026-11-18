@@ -798,6 +798,31 @@ describe("route-scanner", () => {
 }`);
     });
 
+    it("escapes then at every level without colliding with encoded segments or parameters", () => {
+      const thenSegment = ["th", "en"].join("");
+      setupTree({
+        testApp: {
+          [thenSegment]: { "page.tsx": "export default function Page() {}" },
+          nested: { [thenSegment]: { "page.tsx": "export default function Page() {}" } },
+          "%2574hen": { "page.tsx": "export default function Page() {}" },
+          "[then]": { "page.tsx": "export default function Page() {}" },
+        },
+      });
+
+      const result = scanAppDir(tmpPath("output"), tmpPath("testApp"));
+      expect(result.pathStructure).toContain(
+        '"%74hen": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint',
+      );
+      expect(result.pathStructure).toContain(
+        '"%2574hen": PageRouteMarker<typeof Page_asmocked> & RpcEndpoint',
+      );
+      expect(result.pathStructure).toContain('"_then":');
+      expect(result.pathStructure).toContain('"nested": {\n    "%74hen":');
+      expect(result.pageManifests?.map(({ pathname }) => pathname)).toEqual(
+        expect.arrayContaining(["/then", "/nested/then", "/%2574hen", "/[then]"]),
+      );
+    });
+
     it("should preserve escaped underscore segments to avoid DSL key collisions", () => {
       setupTree({
         testApp: {
