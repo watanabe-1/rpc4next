@@ -77,8 +77,14 @@ request for that state and must describe the remaining work.
 - Write the PR title and body in English by default, even when the conversation
   is in another language. Follow an explicit user request for another language.
 - Describe the final net change and its motivation for a reviewer without the
-  conversation. Use concrete before/after behavior when helpful. Omit abandoned
-  approaches, local absolute paths, and unsupported claims.
+  conversation. Use concrete before/after behavior when helpful. For complex
+  changes, briefly explain the relevant background, why the approach was chosen,
+  and any significant alternatives when those details help review. Omit unrelated
+  trial and error, local absolute paths, and unsupported claims.
+- When useful to understand the change or its rationale, link verified supporting
+  evidence such as relevant issues, official documentation, or investigation
+  results, and briefly explain what each source supports. Do not add references
+  merely to fill the description.
 - Apply `conventional-commit.tpl.md` naming. For a single-commit PR, mirror its
   compliant commit subject exactly. For multiple coherent commits, use one
   Conventional Commit message summarizing the complete PR as the proposed squash
