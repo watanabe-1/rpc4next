@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   e2e-test:
-    name: E2E test matrix (${{ matrix.os }}, node=${{ matrix.node-version }}, next=${{ matrix.next-version }})
+    name: E2E test matrix (${{ matrix.os }}, bun=aqua, next=${{ matrix.next-version }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     permissions:
@@ -21,11 +21,9 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        node-version: [aqua]
         next-version: ["15.0.0", "from-package"]
         include:
           - os: windows-latest
-            node-version: aqua
             next-version: from-package
 
     steps:
@@ -36,7 +34,6 @@ jobs:
       - name: Setup toolchain
         uses: watanabe-1/github-actions-common/actions/setup-toolchain@v1.1.0
         with:
-          node-version: ${{ matrix.node-version }}
           bun-version: aqua
           bun-cache: "true"
 
@@ -73,7 +70,7 @@ jobs:
           # Playwright's dry run simulates apt installation and reports missing packages.
           sudo apt-get update
           set +e
-          dependencies=$(bunx playwright install-deps --dry-run chromium)
+          dependencies=$(bun --bun --cwd integration/next-app playwright install-deps --dry-run chromium)
           status=$?
           set -e
           printf '%s\n' "$dependencies"
@@ -121,15 +118,15 @@ jobs:
             echo "Playwright dependency check failed (exit $status)."
             exit "$status"
           fi
-          bunx playwright install-deps --dry-run chromium
+          bun --bun --cwd integration/next-app playwright install-deps --dry-run chromium
           echo "Playwright OS dependencies installed successfully."
-          bunx playwright install chromium
+          bun --bun --cwd integration/next-app playwright install chromium
           echo "Chromium installed successfully."
 
       - name: Install Playwright browser (Windows)
         if: runner.os == 'Windows'
         shell: bash
-        run: bunx playwright install chromium
+        run: bun --bun --cwd integration/next-app playwright install chromium
 
       - name: Print versions
         shell: bash
@@ -137,8 +134,8 @@ jobs:
           uname -a || ver
           node -v
           bun -v
-          bunx next --version
-          bun --cwd integration/next-app tsc --version
+          bun --bun next --version
+          bun --bun --cwd integration/next-app tsc --version
 
       - name: Build (all packages)
         shell: bash
@@ -152,7 +149,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7.0.2
         with:
-          name: playwright-report-${{ matrix.os }}-node-${{ matrix.node-version }}-next-${{ matrix.next-version }}
+          name: playwright-report-${{ matrix.os }}-bun-aqua-next-${{ matrix.next-version }}
           path: integration/next-app/playwright-report
           if-no-files-found: ignore
           retention-days: 7
