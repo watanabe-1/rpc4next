@@ -73,7 +73,7 @@ jobs:
           # Playwright's dry run simulates apt installation and reports missing packages.
           sudo apt-get update
           set +e
-          dependencies=$(bunx playwright install-deps --dry-run chromium 2>&1)
+          dependencies=$(bunx playwright install-deps --dry-run chromium)
           status=$?
           set -e
           printf '%s\n' "$dependencies"
