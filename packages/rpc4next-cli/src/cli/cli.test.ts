@@ -6,6 +6,7 @@ import * as configModule from "./config.js";
 import { EXIT_FAILURE } from "./constants.js";
 import * as initCommand from "./init/init-command.js";
 import * as loggerModule from "./logger.js";
+import * as watcherModule from "./watcher.js";
 
 const flushAsync = async () => {
   await Promise.resolve();
@@ -133,6 +134,34 @@ describe("runCli", () => {
     await flushAsync();
 
     expect(processExitSpy).toHaveBeenCalledWith(0);
+  });
+
+  it.each([
+    [["src", "types.ts", "--watch", "--check"], "Error: --check cannot be used with --watch."],
+    [
+      ["src", "../outside.ts", "--watch"],
+      "Error: outputPath must be inside the current working directory.",
+    ],
+    [["src", "../outside.ts"], "Error: outputPath must be inside the current working directory."],
+  ])("exits with failure for invalid arguments: %j", async (args, message) => {
+    const watcherSpy = vi.spyOn(watcherModule, "setupWatcher");
+
+    runCli(args);
+    await flushAsync();
+
+    expect(mockLogger.error).toHaveBeenCalledWith(message);
+    expect(processExitSpy).toHaveBeenCalledWith(EXIT_FAILURE);
+    expect(watcherSpy).not.toHaveBeenCalled();
+  });
+
+  it("starts the watcher and does not exit on success", async () => {
+    const watcherSpy = vi.spyOn(watcherModule, "setupWatcher").mockReturnValue(async () => {});
+
+    runCli(["src", "types.ts", "--watch"]);
+    await flushAsync();
+
+    expect(watcherSpy).toHaveBeenCalledOnce();
+    expect(processExitSpy).not.toHaveBeenCalled();
   });
 
   it("does not call process.exit when --watch is set", async () => {
