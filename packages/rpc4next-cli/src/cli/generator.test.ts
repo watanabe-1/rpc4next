@@ -35,6 +35,33 @@ describe("generate", () => {
     generatedParamsFilesCache.clear();
   });
 
+  it("generates imports only for exported route names", () => {
+    const tmpDir = makeTempDir();
+    const appDir = path.join(tmpDir, "app");
+    const output = path.join(tmpDir, "src", "generated", "rpc.ts");
+
+    try {
+      writeTree(tmpDir, {
+        app: {
+          "route.ts": `const GET = () => new Response();
+            // export const DELETE = () => new Response();
+            export { GET as POST };`,
+        },
+        src: { generated: {} },
+      });
+
+      generate({ baseDir: appDir, outputPath: output, paramsFileName: null, logger });
+
+      const generated = fs.readFileSync(output, "utf8");
+      expect(generated).toMatch(/import type \{ POST as POST_/);
+      expect(generated).not.toMatch(/import type \{ (GET|DELETE) as /);
+      expect(generated).toContain('"$post"');
+      expect(generated).not.toContain('"$get"');
+    } finally {
+      cleanupTempDir(tmpDir);
+    }
+  });
+
   it("clears scan caches after non-watch generation", () => {
     vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
       pathStructure: `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
