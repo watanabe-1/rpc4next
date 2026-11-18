@@ -119,6 +119,10 @@ const safeDecodeSegment = (entryName: string): string => {
 const getStaticSegmentKey = (entryName: string): string => {
   const decoded = safeDecodeSegment(entryName);
 
+  // Promise resolution probes `then` on every proxy, so expose this route
+  // through an encoded static key instead.
+  if (decoded === "then") return "%74hen";
+
   // The client accepts encoded static keys too. Preserve the original spelling
   // when decoding would leave an escape that the client could decode again.
   return decoded.startsWith("_") || /%[0-9A-Fa-f]{2}/.test(decoded) ? entryName : decoded;
