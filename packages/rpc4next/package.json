@@ -110,7 +110,7 @@
   },
   "scripts": {
     "build": "bun run clean && bun build.ts && bun run build:types",
-    "build:types": "tsc -b --force tsconfig.build-types.json",
+    "build:types": "bun --bun tsc -b --force tsconfig.build-types.json",
     "clean": "bun -e \"const fs=require('fs'); fs.rmSync('dist',{recursive:true,force:true}); fs.rmSync('tsconfig.build-types.tsbuildinfo',{force:true}); fs.rmSync('tsconfig.tsbuildinfo',{force:true});\"",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage.enabled true",
@@ -118,7 +118,7 @@
     "test:watch": "vitest --watch",
     "lint": "oxfmt --check src && oxlint src",
     "check:fix": "oxfmt src && oxlint --fix src",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "bun --bun tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "rpc4next-shared": "workspace:*",

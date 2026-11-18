@@ -68,7 +68,7 @@ jobs:
         run: |
           uname -a || ver
           bun -v
-          bunx next --version
+          bun --bun next --version
 
       - name: Build (all packages)
         shell: bash
@@ -105,7 +105,7 @@ jobs:
         run: |
           uname -a || ver
           bun -v
-          bunx next --version
+          bun --bun next --version
 
       - name: Test
         shell: bash
