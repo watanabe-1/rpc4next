@@ -26,6 +26,7 @@
 ## Working Rules
 
 - Prefer `rg` / `rg --files` for search.
+- Write GitHub issue titles and descriptions in English unless the user requests another language.
 - Preserve existing Biome formatting and naming patterns.
 - Keep edits minimal, scoped to the request, and consistent with current package boundaries.
 - Avoid unrelated renames, broad formatting churn, and cross-package API changes unless they are required.
