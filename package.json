@@ -26,6 +26,7 @@
     "test": "vitest run",
     "test:client-bundle": "RPC4NEXT_RUN_CLIENT_BUNDLE_TEST=1 vitest run integration/next-app/src/client-bundle.test.ts",
     "test:coverage": "vitest run --coverage.enabled true",
+    "test:mutation": "mutator",
     "test:package": "bun run build && bun scripts/package-smoke-test.ts",
     "test:ui": "vitest --ui --coverage.enabled true",
     "test:watch": "vitest --watch",
@@ -38,6 +39,7 @@
     "diff2prompt": "diff2prompt"
   },
   "devDependencies": {
+    "@mizchi/mutator": "0.4.2",
     "@types/bun": "^1.4.4",
     "@types/node": "^26.6.6",
     "@vitest/coverage-v8": "^5.1.0",

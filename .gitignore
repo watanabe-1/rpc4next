@@ -50,6 +50,7 @@ next-env.d.ts
 # caches
 .eslintcache
 .cache
+.mutator/
 
 # IntelliJ based IDEs
 .idea
