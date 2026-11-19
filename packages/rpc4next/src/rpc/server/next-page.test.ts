@@ -284,6 +284,21 @@ describe("createNextPage", () => {
     });
   });
 
+  it("builds the request URL from original params while passing transformed params to the handler", async () => {
+    const page = procedure
+      .forRoute(pageRouteContract)
+      .params(z.object({ id: z.string().transform((id) => String(Number(id))) }))
+      .handle(({ request, params }) => ({
+        body: { pathname: request.nextUrl.pathname, params },
+      }))
+      .page(({ data }) => data);
+
+    await expect(page({ params: Promise.resolve({ id: "001" }) })).resolves.toEqual({
+      pathname: "/photo/001",
+      params: { id: "1" },
+    });
+  });
+
   it("renders procedure body data for page props", async () => {
     const page = basecreateNextPage(
       procedure

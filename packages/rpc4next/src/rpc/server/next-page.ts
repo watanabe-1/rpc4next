@@ -642,11 +642,7 @@ export const createNextPage = <
               ? Awaited<ReturnType<TOnValidationError>>
               : never);
       }
-      const request = createPageRequest(
-        procedure.definition.route?.pathname,
-        inputResult.params as Params,
-        searchParams,
-      );
+      const request = createPageRequest(procedure.definition.route?.pathname, params, searchParams);
 
       const executionContext = {
         request,
