@@ -160,6 +160,28 @@ describe("response promise unwrap", () => {
     expect(file.filename).toBe("report 2026.pdf");
   });
 
+  it.each([
+    ['attachment;filename="report;2026.csv"', "report;2026.csv"],
+    ["attachment;filename=report.csv", "report.csv"],
+    ["attachment;filename*=UTF-8''report%202026.pdf", "report 2026.pdf"],
+  ])("reads filename from Content-Disposition %s", async (contentDisposition, filename) => {
+    const file = await unwrapFileResponse(
+      new Response("file", { headers: { "content-disposition": contentDisposition } }),
+    );
+
+    expect(file.filename).toBe(filename);
+  });
+
+  it("preserves a filename with invalid percent encoding", async () => {
+    const file = await unwrapFileResponse(
+      new Response("pdf", {
+        headers: { "content-disposition": "attachment; filename*=UTF-8''report%ZZ.pdf" },
+      }),
+    );
+
+    expect(file.filename).toBe("report%ZZ.pdf");
+  });
+
   it("ignores whitespace after an encoded filename parameter", async () => {
     const file = await unwrapFileResponse(
       new Response("pdf", {
@@ -353,6 +375,19 @@ describe("response promise unwrap", () => {
     await expect(unwrapResponse(response)).rejects.toMatchObject({
       status: 502,
       payload: undefined,
+      response,
+    });
+  });
+
+  it("falls back to readable text when form data parsing fails", async () => {
+    const response = new Response("upstream failure", {
+      status: 502,
+      headers: { "content-type": "multipart/form-data" },
+    });
+    vi.spyOn(response, "formData").mockRejectedValue(new TypeError("invalid form data"));
+
+    await expect(unwrapResponse(response)).rejects.toMatchObject({
+      payload: "upstream failure",
       response,
     });
   });
@@ -564,6 +599,17 @@ describe("response promise unwrap", () => {
 
     expect(() => matchRpcResponseError(error, { NOT_FOUND: () => "handled" })).toThrow(error);
   });
+
+  it.each([null, { error: null }, { error: { code: 42 } }])(
+    "preserves an external JSON error without a string code: %j",
+    async (payload) => {
+      const response = Response.json(payload, { status: 502 });
+      const error: unknown = await unwrapResponse(response).catch((caught: unknown) => caught);
+
+      expect(error).toBeInstanceOf(RpcResponseError);
+      expect(error).toMatchObject({ code: undefined, payload, response });
+    },
+  );
 
   it.each([
     { body: "upstream unavailable", contentType: "text/plain" },
