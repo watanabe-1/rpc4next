@@ -388,6 +388,18 @@ describe("procedure builder type definitions", () => {
 
     // @ts-expect-error preset error catalogs should stay off bare procedure chains
     void configuredProcedure.errors;
+
+    const routePreset = createRouteProcedure({ onError: defaultProcedureOnError });
+    const pagePreset = createPageProcedure({ onError: () => null });
+
+    // @ts-expect-error route preset defaults cannot be declared twice
+    void routePreset.defaults;
+    // @ts-expect-error route preset errors must be supplied when creating the preset
+    void routePreset.errors;
+    // @ts-expect-error page preset defaults cannot be declared twice
+    void pagePreset.defaults;
+    // @ts-expect-error page preset does not expose error catalog configuration
+    void pagePreset.errors;
   });
 
   it("keeps repeatedly composable builder methods available", () => {

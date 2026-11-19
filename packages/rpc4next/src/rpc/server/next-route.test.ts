@@ -54,6 +54,28 @@ describe("createNextRoute", () => {
     expect(handler).toHaveBeenCalledOnce();
   });
 
+  it.each(["PUT", "PATCH", "DELETE"] as const)(
+    "creates an executable %s handler",
+    async (method) => {
+      const handler = vi.fn<() => { status: 204 }>(() => ({ status: 204 }));
+      const handled = createRouteProcedure({ onError: defaultProcedureOnError })
+        .forRoute(staticRouteContract)
+        .handle(handler);
+      const route = {
+        PUT: () => handled.put().PUT,
+        PATCH: () => handled.patch().PATCH,
+        DELETE: () => handled.delete().DELETE,
+      }[method]();
+
+      const response = await route(new NextRequest("http://localhost/api", { method }), {
+        params: Promise.resolve({}),
+      });
+
+      expect(response.status).toBe(204);
+      expect(handler).toHaveBeenCalledOnce();
+    },
+  );
+
   it.each([false, true])(
     "returns an empty handler result without onError (async: %s)",
     async (asyncHandler) => {
