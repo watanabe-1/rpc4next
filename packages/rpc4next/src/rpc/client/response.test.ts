@@ -160,6 +160,18 @@ describe("response promise unwrap", () => {
     expect(file.filename).toBe("report 2026.pdf");
   });
 
+  it("ignores whitespace after an encoded filename parameter", async () => {
+    const file = await unwrapFileResponse(
+      new Response("pdf", {
+        headers: {
+          "content-disposition": "attachment; filename*=UTF-8''report%202026.pdf  ; size=3",
+        },
+      }),
+    );
+
+    expect(file.filename).toBe("report 2026.pdf");
+  });
+
   it("does not treat a different content disposition parameter as a filename", async () => {
     const file = await unwrapFileResponse(
       new Response("pdf", {
@@ -578,6 +590,21 @@ describe("response promise unwrap", () => {
       expect(rethrown).toBe(error);
     },
   );
+
+  it("does not dispatch a code-less error to a handler named undefined", () => {
+    const error = new RpcResponseError<unknown>(new Response(null, { status: 502 }), "upstream");
+    const handler = vi.fn<() => string>(() => "handled");
+    let rethrown: unknown;
+
+    try {
+      matchRpcResponseError(error, { undefined: handler });
+    } catch (caught) {
+      rethrown = caught;
+    }
+
+    expect(rethrown).toBe(error);
+    expect(handler).not.toHaveBeenCalled();
+  });
 
   it("infers text payloads from successful text response union members", async () => {
     type ResponseUnion =
