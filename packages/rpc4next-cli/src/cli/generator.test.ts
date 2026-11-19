@@ -778,9 +778,13 @@ describe("checkGenerated", () => {
       paramsTypes: [],
     });
     vi.spyOn(fs, "existsSync").mockReturnValue(true);
-    vi.spyOn(fs, "readFileSync").mockReturnValue(
-      `${ROUTE_CONTRACT_GENERATED_MARKER}\nstale-content`,
-    );
+    vi.spyOn(fs, "readFileSync").mockImplementation((filePath) => {
+      if (filePath === outputPath) {
+        return `${ROUTE_CONTRACT_GENERATED_MARKER}\nstale-content`;
+      }
+
+      return generatePathStructure.generateTestManifest(testManifestOutputPath, []);
+    });
 
     const result = checkGenerated({
       baseDir,
@@ -793,6 +797,7 @@ describe("checkGenerated", () => {
     expect(logger.error).toHaveBeenCalledWith(
       `Generated path structure is stale: ${path.relative(process.cwd(), outputPath)}`,
     );
+    expect(logger.error).toHaveBeenCalledTimes(1);
     expect(logger.success).not.toHaveBeenCalled();
   });
 

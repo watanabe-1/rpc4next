@@ -38,6 +38,22 @@ const createNextRoute = <
 };
 
 describe("createNextRoute", () => {
+  it("creates an executable HEAD handler", async () => {
+    const handler = vi.fn<() => { status: 204 }>(() => ({ status: 204 }));
+    const { HEAD } = createRouteProcedure({ onError: defaultProcedureOnError })
+      .forRoute(staticRouteContract)
+      .handle(handler)
+      .head();
+
+    const response = await HEAD(new NextRequest("http://localhost/api", { method: "HEAD" }), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(204);
+    expect(response.body).toBeNull();
+    expect(handler).toHaveBeenCalledOnce();
+  });
+
   it.each([false, true])(
     "returns an empty handler result without onError (async: %s)",
     async (asyncHandler) => {

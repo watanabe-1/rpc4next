@@ -6,21 +6,23 @@ description: Audit and periodically reassess test effectiveness in rpc4next usin
 # rpc4next mutation audit
 
 Assess test effectiveness without treating mutation score or survivor count as a
-quality guarantee. An audit request authorizes measurement and analysis, not
-automatically editing tests, changing dependencies, publishing issues, or setting
-up a scheduler. Follow the user's requested scope and repository `AGENTS.md`.
+quality guarantee. An audit request authorizes measurement, analysis, and issue
+tracking within the audit scope. Prepare and publish relevant audit updates and
+follow-up issues without a separate request. Before editing tests or implementation,
+present a concrete proposal and obtain approval; honor approval already given in
+the session. Do not change dependencies or set up a scheduler without approval.
+Follow the user's requested scope and repository `AGENTS.md`.
 
 ## Compose the workflows
 
 - For mutator execution and report interpretation, read the bundled
-  [mutator](../mutator/SKILL.md) skill. For an explicitly requested test repair,
+  [mutator](../mutator/SKILL.md) skill. For an approved test repair,
   also use [mutation-test-loop](../mutation-test-loop/SKILL.md), subject to the
   user's scope and the repository's dependency and validation rules.
-- For an authorized GitHub issue operation, use
-  [github-issues](../github-issues/SKILL.md). A request to create issues authorizes
-  the specified creation; use an existing issue for related findings when suitable.
-  Do not post comments, change parent relationships, labels or assignees unless
-  requested or necessary to the authorized operation.
+- For GitHub issue operations within the audit, use
+  [github-issues](../github-issues/SKILL.md). Use an existing issue for related
+  findings when suitable. Do not change parent relationships, labels or assignees
+  unless requested or necessary to the authorized operation.
 - The bundled upstream skills are snapshots: mutator and mutation-test-loop from
   [mizchi/mutator v0.4.2](https://github.com/mizchi/mutator/tree/v0.4.2/packages/cli/skills)
   and github-issues from [github/awesome-copilot](https://github.com/github/awesome-copilot/tree/1a8e8f1302a31ddb60089e2db15b21bbd148e8ff/skills/github-issues).
@@ -76,8 +78,11 @@ up a scheduler. Follow the user's requested scope and repository `AGENTS.md`.
   behavior or independently deliverable work, not one issue per mutant. An issue
   should describe evidence, affected contract, reproduction or mutant key, needed
   test, and verification; link the audit and clarify incomplete measurement.
-  Keep a run summary and unresolved scope in the audit record when updates are
-  authorized. Do not claim that a transient `.mutator` report is durable history.
+  Update the audit record with the run summary, unresolved scope, and whether
+  fixes are proposed, local, or merged. At each stopping point, state the next
+  concrete investigation or repair; if it requires test or implementation edits,
+  explain the proposal and request approval before editing. Do not claim that a
+  transient `.mutator` report is durable history.
 - For authorized test changes, re-run selected mutants, then the required root
   `bun run test`, `bun run lint`, and `bun run typecheck`, plus relevant integration
   checks. Report untested areas and pending work. A skill does not schedule runs:
