@@ -160,6 +160,16 @@ describe("response promise unwrap", () => {
     expect(file.filename).toBe("report 2026.pdf");
   });
 
+  it("does not treat a different content disposition parameter as a filename", async () => {
+    const file = await unwrapFileResponse(
+      new Response("pdf", {
+        headers: { "content-disposition": 'attachment; xfilename="other.pdf"' },
+      }),
+    );
+
+    expect(file.filename).toBeUndefined();
+  });
+
   it.each([204, 205])("returns undefined for successful no-body status %i", async (status) => {
     const response = new Response(null, {
       status,
@@ -485,6 +495,32 @@ describe("response promise unwrap", () => {
 
     expect(() => matchRpcResponseError(error, { NOT_FOUND: () => "handled" })).toThrow(error);
   });
+
+  it.each([
+    { body: "upstream unavailable", contentType: "text/plain" },
+    { body: '{"error":{"message":"upstream unavailable"}}', contentType: "application/json" },
+  ])(
+    "rethrows the original error when an external response has no code: $contentType",
+    async ({ body, contentType }) => {
+      const response = new Response(body, {
+        status: 502,
+        headers: { "content-type": contentType },
+      });
+      const error: unknown = await unwrapResponse(response).catch((caught: unknown) => caught);
+
+      expect(error).toBeInstanceOf(RpcResponseError);
+      if (!(error instanceof RpcResponseError)) throw new Error("Expected RpcResponseError");
+      expect(error.code).toBeUndefined();
+
+      let rethrown: unknown;
+      try {
+        matchRpcResponseError(error, {});
+      } catch (caught) {
+        rethrown = caught;
+      }
+      expect(rethrown).toBe(error);
+    },
+  );
 
   it("infers text payloads from successful text response union members", async () => {
     type ResponseUnion =
