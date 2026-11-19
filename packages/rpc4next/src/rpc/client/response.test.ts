@@ -318,6 +318,63 @@ describe("response promise unwrap", () => {
     expect(error).toMatchObject({ status: 502, payload: "not json", response });
   });
 
+  it("preserves form data from an error response", async () => {
+    const response = new Response("reason=unavailable", {
+      status: 502,
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+    });
+    const error: unknown = await unwrapResponse(response).catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(RpcResponseError);
+    if (!(error instanceof RpcResponseError)) throw new Error("Expected RpcResponseError");
+    expect(error.response).toBe(response);
+    expect(error.payload).toBeInstanceOf(FormData);
+    expect((error.payload as FormData).get("reason")).toBe("unavailable");
+  });
+
+  it("preserves the response when an error body is invalid form data", async () => {
+    const response = new Response("upstream failure", {
+      status: 502,
+      headers: { "content-type": "multipart/form-data" },
+    });
+
+    await expect(unwrapResponse(response)).rejects.toMatchObject({
+      status: 502,
+      payload: undefined,
+      response,
+    });
+  });
+
+  it("preserves binary error bodies as blobs", async () => {
+    const response = new Response("binary failure", {
+      status: 502,
+      headers: { "content-type": "application/octet-stream" },
+    });
+    const error: unknown = await unwrapResponse(response).catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(RpcResponseError);
+    if (!(error instanceof RpcResponseError)) throw new Error("Expected RpcResponseError");
+    expect(error.response).toBe(response);
+    expect(error.payload).toBeInstanceOf(Blob);
+    await expect((error.payload as Blob).text()).resolves.toBe("binary failure");
+  });
+
+  it("preserves the response when a binary error body cannot be read", async () => {
+    const response = new Response("binary failure", {
+      status: 502,
+      statusText: "Bad Gateway",
+      headers: { "content-type": "application/octet-stream" },
+    });
+    vi.spyOn(response, "blob").mockRejectedValue(new Error("body unavailable"));
+
+    await expect(unwrapResponse(response)).rejects.toMatchObject({
+      status: 502,
+      statusText: "Bad Gateway",
+      payload: undefined,
+      response,
+    });
+  });
+
   it("throws RpcResponseError with a parsed payload for file error responses", async () => {
     const response = Response.json(
       {
