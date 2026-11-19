@@ -834,6 +834,60 @@ describe("checkGenerated", () => {
     expect(fs.readFileSync).not.toHaveBeenCalledWith(testManifestOutputPath, "utf8");
   });
 
+  it.each(["missing params", "extra params", "stale manifest"] as const)(
+    "returns false when only the %s is out of date",
+    (staleTarget) => {
+      const tmpDir = makeTempDir();
+      const appDir = path.join(tmpDir, "app");
+      const currentDir = path.join(appDir, "current");
+      const output = path.join(tmpDir, "generated", "rpc.ts");
+      const manifest = path.join(tmpDir, "generated", "rpc-test-manifest.ts");
+      const currentParams = path.join(currentDir, paramsFileName);
+      const extraParams = path.join(appDir, "extra", paramsFileName);
+      const pathStructure = `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`;
+      const paramsType = `${ROUTE_CONTRACT_GENERATED_MARKER}\nparams-type`;
+
+      try {
+        writeTree(tmpDir, {
+          app: {
+            current: staleTarget === "missing params" ? {} : { [paramsFileName]: paramsType },
+            ...(staleTarget === "extra params" ? { extra: { [paramsFileName]: paramsType } } : {}),
+          },
+          generated: {
+            "rpc.ts": pathStructure,
+            "rpc-test-manifest.ts":
+              staleTarget === "stale manifest"
+                ? `${ROUTE_CONTRACT_GENERATED_MARKER}\nstale manifest`
+                : generatePathStructure.generateTestManifest(manifest, []),
+          },
+        });
+        vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
+          pathStructure,
+          paramsTypes: [{ paramsType, dirPath: currentDir }],
+        });
+
+        const result = checkGenerated({
+          baseDir: appDir,
+          outputPath: output,
+          paramsFileName,
+          logger,
+        });
+
+        const expectedError =
+          staleTarget === "missing params"
+            ? `Generated params file is stale: ${path.relative(process.cwd(), currentParams)}`
+            : staleTarget === "extra params"
+              ? `Generated params file should be removed: ${path.relative(process.cwd(), extraParams)}`
+              : `Generated test manifest is stale: ${path.relative(process.cwd(), manifest)}`;
+        expect(result).toBe(false);
+        expect(logger.error).toHaveBeenCalledExactlyOnceWith(expectedError);
+        expect(logger.success).not.toHaveBeenCalled();
+      } finally {
+        cleanupTempDir(tmpDir);
+      }
+    },
+  );
+
   it("returns false when params files are missing or should be removed", () => {
     const tmpDir = makeTempDir();
     const appDir = path.join(tmpDir, "app");
