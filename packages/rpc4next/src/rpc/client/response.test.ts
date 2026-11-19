@@ -46,6 +46,24 @@ describe("response promise unwrap", () => {
     await expect(unwrapResponse(response)).resolves.toBe("plain text");
   });
 
+  it("parses media types with whitespace before their parameters", async () => {
+    const json = new Response('{"ok":true}', {
+      headers: { "content-type": "application/json ; charset=utf-8" },
+    });
+    const text = new Response("hello", {
+      headers: { "content-type": "application/xml ; charset=utf-8" },
+    });
+    const form = new Response("name=Ada", {
+      headers: { "content-type": "application/x-www-form-urlencoded ; charset=utf-8" },
+    });
+
+    await expect(unwrapResponse(json)).resolves.toEqual({ ok: true });
+    await expect(unwrapResponse(text)).resolves.toBe("hello");
+    const formData = await unwrapResponse(form);
+    expect(formData).toBeInstanceOf(FormData);
+    expect((formData as FormData).get("name")).toBe("Ada");
+  });
+
   it.each([
     "text/plain; charset=utf-8",
     "application/xml",
@@ -147,6 +165,14 @@ describe("response promise unwrap", () => {
     await expect(file.blob.text()).resolves.toBe("id,name\n1,Ada");
   });
 
+  it("returns an empty content type when a file response has no Content-Type", async () => {
+    const response = new Response(null);
+    const file = await unwrapFileResponse(response);
+
+    expect(file.contentType).toBe("");
+    expect(file.response).toBe(response);
+  });
+
   it("unwraps RFC 5987 encoded file names", async () => {
     const file = await unwrapFileResponse(
       new Response("pdf", {
@@ -163,6 +189,7 @@ describe("response promise unwrap", () => {
   it.each([
     ['attachment;filename="report;2026.csv"', "report;2026.csv"],
     ["attachment;filename=report.csv", "report.csv"],
+    ["attachment;filename=report.csv  ; size=3", "report.csv"],
     ["attachment;filename*=UTF-8''report%202026.pdf", "report 2026.pdf"],
   ])("reads filename from Content-Disposition %s", async (contentDisposition, filename) => {
     const file = await unwrapFileResponse(
@@ -194,15 +221,21 @@ describe("response promise unwrap", () => {
     expect(file.filename).toBe("report 2026.pdf");
   });
 
-  it("does not treat a different content disposition parameter as a filename", async () => {
-    const file = await unwrapFileResponse(
-      new Response("pdf", {
-        headers: { "content-disposition": 'attachment; xfilename="other.pdf"' },
-      }),
-    );
+  it.each([
+    'attachment; xfilename="other.pdf"',
+    "attachment; xfilename*=UTF-8''other.pdf",
+    'attachment; filename-extra="other.pdf"',
+    "attachment; filename*-extra=UTF-8''other.pdf",
+  ])(
+    "does not treat a different content disposition parameter as a filename: %s",
+    async (value) => {
+      const file = await unwrapFileResponse(
+        new Response("pdf", { headers: { "content-disposition": value } }),
+      );
 
-    expect(file.filename).toBeUndefined();
-  });
+      expect(file.filename).toBeUndefined();
+    },
+  );
 
   it.each([204, 205])("returns undefined for successful no-body status %i", async (status) => {
     const response = new Response(null, {
