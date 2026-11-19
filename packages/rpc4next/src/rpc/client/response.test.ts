@@ -478,6 +478,14 @@ describe("response promise unwrap", () => {
     expectTypeOf(result).toEqualTypeOf<string>();
   });
 
+  it("rethrows the original error for unexpected external error codes", () => {
+    type Payload = { error: { code: "NOT_FOUND"; message: string } };
+    const payload = JSON.parse('{"error":{"code":"UNKNOWN","message":"Unexpected"}}') as Payload;
+    const error = new RpcResponseError<Payload>(new Response(null, { status: 500 }), payload);
+
+    expect(() => matchRpcResponseError(error, { NOT_FOUND: () => "handled" })).toThrow(error);
+  });
+
   it("infers text payloads from successful text response union members", async () => {
     type ResponseUnion =
       | TypedNextResponse<"accepted", 202, "text/plain">
