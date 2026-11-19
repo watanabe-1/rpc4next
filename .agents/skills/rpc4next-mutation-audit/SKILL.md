@@ -8,15 +8,18 @@ description: Audit and periodically reassess test effectiveness in rpc4next usin
 Assess test effectiveness without treating mutation score or survivor count as a
 quality guarantee. An audit request authorizes measurement, analysis, and issue
 tracking within the audit scope. Prepare and publish relevant audit updates and
-follow-up issues without a separate request. Before editing tests or implementation,
-present a concrete proposal and obtain approval; honor approval already given in
-the session. Do not change dependencies or set up a scheduler without approval.
+follow-up issues without a separate request. Make small test improvements in
+batches without repeated approval when the public contract and test approach are
+clear and within the requested audit scope. Before changes requiring a product or
+contract decision, implementation changes, or substantial test redesign, present
+a concrete proposal and obtain approval; honor approval already given in the
+session. Do not change dependencies or set up a scheduler without approval.
 Follow the user's requested scope and repository `AGENTS.md`.
 
 ## Compose the workflows
 
 - For mutator execution and report interpretation, read the bundled
-  [mutator](../mutator/SKILL.md) skill. For an approved test repair,
+  [mutator](../mutator/SKILL.md) skill. For test repairs,
   also use [mutation-test-loop](../mutation-test-loop/SKILL.md), subject to the
   user's scope and the repository's dependency and validation rules.
 - For GitHub issue operations within the audit, use
@@ -80,9 +83,9 @@ Follow the user's requested scope and repository `AGENTS.md`.
   test, and verification; link the audit and clarify incomplete measurement.
   Update the audit record with the run summary, unresolved scope, and whether
   fixes are proposed, local, or merged. At each stopping point, state the next
-  concrete investigation or repair; if it requires test or implementation edits,
-  explain the proposal and request approval before editing. Do not claim that a
-  transient `.mutator` report is durable history.
+  concrete investigation or repair; request approval before edits that require a
+  product or contract decision, implementation changes, or substantial test
+  redesign. Do not claim that a transient `.mutator` report is durable history.
 - For authorized test changes, re-run selected mutants, then the required root
   `bun run test`, `bun run lint`, and `bun run typecheck`, plus relevant integration
   checks. Report untested areas and pending work. A skill does not schedule runs:
