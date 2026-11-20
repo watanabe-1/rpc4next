@@ -78,6 +78,7 @@ describe("scanEndpointFile", () => {
     "export { type Search as Query } from './types'",
     "export type { Query } from './types'",
     "export { Query } from './types'",
+    "export { 'Search' as 'Query' } from './types'",
     "import type { Search } from './types'; export type { Search as Query }",
   ])("detects Query exported through TypeScript syntax: %s", (source) => {
     const { inputFile, outputFile, rootDir } = createPaths();
@@ -191,6 +192,18 @@ describe("scanEndpointFile", () => {
     const result = scanEndpointFile(outputFile, inputFile);
 
     expect(result.query).toBeUndefined();
+  });
+
+  it("does not treat a route inside a page.tsx directory as a page", () => {
+    const { outputFile, rootDir } = createPaths();
+    const inputFile = path.join(rootDir, "app", "page.tsx", "route.ts");
+    writeTree(rootDir, { "app/page.tsx/route.ts": "export const GET = () => new Response();" });
+
+    const result = scanEndpointFile(outputFile, inputFile);
+
+    expect(result.page).toBeUndefined();
+    expect(result.query).toBeUndefined();
+    expect(result.routes.map((route) => route.exportName)).toEqual(["GET"]);
   });
 
   it("should return a route definition for an exported async function", () => {
@@ -322,6 +335,11 @@ describe("scanEndpointFile", () => {
       methods: ["GET"],
     },
     {
+      name: "string names in re-exports",
+      source: 'export { "handler" as "GET" } from "./handlers";',
+      methods: ["GET"],
+    },
+    {
       name: "renamed destructured properties",
       source: "export const { GET: handler, handler: POST } = handlers;",
       methods: ["POST"],
@@ -339,6 +357,11 @@ describe("scanEndpointFile", () => {
       name: "array destructuring and multiple declarations",
       source: "export const [GET, , POST = () => new Response()] = handlers, PUT = handler;",
       methods: ["GET", "POST", "PUT"],
+    },
+    {
+      name: "array rest bindings",
+      source: "export const [...GET] = handlers;",
+      methods: ["GET"],
     },
     {
       name: "line and block comments",
@@ -372,6 +395,14 @@ describe("scanEndpointFile", () => {
       methods: [],
     },
     {
+      name: "ambient declarations with no runtime value",
+      source: `export declare const GET: () => Response;
+        declare const handler: () => Response;
+        export { handler as POST };
+        export const PUT = () => new Response();`,
+      methods: ["PUT"],
+    },
+    {
       name: "type-only imports exported without an explicit type modifier",
       source: `import type { Handler } from "./types";
         import { type Other, handler } from "./handlers";
@@ -399,6 +430,11 @@ describe("scanEndpointFile", () => {
       methods: ["GET"],
     },
     {
+      name: "a separately exported value aliased as an HTTP method",
+      source: "export const handler = () => new Response(); export { handler as GET };",
+      methods: ["GET"],
+    },
+    {
       name: "generic function declarations and comments between tokens",
       source: `export function GET<T>(request: T) { return new Response(); }
         export /* comment */ const POST: () => Response = () => new Response();`,
@@ -419,6 +455,7 @@ describe("scanEndpointFile", () => {
 
     expect(() => scanEndpointFile(outputFile, inputFile)).toThrow(SyntaxError);
     expect(() => scanEndpointFile(outputFile, inputFile)).toThrow(`Failed to parse ${inputFile}:`);
+    expect(() => scanEndpointFile(outputFile, inputFile)).toThrow("Unexpected token");
   });
 
   it("should parse TSX without detecting export text in JSX", () => {

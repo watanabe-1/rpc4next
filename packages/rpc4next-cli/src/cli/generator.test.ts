@@ -510,7 +510,7 @@ describe("generate", () => {
     }
   });
 
-  it("uses cached generated params file paths for warm watch cleanup", () => {
+  it.each([false, true])("cleans cached watch files, including missing ones: %s", (removed) => {
     const tmpDir = makeTempDir();
     const appDir = path.join(tmpDir, "app");
     const currentDir = path.join(appDir, "current");
@@ -562,6 +562,10 @@ describe("generate", () => {
         preserveCache: true,
       });
 
+      if (removed) {
+        fs.rmSync(staleFilePath);
+      }
+
       const readdirSpy = vi.spyOn(fs, "readdirSync").mockImplementation(() => {
         throw new Error("unexpected full cleanup scan");
       });
@@ -576,6 +580,38 @@ describe("generate", () => {
 
       expect(readdirSpy).not.toHaveBeenCalled();
       expect(fs.existsSync(staleFilePath)).toBe(false);
+    } finally {
+      cleanupTempDir(tmpDir);
+    }
+  });
+
+  it("keeps watch cleanup separate for different contract filenames", () => {
+    const tmpDir = makeTempDir();
+    const appDir = path.join(tmpDir, "app");
+    const routeDir = path.join(appDir, "current");
+    const firstName = "first-contract.ts";
+    const secondName = "second-contract.ts";
+
+    try {
+      writeTree(tmpDir, { app: { current: {} }, src: { generated: {} } });
+      vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
+        pathStructure: `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
+        paramsTypes: [
+          { paramsType: `${ROUTE_CONTRACT_GENERATED_MARKER}\ncurrent`, dirPath: routeDir },
+        ],
+      });
+      const options = {
+        baseDir: appDir,
+        outputPath: path.join(tmpDir, "src", "generated", "rpc.ts"),
+        logger,
+        preserveCache: true,
+      };
+
+      generate({ ...options, paramsFileName: firstName });
+      generate({ ...options, paramsFileName: secondName });
+
+      expect(fs.existsSync(path.join(routeDir, firstName))).toBe(true);
+      expect(fs.existsSync(path.join(routeDir, secondName))).toBe(true);
     } finally {
       cleanupTempDir(tmpDir);
     }
