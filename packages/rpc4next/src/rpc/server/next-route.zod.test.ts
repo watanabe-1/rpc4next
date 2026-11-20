@@ -364,6 +364,27 @@ describe("createNextRoute zod integration", () => {
     await expect(response.text()).resolves.toBe("local-validation");
   });
 
+  it("lets method options override the shared validation error handler", async () => {
+    const appProcedure = createRouteProcedure({
+      onError: defaultProcedureOnError,
+      onValidationError: ({ response }) => response.text("shared-validation", { status: 409 }),
+    });
+    const { GET } = appProcedure
+      .forRoute(staticRouteContract)
+      .query(z.object({ page: z.coerce.number().int().positive() }))
+      .handle(({ query }) => ({ body: query }))
+      .get({
+        onValidationError: ({ response }) => response.text("method-validation", { status: 422 }),
+      });
+
+    const response = await GET(new NextRequest("http://127.0.0.1:3000/api/test?page=0"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(422);
+    await expect(response.text()).resolves.toBe("method-validation");
+  });
+
   it("does not call shared validation hooks after an input hook returns undefined", async () => {
     const sharedHook = vi.fn<() => Response>(() => new Response("shared", { status: 422 }));
     const inputHook = vi.fn<() => Promise<undefined>>(async () => undefined);
