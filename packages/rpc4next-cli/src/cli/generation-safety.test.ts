@@ -64,6 +64,24 @@ describe("generation target safety", () => {
     }
   });
 
+  it.each(["icon1.ts", "icon12.ts"])("rejects reserved output filename %s", (output) => {
+    const before = snapshot();
+
+    expect(handleCli("app", output, {}, logger)).toBe(1);
+    expect(logger.error).toHaveBeenLastCalledWith(
+      expect.stringContaining("Next.js reserved filename"),
+    );
+    expect(snapshot()).toEqual(before);
+  });
+
+  it.each(["myroute.ts", "route.ts.backup", "robots.ts.backup", "icon-custom.ts"])(
+    "allows non-reserved output filename %s",
+    (output) => {
+      expect(handleCli("app", output, {}, logger)).toBe(0);
+      expect(fs.existsSync(path.join(tmpDir, output))).toBe(true);
+    },
+  );
+
   it.each([false, true])("preserves every file on a later route collision (check=%s)", (check) => {
     writeTree(tmpDir, { app: { c: { "contract.ts": "handwritten contract" } } });
     const before = snapshot();
@@ -115,6 +133,19 @@ describe("generation target safety", () => {
     },
   );
 
+  it.skipIf(process.platform !== "win32")(
+    "rejects generation targets that differ only in case on Windows",
+    () => {
+      const before = snapshot();
+
+      expect(handleCli("app", "app/a/CONTRACT.ts", { paramsFile: "contract.ts" }, logger)).toBe(1);
+      expect(logger.error).toHaveBeenLastCalledWith(
+        expect.stringContaining("duplicate output path"),
+      );
+      expect(snapshot()).toEqual(before);
+    },
+  );
+
   it("creates new files, updates marked files, and passes check without writes", () => {
     expect(handleCli("app", "rpc.ts", { paramsFile: "contract.ts" }, logger)).toBe(0);
     for (const name of ["a", "b", "c"]) {
@@ -125,6 +156,8 @@ describe("generation target safety", () => {
     }
     const before = snapshot();
     const writeSpy = vi.spyOn(fs, "writeFileSync");
+    expect(handleCli("app", "rpc.ts", { paramsFile: "contract.ts" }, logger)).toBe(0);
+    expect(writeSpy).not.toHaveBeenCalled();
     expect(handleCli("app", "rpc.ts", { paramsFile: "contract.ts", check: true }, logger)).toBe(0);
     expect(writeSpy).not.toHaveBeenCalled();
     expect(snapshot()).toEqual(before);
@@ -155,6 +188,15 @@ describe("generation target safety", () => {
 
     expect(checkGenerated(options)).toBe(false);
     expect(logger.error).toHaveBeenCalledWith(expect.stringContaining("is stale"));
+  });
+
+  it("preserves route directory names containing a TypeScript extension in imports", () => {
+    writeTree(tmpDir, { app: { "version.ts": { "route.ts": route } } });
+
+    expect(handleCli("app", "rpc.ts", {}, logger)).toBe(0);
+    expect(fs.readFileSync(path.join(tmpDir, "rpc-test-manifest.ts"), "utf8")).toContain(
+      "./app/version.ts/route",
+    );
   });
 
   it("preserves the output extension in the derived test manifest", () => {
