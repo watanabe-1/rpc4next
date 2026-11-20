@@ -498,6 +498,25 @@ describe("createNextPage", () => {
     expect(render).not.toHaveBeenCalled();
   });
 
+  it("lets page-local error handling override createPageProcedure defaults", async () => {
+    const sharedOnError = vi.fn<() => string>(() => "shared-error");
+    const localOnError = vi.fn<() => string>(() => "local-error");
+    const page = createPageProcedure({ onError: sharedOnError })
+      .forRoute(pageRouteContract)
+      .params(paramsSchema)
+      .query(querySchema)
+      .page(() => "rendered", { onError: localOnError });
+
+    await expect(
+      page({
+        params: Promise.resolve({ id: "photo-1" }),
+        searchParams: Promise.resolve({ tab: "bad" }),
+      }),
+    ).resolves.toBe("local-error");
+    expect(localOnError).toHaveBeenCalledOnce();
+    expect(sharedOnError).not.toHaveBeenCalled();
+  });
+
   it("lets page-local validation error handling override createPageProcedure defaults", async () => {
     const onValidationError = (({ target }) =>
       `local-${target}-validation`) satisfies ProcedurePageOnValidationError;
