@@ -130,6 +130,51 @@ describe("generation target safety", () => {
     expect(snapshot()).toEqual(before);
   });
 
+  it("preserves generated files with a different name during stale contract cleanup", () => {
+    writeTree(tmpDir, { app: { stale: { "other.ts": generated } } });
+    const otherFile = path.join(tmpDir, "app", "stale", "other.ts");
+    const staleContract = path.join(tmpDir, "app", "stale", "contract.ts");
+
+    expect(handleCli("app", "rpc.ts", { paramsFile: "contract.ts" }, logger)).toBe(0);
+
+    expect(fs.existsSync(staleContract)).toBe(false);
+    expect(fs.readFileSync(otherFile, "utf8")).toBe(generated);
+  });
+
+  it("detects a route added between consecutive checks", () => {
+    const options = {
+      baseDir: path.join(tmpDir, "app"),
+      outputPath: path.join(tmpDir, "rpc.ts"),
+      paramsFileName: "contract.ts",
+      logger,
+    };
+    generate(options);
+    expect(checkGenerated(options)).toBe(true);
+
+    writeTree(tmpDir, { app: { added: { "route.ts": route } } });
+
+    expect(checkGenerated(options)).toBe(false);
+    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining("is stale"));
+  });
+
+  it("preserves the output extension in the derived test manifest", () => {
+    expect(handleCli("app", "rpc.mts", {}, logger)).toBe(0);
+
+    const manifest = path.join(tmpDir, "rpc-test-manifest.mts");
+    expect(fs.readFileSync(manifest, "utf8")).toContain(ROUTE_CONTRACT_GENERATED_MARKER);
+    expect(handleCli("app", "rpc.mts", { check: true }, logger)).toBe(0);
+  });
+
+  it("uses a TypeScript manifest extension when the output has none", () => {
+    expect(handleCli("app", "rpc", {}, logger)).toBe(0);
+
+    const manifest = path.join(tmpDir, "rpc-test-manifest.ts");
+    const content = fs.readFileSync(manifest, "utf8");
+    expect(content).toContain(ROUTE_CONTRACT_GENERATED_MARKER);
+    expect(content).not.toBe(generated);
+    expect(handleCli("app", "rpc", { check: true }, logger)).toBe(0);
+  });
+
   it.each([generate, checkGenerated])(
     "protects direct generator calls from reserved filenames",
     (run) => {
@@ -137,6 +182,25 @@ describe("generation target safety", () => {
       expect(() =>
         run({
           baseDir: path.join(tmpDir, "app"),
+          outputPath: path.join(tmpDir, "rpc.ts"),
+          paramsFileName: "route.ts",
+          logger,
+        }),
+      ).toThrow("Next.js reserved filename");
+      expect(snapshot()).toEqual(before);
+    },
+  );
+
+  it.each([generate, checkGenerated])(
+    "rejects reserved params filenames even when no routes exist",
+    (run) => {
+      const emptyApp = path.join(tmpDir, "empty-app");
+      fs.mkdirSync(emptyApp);
+      const before = snapshot();
+
+      expect(() =>
+        run({
+          baseDir: emptyApp,
           outputPath: path.join(tmpDir, "rpc.ts"),
           paramsFileName: "route.ts",
           logger,
