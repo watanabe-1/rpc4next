@@ -668,88 +668,13 @@ When you want to treat the result as the success payload, narrow the response
 first with `response.ok` or a status check, then call `response.json()` in that
 branch.
 
-When application code only needs the parsed success body and non-2xx responses
-can follow the exception path, call `unwrap()` on the RPC response promise. It
-returns the payload from the `ok: true` response branch and throws
-`RpcResponseError` for non-2xx responses.
+For downloads, read the body and headers using the standard `Response` API:
 
 ```ts
-import { RpcResponseError } from "rpc4next/client";
-
-try {
-  const body = await rpc.api.users
-    ._userId("123")
-    .$get({
-      url: { query: { includePosts: "true" } },
-    })
-    .unwrap();
-
-  console.log(body);
-} catch (error) {
-  if (error instanceof RpcResponseError) {
-    console.log(error.status);
-    console.log(error.statusText);
-    console.log(error.code);
-    console.log(error.payload);
-    console.log(error.response);
-  }
-}
-```
-
-`RpcResponseError.code` is populated when the response body is an rpc4next error
-envelope returned by `response.error(...)`:
-
-```ts
-return response.error("FORBIDDEN", {
-  message: "Editor role required.",
-  details: { reason: "editor_only" as const },
-});
-```
-
-TypeScript does not type thrown values from a `catch` block as
-endpoint-specific error unions, so `unwrap()` is not the primary API for
-fine-grained UI branching on known errors. Use the typed `Response` path above
-when the UI needs exhaustive, endpoint-specific handling.
-
-Non-JSON error bodies are also handled safely. `unwrap()` parses JSON when
-possible, reads text responses for `text/*`, XML, and YAML media types, and
-still throws `RpcResponseError` with `status`, `statusText`, and `response` if
-the body is empty or cannot be read.
-
-Responses with HTTP statuses that cannot include a body, such as `204`, `205`,
-and `304`, unwrap to `undefined` regardless of their `Content-Type` header.
-
-For file downloads, call `unwrapFile()` instead. It keeps the same error
-handling behavior as `unwrap()`, but reads successful responses as `Blob`
-payloads and includes response metadata for saving the file.
-
-```ts
-const file = await rpc.api.exports.$get().unwrapFile();
-
-console.log(file.blob);
-console.log(file.filename);
-console.log(file.contentType);
-```
-
-If you prefer a small dispatch table for rpc4next error envelopes, use
-`matchRpcResponseError(...)` inside the `RpcResponseError` branch. It rethrows
-the original error when the payload has no rpc4next code or no matching handler:
-
-```ts
-import { matchRpcResponseError, RpcResponseError } from "rpc4next/client";
-
-try {
-  await rpc.api["procedure-guarded"]._userId("123").$get().unwrap();
-} catch (error) {
-  if (error instanceof RpcResponseError) {
-    return matchRpcResponseError(error, {
-      UNAUTHORIZED: () => showSignInPrompt(),
-      FORBIDDEN: () => showAccessDenied(),
-    });
-  }
-
-  throw error;
-}
+const response = await rpc.api.exports.$get();
+if (!response.ok) throw new Error(`Download failed: ${response.status}`);
+const blob = await response.blob();
+const contentDisposition = response.headers.get("content-disposition");
 ```
 
 ### Reusable Client Types
@@ -767,7 +692,7 @@ import type { InferRpcRequestType } from "rpc4next/client";
 type CreatePostInput = InferRpcRequestType<typeof client.api.posts.$post>;
 
 export async function submitPost(input: CreatePostInput) {
-  return client.api.posts.$post(input).unwrap();
+  return client.api.posts.$post(input);
 }
 ```
 
@@ -785,7 +710,7 @@ const initialValues: CreatePostFormValues = {
 ```
 
 Use `InferRpcResponseType` for success payloads. It accepts either a generated
-method or a `RpcResponsePromise`:
+method or its response promise:
 
 ```ts
 import type { InferRpcResponseType } from "rpc4next/client";
@@ -849,7 +774,11 @@ type CreatePostPayload = InferRpcResponseType<typeof client.api.posts.$post>;
 export function useUser(userId: string) {
   return useQuery<UserPayload>({
     queryKey: ["user", userId],
-    queryFn: () => client.api.users._userId(userId).$get().unwrap(),
+    queryFn: async () => {
+      const response = await client.api.users._userId(userId).$get();
+      if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+      return response.json();
+    },
   });
 }
 
@@ -857,7 +786,11 @@ export function useCreatePost() {
   const queryClient = useQueryClient();
 
   return useMutation<CreatePostPayload, Error, CreatePostInput>({
-    mutationFn: (input) => client.api.posts.$post(input).unwrap(),
+    mutationFn: async (input) => {
+      const response = await client.api.posts.$post(input);
+      if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
     },

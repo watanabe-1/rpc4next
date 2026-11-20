@@ -13,7 +13,6 @@ import type { ProcedureRouteContract } from "../server/generated";
 import { createNextRoute } from "../server/next-route";
 import { defaultProcedureOnError } from "../server/on-error";
 import type { ParamsKey, QueryKey, RpcEndpoint, RpcGeneratedPathStructure } from "./generated";
-import type { SuccessfulResponsePayload } from "./response";
 import { createRpcClient } from "./rpc-client";
 import { createRpcTestClient, type RpcTestRouteModule } from "./test";
 
@@ -157,20 +156,12 @@ describe("createRpcClient", () => {
       expect(data).toEqual({ method: "get" });
     });
 
-    it("unwraps HTTP method response promises without changing Promise behavior", async () => {
+    it("returns a standard promise of the response", async () => {
       const client = createRpcClient<PathStructure>("http://localhost:3000");
       const request = client.api.hoge._foo("test").$get();
-
-      expect(request.unwrap).toBeTypeOf("function");
+      expect("unwrap" in request).toBe(false);
       await expect(request.then((response) => response.status)).resolves.toBe(200);
-      expect("unwrap" in request.then((response) => response)).toBe(false);
-      await expect(client.api.hoge._foo("test").$get().unwrap()).resolves.toEqual({
-        method: "get",
-      });
-
-      const response = await request;
-      expect(response).toBeInstanceOf(Response);
-      expect("unwrap" in response).toBe(false);
+      expect(await request).toBeInstanceOf(Response);
     });
 
     it("should successfully perform POST request", async () => {
@@ -372,18 +363,49 @@ describe("createRpcClient", () => {
         { baseUrl: "http://rpc4next.local" },
       );
 
-      await expect(client.api.users.me.$get().unwrap()).resolves.toEqual({ route: "static" });
-      await expect(client.api.users._userId("alice").$get().unwrap()).resolves.toEqual({
+      await expect(
+        client.api.users.me.$get().then(async (response) => {
+          if (!response.ok) throw new Error(String(response.status));
+
+          return response.json();
+        }),
+      ).resolves.toEqual({ route: "static" });
+      await expect(
+        client.api.users
+          ._userId("alice")
+          .$get()
+          .then(async (response) => {
+            if (!response.ok) throw new Error(String(response.status));
+
+            return response.json();
+          }),
+      ).resolves.toEqual({
         route: "dynamic",
         params: { userId: "alice" },
       });
       await expect(
-        client.api.users.___parts(["alice", "settings"]).$get().unwrap(),
+        client.api.users
+          .___parts(["alice", "settings"])
+          .$get()
+          .then(async (response) => {
+            if (!response.ok) throw new Error(String(response.status));
+
+            return response.json();
+          }),
       ).resolves.toEqual({
         route: "catch-all",
         params: { parts: ["alice", "settings"] },
       });
-      await expect(client.api.docs._____parts().$get().unwrap()).resolves.toEqual({
+      await expect(
+        client.api.docs
+          ._____parts()
+          .$get()
+          .then(async (response) => {
+            if (!response.ok) throw new Error(String(response.status));
+
+            return response.json();
+          }),
+      ).resolves.toEqual({
         route: "optional-catch-all",
         params: { parts: undefined },
       });
@@ -406,7 +428,16 @@ describe("createRpcClient", () => {
         { baseUrl: "http://rpc4next.local" },
       );
 
-      await expect(client.api.hoge._foo("test").$get().unwrap()).resolves.toEqual({
+      await expect(
+        client.api.hoge
+          ._foo("test")
+          .$get()
+          .then(async (response) => {
+            if (!response.ok) throw new Error(String(response.status));
+
+            return response.json();
+          }),
+      ).resolves.toEqual({
         params: { foo: "test" },
       });
     });
@@ -429,7 +460,16 @@ describe("createRpcClient", () => {
         { baseUrl: "http://rpc4next.local" },
       );
 
-      await expect(client.api.hoge._foo("test").$get().unwrap()).resolves.toEqual({
+      await expect(
+        client.api.hoge
+          ._foo("test")
+          .$get()
+          .then(async (response) => {
+            if (!response.ok) throw new Error(String(response.status));
+
+            return response.json();
+          }),
+      ).resolves.toEqual({
         params: { foo: "override" },
       });
     });
@@ -946,14 +986,6 @@ describe("createRpcClient", () => {
 
       const _responsePromise = client.api.hoge._foo("").$get();
       expectTypeOf(_responsePromise).toExtend<Promise<Response>>();
-      expectTypeOf(_responsePromise.unwrap).toEqualTypeOf<
-        () => Promise<SuccessfulResponsePayload<Awaited<typeof _responsePromise>>>
-      >();
-      const _unwrappedPayload = await _responsePromise.unwrap();
-      expectTypeOf(_unwrappedPayload).toEqualTypeOf<
-        SuccessfulResponsePayload<Awaited<typeof _responsePromise>>
-      >();
-
       const incloudErrResponse = await client.api.hoge._foo("").$get();
 
       expectTypeOf(incloudErrResponse).toExtend<Response>();

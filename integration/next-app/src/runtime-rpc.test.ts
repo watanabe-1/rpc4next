@@ -358,7 +358,14 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
     );
 
     it("dispatches generated dynamic routes to the matching Next.js handler", async () => {
-      const payload = await client.api.users._userId("generated-user").$get().unwrap();
+      const payload = await client.api.users
+        ._userId("generated-user")
+        .$get()
+        .then(async (response) => {
+          if (!response.ok) throw new Error(String(response.status));
+
+          return response.json();
+        });
 
       expect(payload).toEqual({
         ok: true,
@@ -399,7 +406,11 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
         .$post({
           body: { json: { title: "generated route body" } },
         })
-        .unwrap();
+        .then(async (response) => {
+          if (!response.ok) throw new Error(String(response.status));
+
+          return response.json();
+        });
 
       expect(payload).toEqual({
         ok: true,

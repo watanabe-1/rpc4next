@@ -3,9 +3,9 @@
 import type { ProcedureRouteContract } from "rpc4next/server/generated";
 
 export type Params = {};
-export type RouteContract = ProcedureRouteContract<"/response-unwrap", Params>;
+export type RouteContract = ProcedureRouteContract<"/response-handling", Params>;
 
 export const routeContract = {
-  pathname: "/response-unwrap",
+  pathname: "/response-handling",
   params: {} as Params,
 } as RouteContract;
