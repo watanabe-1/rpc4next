@@ -66,7 +66,7 @@ import type { GET as GET_a598afd861d0a3c6 } from "../../app/reserved-routes/$get
 import type { GET as GET_349894c702267495 } from "../../app/reserved-routes/$get/route";
 import type Page_a1b876b4b91f7bfd from "../../app/reserved-routes/$url/child/page";
 import type Page_875818cff01b68ea from "../../app/reserved-routes/$url/page";
-import type Page_e14cc8f4edef5d4a from "../../app/response-unwrap/page";
+import type Page_725119f2beb3bb1f from "../../app/response-handling/page";
 import type Page_79655d0ab49e4d46 from "../../app/static-encoding/%E6%97%A5%E6%9C%AC%E8%AA%9E/page";
 import type Page_0abc5ba00a7184a9 from "../../app/static-encoding/100%25/page";
 import type Page_973b333cc1d2f7e2 from "../../app/static-encoding/a%2Fb/page";
@@ -205,7 +205,7 @@ export type PathStructure = RpcGeneratedPathStructure<PageRouteMarker<typeof Pag
       "child": PageRouteMarker<typeof Page_a1b876b4b91f7bfd> & RpcEndpoint
     }
   },
-  "response-unwrap": PageRouteMarker<typeof Page_e14cc8f4edef5d4a> & RpcEndpoint,
+  "response-handling": PageRouteMarker<typeof Page_725119f2beb3bb1f> & RpcEndpoint,
   "static-encoding": {
     "日本語": PageRouteMarker<typeof Page_79655d0ab49e4d46> & RpcEndpoint,
     "100%": PageRouteMarker<typeof Page_0abc5ba00a7184a9> & RpcEndpoint,

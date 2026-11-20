@@ -1,7 +1,6 @@
 import type { ContentType } from "../lib/content-type-types";
 import { normalizeHeaders } from "../lib/headers";
 import { deepMerge } from "./client-utils";
-import { createRpcResponsePromise } from "./response";
 import type {
   JsonBodyOptions,
   PathParamsInput,
@@ -94,7 +93,7 @@ export const httpMethod = (
     },
     options?: RpcClientOptions,
   ) => {
-    const responsePromise = (async () => {
+    return (async () => {
       // Build URL (path + query from url options)
       const urlObj = buildUrl(methodParam?.url);
 
@@ -207,7 +206,5 @@ export const httpMethod = (
         });
       }
     })();
-
-    return createRpcResponsePromise(responsePromise);
   };
 };

@@ -299,8 +299,8 @@ export const testPages = [
     load: () => import("../../app/reserved-routes/$url/page") as unknown as Promise<RpcTestPageModule>,
   },
   {
-    pathname: "/response-unwrap",
-    load: () => import("../../app/response-unwrap/page") as unknown as Promise<RpcTestPageModule>,
+    pathname: "/response-handling",
+    load: () => import("../../app/response-handling/page") as unknown as Promise<RpcTestPageModule>,
   },
   {
     pathname: "/static-encoding/%E6%97%A5%E6%9C%AC%E8%AA%9E",

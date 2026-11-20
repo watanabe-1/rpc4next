@@ -6,8 +6,6 @@ import {
   type InferRpcErrorCode,
   type InferRpcRequestType,
   type InferRpcResponseType,
-  type RpcFilePayload,
-  RpcResponseError,
   type SuccessfulResponsePayload,
 } from "rpc4next/client";
 import type {
@@ -407,7 +405,7 @@ describe("integration next-app generated RPC type coverage", () => {
     void _createPostPayloadFromExpected;
   });
 
-  it("aligns compact response inference with unwrap payloads", async () => {
+  it("aligns compact response inference with successful JSON payloads", async () => {
     const guardedPayload = await client.api["procedure-guarded"]
       ._userId("procedure-user")
       .$get({
@@ -418,7 +416,11 @@ describe("integration next-app generated RPC type coverage", () => {
           },
         },
       })
-      .unwrap();
+      .then(async (response) => {
+        if (!response.ok) throw new Error(String(response.status));
+
+        return response.json();
+      });
     type GuardedGet = ReturnType<(typeof client.api)["procedure-guarded"]["_userId"]>["$get"];
     expectTypeOf<typeof guardedPayload>().toEqualTypeOf<InferRpcResponseType<GuardedGet>>();
     expectTypeOf<typeof guardedPayload>().toEqualTypeOf<{
@@ -441,7 +443,11 @@ describe("integration next-app generated RPC type coverage", () => {
       .$post({
         body: { json: { title: "integration type test" } },
       })
-      .unwrap();
+      .then(async (response) => {
+        if (!response.ok) throw new Error(String(response.status));
+
+        return response.json();
+      });
     type CreatePostPayload = InferRpcResponseType<typeof client.api.posts.$post>;
     type ExpectedCreatePostMutationPayload = {
       ok: true;
@@ -531,11 +537,20 @@ describe("integration next-app generated RPC type coverage", () => {
               },
             },
           })
-          .unwrap(),
+          .then(async (response) => {
+            if (!response.ok) throw new Error(String(response.status));
+
+            return response.json();
+          }),
     } satisfies UseQueryOptions<GuardedPayload>;
 
     const _createPostMutationOptions = {
-      mutationFn: (input) => client.api.posts.$post(input).unwrap(),
+      mutationFn: (input) =>
+        client.api.posts.$post(input).then(async (response) => {
+          if (!response.ok) throw new Error(String(response.status));
+
+          return response.json();
+        }),
       onSuccess: (payload) => {
         expectTypeOf(payload).toEqualTypeOf<CreatePostPayload>();
       },
@@ -668,14 +683,18 @@ describe("integration next-app generated RPC type coverage", () => {
       source: "procedure-contract";
       requestId: string;
     }>();
-    const _procedureContractPayloadFromUnwrap = await client.api["procedure-contract"]
+    const _procedureContractPayloadFromJson = await client.api["procedure-contract"]
       ._userId("procedure-user")
       .$get({
         url: { query: { includePosts: "true" } },
       })
-      .unwrap();
+      .then(async (response) => {
+        if (!response.ok) throw new Error(String(response.status));
+
+        return response.json();
+      });
     expectTypeOf<
-      typeof _procedureContractPayloadFromUnwrap
+      typeof _procedureContractPayloadFromJson
     >().toEqualTypeOf<ProcedureContractPayload>();
     const _procedureDefaultsErrorResponse = await client.api["procedure-defaults-error"].$get({
       url: { query: { mode: "deny" } },
@@ -1163,11 +1182,6 @@ describe("integration next-app generated RPC type coverage", () => {
     type _procedureFileDownloadKeepsSuccess = ExpectTrue<
       HasResponseVariant<typeof procedureFileDownloadResponse, string, 200, "text/csv">
     >;
-    const _procedureFilePayload = await client.api["procedure-file-download"].$get().unwrapFile();
-    expectTypeOf<typeof _procedureFilePayload>().toEqualTypeOf<
-      RpcFilePayload<typeof procedureFileDownloadResponse>
-    >();
-
     const procedureValidationBranchResponse = await client.api["procedure-validation-branch"].$get({
       url: { query: { page: "1" } },
     });
@@ -1234,28 +1248,6 @@ describe("integration next-app generated RPC type coverage", () => {
     type _redirectResponseKeepsDefaultError = ExpectTrue<
       HasVariant<RedirectResponse, SharedProcedureOnErrorResponse>
     >;
-
-    const _responseError = new RpcResponseError(
-      new Response("error", { status: 500, statusText: "Internal Server Error" }),
-      "error",
-    );
-    expectTypeOf<typeof _responseError.payload>().toEqualTypeOf<string>();
-    const _typedResponseError = new RpcResponseError(
-      new Response(JSON.stringify({ error: { code: "FORBIDDEN", message: "Forbidden" } }), {
-        status: 403,
-        statusText: "Forbidden",
-      }),
-      {
-        error: {
-          code: "FORBIDDEN" as const,
-          message: "Forbidden",
-          details: {
-            reason: "defaults_formatter" as const,
-          },
-        },
-      },
-    );
-    expectTypeOf<typeof _typedResponseError.code>().toEqualTypeOf<"FORBIDDEN" | undefined>();
   });
 
   it("rejects invalid generated RPC inputs at compile time", () => {
