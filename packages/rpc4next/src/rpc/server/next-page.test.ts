@@ -284,6 +284,21 @@ describe("createNextPage", () => {
     });
   });
 
+  it("preserves a single query value in the page request URL", async () => {
+    const page = procedure
+      .forRoute(pageRouteContract)
+      .params(paramsSchema)
+      .handle(({ request }) => ({ body: [...request.nextUrl.searchParams] }))
+      .page(({ data }) => data);
+
+    await expect(
+      page({
+        params: Promise.resolve({ id: "photo-1" }),
+        searchParams: Promise.resolve({ q: "single value" }),
+      }),
+    ).resolves.toEqual([["q", "single value"]]);
+  });
+
   it("builds the request URL from original params while passing transformed params to the handler", async () => {
     const page = procedure
       .forRoute(pageRouteContract)
@@ -886,6 +901,31 @@ describe("createNextPage", () => {
     expect(onError).toHaveBeenCalledTimes(1);
   });
 
+  it("reports a fallback message when a page input schema returns no issues", async () => {
+    const emptyIssuesSchema: StandardSchemaV1 = {
+      "~standard": {
+        version: 1,
+        vendor: "rpc4next-test",
+        validate: () => ({ issues: [] }),
+      },
+    };
+    const onError = vi.fn<(error: unknown) => string>(() => "invalid-page");
+    const page = procedure
+      .forRoute(pageRouteContract)
+      .params(paramsSchema)
+      .query(emptyIssuesSchema)
+      .handle(() => ({ body: "unreachable" }))
+      .page(({ data }) => data, { onError });
+
+    await expect(page({ params: Promise.resolve({ id: "photo-1" }) })).resolves.toBe(
+      "invalid-page",
+    );
+    expect(onError).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ message: "Validation failed." }),
+      expect.any(Object),
+    );
+  });
+
   it("validates page output when runtime output validation is enabled", async () => {
     const page = procedure
       .forRoute(pageRouteContract)
@@ -941,7 +981,10 @@ describe("createNextPage", () => {
       }),
     ).resolves.toBe("invalid-output");
 
-    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ message: "Procedure output validation failed." }),
+      expect.any(Object),
+    );
   });
 
   it("requires Standard Schema output contracts when page runtime validation is enabled", () => {
@@ -966,6 +1009,22 @@ describe("createNextPage", () => {
       "Procedure output contracts must implement Standard Schema V1 when validateOutput is enabled.",
     );
   });
+
+  it.each([undefined, false])(
+    "allows a type-only output contract when runtime validation is %s",
+    async (validateOutput) => {
+      const page = procedure
+        .forRoute(pageRouteContract)
+        .params(paramsSchema)
+        .output({ _output: { id: "" } })
+        .handle(({ params }) => ({ body: { id: params.id } }))
+        .page(({ data }) => data, { validateOutput });
+
+      await expect(page({ params: Promise.resolve({ id: "photo-1" }) })).resolves.toEqual({
+        id: "photo-1",
+      });
+    },
+  );
 
   it("lets createPageProcedure provide page terminal onError", async () => {
     const appProcedure = createPageProcedure({
