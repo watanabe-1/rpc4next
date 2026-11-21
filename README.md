@@ -544,15 +544,27 @@ For multipart form data, validate field length, file size, file type, and
 repeatable field counts in your schema:
 
 ```ts
+const optionalTags = z.preprocess(
+  (value) => (value === undefined || Array.isArray(value) ? value : [value]),
+  z.array(z.string().min(1).max(40)).max(10).optional(),
+);
+
 const formDataSchema = z.object({
   displayName: z.string().min(1).max(80),
   avatar: z
     .instanceof(File)
     .refine((file) => file.size <= 2 * 1024 * 1024, "Avatar file is too large.")
     .refine((file) => ["image/png", "image/jpeg", "image/webp"].includes(file.type)),
-  tags: z.array(z.string().min(1).max(40)).max(10).optional(),
+  tags: optionalTags,
 });
 ```
+
+Query parameters and form fields with one value are passed to the schema as a
+scalar; repeated values are passed as an array. Missing fields are `undefined`.
+Normalize repeatable fields in the schema as above, including query fields in
+route and page procedures. An empty array sends no values, so it cannot be
+distinguished from a missing field. Use a schema default if both should become
+an empty array.
 
 Schema validation runs after the runtime reads and parses the request body. For
 overall JSON or multipart body limits, configure your Next.js runtime, hosting
