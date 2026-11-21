@@ -630,12 +630,31 @@ const response = await rpc.api["request-meta"].$get({
 });
 ```
 
-`requestHeaders.cookies` is part of the typed input contract. On the server, or
-when you provide a non-browser `fetch`, rpc4next serializes it into the `Cookie`
-header. In the browser, scripts cannot set the `Cookie` header directly, so
-rpc4next omits that synthetic header and lets `fetch` send real browser cookies
-instead. For cross-origin browser calls, pass the appropriate `credentials`
-option, such as `{ init: { credentials: "include" } }`.
+By default, `requestHeaders.cookies` is part of the typed input contract and is
+serialized into the `Cookie` header outside the browser. To use cookies managed
+by the browser or a custom transport, select managed mode when creating the client:
+
+```ts
+const rpc = createRpcClient<PathStructure>("", { cookieMode: "managed" });
+const response = await rpc.api["request-meta"].$get({
+  requestHeaders: { headers: { "x-integration-test": "example" } },
+});
+```
+
+Managed mode removes cookie values from RPC call arguments; it does not set or
+verify cookies. A custom `fetch` receives any Cookie header configured through
+request init, including in browsers; the native browser `fetch` uses the cookie
+store instead. Server-issued
+`HttpOnly` cookies are available to requests without exposing their values to
+JavaScript. For cross-origin browser calls, set appropriate credentials, for
+example `{ cookieMode: "managed", init: { credentials: "include" } }`; cookie
+attributes, browser policy, and CORS also affect whether cookies are sent.
+Explicit cookie arguments are omitted in browser runtimes even in the default
+mode, so use managed mode for browser calls. The server still validates received
+cookies and may reject a request when they are missing or invalid.
+When `cookieMode` is only known at runtime, the returned client has a union of
+both modes; narrow the option before creating the client when mode-specific call
+types are needed. The in-process `createRpcTestClient` supports the same modes.
 
 ### 6. Handle Typed Responses
 

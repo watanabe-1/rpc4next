@@ -8,4 +8,4 @@ export type {
   SuccessfulJsonPayload,
   SuccessfulResponsePayload,
 } from "./inference";
-export type { InferPageQuery, PageQueryInput } from "./types";
+export type { InferPageQuery, PageQueryInput, RpcClientCreationOptions } from "./types";

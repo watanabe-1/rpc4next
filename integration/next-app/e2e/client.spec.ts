@@ -34,7 +34,11 @@ test.describe("integration next-app rpc4next browser client e2e", () => {
 
   test("generated client sends browser headers and surfaces validation errors", async ({
     page,
+    context,
   }) => {
+    await context.addCookies([
+      { name: "session", value: "browser-session", url: "http://127.0.0.1:3100" },
+    ]);
     await page.goto("/e2e-client");
 
     await page.getByRole("button", { name: "call request-meta" }).click();
@@ -53,6 +57,12 @@ test.describe("integration next-app rpc4next browser client e2e", () => {
     await expect(page.getByTestId("invalid-users-result")).toContainText('"status":400');
     await expect(page.getByTestId("invalid-users-result")).toContainText('"code":"BAD_REQUEST"');
     await expect(page.getByTestId("invalid-users-result")).toContainText("includePosts");
+  });
+
+  test("managed cookies must exist in the browser store", async ({ page }) => {
+    await page.goto("/e2e-client");
+    await page.getByRole("button", { name: "call request-meta" }).click();
+    await expect(page.getByTestId("request-meta-result")).toContainText('"status":400');
   });
 
   test("generated client handles guarded procedure success and typed forbidden envelopes", async ({

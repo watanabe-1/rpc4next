@@ -599,6 +599,51 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     expect(calledInit?.headers).toEqual({ cookie: "a=1" });
   });
 
+  it("ignores cookie arguments in managed mode while retaining transport headers", async () => {
+    let calledInit: CapturedInit | undefined;
+    const fetch: typeof globalThis.fetch = (_input, init) => {
+      calledInit = init as CapturedInit | undefined;
+
+      return Promise.resolve(new Response(null, { status: 200 }));
+    };
+    const request = httpMethod("$get", ["http://example.com", "api"], {}, [], {
+      fetch,
+      cookieMode: "managed",
+      init: { headers: { Cookie: "transport=1" } },
+    });
+
+    await request({ requestHeaders: { cookies: { invalid: "bad;value" }, headers: undefined } });
+    expect(calledInit?.headers).toEqual({ cookie: "transport=1" });
+  });
+
+  it("retains managed Cookie headers for browser custom transports only", async () => {
+    simulateBrowserRuntime();
+    let calledInit: CapturedInit | undefined;
+    const customFetch: typeof globalThis.fetch = (_input, init) => {
+      calledInit = init as CapturedInit | undefined;
+
+      return Promise.resolve(new Response(null, { status: 200 }));
+    };
+    const request = httpMethod("$get", ["http://example.com", "api"], {}, [], {
+      cookieMode: "managed",
+      fetch: customFetch,
+      init: { headers: { Cookie: "transport=1" } },
+    });
+    await request({ requestHeaders: { cookies: { ignored: "2" }, headers: undefined } });
+    expect(calledInit?.headers).toEqual({ cookie: "transport=1" });
+
+    const overrideRequest = httpMethod("$get", ["http://example.com", "api"], {}, [], {
+      cookieMode: "managed",
+      init: { headers: { Cookie: "transport=1" } },
+    });
+    await overrideRequest(undefined, { fetch: customFetch });
+    expect(calledInit?.headers).toEqual({ cookie: "transport=1" });
+
+    global.fetch = customFetch;
+    await overrideRequest();
+    expect(calledInit?.headers).toBeUndefined();
+  });
+
   it("does not attach body for GET/HEAD even if body.json is provided", async () => {
     const key = "$get";
     const paths = ["http://example.com", "api", "nobody"];

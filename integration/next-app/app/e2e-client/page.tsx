@@ -5,7 +5,7 @@ import { createRpcClient } from "rpc4next/client";
 
 import type { PathStructure } from "../../src/generated/rpc";
 
-const client = createRpcClient<PathStructure>("");
+const client = createRpcClient<PathStructure>("", { cookieMode: "managed" });
 
 type ResultState = {
   users: string;
@@ -76,16 +76,9 @@ export default function E2eClientPage() {
       <button
         type="button"
         onClick={runOnClick(async () => {
-          await cookieStore.set({
-            name: "session",
-            value: "browser-session",
-            path: "/",
-          });
-
           const response = await client.api["request-meta"].$get({
             requestHeaders: {
               headers: { "x-integration-test": "browser-header" },
-              cookies: { session: "browser-session" },
             },
           });
           const payload = await stringifyResponse(response);

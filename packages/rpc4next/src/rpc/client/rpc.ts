@@ -1,5 +1,5 @@
 import { isDynamic, isOptionalCatchAll } from "./client-utils";
-import type { PathParamsInput, RpcClientOptions, RpcProxyHandler } from "./types";
+import type { PathParamsInput, RpcClientCreationOptions, RpcProxyHandler } from "./types";
 
 type ProxyState = {
   parent: ProxyState | undefined;
@@ -57,7 +57,7 @@ const extendState = (
 
 const createProxy = <T>(
   handler: RpcProxyHandler,
-  options: RpcClientOptions,
+  options: RpcClientCreationOptions,
   state: ProxyState,
 ): T => {
   // We keep a callable target but route all calls through the `apply` trap.
@@ -131,7 +131,7 @@ const createProxy = <T>(
 
 export const makeCreateRpc =
   (handler: RpcProxyHandler) =>
-  <T extends object>(base: string = "/", options: RpcClientOptions = {}) =>
+  <T extends object>(base: string = "/", options: RpcClientCreationOptions = {}) =>
     createProxy<T>(handler, options, {
       parent: undefined,
       segment: base,

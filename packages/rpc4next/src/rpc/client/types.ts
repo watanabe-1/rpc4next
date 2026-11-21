@@ -52,6 +52,11 @@ export type RpcClientOptions<
   init?: DistributeOmit<TypedRequestInit<TWithoutHeaders>, TWithoutInit>;
 };
 
+/** Client-wide transport options, including the source of request cookies. */
+export type RpcClientCreationOptions = RpcClientOptions & {
+  cookieMode?: "explicit" | "managed";
+};
+
 declare const __proxy: unique symbol;
 /** Marker used by generated `PathStructure` leaves that represent callable endpoints. */
 export type RpcEndpoint = { [__proxy]?: true };
@@ -164,13 +169,16 @@ type HttpMethodsArgs<
   TMethod extends HttpMethodFuncKey,
   T,
   TValidationSchema extends ValidationSchema,
+  TCookieMode extends "explicit" | "managed" = "explicit",
   TQuery = ValidationInputFor<"query", TValidationSchema>,
   TJson = TMethod extends "$get" | "$head" ? never : ValidationInputFor<"json", TValidationSchema>,
   TFormData = TMethod extends "$get" | "$head"
     ? never
     : ValidationInputFor<"formData", TValidationSchema>,
   THeaders = ValidationInputFor<"headers", TValidationSchema>,
-  TCookies = ValidationInputFor<"cookies", TValidationSchema>,
+  TCookies = TCookieMode extends "managed"
+    ? never
+    : ValidationInputFor<"cookies", TValidationSchema>,
   TBaseArgs = UrlArgsObj<T, TQuery> &
     BodyArgsObj<TJson, TFormData> &
     HeadersArgsObj<THeaders, TCookies>,
@@ -182,9 +190,14 @@ type HttpMethodsArgs<
   >,
 ];
 
-type InferHttpMethods<T extends HttpMethodMapLike> = {
+type InferHttpMethods<T extends HttpMethodMapLike, TCookieMode extends "explicit" | "managed"> = {
   [K in keyof T as K extends HttpMethodFuncKey ? K : never]: (
-    ...args: HttpMethodsArgs<Extract<K, HttpMethodFuncKey>, T, InferValidationSchema<T[K]>>
+    ...args: HttpMethodsArgs<
+      Extract<K, HttpMethodFuncKey>,
+      T,
+      InferValidationSchema<T[K]>,
+      TCookieMode
+    >
   ) => Promise<InferTypedNextResponseType<T[K]>>;
 };
 
@@ -372,31 +385,34 @@ export type InferPageRenderResult<T> =
       : unknown
     : unknown;
 
-type PathProxyAsFunction<T> = {
+type PathProxyAsFunction<T, TCookieMode extends "explicit" | "managed"> = {
   $url: (...args: UrlArgs<T, InferQuery<T>>) => UrlResult<T>;
-} & (T extends HttpMethodMapLike ? InferHttpMethods<T> : unknown);
+} & (T extends HttpMethodMapLike ? InferHttpMethods<T, TCookieMode> : unknown);
 
 /**
  * Applies a route parameter. Empty strings, `.` and `..` are rejected during URL construction,
  * including individual catch-all elements. An optional catch-all may be omitted or be an empty
  * array.
  */
-type ParamFunction<T, TParamArgs extends unknown[]> = (
+type ParamFunction<T, TParamArgs extends unknown[], TCookieMode extends "explicit" | "managed"> = (
   ...args: TParamArgs
-) => DynamicPathProxyAsFunction<T>;
+) => DynamicPathProxyAsFunction<T, TCookieMode>;
 
 type NonEmptyArray<T> = [T, ...T[]];
 
 /** Generated client proxy shape where dynamic segments are called as functions. */
-export type DynamicPathProxyAsFunction<T> = Omit<
-  (T extends RpcEndpoint ? PathProxyAsFunction<T> : unknown) & {
+export type DynamicPathProxyAsFunction<
+  T,
+  TCookieMode extends "explicit" | "managed" = "explicit",
+> = Omit<
+  (T extends RpcEndpoint ? PathProxyAsFunction<T, TCookieMode> : unknown) & {
     [K in keyof T]: K extends OptionalCatchAllKey
-      ? ParamFunction<T[K], [value?: string[]]>
+      ? ParamFunction<T[K], [value?: string[]], TCookieMode>
       : K extends CatchAllKey
-        ? ParamFunction<T[K], [value: NonEmptyArray<string>]>
+        ? ParamFunction<T[K], [value: NonEmptyArray<string>], TCookieMode>
         : K extends DynamicKey
-          ? ParamFunction<T[K], [value: string | number]>
-          : DynamicPathProxyAsFunction<T[K]>;
+          ? ParamFunction<T[K], [value: string | number], TCookieMode>
+          : DynamicPathProxyAsFunction<T[K], TCookieMode>;
   },
   QueryKey | ParamsKey | RpcGeneratedSchemaKey | RpcPageRouteKey
 >;
@@ -418,6 +434,6 @@ export type RpcProxyHandler = (
     paths: string[];
     params: PathParamsInput;
     dynamicKeys: string[];
-    options: RpcClientOptions;
+    options: RpcClientCreationOptions;
   },
 ) => unknown;

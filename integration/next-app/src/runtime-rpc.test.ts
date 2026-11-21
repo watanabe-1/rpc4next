@@ -317,6 +317,29 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
     const client = createRpcTestClient<PathStructure>(testRoutes, { baseUrl });
     const pageClient = createRpcTestPageClient<PathStructure>(testPages, { baseUrl });
 
+    it("uses managed cookies from the test transport and ignores cookie call arguments", async () => {
+      const managed = createRpcTestClient<PathStructure>(testRoutes, {
+        baseUrl,
+        cookieMode: "managed",
+        init: { headers: { Cookie: "session=transport" } },
+      });
+      const args = {
+        requestHeaders: {
+          headers: { "x-integration-test": "test" },
+          cookies: { session: "ignored" },
+        },
+      };
+      const response = await managed.api["request-meta"].$get(args);
+      expect(response.status).toBe(200);
+      await expect(response.json()).resolves.toEqual({ header: "test", session: "transport" });
+
+      const noCookie = createRpcTestClient<PathStructure>(testRoutes, {
+        baseUrl,
+        cookieMode: "managed",
+      });
+      expect((await noCookie.api["request-meta"].$get(args)).status).toBe(400);
+    });
+
     it("renders generated Japanese and space-containing static pages", async () => {
       await expect(pageClient["static-encoding"]["日本語"].$render()).resolves.toMatchObject({
         props: { children: "static-encoding:unicode" },

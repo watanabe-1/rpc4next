@@ -5,6 +5,7 @@ import type {
   JsonBodyOptions,
   PathParamsInput,
   RequestHeadersOptions,
+  RpcClientCreationOptions,
   RpcClientOptions,
   TypedRequestInit,
   UrlOptions,
@@ -77,7 +78,7 @@ export const httpMethod = (
   paths: string[],
   params: PathParamsInput,
   dynamicKeys: string[],
-  defaultOptions: RpcClientOptions,
+  defaultOptions: RpcClientCreationOptions,
 ) => {
   const method = key.replace(/^\$/, "").toUpperCase();
   const buildUrl = createUrl(paths, params, dynamicKeys);
@@ -98,7 +99,8 @@ export const httpMethod = (
       const urlObj = buildUrl(methodParam?.url);
 
       // Select fetch implementation
-      const customFetch = options?.fetch ?? defaultOptions.fetch ?? fetch;
+      const providedFetch = options?.fetch ?? defaultOptions.fetch;
+      const customFetch = providedFetch ?? fetch;
 
       // --- Merge headers (default < options.init < methodParam.requestHeaders)
       const innerInit = options?.init;
@@ -116,8 +118,12 @@ export const httpMethod = (
       };
 
       const headersWithCookies = (() => {
-        if (isBrowserRuntime()) {
+        if (isBrowserRuntime() && !(defaultOptions.cookieMode === "managed" && providedFetch)) {
           return omitCookieHeader(mergedHeaders);
+        }
+
+        if (defaultOptions.cookieMode === "managed") {
+          return mergedHeaders;
         }
 
         // ---- Cookies: merge (existing cookie header + methodParam cookies map)

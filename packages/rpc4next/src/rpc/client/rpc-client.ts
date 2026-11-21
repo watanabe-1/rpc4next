@@ -3,6 +3,7 @@ import { httpMethod } from "./http-method";
 import { makeCreateRpc } from "./rpc";
 import type {
   DynamicPathProxyAsFunction,
+  RpcClientCreationOptions,
   RpcClientOptions,
   RpcGeneratedPathStructure,
 } from "./types";
@@ -45,7 +46,17 @@ export const createRpcClient = makeCreateRpc((key, context) => {
   }
 
   return undefined;
-}) as <T extends RpcGeneratedPathStructure>(
-  baseUrl: string,
-  options?: RpcClientOptions,
-) => DynamicPathProxyAsFunction<T>;
+}) as {
+  <T extends RpcGeneratedPathStructure>(
+    baseUrl: string,
+    options: RpcClientOptions & { cookieMode: "managed" },
+  ): DynamicPathProxyAsFunction<T, "managed">;
+  <T extends RpcGeneratedPathStructure>(
+    baseUrl: string,
+    options?: RpcClientOptions & { cookieMode?: "explicit" },
+  ): DynamicPathProxyAsFunction<T>;
+  <T extends RpcGeneratedPathStructure>(
+    baseUrl: string,
+    options: RpcClientCreationOptions,
+  ): DynamicPathProxyAsFunction<T> | DynamicPathProxyAsFunction<T, "managed">;
+};
