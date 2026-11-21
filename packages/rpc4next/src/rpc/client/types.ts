@@ -376,6 +376,11 @@ type PathProxyAsFunction<T> = {
   $url: (...args: UrlArgs<T, InferQuery<T>>) => UrlResult<T>;
 } & (T extends HttpMethodMapLike ? InferHttpMethods<T> : unknown);
 
+/**
+ * Applies a route parameter. Empty strings, `.` and `..` are rejected during URL construction,
+ * including individual catch-all elements. An optional catch-all may be omitted or be an empty
+ * array.
+ */
 type ParamFunction<T, TParamArgs extends unknown[]> = (
   ...args: TParamArgs
 ) => DynamicPathProxyAsFunction<T>;

@@ -389,7 +389,7 @@ describe("createHandler type definitions", () => {
       option?: RpcClientOptions<"Content-Type", "body">,
     ];
 
-    const _post1 = client.api.none._json("").$post;
+    const _post1 = client.api.none._json("value").$post;
 
     expectTypeOf<Parameters<typeof _post1>>().toEqualTypeOf<ExpectedJsonParameters>();
 

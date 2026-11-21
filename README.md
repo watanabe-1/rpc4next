@@ -366,9 +366,14 @@ underscores or percent signs are unchanged. Upgrade
 update calls using escaped keys. Version 1 output must be regenerated because
 its keys cannot distinguish names such as `[__id]` and `[...id]`.
 
-Dynamic route parameter values cannot be `.` or `..`, including individual
-catch-all and optional catch-all elements. URL construction throws an error for
-these values because URL parsers resolve them as path segments.
+Dynamic route parameter values cannot be empty strings, `.` or `..`, including
+individual catch-all and optional catch-all elements. These values cannot represent
+the intended path segment after URL normalization, so URL construction throws an
+error naming the parameter before a request is sent. Validate user input before
+accessing `$url` or an HTTP method; for example, do not call `_id(id)` when `id`
+is an empty form field. Optional catch-all parameters can be omitted or passed as
+an empty array to omit the entire segment; an array containing an empty string is
+invalid. TypeScript accepts these strings, so the check happens at runtime.
 
 A static `then` segment uses the generated key `["%74hen"]`, at any depth:
 

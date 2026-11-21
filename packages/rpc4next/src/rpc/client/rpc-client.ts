@@ -11,6 +11,10 @@ import { createUrl } from "./url";
 /**
  * Creates a generated RPC client for fetch-like calls and typed URL generation.
  *
+ * Dynamic path values and catch-all elements cannot be empty, `.` or `..`. URL construction throws
+ * for these values; validate user input before accessing `$url` or an HTTP method. Optional
+ * catch-all parameters can be omitted or passed as an empty array.
+ *
  * @example
  *   ~~~ts
  *   import { createRpcClient } from "rpc4next/client";
