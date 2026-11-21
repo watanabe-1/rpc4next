@@ -40,4 +40,34 @@ describe("RPC validation error handler", () => {
     });
     expectTypeOf(response).toExtend<RpcValidationErrorResponse<"query">>();
   });
+
+  it.each([
+    {
+      issues: [{ message: "Invalid input" }],
+      message: "Invalid input",
+      expectedIssues: [{ message: "Invalid input", path: [] }],
+    },
+    { issues: [], message: "Validation failed.", expectedIssues: [] },
+  ])(
+    "handles missing issue paths and empty issue lists",
+    async ({ issues, message, expectedIssues }) => {
+      const handler = createRpcValidationErrorHandler<"query">();
+      const response = await handler({
+        target: "query",
+        value: {},
+        issues,
+        request: new Request("http://localhost") as never,
+        response: createResponseHelpers(),
+      });
+
+      expect(response.status).toBe(400);
+      await expect(response.json()).resolves.toEqual({
+        error: {
+          code: "BAD_REQUEST",
+          message,
+          details: { target: "query", issues: expectedIssues },
+        },
+      });
+    },
+  );
 });

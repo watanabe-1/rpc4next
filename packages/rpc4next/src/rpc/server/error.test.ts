@@ -36,6 +36,29 @@ describe("RPC error envelopes", () => {
     });
   });
 
+  it.each([
+    ["BAD_REQUEST", 400, "Bad request"],
+    ["UNAUTHORIZED", 401, "Unauthorized"],
+    ["FORBIDDEN", 403, "Forbidden"],
+    ["NOT_FOUND", 404, "Not found"],
+    ["CONFLICT", 409, "Conflict"],
+    ["UNPROCESSABLE_CONTENT", 422, "Unprocessable content"],
+    ["TOO_MANY_REQUESTS", 429, "Too many requests"],
+    ["INTERNAL_SERVER_ERROR", 500, "Internal server error"],
+  ] as const)("uses the default status and message for %s", (code, status, message) => {
+    expect(getDefaultRpcErrorStatus(code)).toBe(status);
+    expect(createRpcErrorEnvelope(code).error).toStrictEqual({ code, message });
+  });
+
+  it("omits details from default and custom catalog envelopes when unspecified", () => {
+    const errors = defineRpcErrors({ CUSTOM: { status: 400, message: "Custom" } });
+
+    expect(Object.hasOwn(createRpcErrorEnvelope("BAD_REQUEST").error, "details")).toBe(false);
+    expect(
+      Object.hasOwn(createRpcErrorEnvelopeFromCatalog(errors, "CUSTOM").error, "details"),
+    ).toBe(false);
+  });
+
   it("preserves envelope type information", () => {
     const envelope = createRpcErrorEnvelope("CONFLICT", {
       details: { resource: "post" },

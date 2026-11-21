@@ -966,6 +966,25 @@ describe("createNextRoute zod integration", () => {
     });
   });
 
+  it("rejects non-string parsed values for response.text", async () => {
+    const route = createNextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .output(z.string().transform((value) => new Blob([value])))
+        .handle(async ({ response }) => response.text("draft-post")),
+      { method: "GET", validateOutput: true },
+    );
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({
+      error: { code: "INTERNAL_SERVER_ERROR", message: "Internal server error" },
+    });
+  });
+
   it("skips runtime output validation for raw Response escape hatches", async () => {
     const route = createNextRoute(
       procedure
