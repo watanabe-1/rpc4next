@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.17.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.16.1...rpc4next-v0.17.0) (2026-11-21)
+
+
+### Features
+
+* **client:** Support managed cookie transport ([#768](https://github.com/watanabe-1/rpc4next/issues/768)) ([187986d](https://github.com/watanabe-1/rpc4next/commit/187986d3ebe9a1b7c73433f24df0296d241f8349))
+
+
+### Bug Fixes
+
+* **client:** Infer synchronous route handler responses ([#719](https://github.com/watanabe-1/rpc4next/issues/719)) ([eafd519](https://github.com/watanabe-1/rpc4next/commit/eafd519af5b66b53aac2917a41da1ee337a2f7b5))
+* **client:** Preserve abort errors ([#737](https://github.com/watanabe-1/rpc4next/issues/737)) ([f1478ad](https://github.com/watanabe-1/rpc4next/commit/f1478ade6502c19ef0d83cae9ef7ec2f5e7b2bbb))
+* **client:** Preserve prototype-sensitive match params ([#720](https://github.com/watanabe-1/rpc4next/issues/720)) ([9aacdf3](https://github.com/watanabe-1/rpc4next/commit/9aacdf311512cab45d61c0ba90a4b88c9fed61db))
+* **client:** Propagate successful response body errors ([#736](https://github.com/watanabe-1/rpc4next/issues/736)) ([eaadb00](https://github.com/watanabe-1/rpc4next/commit/eaadb004c16ce4663b14c630b6640369fd009d59))
+* **client:** Reject dot segments in dynamic parameters ([#731](https://github.com/watanabe-1/rpc4next/issues/731)) ([dbc8584](https://github.com/watanabe-1/rpc4next/commit/dbc85849bd680df8c509decadeef1b4806912787))
+* **client:** Reject empty dynamic path segments ([#767](https://github.com/watanabe-1/rpc4next/issues/767)) ([cfdc59b](https://github.com/watanabe-1/rpc4next/commit/cfdc59b5e7f0c8e3bfbfaa3b74f1a5879f148090))
+* **cli:** Escape static then route keys ([#730](https://github.com/watanabe-1/rpc4next/issues/730)) ([48ac0f7](https://github.com/watanabe-1/rpc4next/commit/48ac0f7744c0f998d96e3a5ccd33ac12cad25c3e))
+* **server:** Apply per-input page validation error hooks ([#722](https://github.com/watanabe-1/rpc4next/issues/722)) ([f5cdcf0](https://github.com/watanabe-1/rpc4next/commit/f5cdcf0b12a7aa4276e93e1118b8aeba2c514e58))
+* **server:** Preserve empty procedure handler results ([#723](https://github.com/watanabe-1/rpc4next/issues/723)) ([a940c12](https://github.com/watanabe-1/rpc4next/commit/a940c127cdeb8f65c358bd3f97b4e4d12848f39a))
+* **server:** Preserve original page request parameters ([#744](https://github.com/watanabe-1/rpc4next/issues/744)) ([b478afb](https://github.com/watanabe-1/rpc4next/commit/b478afb1d3e0e2a5ea63114f2009c518b847fe8e))
+* **server:** Rethrow Next.js control-flow exceptions ([#721](https://github.com/watanabe-1/rpc4next/issues/721)) ([ac73605](https://github.com/watanabe-1/rpc4next/commit/ac73605a3449fb759c3c95d0547313e920eb5be2))
+
 ## [0.16.1](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.16.0...rpc4next-v0.16.1) (2026-11-15)
 
 ### Bug Fixes
