@@ -12,11 +12,12 @@ import type { ProcedureRouteContract } from "../server/procedure-types";
 import { makeCreateRpc } from "./rpc";
 import { createRpcClient } from "./rpc-client";
 import type {
+  DynamicPathProxyAsFunction,
   InferPageRenderResult,
   ParamsKey,
   PathParamsInput,
   QueryKey,
-  RpcClientOptions,
+  RpcClientCreationOptions,
   RpcEndpoint,
   RpcGeneratedPathStructure,
   rpc4nextGeneratedSchemaSymbol,
@@ -67,7 +68,7 @@ export type RpcTestPage = Pick<ProcedureRouteContract, "pathname"> & {
 };
 
 /** Options for the in-process route test client. */
-export type RpcTestClientOptions = Omit<RpcClientOptions, "fetch"> & {
+export type RpcTestClientOptions = Omit<RpcClientCreationOptions, "fetch"> & {
   baseUrl?: string;
 };
 
@@ -309,9 +310,9 @@ const resolveRouteParams = async (
  * requests directly to loaded route modules instead of starting Next.js or mocking HTTP with a
  * separate server.
  */
-export const createRpcTestClient = <T extends RpcGeneratedPathStructure>(
+export const createRpcTestClient = (<T extends RpcGeneratedPathStructure>(
   routes: readonly RpcTestRoute[],
-  options: RpcTestClientOptions = {},
+  options?: RpcTestClientOptions,
 ) => {
   const matchers = [...routes].sort(compareRoutePriority).map((route) => ({
     route,
@@ -352,12 +353,34 @@ export const createRpcTestClient = <T extends RpcGeneratedPathStructure>(
 
     return new Response("Not Found", { status: 404 });
   };
-  const { baseUrl = DEFAULT_TEST_BASE_URL, ...clientOptions } = options;
+  const { baseUrl = DEFAULT_TEST_BASE_URL, ...clientOptions } = options ?? {};
+
+  if (clientOptions.cookieMode === "managed") {
+    return createRpcClient<T>(baseUrl, {
+      ...clientOptions,
+      cookieMode: "managed",
+      fetch: testFetch,
+    });
+  }
 
   return createRpcClient<T>(baseUrl, {
     ...clientOptions,
+    cookieMode: "explicit",
     fetch: testFetch,
   });
+}) as {
+  <T extends RpcGeneratedPathStructure>(
+    routes: readonly RpcTestRoute[],
+    options: RpcTestClientOptions & { cookieMode: "managed" },
+  ): DynamicPathProxyAsFunction<T, "managed">;
+  <T extends RpcGeneratedPathStructure>(
+    routes: readonly RpcTestRoute[],
+    options?: RpcTestClientOptions & { cookieMode?: "explicit" },
+  ): DynamicPathProxyAsFunction<T>;
+  <T extends RpcGeneratedPathStructure>(
+    routes: readonly RpcTestRoute[],
+    options: RpcTestClientOptions,
+  ): DynamicPathProxyAsFunction<T> | DynamicPathProxyAsFunction<T, "managed">;
 };
 
 const createRpcTestPageRenderDispatcher = (

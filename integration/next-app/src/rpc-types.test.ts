@@ -6,8 +6,10 @@ import {
   type InferRpcErrorCode,
   type InferRpcRequestType,
   type InferRpcResponseType,
+  type RpcClientCreationOptions,
   type SuccessfulResponsePayload,
 } from "rpc4next/client";
+import { createRpcTestClient, type RpcTestClientOptions } from "rpc4next/client/test";
 import type {
   ContentType,
   HttpStatusCode,
@@ -1292,6 +1294,55 @@ describe("integration next-app generated RPC type coverage", () => {
     void client.api["request-meta"].$get({
       // @ts-expect-error request-meta requires both validated headers and cookies
       requestHeaders: { headers: { "x-integration-test": "header-ok" } },
+    });
+
+    const managedClient = createRpcClient<PathStructure>(baseUrl, {
+      cookieMode: "managed",
+      fetch: async () => new Response("{}"),
+    });
+    void managedClient.api["request-meta"].$get({
+      requestHeaders: { headers: { "x-integration-test": "header-ok" } },
+    });
+
+    const managedTestClient = createRpcTestClient<PathStructure>([], { cookieMode: "managed" });
+    void managedTestClient.api["request-meta"].$get({
+      requestHeaders: { headers: { "x-integration-test": "header-ok" } },
+    });
+    void managedTestClient.api["request-meta"].$get({
+      requestHeaders: {
+        headers: { "x-integration-test": "header-ok" },
+        // @ts-expect-error managed test clients do not accept cookie arguments
+        cookies: { session: "ignored" },
+      },
+    });
+    const explicitTestClient = createRpcTestClient<PathStructure>([]);
+    void explicitTestClient.api["request-meta"].$get({
+      // @ts-expect-error explicit test clients require cookie arguments
+      requestHeaders: { headers: { "x-integration-test": "header-ok" } },
+    });
+
+    const clientOptions = (): RpcClientCreationOptions => ({ fetch: async () => new Response() });
+    const testClientOptions = (): RpcTestClientOptions => ({ baseUrl });
+    const unknownModeClient = createRpcClient<PathStructure>(baseUrl, clientOptions());
+    const unknownModeTestClient = createRpcTestClient<PathStructure>([], testClientOptions());
+    for (const unknownClient of [unknownModeClient, unknownModeTestClient]) {
+      void unknownClient.api["request-meta"].$get({
+        // @ts-expect-error cookie input is required when the mode may be explicit
+        requestHeaders: { headers: { "x-integration-test": "header-ok" } },
+      });
+      void unknownClient.api["request-meta"].$get({
+        requestHeaders: {
+          headers: { "x-integration-test": "header-ok" },
+          cookies: { session: "explicit-value" },
+        },
+      });
+    }
+    void managedClient.api["request-meta"].$get({
+      requestHeaders: {
+        headers: { "x-integration-test": "header-ok" },
+        // @ts-expect-error managed cookies are supplied by the transport
+        cookies: { session: "ignored" },
+      },
     });
 
     void client.api["procedure-submit"].$post({
