@@ -151,6 +151,33 @@ describe("createNextRoute zod integration", () => {
     });
   });
 
+  it.each([
+    ["", undefined],
+    ["?tag=a", ["a"]],
+    ["?tag=a&tag=b", ["a", "b"]],
+  ])("normalizes repeatable query values for %s", async (search, expected) => {
+    const route = createNextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .query(
+          z.object({
+            tag: z.preprocess(
+              (value) => (value === undefined || Array.isArray(value) ? value : [value]),
+              z.array(z.string()).optional(),
+            ),
+          }),
+        )
+        .handle(({ query }) => ({ body: { tags: query.tag ?? null } })),
+    );
+
+    const response = await route(new NextRequest(`http://localhost/api${search}`), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ tags: expected ?? null });
+  });
+
   it("stops the route when params validation fails", async () => {
     const handler = vi.fn<() => { body: string }>(() => ({ body: "unexpected" }));
     const route = createNextRoute(
@@ -577,6 +604,36 @@ describe("createNextRoute zod integration", () => {
       tags: ["alpha", "beta", "gamma"],
     });
   });
+
+  it.each([[[]], [["alpha"]], [["alpha", "beta"]]])(
+    "normalizes repeatable form fields: %j",
+    async (tags) => {
+      const route = createNextRoute(
+        procedure
+          .forRoute(staticRouteContract)
+          .formData(
+            z.object({
+              tags: z.preprocess(
+                (value) => (value === undefined || Array.isArray(value) ? value : [value]),
+                z.array(z.string().min(1).max(40)).max(10).optional(),
+              ),
+            }),
+          )
+          .handle(({ formData }) => ({ body: { tags: formData.tags ?? null } })),
+        { method: "POST" },
+      );
+      const payload = new FormData();
+      for (const tag of tags) payload.append("tags", tag);
+
+      const response = await route(
+        new NextRequest("http://localhost/api", { method: "POST", body: payload }),
+        { params: Promise.resolve({}) },
+      );
+
+      expect(response.status).toBe(200);
+      await expect(response.json()).resolves.toEqual({ tags: tags.length ? tags : null });
+    },
+  );
 
   it("keeps single form-data values scalar after normalization", async () => {
     const route = createNextRoute(
