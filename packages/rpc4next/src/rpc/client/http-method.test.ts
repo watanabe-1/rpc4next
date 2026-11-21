@@ -299,6 +299,24 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     });
   });
 
+  it("wraps a null rejection from a custom fetch", async () => {
+    const fetch: typeof globalThis.fetch = () => Promise.reject(null);
+    const request = httpMethod("$get", ["http://example.com", "api"], {}, [], { fetch });
+
+    await expect(request()).rejects.toMatchObject({
+      message: "[httpMethod] GET http://example.com/api failed: null",
+      cause: null,
+    });
+  });
+
+  it("preserves an AbortError from a custom fetch without a signal", async () => {
+    const reason = { name: "AbortError" };
+    const fetch: typeof globalThis.fetch = () => Promise.reject(reason);
+    const request = httpMethod("$get", ["http://example.com", "api"], {}, [], { fetch });
+
+    await expect(request()).rejects.toBe(reason);
+  });
+
   it("preserves AbortController cancellation errors", async () => {
     const controller = new AbortController();
     controller.abort();
@@ -319,6 +337,22 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     });
 
     await expect(requestFn()).rejects.toBe(reason);
+  });
+
+  it("wraps an unrelated fetch error even when the signal is aborted", async () => {
+    const controller = new AbortController();
+    controller.abort(new Error("Cancelled by caller"));
+    const error = new Error("Fetch failed independently");
+    const fetch: typeof globalThis.fetch = () => Promise.reject(error);
+    const request = httpMethod("$get", ["http://example.com", "api"], {}, [], {
+      fetch,
+      init: { signal: controller.signal },
+    });
+
+    await expect(request()).rejects.toMatchObject({
+      message: "[httpMethod] GET http://example.com/api failed: Fetch failed independently",
+      cause: error,
+    });
   });
 
   it("merges default Headers instance with client headers object", async () => {
@@ -546,6 +580,23 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     expect(calledInit?.headers).toEqual({
       cookie: "a=1; b=2",
     });
+  });
+
+  it("keeps an existing Cookie header unchanged when the cookie map is empty", async () => {
+    let calledInit: CapturedInit | undefined;
+    const fetch: typeof globalThis.fetch = (_input, init) => {
+      calledInit = init as CapturedInit | undefined;
+
+      return Promise.resolve(new Response(null, { status: 200 }));
+    };
+    const request = httpMethod("$get", ["http://example.com", "api"], {}, [], {
+      fetch,
+      init: { headers: { Cookie: "a=1" } },
+    });
+
+    await request({ requestHeaders: { cookies: {}, headers: undefined } });
+
+    expect(calledInit?.headers).toEqual({ cookie: "a=1" });
   });
 
   it("does not attach body for GET/HEAD even if body.json is provided", async () => {

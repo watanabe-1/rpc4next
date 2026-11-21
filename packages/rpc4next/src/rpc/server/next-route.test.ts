@@ -431,6 +431,27 @@ describe("createNextRoute", () => {
     await expect(response.text()).resolves.toBe("blocked");
   });
 
+  it("preserves a thrown Response through the default error handler", async () => {
+    const thrown = new Response("blocked", {
+      status: 418,
+      headers: { "x-reason": "policy" },
+    });
+    const route = createNextRoute(
+      procedure.forRoute(staticRouteContract).handle(() => {
+        throw thrown;
+      }),
+    );
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response).toBe(thrown);
+    expect(response.status).toBe(418);
+    expect(response.headers.get("x-reason")).toBe("policy");
+    await expect(response.text()).resolves.toBe("blocked");
+  });
+
   it("can attach an explicit method to the generated route contract", () => {
     const route = createNextRoute(
       procedure.forRoute(staticRouteContract).handle(async () => ({
@@ -584,6 +605,26 @@ describe("createNextRoute", () => {
     );
   });
 
+  it.each([
+    ["null", null],
+    ["a primitive", "invalid"],
+    ["null metadata", { "~standard": null }],
+    ["primitive metadata", { "~standard": "invalid" }],
+    ["a non-function validator", { "~standard": { validate: "invalid" } }],
+  ])("rejects %s as a runtime output schema", (_description, schema) => {
+    expect(() =>
+      createNextRoute(
+        procedure
+          .forRoute(staticRouteContract)
+          .output(schema)
+          .handle(async () => ({ body: "value" })),
+        { method: "GET", validateOutput: true },
+      ),
+    ).toThrow(
+      "Procedure output contracts must implement Standard Schema V1 when validateOutput is enabled.",
+    );
+  });
+
   it("supports redirects from normalized procedure results", async () => {
     const route = createNextRoute(
       procedure.forRoute(staticRouteContract).handle(async () => ({
@@ -597,6 +638,43 @@ describe("createNextRoute", () => {
 
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe("http://127.0.0.1:3000/feed");
+  });
+
+  it("preserves a redirect result's status and headers", async () => {
+    const route = createNextRoute(
+      procedure.forRoute(staticRouteContract).handle(async () => ({
+        redirect: "http://127.0.0.1:3000/feed",
+        status: 308 as const,
+        headers: { "x-reason": "moved" },
+      })),
+    );
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(308);
+    expect(response.headers.get("location")).toBe("http://127.0.0.1:3000/feed");
+    expect(response.headers.get("x-reason")).toBe("moved");
+  });
+
+  it("returns a string procedure result as text with its status and headers", async () => {
+    const route = createNextRoute(
+      procedure.forRoute(staticRouteContract).handle(async () => ({
+        body: "hello",
+        status: 201 as const,
+        headers: { "x-result": "created" },
+      })),
+    );
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(201);
+    expect(response.headers.get("content-type")).toContain("text/plain");
+    expect(response.headers.get("x-result")).toBe("created");
+    await expect(response.text()).resolves.toBe("hello");
   });
 
   it("short-circuits middleware responses before later middleware or handler execution", async () => {
