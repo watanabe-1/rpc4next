@@ -151,6 +151,46 @@ describe("createNextRoute zod integration", () => {
     });
   });
 
+  it("stops the route when params validation fails", async () => {
+    const handler = vi.fn<() => { body: string }>(() => ({ body: "unexpected" }));
+    const route = createNextRoute(
+      procedure
+        .forRoute(dynamicUserRouteContract)
+        .params(z.object({ userId: z.string().min(1) }), {
+          onValidationError: ({ response, target }) => response.text(`invalid:${target}`, 422),
+        })
+        .handle(handler),
+    );
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({ userId: "" }),
+    });
+
+    expect(response.status).toBe(422);
+    await expect(response.text()).resolves.toBe("invalid:params");
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it("stops the route when cookie validation fails", async () => {
+    const handler = vi.fn<() => { body: string }>(() => ({ body: "unexpected" }));
+    const route = createNextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .cookies(z.object({ session: z.string().min(1) }), {
+          onValidationError: ({ response, target }) => response.text(`invalid:${target}`, 422),
+        })
+        .handle(handler),
+    );
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(422);
+    await expect(response.text()).resolves.toBe("invalid:cookies");
+    expect(handler).not.toHaveBeenCalled();
+  });
+
   it("runs validator-stage custom branches before the procedure pipeline", async () => {
     const onError = vi.fn<(error: unknown, context: { response: typeof NextResponse }) => Response>(
       (error: unknown, { response }) =>
@@ -518,6 +558,7 @@ describe("createNextRoute zod integration", () => {
     payload.set("avatar", new File(["avatar"], "avatar.png", { type: "image/png" }));
     payload.append("tags", "alpha");
     payload.append("tags", "beta");
+    payload.append("tags", "gamma");
 
     const response = await route(
       new NextRequest("http://127.0.0.1:3000/api/procedure", {
@@ -533,7 +574,7 @@ describe("createNextRoute zod integration", () => {
     await expect(response.json()).resolves.toEqual({
       displayName: "demo-user",
       filename: "avatar.png",
-      tags: ["alpha", "beta"],
+      tags: ["alpha", "beta", "gamma"],
     });
   });
 
@@ -714,6 +755,7 @@ describe("createNextRoute zod integration", () => {
   });
 
   it("normalizes invalid runtime output as INTERNAL_SERVER_ERROR", async () => {
+    const onError = vi.fn<typeof defaultProcedureOnError>(defaultProcedureOnError);
     const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
@@ -730,7 +772,7 @@ describe("createNextRoute zod integration", () => {
             count: -1,
           },
         })),
-      { method: "GET", validateOutput: true },
+      { method: "GET", validateOutput: true, onError },
     );
 
     const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
@@ -738,6 +780,10 @@ describe("createNextRoute zod integration", () => {
     });
 
     expect(response.status).toBe(500);
+    expect(onError).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ message: "Procedure output validation failed." }),
+      expect.any(Object),
+    );
     await expect(response.json()).resolves.toEqual({
       error: {
         code: "INTERNAL_SERVER_ERROR",
@@ -940,6 +986,24 @@ describe("createNextRoute zod integration", () => {
     await expect(response.text()).resolves.toBe("DRAFT-POST");
   });
 
+  it("allows a parsed null value as an empty response.body", async () => {
+    const route = createNextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .output(z.string().transform(() => null))
+        .handle(async ({ response }) => response.body("draft-post")),
+      { method: "GET", validateOutput: true },
+    );
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toBeNull();
+    await expect(response.text()).resolves.toBe("");
+  });
+
   it("fails response.body output validation when parsed values cannot be reflected", async () => {
     const route = createNextRoute(
       procedure
@@ -967,12 +1031,13 @@ describe("createNextRoute zod integration", () => {
   });
 
   it("rejects non-string parsed values for response.text", async () => {
+    const onError = vi.fn<typeof defaultProcedureOnError>(defaultProcedureOnError);
     const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
         .output(z.string().transform((value) => new Blob([value])))
         .handle(async ({ response }) => response.text("draft-post")),
-      { method: "GET", validateOutput: true },
+      { method: "GET", validateOutput: true, onError },
     );
 
     const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
@@ -980,6 +1045,13 @@ describe("createNextRoute zod integration", () => {
     });
 
     expect(response.status).toBe(500);
+    expect(onError).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        message:
+          "Procedure output validation produced a value that cannot be reflected by response.text(...).",
+      }),
+      expect.any(Object),
+    );
     await expect(response.json()).resolves.toEqual({
       error: { code: "INTERNAL_SERVER_ERROR", message: "Internal server error" },
     });
@@ -1015,6 +1087,23 @@ describe("createNextRoute zod integration", () => {
       ok: true,
       slug: "raw-response",
     });
+  });
+
+  it("does not apply successful output transforms to status 300 responses", async () => {
+    const route = createNextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .output(z.string().transform((value) => value.toUpperCase()))
+        .handle(async () => ({ status: 300 as const, body: "multiple choices" })),
+      { method: "GET", validateOutput: true },
+    );
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(300);
+    await expect(response.text()).resolves.toBe("multiple choices");
   });
 
   it("reuses shared baseProcedure presets without mutating earlier routes", async () => {

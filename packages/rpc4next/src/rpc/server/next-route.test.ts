@@ -508,6 +508,60 @@ describe("createNextRoute", () => {
     });
   });
 
+  it("serializes malformed multipart bodies as BAD_REQUEST errors", async () => {
+    const route = createNextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .formData({
+          "~standard": {
+            version: 1,
+            vendor: "rpc4next-test",
+            validate: (value) => ({ value }),
+          },
+        })
+        .handle(async () => ({ body: "unexpected" })),
+      { method: "POST" },
+    );
+
+    const response = await route(
+      new NextRequest("http://127.0.0.1:3000/api", {
+        method: "POST",
+        body: "not a multipart body",
+        headers: { "content-type": "multipart/form-data; boundary=test-boundary" },
+      }),
+      { params: Promise.resolve({}) },
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: { code: "BAD_REQUEST", message: "Invalid form-data body." },
+    });
+  });
+
+  it("uses a fallback message when input validation returns an empty issue list", async () => {
+    const route = createNextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .query({
+          "~standard": {
+            version: 1,
+            vendor: "rpc4next-test",
+            validate: () => ({ issues: [] }),
+          },
+        })
+        .handle(async () => ({ body: "unexpected" })),
+    );
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: { code: "BAD_REQUEST", message: "Validation failed." },
+    });
+  });
+
   it("keeps prototype-like formData keys as data properties", async () => {
     const route = createNextRoute(
       procedure
