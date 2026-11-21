@@ -135,6 +135,17 @@ describe("deepMerge", () => {
     expect(result.init.cache).toBe("no-cache");
   });
 
+  it("should replace a null default signal with an AbortSignal", () => {
+    const signal = new AbortController().signal;
+
+    const result = deepMerge(
+      { init: { signal: null as AbortSignal | null } },
+      { init: { signal } },
+    );
+
+    expect(result.init.signal).toBe(signal);
+  });
+
   it("should overwrite class instances with the source instance", () => {
     class Options {
       constructor(public value: string) {}

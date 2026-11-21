@@ -202,6 +202,16 @@ describe("createUrl", () => {
     expect(result.path).toBe("https://example.com/search?q=term");
   });
 
+  it("omits inherited enumerable query properties", () => {
+    const query = Object.assign(Object.create({ inherited: "ignored" }) as Record<string, string>, {
+      q: "term",
+    });
+    const result = createUrl(["https://example.com", "search"], {}, [])({ query });
+
+    expect(result.relativePath).toBe("/search?q=term");
+    expect(result.path).toBe("https://example.com/search?q=term");
+  });
+
   it("generates a URL with a catch-all parameter", () => {
     const paths = ["https://example.com", "user", "___ids"];
     const params = { ___ids: ["1", "2", "3"] };
@@ -294,6 +304,18 @@ describe("createUrl", () => {
     expect(result.relativePath).toBe("/user/detail");
   });
 
+  it("normalizes consecutive empty dynamic parameters in the generated path", () => {
+    const result = createUrl(
+      ["https://example.com", "users", "_first", "_second", "profile"],
+      { _first: "", _second: "" },
+      ["_first", "_second"],
+    )();
+
+    expect(result.relativePath).toBe("/users/profile");
+    expect(result.path).toBe("https://example.com/users/profile");
+    expect(result.pathname).toBe("/users/[first]/[second]/profile");
+  });
+
   it("handles trailing slash in base URL correctly", () => {
     const paths = ["https://example.com/", "_group", "user", "___ids"];
     const params = { _group: "test", ___ids: ["1", "2"] };
@@ -332,6 +354,13 @@ describe("createUrl", () => {
     expect(result.relativePath).toBe("/patterns/_escaped");
     expect(result.path).toBe("https://example.com/patterns/_escaped");
     expect(result.pathname).toBe("/patterns/_escaped");
+  });
+
+  it("keeps a static segment ending in underscores as a literal pathname", () => {
+    const result = createUrl(["https://example.com", "patterns", "report_____"], {}, [])();
+
+    expect(result.pathname).toBe("/patterns/report_____");
+    expect(result.relativePath).toBe("/patterns/report_____");
   });
 
   it("does not decode an encoded slash in a static segment into a path separator", () => {

@@ -69,6 +69,18 @@ describe("matchPath", () => {
     expect(matcher("/_escaped")?.params).toEqual({});
   });
 
+  it("matches dots in static route names literally", () => {
+    const matcher = matchPath(["files", "report.json"], []);
+
+    expect(matcher("/files/report.json")).toEqual({
+      params: {},
+      query: {},
+      hash: undefined,
+    });
+    expect(matcher("/files/reportXjson")).toBeNull();
+    expect(matcher("/files/reportjson")).toBeNull();
+  });
+
   it("preserves malformed and double-encoded dynamic values", () => {
     const matcher = matchPath(["日本語", "__id"], ["__id"]);
 
