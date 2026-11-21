@@ -134,6 +134,11 @@ const encodeStaticSegment = (value: string) => {
 };
 
 const encodeDynamicSegment = (value: string | number, key: string) => {
+  if (value === "") {
+    throw new Error(
+      `Invalid dynamic parameter "${getParamName(key)}": path segments cannot be empty.`,
+    );
+  }
   if (value === "." || value === "..") {
     throw new Error(
       `Invalid dynamic parameter "${getParamName(key)}": path segments cannot be "." or "..".`,
@@ -177,7 +182,8 @@ const getPathnameSegment = (segment: string) => {
  *   URL-encoded then joined by `/`.
  * - If `params[key]` is `undefined`, the segment is removed (useful for optional segments).
  * - Otherwise, the value is URL-encoded and substituted into the segment.
- * - Values equal to `.` or `..` throw because URL parsers resolve them as path segments.
+ * - Empty values and values equal to `.` or `..` throw because they cannot represent the intended
+ *   path segment after URL normalization.
  *
  * The returned builder optionally appends a suffix (e.g. query/hash) via `buildUrlSuffix(url)` and
  * also produces a Next.js-style `pathname` by converting underscore-prefixed dynamic markers into

@@ -3,6 +3,20 @@ import { describe, expect, it } from "vitest";
 import { createUrl } from "./url";
 
 describe("createUrl", () => {
+  it("rejects an empty dynamic segment", () => {
+    expect(() => createUrl(["", "users", "_id"], { _id: "" }, ["_id"])).toThrow(
+      'Invalid dynamic parameter "id": path segments cannot be empty.',
+    );
+  });
+
+  it.each(["___slug", "_____slug"])("rejects empty elements in %s arrays", (key) => {
+    for (const parts of [[""], ["", "safe"], ["safe", ""], ["safe", "", "more"]]) {
+      expect(() => createUrl(["", "docs", key], { [key]: parts }, [key])).toThrow(
+        'Invalid dynamic parameter "slug": path segments cannot be empty.',
+      );
+    }
+  });
+
   it.each([".", ".."])('rejects dynamic segment "%s" before URL normalization', (value) => {
     expect(new URL(`https://example.com/users/${value}/profile`).pathname).not.toBe(
       `/users/${value}/profile`,
@@ -302,18 +316,6 @@ describe("createUrl", () => {
     const urlGenerator = createUrl(paths, params, dynamicKeys);
     const result = urlGenerator();
     expect(result.relativePath).toBe("/user/detail");
-  });
-
-  it("normalizes consecutive empty dynamic parameters in the generated path", () => {
-    const result = createUrl(
-      ["https://example.com", "users", "_first", "_second", "profile"],
-      { _first: "", _second: "" },
-      ["_first", "_second"],
-    )();
-
-    expect(result.relativePath).toBe("/users/profile");
-    expect(result.path).toBe("https://example.com/users/profile");
-    expect(result.pathname).toBe("/users/[first]/[second]/profile");
   });
 
   it("handles trailing slash in base URL correctly", () => {

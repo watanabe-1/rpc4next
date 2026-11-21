@@ -747,6 +747,15 @@ describe("createRpcClient", () => {
       expect(url.params).toEqual({ foo: "A", bar: "B" });
     });
 
+    it("rejects empty parameters before generating a URL or sending a request", () => {
+      const client = createRpcClient<PathStructure>("http://localhost:3000");
+      const route = client.api.hoge._foo("");
+      const message = 'Invalid dynamic parameter "foo": path segments cannot be empty.';
+
+      expect(() => route.$url()).toThrow(message);
+      expect(() => route.$get()).toThrow(message);
+    });
+
     it('throws when calling the root proxy as a function ("/" is not dynamic)', () => {
       const client = createRpcClient<PathStructure>("/");
       expect(() => (client as unknown as (v: string) => void)("x")).toThrow(
@@ -794,6 +803,15 @@ describe("createRpcClient", () => {
   });
 
   describe("optional catch-all runtime behavior", () => {
+    it("allows an empty array but rejects an empty element", () => {
+      const client = createRpcClient<OptionalCatchAllPath>("");
+
+      expect(client.patterns._____parts([]).$url().relativePath).toBe("/patterns");
+      expect(() => client.patterns._____parts([""]).$url()).toThrow(
+        'Invalid dynamic parameter "parts": path segments cannot be empty.',
+      );
+    });
+
     it("allows calling an optional catch-all segment without an argument", () => {
       const client = createRpcClient<OptionalCatchAllPath>("");
 
@@ -959,7 +977,7 @@ describe("createRpcClient", () => {
       const client = createRpcClient<PathStructureForTypeTest>("", {
         fetch: customFetch,
       });
-      const _createUrl = client.fuga._foo("param")._piyo("").$url;
+      const _createUrl = client.fuga._foo("param")._piyo("value").$url;
 
       type ExpectedUrlResult = {
         pathname: string;
@@ -984,9 +1002,9 @@ describe("createRpcClient", () => {
 
       expectTypeOf(_response).toExtend<Response>();
 
-      const _responsePromise = client.api.hoge._foo("").$get();
+      const _responsePromise = client.api.hoge._foo("value").$get();
       expectTypeOf(_responsePromise).toExtend<Promise<Response>>();
-      const incloudErrResponse = await client.api.hoge._foo("").$get();
+      const incloudErrResponse = await client.api.hoge._foo("value").$get();
 
       expectTypeOf(incloudErrResponse).toExtend<Response>();
       type JsonOrTextGetJson = Awaited<ReturnType<(typeof incloudErrResponse)["json"]>>;
@@ -1008,7 +1026,7 @@ describe("createRpcClient", () => {
         void _text;
       }
 
-      const _defaultResponse = await client.api.hoge._bar("").$get();
+      const _defaultResponse = await client.api.hoge._bar("value").$get();
 
       type ExpectedDefaultResponse = TypedNextResponse<
         { default: string },
