@@ -300,7 +300,7 @@ describe("Standard Schema compatibility", () => {
         TypedNextResponse<
           {
             ok: true;
-            page: number;
+            page: number | null;
             source: "standard-schema";
           },
           200,

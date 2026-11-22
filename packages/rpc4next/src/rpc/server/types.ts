@@ -8,6 +8,7 @@ import type {
   RedirectionHttpStatusCode,
   SuccessfulHttpStatusCode,
 } from "../lib/http-status-code-types";
+import type { JsonParsed } from "../lib/json-types";
 import type {
   DefaultRpcErrorCatalog,
   RpcErrorCatalog,
@@ -96,11 +97,11 @@ export type JsonResponseHelper<TJson = unknown> = [unknown] extends [TJson]
   ? <TData, TStatus extends HttpStatusCode = 200>(
       data: TData,
       init?: TStatus | TypedResponseInit<TStatus, "application/json">,
-    ) => TypedNextResponse<TData, TStatus, "application/json">
+    ) => TypedNextResponse<JsonParsed<TData>, TStatus, "application/json">
   : <TStatus extends HttpStatusCode = 200>(
       data: TJson,
       init?: TStatus | TypedResponseInit<TStatus, "application/json">,
-    ) => TypedNextResponse<TJson, TStatus, "application/json">;
+    ) => TypedNextResponse<JsonParsed<TJson>, TStatus, "application/json">;
 
 /** Response helpers that preserve payload, status, and content-type in generated client types. */
 export interface ResponseHelpers<
@@ -140,7 +141,7 @@ export interface ResponseHelpers<
     code: TCode,
     init?: RpcErrorResponseInit<TDetails>,
   ) => TypedNextResponse<
-    RpcErrorEnvelope<TCode, TDetails>,
+    RpcErrorEnvelope<TCode, JsonParsed<TDetails>>,
     RpcErrorStatus<TCode, TErrorCatalog>,
     "application/json"
   >;

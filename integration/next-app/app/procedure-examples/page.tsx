@@ -213,7 +213,7 @@ type ExpectedProcedureValidationBranchResponse =
       {
         ok: true;
         source: "procedure-validation-branch";
-        page: number;
+        page: number | null;
       },
       200,
       "application/json"
@@ -234,7 +234,7 @@ type ExpectedProcedureValidationBranchResponse =
         ok: false;
         source: "procedure-validation-branch";
         target: "query";
-        issueCount: number;
+        issueCount: number | null;
         receivedPage?: string;
       },
       HttpStatusCode,

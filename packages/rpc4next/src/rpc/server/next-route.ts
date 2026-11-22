@@ -4,6 +4,7 @@ import type { HttpMethod } from "rpc4next-shared";
 
 import type { ContentType } from "../lib/content-type-types";
 import type { HttpStatusCode } from "../lib/http-status-code-types";
+import type { JsonParsed } from "../lib/json-types";
 import { searchParamsToObject } from "../lib/search-params";
 import type { DefaultRpcErrorCatalog, RpcErrorCatalog, RpcErrorStatus } from "./error";
 import type { ProcedureOnError, ProcedureOnErrorResult } from "./on-error";
@@ -341,7 +342,7 @@ type ResolveStatus<TStatus, TDefault extends HttpStatusCode> = TStatus extends H
 
 type NormalizeProcedureBodyResponse<TBody, TStatus extends HttpStatusCode> = TBody extends string
   ? TypedNextResponse<TBody, TStatus, "text/plain">
-  : TypedNextResponse<TBody, TStatus, "application/json">;
+  : TypedNextResponse<JsonParsed<TBody>, TStatus, "application/json">;
 
 type NormalizeProcedureHandlerResult<TResult> = TResult extends Response | NextResponse
   ? TResult

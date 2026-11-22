@@ -1134,7 +1134,7 @@ describe("integration next-app generated RPC type coverage", () => {
             ok: true;
             displayName: string;
             filename: string;
-            tags: string[];
+            tags: (string | null)[];
             source: "procedure-form-data";
           },
           200,
@@ -1160,7 +1160,7 @@ describe("integration next-app generated RPC type coverage", () => {
           ok: true;
           displayName: string;
           filename: string;
-          tags: string[];
+          tags: (string | null)[];
           source: "procedure-form-data";
         },
         200
@@ -1192,7 +1192,7 @@ describe("integration next-app generated RPC type coverage", () => {
           {
             ok: true;
             source: "procedure-validation-branch";
-            page: number;
+            page: number | null;
           },
           200,
           "application/json"
@@ -1213,7 +1213,7 @@ describe("integration next-app generated RPC type coverage", () => {
             ok: false;
             source: "procedure-validation-branch";
             target: "query";
-            issueCount: number;
+            issueCount: number | null;
             receivedPage?: string;
           },
           HttpStatusCode,
@@ -1236,7 +1236,7 @@ describe("integration next-app generated RPC type coverage", () => {
           ok: false;
           source: "procedure-validation-branch";
           target: "query";
-          issueCount: number;
+          issueCount: number | null;
           receivedPage?: string;
         }
       >
