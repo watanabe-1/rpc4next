@@ -9,6 +9,7 @@ import type {
 import type { ContentType } from "../lib/content-type-types";
 import type { HttpRequestHeaders } from "../lib/http-request-headers-types";
 import type { HttpStatusCode, SuccessfulHttpStatusCode } from "../lib/http-status-code-types";
+import type { JsonParsed } from "../lib/json-types";
 import type { RpcErrorCode, RpcErrorStatus } from "../server/error";
 import type { procedureDefinitionSymbol } from "../server/procedure-definition";
 import type {
@@ -271,7 +272,7 @@ type InferProcedureCustomValidationErrorResponse<TValidationErrorResponses> =
 type NormalizeProcedureValidationErrorResponse<TResult> = TResult extends TypedNextResponse
   ? TResult
   : TResult extends NextResponse<infer TData>
-    ? TypedNextResponse<TData, HttpStatusCode, ContentType>
+    ? TypedNextResponse<JsonParsed<TData>, HttpStatusCode, ContentType>
     : TResult extends Response
       ? TypedNextResponse<unknown, HttpStatusCode, ContentType>
       : TResult extends {
@@ -285,7 +286,7 @@ type NormalizeProcedureValidationErrorResponse<TResult> = TResult extends TypedN
             }
           ? TBody extends string
             ? TypedNextResponse<TBody, ResolveStatus<TStatus, 200>, "text/plain">
-            : TypedNextResponse<TBody, ResolveStatus<TStatus, 200>, "application/json">
+            : TypedNextResponse<JsonParsed<TBody>, ResolveStatus<TStatus, 200>, "application/json">
           : TResult extends {
                 status?: infer TStatus;
               }
@@ -306,19 +307,23 @@ type InferProcedureOutputValidationErrorResponse<T> =
 type ReplaceSuccessResponseBody<TResponse, TOutput> =
   TResponse extends TypedNextResponse<unknown, infer TStatus, infer TContentType>
     ? TStatus extends SuccessfulHttpStatusCode
-      ? TypedNextResponse<TOutput, TStatus, TContentType>
+      ? TypedNextResponse<
+          TContentType extends "application/json" ? JsonParsed<TOutput> : TOutput,
+          TStatus,
+          TContentType
+        >
       : TResponse
     : never;
 
 type InferTypedNextResponseTypeFromOutput<TResponse, TOutput> = [
   ReplaceSuccessResponseBody<TResponse, TOutput>,
 ] extends [never]
-  ? TypedNextResponse<TOutput, HttpStatusCode, ContentType>
+  ? TypedNextResponse<JsonParsed<TOutput>, HttpStatusCode, ContentType>
   : ReplaceSuccessResponseBody<TResponse, TOutput>;
 
 type InferTypedNextResponseTypeFromResponse<TResponse> = TResponse extends TypedNextResponse
   ? TResponse
-  : TypedNextResponse<InferNextResponseType<TResponse>, HttpStatusCode, ContentType>;
+  : TypedNextResponse<JsonParsed<InferNextResponseType<TResponse>>, HttpStatusCode, ContentType>;
 
 type InferTypedNextResponseType<T> = T extends (...args: never[]) => unknown
   ? IsNever<InferProcedureOutput<T>> extends true

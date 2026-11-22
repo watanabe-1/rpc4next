@@ -66,7 +66,7 @@ export const createRpcValidationErrorHandler = <
           path: getRpcValidationIssuePath(path),
         })),
       },
-    })) as ProcedureValidationErrorHandler<
+    }) as unknown as RpcValidationErrorResponse<TTarget>) as ProcedureValidationErrorHandler<
     TTarget,
     unknown,
     RpcValidationErrorResponse<TTarget>,

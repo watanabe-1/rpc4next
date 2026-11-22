@@ -545,6 +545,34 @@ const response = await rpc.api.posts.$post({
 });
 ```
 
+JSON bodies cross a serialization boundary. The client sends `JSON.stringify`
+output and the server validates the parsed value against the schema's input
+type. Define JSON schema inputs using values that survive this round trip: for
+example, accept a date string and transform it to `Date` in the schema. Passing
+a `Date` to a schema expecting `Date` sends a string and will fail validation.
+Properties with `undefined` are omitted; array elements become `null`.
+
+JSON response types describe the parsed value: for example, `Date` becomes a
+string or `null` (for an invalid date). When `validateOutput: true` is enabled,
+output validation checks the
+server-side value. A handler's `response.json(...)` call serializes immediately,
+before validation checks that original value, so serialization can fail first.
+JSON serialization can fail for values such as `bigint` or circular
+references. Non-finite numbers become `null`, so a general `number` is inferred
+as `number | null` in JSON responses.
+Array element types also include `null` because sparse array slots serialize as
+`null`. Mutable tuples are inferred as arrays of their possible element types,
+since methods like `shift` and `pop` can change their length and order. Readonly
+tuple inference assumes the value is not mutated through another reference.
+
+For predictable response types, return plain objects with enumerable data
+properties. TypeScript types do not describe property enumerability or whether
+a property is inherited: class instances and getters can therefore serialize
+differently from their inferred types. Convert them to plain objects explicitly
+or define a `toJSON` method that returns a plain JSON value.
+Boxed primitives and structurally similar objects cannot be distinguished by
+TypeScript, so their inferred JSON types may include both representations.
+
 For multipart form data, validate field length, file size, file type, and
 repeatable field counts in your schema:
 

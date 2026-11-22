@@ -236,7 +236,7 @@ describe("procedure builder zod integration", () => {
           TypedNextResponse<
             {
               ok: true;
-              page: number;
+              page: number | null;
               source: "procedure";
             },
             200,
@@ -281,7 +281,7 @@ describe("procedure builder zod integration", () => {
             {
               ok: true;
               source: "procedure-validation-branch";
-              page: number;
+              page: number | null;
             },
             200,
             "application/json"
