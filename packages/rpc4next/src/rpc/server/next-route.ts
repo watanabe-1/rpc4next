@@ -277,9 +277,8 @@ type InferProcedureValidationErrorResponse<TProcedure extends ProcedureTypeCarri
   }
     ? keyof TValidationSchema["input"] extends never
       ? never
-      :
-          | ProcedureErrorResponse<"BAD_REQUEST", InferProcedureErrorCatalog<TProcedure>>
-          | InferProcedureCustomValidationErrorResponse<TValidationErrorResponses>
+      : | ProcedureErrorResponse<"BAD_REQUEST", InferProcedureErrorCatalog<TProcedure>>
+        | InferProcedureCustomValidationErrorResponse<TValidationErrorResponses>
     : never;
 
 type InferProcedureCustomValidationErrorResponse<TValidationErrorResponses> =
@@ -375,20 +374,18 @@ type NextRouteResponse<
   TOnValidationError extends AnyProcedureValidationErrorHandler | undefined = undefined,
 > =
   IsNever<InferProcedureHandlerResult<TProcedure>> extends true
-    ?
-        | TypedNextResponse<unknown, HttpStatusCode, ContentType>
-        | NormalizeProcedureHandlerResult<InferProcedureMiddlewareTerminalResult<TProcedure>>
-        | InferProcedureOnErrorResponse<TOnError>
-        | InferProcedureValidationErrorResponse<TProcedure>
-        | InferProcedureSharedValidationErrorResponse<TOnValidationError>
-        | InferProcedureOutputValidationErrorResponse<TProcedure, TValidateOutput>
-    :
-        | NormalizeProcedureHandlerResult<InferProcedureHandlerResult<TProcedure>>
-        | NormalizeProcedureHandlerResult<InferProcedureMiddlewareTerminalResult<TProcedure>>
-        | InferProcedureOnErrorResponse<TOnError>
-        | InferProcedureValidationErrorResponse<TProcedure>
-        | InferProcedureSharedValidationErrorResponse<TOnValidationError>
-        | InferProcedureOutputValidationErrorResponse<TProcedure, TValidateOutput>;
+    ? | TypedNextResponse<unknown, HttpStatusCode, ContentType>
+      | NormalizeProcedureHandlerResult<InferProcedureMiddlewareTerminalResult<TProcedure>>
+      | InferProcedureOnErrorResponse<TOnError>
+      | InferProcedureValidationErrorResponse<TProcedure>
+      | InferProcedureSharedValidationErrorResponse<TOnValidationError>
+      | InferProcedureOutputValidationErrorResponse<TProcedure, TValidateOutput>
+    : | NormalizeProcedureHandlerResult<InferProcedureHandlerResult<TProcedure>>
+      | NormalizeProcedureHandlerResult<InferProcedureMiddlewareTerminalResult<TProcedure>>
+      | InferProcedureOnErrorResponse<TOnError>
+      | InferProcedureValidationErrorResponse<TProcedure>
+      | InferProcedureSharedValidationErrorResponse<TOnValidationError>
+      | InferProcedureOutputValidationErrorResponse<TProcedure, TValidateOutput>;
 
 export type NextRouteHandler<
   TProcedure extends ProcedureTypeCarrier = ProcedureTypeCarrier,

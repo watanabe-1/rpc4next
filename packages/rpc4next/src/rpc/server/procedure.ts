@@ -483,11 +483,10 @@ export type ProcedureHandlerResult<
   TMode extends ProcedureAdapterMode = "neutral",
 > = TMode extends "page"
   ? ProcedurePageResult<TOutput> | Promise<ProcedurePageResult<TOutput>>
-  :
-      | Response
-      | NextResponse
-      | ProcedureResult<TOutput>
-      | Promise<Response | NextResponse | ProcedureResult<TOutput>>;
+  : | Response
+    | NextResponse
+    | ProcedureResult<TOutput>
+    | Promise<Response | NextResponse | ProcedureResult<TOutput>>;
 
 type ProcedureAnyHandlerResult<TOutput = unknown> =
   | Response

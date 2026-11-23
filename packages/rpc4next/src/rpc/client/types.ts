@@ -257,9 +257,8 @@ type InferProcedureValidationErrorResponse<T> =
         }
       ? keyof TValidationSchema["input"] extends never
         ? never
-        :
-            | ProcedureErrorResponse<"BAD_REQUEST">
-            | InferProcedureCustomValidationErrorResponse<TValidationErrorResponses>
+        : | ProcedureErrorResponse<"BAD_REQUEST">
+          | InferProcedureCustomValidationErrorResponse<TValidationErrorResponses>
       : never;
 
 type InferProcedureCustomValidationErrorResponse<TValidationErrorResponses> =
@@ -327,14 +326,12 @@ type InferTypedNextResponseTypeFromResponse<TResponse> = TResponse extends Typed
 
 type InferTypedNextResponseType<T> = T extends (...args: never[]) => unknown
   ? IsNever<InferProcedureOutput<T>> extends true
-    ?
-        | InferTypedNextResponseTypeFromResponse<Awaited<ReturnType<T>>>
-        | InferProcedureValidationErrorResponse<T>
-        | InferProcedureOutputValidationErrorResponse<T>
-    :
-        | InferTypedNextResponseTypeFromOutput<Awaited<ReturnType<T>>, InferProcedureOutput<T>>
-        | InferProcedureValidationErrorResponse<T>
-        | InferProcedureOutputValidationErrorResponse<T>
+    ? | InferTypedNextResponseTypeFromResponse<Awaited<ReturnType<T>>>
+      | InferProcedureValidationErrorResponse<T>
+      | InferProcedureOutputValidationErrorResponse<T>
+    : | InferTypedNextResponseTypeFromOutput<Awaited<ReturnType<T>>, InferProcedureOutput<T>>
+      | InferProcedureValidationErrorResponse<T>
+      | InferProcedureOutputValidationErrorResponse<T>
   : TypedNextResponse<never, HttpStatusCode, ContentType>;
 
 type PathProxyAsProperty<T> = {
