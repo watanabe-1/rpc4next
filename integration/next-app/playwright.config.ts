@@ -12,6 +12,7 @@ export default defineConfig({
   },
   webServer: {
     command: "bun run dev:e2e",
+    env: { RPC_ORIGIN: "http://127.0.0.1:3100" },
     url: "http://127.0.0.1:3100",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

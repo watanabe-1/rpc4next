@@ -1,18 +1,14 @@
-import { headers } from "next/headers";
 import { createRpcClient } from "rpc4next/client";
 
 import { appPageProcedure } from "../_rpc/page-procedure";
 import { routeContract } from "./route-contract";
 import type { PathStructure } from "@/generated/rpc";
+import { serverRpcOrigin } from "@/lib/server-rpc-origin";
 
 export const dynamic = "force-dynamic";
 
 export default appPageProcedure.forRoute(routeContract).page(async () => {
-  const headerStore = await headers();
-  const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host");
-  const protocol = headerStore.get("x-forwarded-proto") ?? "http";
-  if (!host) throw new Error("Expected host header for response page.");
-  const rpc = createRpcClient<PathStructure>(`${protocol}://${host}`);
+  const rpc = createRpcClient<PathStructure>(serverRpcOrigin());
 
   const response = await rpc.api["procedure-contract"]._userId("demo-user").$get({
     url: { query: { includePosts: "true" } },
