@@ -85,6 +85,10 @@ Command meanings:
 - `bun run test`: runs the integration workspace test suite, including typecheck, Vitest runtime checks, direct route-handler checks, folder-pattern checks, and TypeScript-only `PathStructure` assertions
 - `bun run e2e`: runs Playwright checks against the real Next.js app on `http://127.0.0.1:3100`
 
+Server-side RPC examples use `RPC_ORIGIN` as their configured destination, defaulting
+to `http://127.0.0.1:3000` for local development. Set it to the app's trusted origin
+when running the fixture on another port or deploying it. Playwright sets it to port 3100.
+
 For headed browser debugging inside `integration/next-app`, run `bun run e2e -- --headed`.
 Before the first Playwright run, install the browser once:
 

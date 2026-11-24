@@ -437,28 +437,26 @@ export const rpc = createRpcClient<PathStructure>("");
 ```
 
 Use `""` for same-origin calls in the browser, or pass an absolute base URL for server-side or cross-origin usage.
-When you call routes from a Server Component or another server-side runtime, derive
-that absolute base URL from request headers or your deployment config before
-creating the client:
+For server-side calls, configure an absolute origin in your deployment environment
+(for example, `RPC_ORIGIN=https://example.com`) and use it to create the client:
 
 ```ts
-import { headers } from "next/headers";
 import { createRpcClient } from "rpc4next/client";
 
 import type { PathStructure } from "../generated/rpc";
 
-export const createServerRpcClient = async () => {
-  const headerStore = await headers();
-  const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host");
-  const protocol = headerStore.get("x-forwarded-proto") ?? "https";
-
-  if (!host) {
-    throw new Error("Missing host header");
+export const createServerRpcClient = () => {
+  const origin = process.env.RPC_ORIGIN;
+  if (!origin) {
+    throw new Error("Missing RPC_ORIGIN deployment configuration");
   }
-
-  return createRpcClient<PathStructure>(`${protocol}://${host}`);
+  return createRpcClient<PathStructure>(origin);
 };
 ```
+
+Do not use request headers as the destination without establishing a trust boundary:
+a trusted proxy must overwrite forwarding headers, and the resulting protocol and
+host must be checked against an explicit allowlist before making the request.
 
 For route-handler tests, use `createRpcTestClient` to call your exported
 `GET`/`POST` functions directly. This keeps the generated typed client in the

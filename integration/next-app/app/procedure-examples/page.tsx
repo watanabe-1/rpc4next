@@ -1,4 +1,3 @@
-import { headers } from "next/headers";
 import { createRpcClient } from "rpc4next/client";
 import type {
   ContentType,
@@ -9,6 +8,7 @@ import type {
 
 import type { PathStructure } from "@/generated/rpc";
 import type { rpcClient } from "@/lib/rpc-client";
+import { serverRpcOrigin } from "@/lib/server-rpc-origin";
 
 export const dynamic = "force-dynamic";
 
@@ -42,15 +42,7 @@ type SharedProcedureValidationErrorResponse = TypedNextResponse<
 >;
 
 const createServerRpcClient = async () => {
-  const headerStore = await headers();
-  const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host");
-  const protocol = headerStore.get("x-forwarded-proto") ?? "http";
-
-  if (!host) {
-    throw new Error("Expected host header for procedure-examples page.");
-  }
-
-  return createRpcClient<PathStructure>(`${protocol}://${host}`);
+  return createRpcClient<PathStructure>(serverRpcOrigin());
 };
 
 type ProcedureContractGet = ReturnType<
