@@ -7,7 +7,7 @@ import type { RpcErrorCatalog } from "./error";
 import { getRpcPageTestRequest } from "./page-test-request-context";
 import type { ProcedureMiddleware, ProcedureMiddlewareResult, ProcedureResult } from "./procedure";
 import { attachProcedureDefinition } from "./procedure-definition";
-import { executePipeline, isProcedureResult } from "./procedure-internals";
+import { getProcedureSteps, isProcedureResult } from "./procedure-internals";
 import type {
   MergeProcedureDefinition,
   ProcedureDefinition,
@@ -208,13 +208,15 @@ type ProcedureHasBodyContract<
   TProcedure extends NextPageProcedureCarrier,
   TTarget extends "json" | "formData",
 > =
-  InferProcedureDefinition<TProcedure> extends {
-    input: ProcedureInputContract<infer TValidationSchema>;
-  }
-    ? TTarget extends keyof TValidationSchema["input"]
-      ? true
-      : false
-    : false;
+  InferProcedureDefinition<TProcedure> extends { input: { contracts: Record<TTarget, unknown> } }
+    ? true
+    : InferProcedureDefinition<TProcedure> extends {
+          input: ProcedureInputContract<infer TValidationSchema>;
+        }
+      ? TTarget extends keyof TValidationSchema["input"]
+        ? true
+        : false
+      : false;
 
 type ResponseLike = {
   readonly body: ReadableStream<Uint8Array> | null;
@@ -499,10 +501,6 @@ const validateProcedureInputs = async (
 ) => {
   const contracts = procedureDefinition.input?.contracts ?? {};
 
-  if (contracts.json || contracts.formData) {
-    throw new Error("Page procedures do not support json or formData input contracts.");
-  }
-
   const headers = contracts.headers ? await readHeaders() : undefined;
   const cookies = contracts.cookies ? await readCookies() : undefined;
 
@@ -629,24 +627,17 @@ export const createNextPage = <
     const searchParams = normalizeSearchParams(await props.searchParams);
 
     try {
-      const inputResult = await validateProcedureInputs(
-        params,
-        searchParams,
-        procedure.definition,
-        onValidationError,
-      );
-      if (!inputResult.ok) {
-        return inputResult.result as
-          | InferPageInputValidationErrorResult<InferProcedureDefinition<TProcedure>>
-          | (TOnValidationError extends ProcedurePageOnValidationError
-              ? Awaited<ReturnType<TOnValidationError>>
-              : never);
+      if (inputContracts.json || inputContracts.formData) {
+        throw new Error("Page procedures do not support json or formData input contracts.");
       }
-      const request = createPageRequest(procedure.definition.route?.pathname, params, searchParams);
 
+      const request = createPageRequest(procedure.definition.route?.pathname, params, searchParams);
       const executionContext = {
         request,
-        ...inputResult,
+        params: undefined as unknown,
+        query: undefined as unknown,
+        headers: undefined as unknown,
+        cookies: undefined as unknown,
         json: undefined,
         formData: undefined,
         response: createResponseHelpers(procedure.errorCatalog),
@@ -654,33 +645,65 @@ export const createNextPage = <
         ctx: {} as Record<string, unknown>,
       };
 
-      const result = await executePipeline<
-        typeof executionContext,
-        ProcedureMiddlewareResult | InferProcedureHandlerResult<TProcedure>,
-        Response | ProcedureResult
-      >(
-        [
-          ...(procedure.middlewares as unknown as readonly ((
-            context: typeof executionContext,
-          ) => ProcedureMiddlewareResult | Promise<ProcedureMiddlewareResult>)[]),
-        ],
-        executionContext,
-        {
-          handler: handler
-            ? (context) => handler(context as InferProcedureHandlerContext<TProcedure>)
-            : undefined,
-          isTerminal: (value): value is Response | ProcedureResult =>
-            value instanceof Response || isProcedureResult(value),
-          applyResult: (context, value) => {
-            if (value && typeof value === "object" && "ctx" in value) {
-              context.ctx = {
-                ...context.ctx,
-                ...(value.ctx as Record<string, unknown>),
-              };
-            }
-          },
-        },
-      );
+      let terminal: Response | ProcedureResult | undefined;
+      for (const step of getProcedureSteps(procedure.definition, procedure.middlewares.length)) {
+        if ("target" in step) {
+          // A terminal page result still renders with validated params and query.
+          if (terminal !== undefined && step.target !== "params" && step.target !== "query") {
+            continue;
+          }
+          const input = procedure.definition.input;
+          const inputResult = await validateProcedureInputs(
+            params,
+            searchParams,
+            {
+              ...procedure.definition,
+              input: { ...input, contracts: { [step.target]: input?.contracts?.[step.target] } },
+            },
+            onValidationError,
+          );
+          if (!inputResult.ok) {
+            return inputResult.result as
+              | InferPageInputValidationErrorResult<InferProcedureDefinition<TProcedure>>
+              | (TOnValidationError extends ProcedurePageOnValidationError
+                  ? Awaited<ReturnType<TOnValidationError>>
+                  : never);
+          }
+          if (
+            step.target === "params" ||
+            step.target === "query" ||
+            step.target === "headers" ||
+            step.target === "cookies"
+          ) {
+            Object.assign(executionContext, { [step.target]: inputResult[step.target] });
+          }
+        } else {
+          if (terminal !== undefined) continue;
+          const middleware = procedure.middlewares[step.middleware] as unknown as
+            | ((
+                context: typeof executionContext,
+              ) => ProcedureMiddlewareResult | Promise<ProcedureMiddlewareResult>)
+            | undefined;
+          const value = await middleware?.(executionContext);
+          if (value instanceof Response || isProcedureResult(value)) {
+            terminal = value;
+            // These results cannot be rendered and should fail before further validation.
+            if (value instanceof Response || value.redirect) break;
+            continue;
+          }
+          if (value && typeof value === "object" && "ctx" in value) {
+            executionContext.ctx = {
+              ...executionContext.ctx,
+              ...(value.ctx as Record<string, unknown>),
+            };
+          }
+        }
+      }
+      const result =
+        terminal ??
+        (handler
+          ? await handler(executionContext as InferProcedureHandlerContext<TProcedure>)
+          : undefined);
 
       const { data } = assertPageTerminalResult(result);
       const renderedData =
@@ -690,8 +713,8 @@ export const createNextPage = <
 
       return await render({
         ...(handler ? { data: renderedData as InferProcedureData<TProcedure> } : {}),
-        params: inputResult.params,
-        query: inputResult.query,
+        params: executionContext.params,
+        query: executionContext.query,
         ctx: executionContext.ctx,
       } as NextPageRenderContext<TProcedure, InferProcedureData<TProcedure>>);
     } catch (error) {

@@ -51,6 +51,149 @@ describe("createNextRoute zod integration", () => {
     vi.restoreAllMocks();
   });
 
+  it("runs authentication before body parsing and validates in declaration order", async () => {
+    const order: string[] = [];
+    const schema = z.object({ title: z.string() }).refine(() => {
+      order.push("validate");
+
+      return true;
+    });
+    const base = createRouteProcedure({ onError: defaultProcedureOnError }).use(
+      ({ request, response }) => {
+        order.push("auth");
+        if (!request.headers.has("authorization")) return response.error("UNAUTHORIZED");
+      },
+    );
+    const route = base
+      .forRoute(staticRouteContract)
+      .json(schema)
+      .use(({ json }) => {
+        order.push(json.title);
+      })
+      .handle(() => ({ body: "ok" }))
+      .post().POST;
+    const request = (body: string, authorized: boolean) =>
+      new NextRequest("http://localhost/api/test", {
+        method: "POST",
+        body,
+        headers: authorized ? { authorization: "Bearer token" } : {},
+      });
+    const segment = { params: Promise.resolve({}) };
+    expect((await route(request("invalid", false), segment)).status).toBe(401);
+    expect(order).toEqual(["auth"]);
+    order.length = 0;
+    expect((await route(request("invalid", true), segment)).status).toBe(400);
+    expect(order).toEqual(["auth"]);
+    order.length = 0;
+    expect((await route(request('{"title":"post"}', true), segment)).status).toBe(200);
+    expect(order).toEqual(["auth", "validate", "post"]);
+  });
+
+  it("stops before middleware when an earlier input is invalid", async () => {
+    const middleware = vi.fn<() => undefined>(() => undefined);
+    const route = createRouteProcedure({ onError: defaultProcedureOnError })
+      .forRoute(staticRouteContract)
+      .json(z.object({ title: z.string() }))
+      .use(middleware)
+      .handle(() => ({ body: "ok" }))
+      .post().POST;
+
+    const response = await route(
+      new NextRequest("http://localhost/api/test", { method: "POST", body: "{}" }),
+      { params: Promise.resolve({}) },
+    );
+    expect(response.status).toBe(400);
+    expect(middleware).not.toHaveBeenCalled();
+  });
+
+  it("validates and executes middleware for a structurally constructed procedure", async () => {
+    const middleware = vi.fn<
+      (context: {
+        request: NextRequest;
+        response: { error: (code: "UNAUTHORIZED") => Response };
+      }) => Response | undefined
+    >(({ request, response }) => {
+      if (!request.headers.has("authorization")) return response.error("UNAUTHORIZED");
+    });
+    const handler = vi.fn<() => { body: string }>(() => ({ body: "ok" }));
+    const built = createRouteProcedure({ onError: defaultProcedureOnError })
+      .forRoute(staticRouteContract)
+      .json(z.object({ title: z.string() }))
+      .use(middleware)
+      .handle(handler);
+    const definition = Object.fromEntries(
+      Object.entries(built.definition),
+    ) as typeof built.definition;
+    const route = createNextRoute({ ...built, definition }, { method: "POST" });
+    const request = (body: string, authorization?: string) =>
+      new NextRequest("http://localhost/api/test", {
+        method: "POST",
+        body,
+        headers: authorization ? { authorization } : {},
+      });
+    const segment = { params: Promise.resolve({}) };
+
+    expect((await route(request("{}"), segment)).status).toBe(400);
+    expect(middleware).not.toHaveBeenCalled();
+    expect((await route(request('{"title":"ok"}'), segment)).status).toBe(401);
+    expect(middleware).toHaveBeenCalledOnce();
+    expect(handler).not.toHaveBeenCalled();
+    expect((await route(request('{"title":"ok"}', "Bearer token"), segment)).status).toBe(200);
+    expect(handler).toHaveBeenCalledOnce();
+  });
+
+  it("executes authentication appended to a builder-made procedure", async () => {
+    const handler = vi.fn<() => { body: string }>(() => ({ body: "secret" }));
+    const auth = vi.fn<() => Response>(() => new Response("Unauthorized", { status: 401 }));
+    const built = procedure
+      .forRoute(staticRouteContract)
+      .json(z.object({ title: z.string() }))
+      .use(() => undefined)
+      .handle(handler);
+    const route = createNextRoute(
+      { ...built, middlewares: [...built.middlewares, auth] },
+      { method: "POST" },
+    );
+    const response = await route(
+      new NextRequest("http://localhost/api/test", { method: "POST", body: '{"title":"ok"}' }),
+      { params: Promise.resolve({}) },
+    );
+
+    expect(response.status).toBe(401);
+    expect(auth).toHaveBeenCalledOnce();
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it("validates a contract added to a copied builder definition", async () => {
+    const handler = vi.fn<(context: { json: { title: string } }) => { body: string }>(
+      ({ json }) => ({ body: json.title }),
+    );
+    const built = procedure
+      .forRoute(staticRouteContract)
+      .query(z.object({}))
+      .handle(() => ({ body: "unused" }));
+    const definition = {
+      ...built.definition,
+      input: {
+        ...built.definition.input,
+        contracts: {
+          ...built.definition.input.contracts,
+          json: z.object({ title: z.string().transform((title) => title.toUpperCase()) }),
+        },
+      },
+    };
+    const route = createNextRoute({ ...built, definition, handler }, { method: "POST" });
+    const request = (body: string) =>
+      new NextRequest("http://localhost/api/test", { method: "POST", body });
+    const segment = { params: Promise.resolve({}) };
+
+    expect((await route(request("{}"), segment)).status).toBe(400);
+    expect(handler).not.toHaveBeenCalled();
+    const response = await route(request('{"title":"post"}'), segment);
+    expect(response.status).toBe(200);
+    expect(handler).toHaveBeenCalledWith(expect.objectContaining({ json: { title: "POST" } }));
+  });
+
   it("normalizes validated input, middleware context, and response contracts", async () => {
     const route = createNextRoute(
       procedure

@@ -1007,7 +1007,7 @@ For pages:
 
 - supported input contracts are `params`, `query`, `headers`, and `cookies`
 - `json` and `formData` are rejected because pages do not receive request bodies
-- `.page(...)` receives validated `params` and `query` directly from the procedure pipeline
+- `.page(...)` receives validated `params` and `query` directly from the procedure pipeline; declare `.params(...)` or `.query(...)` for each value the render callback needs. Without the corresponding contract, its runtime value is `undefined`.
 - if the page only needs validated URL input, `.handle()` is optional
 - handlers are still useful for DB reads or render-time data preparation; their `ProcedureResult` body is passed to `.page(...)` as `data`
 - `validateOutput: true` parses the body with `.output(schema)` before render
@@ -1079,6 +1079,61 @@ exposes `.page(...)`. The un-defaulted `procedure` builder can still feed either
 adapter, but app presets should choose the factory first.
 
 ### Middleware
+
+Input contracts and middleware execute in the order they are declared. A middleware
+can use inputs declared before it; later input contracts run only after that
+middleware succeeds. For authenticated routes, declare authentication before
+`.json(...)` or `.formData(...)` so unauthorized requests are rejected before
+reading or validating the body. In route procedures, authentication can read raw
+headers or cookies from `request`, and must validate those values before trusting
+them.
+
+This order also applies to shared procedure builders and page procedures.
+
+When composing a procedure object directly, input contracts or middleware added
+after the builder's recorded steps execute after those steps. Added input
+contracts execute before added middleware, in the order `params`, `query`,
+`json`, `formData`, `headers`, `cookies`.
+
+If page middleware returns a result to render, later middleware and the handler
+are skipped, but any remaining `params` and `query` contracts are validated
+before rendering. A validation failure is handled instead of rendering.
+
+Page procedures receive a synthetic `request` containing the URL, not the
+incoming headers or cookies. For page authentication, declare `.headers(...)`
+or `.cookies(...)` before the authentication middleware and use the validated
+values it receives. For example:
+
+```tsx
+const guardedPage = createPageProcedure({ onError })
+  .cookies(z.object({ session: z.string().optional() }))
+  .use(async ({ cookies, page }) => {
+    const viewer = await authenticateSession(cookies.session);
+    if (!viewer) return page.redirect("/login");
+    return { ctx: { viewer } };
+  });
+```
+
+`authenticateSession` is application-defined and must reject missing, malformed,
+or invalid credentials. The cookie contract is validated before authentication;
+other input contracts can be declared after the middleware.
+
+For example, put a shared authentication middleware before a route's body contract:
+
+```ts
+const guarded = appRouteProcedure.use(async ({ request, response }) => {
+  const viewer = await authenticate(request.headers.get("authorization"));
+  if (!viewer) return response.error("UNAUTHORIZED");
+  return { ctx: { viewer } };
+});
+
+const createPost = guarded
+  .json(postSchema)
+  .handle(({ json, ctx }) => ({ body: { title: json.title, author: ctx.viewer.id } }));
+```
+
+`authenticate` and `postSchema` are application-defined. The middleware must
+handle missing or malformed credentials as well as invalid tokens.
 
 Use `.use(fn)` to add middleware to the current builder. The middleware context
 includes `request`, `ctx`, `response`, and any inputs already declared on the

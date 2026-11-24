@@ -11,7 +11,7 @@ import type { ProcedureOnError, ProcedureOnErrorResult } from "./on-error";
 import type { ProcedureMiddleware, ProcedureMiddlewareResult, ProcedureResult } from "./procedure";
 import { attachProcedureDefinition } from "./procedure-definition";
 import {
-  executePipeline,
+  getProcedureSteps,
   isProcedureResult,
   normalizeProcedureResult,
   withProcedureMethod,
@@ -790,59 +790,59 @@ export const createNextRoute = <
     >(errorCatalog);
 
     try {
-      const inputResult = await validateProcedureInputs(
-        request,
-        segmentData,
-        response as unknown as ResponseHelpers<unknown, RpcErrorCatalog>,
-        procedure.definition,
-        options.onValidationError,
-      );
-      if (!inputResult.ok) {
-        return normalizeProcedureResult(routeContext, inputResult.response) as NextRouteResponse<
-          TProcedure,
-          TValidateOutput,
-          TOnError,
-          TOnValidationError
-        >;
-      }
-
-      const { params, query, json, formData, headers, cookies } = inputResult.values;
-
       const executionContext: ProcedureRouteExecutionContext<
         InferProcedureDeclaredOutput<TProcedure>,
         InferProcedureErrorCatalog<TProcedure>
       > = {
         request,
-        params,
-        query: query as Query | undefined,
-        json,
-        formData,
-        headers: headers as Record<string, string> | undefined,
-        cookies: cookies as Record<string, string> | undefined,
+        params: undefined,
+        query: undefined,
+        json: undefined,
+        formData: undefined,
+        headers: undefined,
+        cookies: undefined,
         response,
         ctx: {} as Record<string, unknown>,
       };
 
-      const result = await executePipeline<
-        ProcedureRouteExecutionContext<
-          InferProcedureDeclaredOutput<TProcedure>,
-          InferProcedureErrorCatalog<TProcedure>
-        >,
-        ProcedureMiddlewareResult | InferProcedureHandlerResult<TProcedure>,
-        Response | NextResponse | ProcedureResult
-      >(pipelineSteps, executionContext, {
-        handler: (context) => handler(context as InferProcedureHandlerContext<TProcedure>),
-        isTerminal: (value): value is Response | NextResponse | ProcedureResult =>
-          value instanceof Response || isProcedureResult(value),
-        applyResult: (context, value) => {
+      const steps = getProcedureSteps(procedure.definition, pipelineSteps.length);
+      let terminal: Response | NextResponse | ProcedureResult | undefined;
+      for (const step of steps) {
+        if ("target" in step) {
+          const input = procedure.definition.input;
+          const inputResult = await validateProcedureInputs(
+            request,
+            segmentData,
+            response as unknown as ResponseHelpers<unknown, RpcErrorCatalog>,
+            {
+              ...procedure.definition,
+              input: { ...input, contracts: { [step.target]: input?.contracts?.[step.target] } },
+            },
+            options.onValidationError,
+          );
+          if (!inputResult.ok) {
+            return normalizeProcedureResult(
+              routeContext,
+              inputResult.response,
+            ) as NextRouteResponse<TProcedure, TValidateOutput, TOnError, TOnValidationError>;
+          }
+          Object.assign(executionContext, { [step.target]: inputResult.values[step.target] });
+        } else {
+          const value = await pipelineSteps[step.middleware]?.(executionContext);
+          if (value instanceof Response || isProcedureResult(value)) {
+            terminal = value;
+            break;
+          }
           if (value && typeof value === "object" && "ctx" in value) {
-            context.ctx = {
-              ...context.ctx,
+            executionContext.ctx = {
+              ...executionContext.ctx,
               ...(value.ctx as Record<string, unknown>),
             };
           }
-        },
-      });
+        }
+      }
+      const result =
+        terminal ?? (await handler(executionContext as InferProcedureHandlerContext<TProcedure>));
 
       const outputValidationValue =
         options.validateOutput && outputSchema !== undefined
