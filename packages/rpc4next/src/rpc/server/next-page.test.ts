@@ -208,6 +208,123 @@ describe("createNextPage", () => {
     },
   );
 
+  it("validates render inputs after an early terminal middleware result", async () => {
+    const laterMiddleware = vi.fn<() => undefined>(() => undefined);
+    const handler = vi.fn<() => { body: string }>(() => ({ body: "handler" }));
+    const render = vi.fn<(context: { params: { id: string }; query: { tab: string } }) => string>(
+      ({ params, query }) => `${params.id}:${query.tab}`,
+    );
+    const page = procedure
+      .use(() => ({ body: "early" }))
+      .forRoute(pageRouteContract)
+      .params(paramsSchema)
+      .query(querySchema)
+      .use(laterMiddleware)
+      .handle(handler)
+      .page(render, { onValidationError: () => "invalid" });
+
+    await expect(
+      page({
+        params: Promise.resolve({ id: "photo-1" }),
+        searchParams: Promise.resolve({ tab: "info" }),
+      }),
+    ).resolves.toBe("photo-1:info");
+    await expect(
+      page({
+        params: Promise.resolve({ id: "photo-1" }),
+        searchParams: Promise.resolve({ tab: "bad" }),
+      }),
+    ).resolves.toBe("invalid");
+    expect(render).toHaveBeenCalledOnce();
+    expect(laterMiddleware).not.toHaveBeenCalled();
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it.each(["json", "formData"] as const)(
+    "rejects a structurally added %s contract before running page middleware",
+    async (target) => {
+      const middleware = vi.fn<() => { body: string }>(() => ({ body: "early" }));
+      const render = vi.fn<() => string>(() => "rendered");
+      const onError = vi.fn<(error: unknown) => string>(() => "error");
+      const built = procedure
+        .use(middleware)
+        .forRoute(pageRouteContract)
+        .params(paramsSchema)
+        .handle(() => ({ body: "handler" }));
+      const definition = {
+        ...built.definition,
+        input: {
+          ...built.definition.input,
+          contracts: { ...built.definition.input.contracts, [target]: z.object({}) },
+        },
+      };
+      const page = basecreateNextPage({ ...built, definition }, render, { onError });
+
+      await expect(page({ params: Promise.resolve({ id: "1" }) })).resolves.toBe("error");
+      expect(onError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Page procedures do not support json or formData input contracts.",
+        }),
+        expect.anything(),
+      );
+      expect(middleware).not.toHaveBeenCalled();
+      expect(render).not.toHaveBeenCalled();
+    },
+  );
+
+  it("executes middleware appended to a builder-made page procedure", async () => {
+    const appended = vi.fn<() => { ctx: { authenticated: boolean } }>(() => ({
+      ctx: { authenticated: true },
+    }));
+    const built = procedure
+      .forRoute(pageRouteContract)
+      .params(paramsSchema)
+      .use(() => undefined)
+      .handle(({ ctx }) => ({ body: ctx }));
+    const page = basecreateNextPage(
+      { ...built, middlewares: [...built.middlewares, appended] },
+      ({ data }) => data,
+    );
+
+    await expect(page({ params: Promise.resolve({ id: "1" }) })).resolves.toEqual({
+      authenticated: true,
+    });
+    expect(appended).toHaveBeenCalledOnce();
+  });
+
+  it("validates a contract added to a copied page definition", async () => {
+    const handler = vi.fn<() => { body: string }>(() => ({ body: "ok" }));
+    const render = vi.fn<() => string>(() => "rendered");
+    const built = procedure.forRoute(pageRouteContract).params(paramsSchema).handle(handler);
+    const definition = {
+      ...built.definition,
+      input: {
+        ...built.definition.input,
+        contracts: {
+          ...built.definition.input.contracts,
+          query: z.object({ tab: z.literal("info") }),
+        },
+      },
+    };
+    const page = basecreateNextPage({ ...built, definition }, render, {
+      onValidationError: () => "invalid",
+    });
+
+    await expect(
+      page({ params: Promise.resolve({ id: "1" }), searchParams: Promise.resolve({ tab: "bad" }) }),
+    ).resolves.toBe("invalid");
+    expect(handler).not.toHaveBeenCalled();
+    expect(render).not.toHaveBeenCalled();
+    await expect(
+      page({
+        params: Promise.resolve({ id: "1" }),
+        searchParams: Promise.resolve({ tab: "info" }),
+      }),
+    ).resolves.toBe("rendered");
+    expect(handler).toHaveBeenCalledOnce();
+    expect(render).toHaveBeenCalledWith(expect.objectContaining({ query: { tab: "info" } }));
+  });
+
   it.each([
     ["a?b", "a%3Fb"],
     ["a#b", "a%23b"],
@@ -556,6 +673,93 @@ describe("createNextPage", () => {
     ).resolves.toBe("local-query-validation");
   });
 
+  it("validates and executes middleware for a structurally constructed page procedure", async () => {
+    const middleware = vi.fn<() => undefined>(() => undefined);
+    const handler = vi.fn<() => { body: string }>(() => ({ body: "ok" }));
+    const built = createPageProcedure({ onError: () => "error" })
+      .forRoute(pageRouteContract)
+      .params(paramsSchema)
+      .query(z.object({ tab: z.literal("valid") }))
+      .use(middleware)
+      .handle(handler);
+    const definition = Object.fromEntries(
+      Object.entries(built.definition),
+    ) as typeof built.definition;
+    const page = basecreateNextPage({ ...built, definition }, () => "rendered", {
+      onError: () => "error",
+      onValidationError: () => "invalid",
+    });
+
+    await expect(
+      page({ params: Promise.resolve({ id: "1" }), searchParams: Promise.resolve({ tab: "bad" }) }),
+    ).resolves.toBe("invalid");
+    expect(middleware).not.toHaveBeenCalled();
+    expect(handler).not.toHaveBeenCalled();
+    await expect(
+      page({
+        params: Promise.resolve({ id: "1" }),
+        searchParams: Promise.resolve({ tab: "valid" }),
+      }),
+    ).resolves.toBe("rendered");
+    expect(middleware).toHaveBeenCalledOnce();
+    expect(handler).toHaveBeenCalledOnce();
+  });
+
+  it("provides validated page cookies to authentication before later input validation", async () => {
+    nextHeadersMock.cookies.mockResolvedValue({
+      getAll: () => [{ name: "session", value: "valid" }],
+    });
+    const order: string[] = [];
+    const page = createPageProcedure({ onError: () => "error" })
+      .forRoute(pageRouteContract)
+      .params(paramsSchema)
+      .cookies(z.object({ session: z.string().optional() }))
+      .use(({ cookies }) => {
+        order.push(`auth:${cookies.session}`);
+      })
+      .query(
+        z.object({ tab: z.string() }).transform((value) => {
+          order.push("query");
+
+          return value;
+        }),
+      )
+      .page(() => "rendered");
+
+    await expect(
+      page({
+        params: Promise.resolve({ id: "1" }),
+        searchParams: Promise.resolve({ tab: "info" }),
+      }),
+    ).resolves.toBe("rendered");
+    expect(order).toEqual(["auth:valid", "query"]);
+  });
+
+  it("runs middleware and page input validation in declaration order", async () => {
+    const order: string[] = [];
+    const page = createPageProcedure({ onError: () => "error" })
+      .use(() => {
+        order.push("first");
+      })
+      .forRoute(pageRouteContract)
+      .params(
+        z.object({ id: z.string() }).transform((value) => {
+          order.push("params");
+
+          return value;
+        }),
+      )
+      .use(({ params }) => {
+        order.push(params.id);
+      })
+      .page(() => "rendered");
+
+    await expect(
+      page({ params: Promise.resolve({ id: "photo-1" }), searchParams: Promise.resolve({}) }),
+    ).resolves.toBe("rendered");
+    expect(order).toEqual(["first", "params", "photo-1"]);
+  });
+
   it.each(["params", "query", "headers", "cookies"] as const)(
     "prioritizes the %s input hook and passes only page context",
     async (target) => {
@@ -600,7 +804,8 @@ describe("createNextPage", () => {
         params: { id: "photo-1" },
         searchParams: { tab: "bad" },
       });
-      for (const callback of [sharedHook, localHook, onError, middleware, render]) {
+      expect(middleware).toHaveBeenCalledOnce();
+      for (const callback of [sharedHook, localHook, onError, render]) {
         expect(callback).not.toHaveBeenCalled();
       }
     },
@@ -1222,6 +1427,35 @@ describe("createNextPage", () => {
 
     // @ts-expect-error page procedures do not support json contracts
     jsonProcedure.page(() => null);
+
+    const built = procedure
+      .forRoute(pageRouteContract)
+      .params(paramsSchema)
+      .handle(() => ({}));
+    const structural = {
+      ...built,
+      definition: {
+        ...built.definition,
+        input: {
+          ...built.definition.input,
+          contracts: { ...built.definition.input.contracts, json: z.object({}) },
+        },
+      },
+    };
+    // @ts-expect-error directly added body contracts are also rejected
+    basecreateNextPage(structural, () => null);
+    const structuralForm = {
+      ...built,
+      definition: {
+        ...built.definition,
+        input: {
+          ...built.definition.input,
+          contracts: { ...built.definition.input.contracts, formData: z.object({}) },
+        },
+      },
+    };
+    // @ts-expect-error directly added form-data contracts are also rejected
+    basecreateNextPage(structuralForm, () => null);
 
     expectTypeOf(unboundProcedure.definition).toExtend<object>();
   });

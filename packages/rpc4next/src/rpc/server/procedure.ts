@@ -32,6 +32,7 @@ import {
   withProcedureMeta,
   withProcedureOutput,
   withProcedureRouteBinding,
+  withProcedureStep,
 } from "./procedure-internals";
 import {
   type EmptyProcedureDefinition,
@@ -1454,12 +1455,15 @@ const createProcedureBuilder = <
     TAllowPresetMethods
   > => {
     return createProcedureBuilder(
-      withProcedureInputContract(
-        definition,
-        target,
-        schema,
-        isPageInputOptions(defaults, options) ? undefined : options,
-        isPageInputOptions(defaults, options) ? options : undefined,
+      withProcedureStep(
+        withProcedureInputContract(
+          definition,
+          target,
+          schema,
+          isPageInputOptions(defaults, options) ? undefined : options,
+          isPageInputOptions(defaults, options) ? options : undefined,
+        ),
+        { target },
       ) as unknown as ExtendProcedureInputDefinition<
         TDefinition,
         TTarget,
@@ -1794,7 +1798,7 @@ const createProcedureBuilder = <
     TAllowPresetMethods
   > => {
     return createProcedureBuilder(
-      definition,
+      withProcedureStep(definition, { middleware: middlewares.length }),
       [...middlewares, middleware as unknown as ProcedureMiddleware],
       defaults,
       resolvedErrorCatalog,

@@ -23,6 +23,67 @@ import type { ResponseHelpers } from "./types";
 
 type RouteContextResponseHelpers = ResponseHelpers;
 
+export const procedureStepsSymbol = Symbol("procedure steps");
+export type ProcedureStep = { target: ProcedureInputTarget } | { middleware: number };
+
+export const getProcedureSteps = (
+  definition: ProcedureDefinition,
+  middlewareCount = 0,
+): readonly ProcedureStep[] => {
+  const targets: readonly ProcedureInputTarget[] = [
+    "params",
+    "query",
+    "json",
+    "formData",
+    "headers",
+    "cookies",
+  ];
+  const steps = (
+    definition as ProcedureDefinition & {
+      [procedureStepsSymbol]?: readonly ProcedureStep[];
+    }
+  )[procedureStepsSymbol];
+  if (steps !== undefined) {
+    const recordedTargets = new Set(
+      steps.flatMap((step) => ("target" in step ? [step.target] : [])),
+    );
+    const recordedMiddleware = new Set(
+      steps.flatMap((step) => ("middleware" in step ? [step.middleware] : [])),
+    );
+
+    return [
+      ...steps,
+      ...targets
+        .filter((target) => definition.input?.contracts?.[target] && !recordedTargets.has(target))
+        .map((target) => ({ target })),
+      ...Array.from({ length: middlewareCount }, (_, middleware) => middleware)
+        .filter((middleware) => !recordedMiddleware.has(middleware))
+        .map((middleware) => ({ middleware })),
+    ];
+  }
+
+  // Procedures constructed without the builder retain the original execution order.
+  return [
+    ...targets
+      .filter((target) => definition.input?.contracts?.[target])
+      .map((target) => ({ target })),
+    ...Array.from({ length: middlewareCount }, (_, middleware) => ({ middleware })),
+  ];
+};
+
+export const withProcedureStep = <T extends ProcedureDefinition>(
+  definition: T,
+  step: ProcedureStep,
+): T => ({
+  ...definition,
+  [procedureStepsSymbol]: [
+    ...((definition as T & { [procedureStepsSymbol]?: readonly ProcedureStep[] })[
+      procedureStepsSymbol
+    ] ?? []),
+    step,
+  ],
+});
+
 export const withProcedureMethod = <
   TDefinition extends ProcedureDefinition,
   TMethod extends HttpMethod,
