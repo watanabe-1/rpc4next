@@ -54,8 +54,12 @@ import type { Query as Query_56a6df9ad49eb575 } from "../../app/patterns/native-
 import type Page_d38b38fed2ec9f91 from "../../app/patterns/optional-catch-all/[[...parts]]/page";
 import type Page_8636af1013bbed4a from "../../app/patterns/page";
 import type Page_79cdb44a777689a5 from "../../app/patterns/page-helpers/page";
+import type { Query as Query_a225dbe0859c0786 } from "../../app/patterns/parallel/@analytics/conflict/page";
+import type { Query as Query_eb5c77419f06a684 } from "../../app/patterns/parallel/@analytics/shared/page";
 import type Page_788e67e18069669b from "../../app/patterns/parallel/@analytics/views/page";
+import type { Query as Query_1165dea19c1054c6 } from "../../app/patterns/parallel/@team/conflict/page";
 import type Page_cd2765a820488e3c from "../../app/patterns/parallel/@team/members/page";
+import type { Query as Query_d2cdb95e2a09dd30 } from "../../app/patterns/parallel/@team/shared/page";
 import type Page_608a7d9f533a2285 from "../../app/patterns/parallel/page";
 import type Page_14a3d277b7c2ce94 from "../../app/patterns/search/page";
 import type Page_ec4d53d56d2cdbe0 from "../../app/photo/[id]/comments/[commentId]/page";
@@ -183,6 +187,8 @@ export type PathStructure = RpcGeneratedPathStructure<PageRouteMarker<typeof Pag
     },
     "page-helpers": PageRouteMarker<typeof Page_79cdb44a777689a5> & RpcEndpoint,
     "parallel": PageRouteMarker<typeof Page_608a7d9f533a2285> & RpcEndpoint & {
+      "conflict": Record<QueryKey, Query_a225dbe0859c0786> & RpcEndpoint & Record<QueryKey, Query_1165dea19c1054c6> & RpcEndpoint,
+      "shared": Record<QueryKey, Query_eb5c77419f06a684> & RpcEndpoint & Record<QueryKey, Query_d2cdb95e2a09dd30> & RpcEndpoint,
       "views": PageRouteMarker<typeof Page_788e67e18069669b> & RpcEndpoint,
       "members": PageRouteMarker<typeof Page_cd2765a820488e3c> & RpcEndpoint
     },

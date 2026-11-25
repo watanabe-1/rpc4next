@@ -221,6 +221,7 @@ describe("generatePathStructure", () => {
     expect(manifest).toContain("export const testRoutes = [");
     expect(manifest).toContain("export const testPages = [");
     expect(manifest).toContain('pathname: "/photo/[id]"');
+    expect(manifest).toContain('file: "../../app/photo/[id]/page"');
     expect(manifest).toContain('load: () => import("');
   });
 

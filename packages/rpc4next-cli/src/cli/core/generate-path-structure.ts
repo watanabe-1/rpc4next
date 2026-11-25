@@ -58,13 +58,19 @@ export const generateTestManifest = (
       "  },",
     ].join(NEWLINE);
   });
-  const pages = pageManifests.map(({ fullPath, pathname }) => {
+  const pages = pageManifests.map(({ fullPath, pathname, queryExport }) => {
     const importPath = createRelativeImportPath(outputPath, fullPath);
 
     return [
       "  {",
+      `    file: ${createStringLiteral(importPath)},`,
       `    pathname: ${createStringLiteral(pathname)},`,
-      `    load: () => import(${createStringLiteral(importPath)}) as unknown as Promise<RpcTestPageModule>,`,
+      ...(queryExport
+        ? [
+            `    queryType: undefined as unknown as import(${createStringLiteral(importPath)}).${queryExport},`,
+          ]
+        : []),
+      `    load: () => import(${createStringLiteral(importPath)}) as unknown as Promise<RpcTestPageModule & { default: typeof import(${createStringLiteral(importPath)}).default }>,`,
       "  },",
     ].join(NEWLINE);
   });

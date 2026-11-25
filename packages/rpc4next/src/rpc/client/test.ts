@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import {
   HTTP_METHODS,
+  encodeRouteParamName,
   type HttpMethod,
   type OPTIONAL_CATCH_ALL_PREFIX,
   type CATCH_ALL_PREFIX,
@@ -14,6 +15,7 @@ import { createRpcClient } from "./rpc-client";
 import type {
   DynamicPathProxyAsFunction,
   InferPageRenderResult,
+  InferPageQuery,
   ParamsKey,
   PathParamsInput,
   QueryKey,
@@ -63,6 +65,10 @@ export type RpcTestPageModule = {
 
 /** Page manifest entry consumed by `createRpcTestPageClient`. */
 export type RpcTestPage = Pick<ProcedureRouteContract, "pathname"> & {
+  /** Import path of the page relative to the generated test manifest. */
+  file?: string;
+  /** Type-only query override emitted for pages exporting Query. */
+  queryType?: unknown;
   load: () => Promise<RpcTestPageModule>;
   params?: RpcTestRouteParams | RpcTestRouteParamsResolver;
 };
@@ -396,12 +402,18 @@ const createRpcTestPageRenderDispatcher = (
   return async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = new URL(getInputUrl(input, baseUrl));
 
-    for (const matcher of matchers) {
-      const matched = matcher.match(url.pathname);
-      if (!matched) {
-        continue;
-      }
-
+    const candidates = matchers.filter((matcher) => matcher.match(url.pathname));
+    const best = candidates[0];
+    const matches = best
+      ? candidates.filter((candidate) => compareRoutePriority(best.page, candidate.page) === 0)
+      : [];
+    const selected = matches;
+    if (selected.length > 1) {
+      throw new Error(
+        `Multiple rpc4next test pages matched "${url.pathname}". Use createRpcTestPageFileClient to select a page.`,
+      );
+    }
+    for (const matcher of selected) {
       const request = createNextRequest(input, init, baseUrl);
       const params = await resolveRouteParams(matcher.page, request, url);
       const searchParams = searchParamsToPageObject(url.searchParams);
@@ -450,3 +462,83 @@ export const createRpcTestPageClient = <T extends RpcGeneratedPathStructure>(
 
   return createPageClient<T>(baseUrl) as RpcTestPageDynamicPathProxyAsFunction<T>;
 };
+
+type PageFileEntry = {
+  file: string;
+  pathname: string;
+  load: () => Promise<{ default: (...args: never[]) => unknown }>;
+  params?: RpcTestRouteParams | RpcTestRouteParamsResolver;
+};
+type PageFileHandler<T extends PageFileEntry> = Awaited<ReturnType<T["load"]>>["default"];
+type PageFileQuery<T extends PageFileEntry> = T extends { queryType: infer Q }
+  ? Q
+  : InferPageQuery<PageFileHandler<T>>;
+type PageSegmentParams<S extends string> = S extends `[[...${infer P}]]`
+  ? { [K in P]?: string[] }
+  : S extends `[...${infer P}]`
+    ? { [K in P]: [string, ...string[]] }
+    : S extends `[${infer P}]`
+      ? { [K in P]: string | number }
+      : object;
+type PagePathParams<S extends string> = S extends `${infer Head}/${infer Tail}`
+  ? PageSegmentParams<Head> & PagePathParams<Tail>
+  : PageSegmentParams<S>;
+type PageFileOptions<T extends PageFileEntry, P = PagePathParams<T["pathname"]>> = {
+  init?: RequestInit;
+} & (keyof P extends never
+  ? { params?: never }
+  : AllOptional<P> extends true
+    ? { params?: P }
+    : { params: P }) &
+  ([PageFileQuery<T>] extends [never]
+    ? { query?: never }
+    : AllOptional<PageFileQuery<T>> extends true
+      ? { query?: PageFileQuery<T> }
+      : { query: PageFileQuery<T> });
+type PageFileArgs<T extends PageFileEntry, O = PageFileOptions<T>> =
+  AllOptional<O> extends true ? [options?: O] : [options: O];
+
+/** Creates a test client that selects a page by its generated manifest file identifier. */
+export const createRpcTestPageFileClient = <const T extends readonly PageFileEntry[]>(
+  pages: T,
+  options: RpcTestPageRendererOptions = {},
+) => ({
+  page<const F extends T[number]["file"]>(file: F) {
+    type Entry = Extract<T[number], { file: F }>;
+    const page = pages.find((entry) => entry.file === file);
+    if (!page) throw new Error(`No rpc4next test page file matched "${file}".`);
+    const render = createRpcTestPageRenderDispatcher([page as RpcTestPage], options);
+
+    return {
+      $render: (async (input?: {
+        params?: Record<string, string | number | string[] | undefined>;
+        query?: unknown;
+        init?: RequestInit;
+      }) => {
+        const segments = page.pathname.split("/").filter(Boolean);
+        const params: PathParamsInput = {};
+        const dynamicKeys: string[] = [];
+        const dynamicIndexes = new Set<number>();
+        const paths = segments.map((segment, index) => {
+          const match = /^(\[\[\.\.\.(.+)\]\]|\[\.\.\.(.+)\]|\[(.+)\])$/.exec(segment);
+          if (!match) return segment;
+          const name = match[2] ?? match[3] ?? match[4];
+          const key = `${match[2] ? "_____" : match[3] ? "___" : "_"}${encodeRouteParamName(name)}`;
+          dynamicKeys.push(key);
+          dynamicIndexes.add(index + 1);
+          params[key] = input?.params?.[name];
+
+          return key;
+        });
+        const url = createUrl(
+          [options.baseUrl ?? DEFAULT_TEST_BASE_URL, ...paths],
+          params,
+          dynamicKeys,
+          dynamicIndexes,
+        )({ query: input?.query } as UrlOptions);
+
+        return render(url.path, input?.init);
+      }) as (...args: PageFileArgs<Entry>) => Promise<Awaited<ReturnType<PageFileHandler<Entry>>>>,
+    };
+  },
+});

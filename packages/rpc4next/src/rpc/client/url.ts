@@ -211,16 +211,28 @@ const getPathnameSegment = (segment: string) => {
  *   values from `params`.
  * @returns A builder function that accepts URL options and returns a `UrlResult`.
  */
-export const createUrl = (paths: string[], params: PathParamsInput, dynamicKeys: string[]) => {
+export const createUrl = (
+  paths: string[],
+  params: PathParamsInput,
+  dynamicKeys: string[],
+  dynamicIndexes?: ReadonlySet<number>,
+) => {
   const baseUrl = paths[0];
   const routeSegments: string[] = [];
   const pathnameSegments: string[] = [];
 
   for (let index = 1; index < paths.length; index++) {
     const segment = paths[index];
-    pathnameSegments.push(getPathnameSegment(segment));
+    const isDynamicSegment = dynamicIndexes
+      ? dynamicIndexes.has(index)
+      : dynamicKeys.includes(segment);
+    pathnameSegments.push(
+      dynamicIndexes && !isDynamicSegment
+        ? safeDecodeSegment(segment)
+        : getPathnameSegment(segment),
+    );
 
-    if (!dynamicKeys.includes(segment)) {
+    if (!isDynamicSegment) {
       routeSegments.push(encodeStaticSegment(segment));
 
       continue;
