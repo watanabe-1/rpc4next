@@ -2,17 +2,16 @@
 
 ## [0.12.2](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.12.1...rpc4next-cli-v0.12.2) (2026-11-25)
 
-
 ### Bug Fixes
 
-* **cli:** Detect exported HTTP methods with Oxc ([#724](https://github.com/watanabe-1/rpc4next/issues/724)) ([62e7865](https://github.com/watanabe-1/rpc4next/commit/62e7865127d7e5706c0c0f2ed9e87719e6567cb2))
-* **cli:** Detect Query exports using syntax trees ([#732](https://github.com/watanabe-1/rpc4next/issues/732)) ([aa2fb58](https://github.com/watanabe-1/rpc4next/commit/aa2fb58231ddf367a19625dd8c4e0fb65a981064))
-* **cli:** Escape reserved static route names ([#738](https://github.com/watanabe-1/rpc4next/issues/738)) ([1aba013](https://github.com/watanabe-1/rpc4next/commit/1aba013f18cc5e9a8dda260bd6353d203cc191cf))
-* **cli:** Escape static then route keys ([#730](https://github.com/watanabe-1/rpc4next/issues/730)) ([48ac0f7](https://github.com/watanabe-1/rpc4next/commit/48ac0f7744c0f998d96e3a5ccd33ac12cad25c3e))
-* **cli:** Prevent overwriting handwritten generation targets ([#715](https://github.com/watanabe-1/rpc4next/issues/715)) ([6e65c36](https://github.com/watanabe-1/rpc4next/commit/6e65c3613491d7a12d6bf22d94d9577d0740bd2e))
-* **cli:** Resolve intercepting route contract paths ([#728](https://github.com/watanabe-1/rpc4next/issues/728)) ([003b67b](https://github.com/watanabe-1/rpc4next/commit/003b67bd38779efb930694ba5328cf5d456be7ed))
-* **cli:** Return failure when watch initialization fails ([#733](https://github.com/watanabe-1/rpc4next/issues/733)) ([9a9daed](https://github.com/watanabe-1/rpc4next/commit/9a9daed5da4b10944e81c8f6a5ec0816e9f8962e))
-* **cli:** Verify and support Bun runtime ([#740](https://github.com/watanabe-1/rpc4next/issues/740)) ([e83ad6f](https://github.com/watanabe-1/rpc4next/commit/e83ad6f4fa4da6371a4e0215b7d6ae58e4d0d81f))
+- **cli:** Detect exported HTTP methods with Oxc ([#724](https://github.com/watanabe-1/rpc4next/issues/724)) ([62e7865](https://github.com/watanabe-1/rpc4next/commit/62e7865127d7e5706c0c0f2ed9e87719e6567cb2))
+- **cli:** Detect Query exports using syntax trees ([#732](https://github.com/watanabe-1/rpc4next/issues/732)) ([aa2fb58](https://github.com/watanabe-1/rpc4next/commit/aa2fb58231ddf367a19625dd8c4e0fb65a981064))
+- **cli:** Escape reserved static route names ([#738](https://github.com/watanabe-1/rpc4next/issues/738)) ([1aba013](https://github.com/watanabe-1/rpc4next/commit/1aba013f18cc5e9a8dda260bd6353d203cc191cf))
+- **cli:** Escape static then route keys ([#730](https://github.com/watanabe-1/rpc4next/issues/730)) ([48ac0f7](https://github.com/watanabe-1/rpc4next/commit/48ac0f7744c0f998d96e3a5ccd33ac12cad25c3e))
+- **cli:** Prevent overwriting handwritten generation targets ([#715](https://github.com/watanabe-1/rpc4next/issues/715)) ([6e65c36](https://github.com/watanabe-1/rpc4next/commit/6e65c3613491d7a12d6bf22d94d9577d0740bd2e))
+- **cli:** Resolve intercepting route contract paths ([#728](https://github.com/watanabe-1/rpc4next/issues/728)) ([003b67b](https://github.com/watanabe-1/rpc4next/commit/003b67bd38779efb930694ba5328cf5d456be7ed))
+- **cli:** Return failure when watch initialization fails ([#733](https://github.com/watanabe-1/rpc4next/issues/733)) ([9a9daed](https://github.com/watanabe-1/rpc4next/commit/9a9daed5da4b10944e81c8f6a5ec0816e9f8962e))
+- **cli:** Verify and support Bun runtime ([#740](https://github.com/watanabe-1/rpc4next/issues/740)) ([e83ad6f](https://github.com/watanabe-1/rpc4next/commit/e83ad6f4fa4da6371a4e0215b7d6ae58e4d0d81f))
 
 ## [0.12.1](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.12.0...rpc4next-cli-v0.12.1) (2026-11-15)
 
