@@ -37,6 +37,7 @@ export type RouteManifest = {
 export type PageManifest = {
   fullPath: string;
   pathname: string;
+  queryExport?: "Query";
 };
 
 type RouteType = {
@@ -340,6 +341,7 @@ const appendEndpointFile = (
     accumulator.pageManifests.push({
       fullPath,
       pathname: toRoutePathname(context.rootDir, fullPath),
+      ...(queryDef && queryDef.exportName !== "Page" ? { queryExport: queryDef.exportName } : {}),
     });
   }
 

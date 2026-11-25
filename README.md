@@ -510,6 +510,26 @@ procedure `.headers()` / `.cookies()` validation. It does not recreate the full
 Next.js request async context, so user code that imports and calls
 `next/headers` directly is outside its guarantees.
 
+When multiple pages share a pathname, such as pages in parallel route slots,
+select the file with `createRpcTestPageFileClient`. The manifest retains each
+page's own query and result types:
+
+```ts
+import { createRpcTestPageFileClient } from "rpc4next/client/test";
+
+const pageFiles = createRpcTestPageFileClient(testPages);
+await pageFiles.page("../../app/@team/settings/page").$render();
+```
+
+The file path is relative to the generated test manifest, without the extension.
+Pass dynamic segments as `params` and query values as `query` to `$render()`.
+The helper renders only that page; it does not render layouts or combine slots.
+Use a Next.js integration test to verify the composed page.
+
+The URL path structure combines query contracts for pages sharing a pathname.
+The generated URL therefore requires values satisfying all of those contracts;
+this can be stricter than a particular parallel-route navigation state.
+
 ### 5. Call Routes
 
 Generated client naming follows the App Router path shape:

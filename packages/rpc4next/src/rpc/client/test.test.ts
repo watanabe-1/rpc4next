@@ -9,6 +9,7 @@ import type {
 import {
   createRpcTestClient,
   createRpcTestPageClient,
+  createRpcTestPageFileClient,
   type RpcTestPage,
   type RpcTestPageHandler,
 } from "./test";
@@ -192,6 +193,63 @@ describe.each(["route", "page"] as const)("%s test client static encoding", (cli
 });
 
 describe("createRpcTestPageClient", () => {
+  it("keeps static segments distinct from identical dynamic keys in file tests", async () => {
+    const client = createRpcTestPageFileClient([
+      {
+        file: "page",
+        pathname: "/_id/[id]/___parts/[...parts]/_id",
+        load: loadTestPage(async ({ params }) => params),
+      },
+    ] as const);
+
+    await expect(
+      client.page("page").$render({ params: { id: "abc", parts: ["a/b", "c"] } }),
+    ).resolves.toEqual({ id: "abc", parts: ["a/b", "c"] });
+  });
+
+  it("requires a file when multiple pages share a pathname", async () => {
+    const pageClient = createRpcTestPageClient<TestPathStructure>([
+      { file: "./@team/page", pathname: "/feed", load: loadTestPage(() => "team") },
+      { file: "./@analytics/page", pathname: "/feed", load: loadTestPage(() => "analytics") },
+    ]);
+
+    await expect(pageClient.feed.$render()).rejects.toThrow(
+      'Multiple rpc4next test pages matched "/feed"',
+    );
+  });
+
+  it("selects individual files and preserves their input and result types", async () => {
+    const team = async ({ searchParams }: { searchParams: Promise<{ team: string }> }) => ({
+      team: (await searchParams).team,
+    });
+    const analytics = async ({ searchParams }: { searchParams: Promise<{ period: string }> }) => ({
+      period: (await searchParams).period,
+    });
+    const client = createRpcTestPageFileClient([
+      { file: "team", pathname: "/[id]", load: async () => ({ default: team }) },
+      { file: "analytics", pathname: "/[id]", load: async () => ({ default: analytics }) },
+    ] as const);
+    const renderTeam = client.page("team").$render;
+    expectTypeOf(renderTeam({ params: { id: "a" }, query: { team: "x" } })).toEqualTypeOf<
+      Promise<{ team: string }>
+    >();
+    const checkPageTypes = () => {
+      // @ts-expect-error The selected page has its own query contract.
+      void renderTeam({ params: { id: "a" }, query: { period: "month" } });
+      // @ts-expect-error Dynamic parameters are required.
+      void renderTeam({ query: { team: "x" } });
+      // @ts-expect-error Page identifiers come from the manifest.
+      client.page("missing");
+    };
+    void checkPageTypes;
+    await expect(renderTeam({ params: { id: "a" }, query: { team: "x" } })).resolves.toEqual({
+      team: "x",
+    });
+    await expect(
+      client.page("analytics").$render({ params: { id: "a" }, query: { period: "month" } }),
+    ).resolves.toEqual({ period: "month" });
+  });
+
   it("renders a matching static page", async () => {
     const pageClient = createRpcTestPageClient<TestPathStructure>([
       {
