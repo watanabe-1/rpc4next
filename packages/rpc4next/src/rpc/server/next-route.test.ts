@@ -346,7 +346,10 @@ describe("createNextRoute", () => {
   describe.each(["handler", "middleware"] as const)("errors from %s", (source) => {
     it.each([
       { name: "redirect", navigate: () => redirect("/login") },
-      { name: "permanentRedirect", navigate: () => permanentRedirect("/login") },
+      {
+        name: "permanentRedirect",
+        navigate: () => permanentRedirect("/login"),
+      },
       { name: "notFound", navigate: () => notFound() },
     ])("rethrows $name before onError", async ({ navigate }) => {
       const onError = vi.fn<() => Response>(() => new Response("unexpected", { status: 500 }));
@@ -527,7 +530,9 @@ describe("createNextRoute", () => {
       new NextRequest("http://127.0.0.1:3000/api", {
         method: "POST",
         body: "not a multipart body",
-        headers: { "content-type": "multipart/form-data; boundary=test-boundary" },
+        headers: {
+          "content-type": "multipart/form-data; boundary=test-boundary",
+        },
       }),
       { params: Promise.resolve({}) },
     );
@@ -537,6 +542,93 @@ describe("createNextRoute", () => {
       error: { code: "BAD_REQUEST", message: "Invalid form-data body." },
     });
   });
+
+  it.each(["json", "formData"] as const)(
+    "runs the input hook for malformed %s before the shared hook",
+    async (target) => {
+      const local = vi.fn(({ kind, target, response }) => response.json({ kind, target }, 422));
+      const shared = vi.fn(() => {
+        throw new Error("shared hook called");
+      });
+      const schema = {
+        "~standard": {
+          version: 1 as const,
+          vendor: "test",
+          validate: vi.fn((value: unknown) => ({ value })),
+        },
+      };
+      const base = createRouteProcedure({
+        onError: defaultProcedureOnError,
+        onValidationError: shared,
+      }).forRoute(staticRouteContract);
+      const input =
+        target === "json"
+          ? base.json(schema, { onValidationError: local }).handle(() => ({ body: "unexpected" }))
+          : base
+              .formData(schema, { onValidationError: local })
+              .handle(() => ({ body: "unexpected" }));
+      const route = createNextRoute(input, { method: "POST" });
+      const result = await route(
+        new NextRequest("http://localhost/api", {
+          method: "POST",
+          body: target === "json" ? "{" : "invalid",
+          headers: {
+            "content-type":
+              target === "json" ? "application/json" : "multipart/form-data; boundary=test",
+          },
+        }),
+        { params: Promise.resolve({}) },
+      );
+      expect(result.status).toBe(422);
+      await expect(result.json()).resolves.toEqual({ kind: "parse", target });
+      expect(local).toHaveBeenCalledOnce();
+      expect(shared).not.toHaveBeenCalled();
+      expect(schema["~standard"].validate).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([true, false])(
+    "uses the shared parse hook and falls back when it returns no response: %s",
+    async (returnsResponse) => {
+      const hook = vi.fn(({ response }) =>
+        returnsResponse ? response.text("custom", 422) : undefined,
+      );
+      const schema = {
+        "~standard": {
+          version: 1 as const,
+          vendor: "test",
+          validate: (value: unknown) => ({ value }),
+        },
+      };
+      const { POST } = createRouteProcedure({
+        onError: defaultProcedureOnError,
+        onValidationError: hook,
+      })
+        .forRoute(staticRouteContract)
+        .json(schema)
+        .handle(() => ({ body: "unexpected" }))
+        .post();
+      const result = await POST(
+        new NextRequest("http://localhost/api", {
+          method: "POST",
+          body: "{",
+          headers: { "content-type": "application/json" },
+        }),
+        { params: Promise.resolve({}) },
+      );
+      expect(hook).toHaveBeenCalledOnce();
+      expect(hook.mock.calls[0]?.[0]).toMatchObject({
+        kind: "parse",
+        target: "json",
+      });
+      expect(result.status).toBe(returnsResponse ? 422 : 400);
+      expect(await result.text()).toBe(
+        returnsResponse
+          ? "custom"
+          : JSON.stringify({ error: { code: "BAD_REQUEST", message: "Invalid JSON body." } }),
+      );
+    },
+  );
 
   it("uses a fallback message when input validation returns an empty issue list", async () => {
     const route = createNextRoute(

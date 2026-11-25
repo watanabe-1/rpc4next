@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, type NextResponse } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
 import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 import { z } from "zod";
@@ -104,7 +104,10 @@ describe("createNextRoute zod integration", () => {
       .post().POST;
 
     const response = await route(
-      new NextRequest("http://localhost/api/test", { method: "POST", body: "{}" }),
+      new NextRequest("http://localhost/api/test", {
+        method: "POST",
+        body: "{}",
+      }),
       { params: Promise.resolve({}) },
     );
     expect(response.status).toBe(400);
@@ -160,7 +163,10 @@ describe("createNextRoute zod integration", () => {
       { method: "POST" },
     );
     const response = await route(
-      new NextRequest("http://localhost/api/test", { method: "POST", body: '{"title":"ok"}' }),
+      new NextRequest("http://localhost/api/test", {
+        method: "POST",
+        body: '{"title":"ok"}',
+      }),
       { params: Promise.resolve({}) },
     );
 
@@ -183,7 +189,9 @@ describe("createNextRoute zod integration", () => {
         ...built.definition.input,
         contracts: {
           ...built.definition.input.contracts,
-          json: z.object({ title: z.string().transform((title) => title.toUpperCase()) }),
+          json: z.object({
+            title: z.string().transform((title) => title.toUpperCase()),
+          }),
         },
       },
     };
@@ -327,7 +335,9 @@ describe("createNextRoute zod integration", () => {
   });
 
   it("stops the route when params validation fails", async () => {
-    const handler = vi.fn<() => { body: string }>(() => ({ body: "unexpected" }));
+    const handler = vi.fn<() => { body: string }>(() => ({
+      body: "unexpected",
+    }));
     const route = createNextRoute(
       procedure
         .forRoute(dynamicUserRouteContract)
@@ -347,7 +357,9 @@ describe("createNextRoute zod integration", () => {
   });
 
   it("stops the route when cookie validation fails", async () => {
-    const handler = vi.fn<() => { body: string }>(() => ({ body: "unexpected" }));
+    const handler = vi.fn<() => { body: string }>(() => ({
+      body: "unexpected",
+    }));
     const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
@@ -505,7 +517,10 @@ describe("createNextRoute zod integration", () => {
           message: "Shared validation failed.",
           details: {
             target,
-            issues: issues.map(({ message, path }) => ({ message, path })),
+            issues: (issues ?? []).map(({ message, path }) => ({
+              message,
+              path,
+            })),
           },
         }),
     });
@@ -608,7 +623,9 @@ describe("createNextRoute zod integration", () => {
       onValidationError: sharedHook,
     })
       .forRoute(staticRouteContract)
-      .query(z.object({ page: z.coerce.number().positive() }), { onValidationError: inputHook })
+      .query(z.object({ page: z.coerce.number().positive() }), {
+        onValidationError: inputHook,
+      })
       .handle(({ query }) => ({ body: query }))
       .get();
     const response = await route(new NextRequest("http://127.0.0.1:3000/api/test?page=0"), {
@@ -774,12 +791,17 @@ describe("createNextRoute zod integration", () => {
       for (const tag of tags) payload.append("tags", tag);
 
       const response = await route(
-        new NextRequest("http://localhost/api", { method: "POST", body: payload }),
+        new NextRequest("http://localhost/api", {
+          method: "POST",
+          body: payload,
+        }),
         { params: Promise.resolve({}) },
       );
 
       expect(response.status).toBe(200);
-      await expect(response.json()).resolves.toEqual({ tags: tags.length ? tags : null });
+      await expect(response.json()).resolves.toEqual({
+        tags: tags.length ? tags : null,
+      });
     },
   );
 
@@ -1167,7 +1189,9 @@ describe("createNextRoute zod integration", () => {
 
     expect(response.status).toBe(500);
     expect(onError).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ message: "Procedure output validation failed." }),
+      expect.objectContaining({
+        message: "Procedure output validation failed.",
+      }),
       expect.any(Object),
     );
     await expect(response.json()).resolves.toEqual({
@@ -1464,7 +1488,10 @@ describe("createNextRoute zod integration", () => {
       expect.any(Object),
     );
     await expect(response.json()).resolves.toEqual({
-      error: { code: "INTERNAL_SERVER_ERROR", message: "Internal server error" },
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Internal server error",
+      },
     });
   });
 
@@ -1495,7 +1522,10 @@ describe("createNextRoute zod integration", () => {
 
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
-      error: { code: "INTERNAL_SERVER_ERROR", message: "Internal server error" },
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Internal server error",
+      },
     });
   });
 
@@ -1538,7 +1568,10 @@ describe("createNextRoute zod integration", () => {
       procedure
         .forRoute(staticRouteContract)
         .output(z.string().transform((value) => value.toUpperCase()))
-        .handle(async () => ({ status: 300 as const, body: "multiple choices" })),
+        .handle(async () => ({
+          status: 300 as const,
+          body: "multiple choices",
+        })),
       { method: "GET" },
     );
 

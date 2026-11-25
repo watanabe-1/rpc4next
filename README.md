@@ -621,6 +621,12 @@ validation details, configure `createRouteProcedure({ onError, onValidationError
 and explicitly choose a sanitized shape. A route-local
 `onValidationError(...)` on a specific input contract can still override that
 shared default for custom branches.
+The hook also handles JSON and form-data body parsing failures. Its `kind` is
+`"parse"` for those failures and `"validation"` for schema failures; only the
+latter provides `value` and `issues`. Input-specific hooks take precedence over
+the shared hook. If the selected hook returns no response, the default
+`BAD_REQUEST` response is used. GET and HEAD body contract errors are not
+passed to this hook.
 
 ```ts
 export const appRouteProcedure = createRouteProcedure({
@@ -630,11 +636,22 @@ export const appRouteProcedure = createRouteProcedure({
       message: "Validation failed.",
       details: {
         target,
-        issues: issues.map(({ message, path }) => ({ message, path })),
+        issues: (issues ?? []).map(({ message, path }) => ({ message, path })),
       },
     }),
 });
 ```
+
+**Migration:** Route `onValidationError` handlers written before parse failures
+were included must handle both `kind` values. Update both shared and input-local
+handlers before upgrading: narrow `kind` before accessing `issues` or `value`,
+or use an empty issue list for parse failures as in the example above. To keep
+the previous default response for malformed bodies, return `undefined` when
+`kind === "parse"` and handle schema failures as before. Without this change,
+an existing handler that accesses `issues` may throw on malformed bodies; the
+exception goes to `onError` and can produce a server error instead of a 400.
+The context type change also requires existing TypeScript handlers to be updated.
+Page validation handlers are unaffected.
 
 For page procedures, validation failures do not produce JSON error envelopes.
 They flow through page rendering instead. Use

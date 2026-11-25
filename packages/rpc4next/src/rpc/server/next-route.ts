@@ -16,16 +16,16 @@ import {
   normalizeProcedureResult,
   withProcedureMethod,
 } from "./procedure-internals";
-import {
-  type MergeProcedureDefinition,
-  type ProcedureDefinition,
-  type ProcedureInputContract,
-  type ProcedureValidationErrorHandler,
-  type ProcedureValidationErrorHandlerResult,
-  type ProcedureValidationErrorResponseMap,
-  type WithProcedureDefinition,
+import type {
+  MergeProcedureDefinition,
+  ProcedureDefinition,
+  ProcedureInputContract,
+  ProcedureInputTarget,
+  ProcedureValidationErrorHandler,
+  ProcedureValidationErrorHandlerResult,
+  ProcedureValidationErrorResponseMap,
+  WithProcedureDefinition,
 } from "./procedure-types";
-import type { ProcedureInputTarget } from "./procedure-types";
 import {
   createResponseHelpers,
   createRouteContext,
@@ -96,7 +96,6 @@ const entriesToNullPrototypeObject = <TValue>(
 const getContractValue = async (
   request: NextRequest,
   segmentData: { params: Promise<Params> },
-  response: ResponseHelpers<unknown, RpcErrorCatalog>,
   target: ProcedureInputTarget,
 ) => {
   if (target === "params") {
@@ -124,9 +123,7 @@ const getContractValue = async (
 
       return {
         ok: false as const,
-        response: response.error("BAD_REQUEST", {
-          message: "Invalid JSON body.",
-        }),
+        message: "Invalid JSON body.",
       };
     }
   }
@@ -142,9 +139,7 @@ const getContractValue = async (
 
       return {
         ok: false as const,
-        response: response.error("BAD_REQUEST", {
-          message: "Invalid form-data body.",
-        }),
+        message: "Invalid form-data body.",
       };
     }
   }
@@ -370,7 +365,9 @@ type NormalizeProcedureObjectOutputResult<
   TProcedure extends ProcedureTypeCarrier,
   TStatus extends HttpStatusCode,
 > = TStatus extends SuccessfulHttpStatusCode
-  ? InferProcedureDefinition<TProcedure> extends { output: { response?: infer TOutput } }
+  ? InferProcedureDefinition<TProcedure> extends {
+      output: { response?: infer TOutput };
+    }
     ? NormalizeProcedureBodyResponse<TOutput, TStatus>
     : NormalizeProcedureHandlerResult<TResult>
   : NormalizeProcedureHandlerResult<Omit<TResult, "status"> & { status: TStatus }>;
@@ -378,7 +375,9 @@ type NormalizeProcedureObjectOutputResult<
 type NormalizeProcedureOutputResult<TResult, TProcedure extends ProcedureTypeCarrier> =
   TResult extends TypedNextResponse<unknown, infer TStatus, infer TContentType>
     ? TStatus extends SuccessfulHttpStatusCode
-      ? InferProcedureDefinition<TProcedure> extends { output: { response?: infer TOutput } }
+      ? InferProcedureDefinition<TProcedure> extends {
+          output: { response?: infer TOutput };
+        }
         ? TypedNextResponse<
             TContentType extends "application/json" ? JsonParsed<TOutput> : TOutput,
             TStatus,
@@ -658,11 +657,22 @@ const validateProcedureInputs = async (
       };
     }
 
-    const contractValue = await getContractValue(request, segmentData, response, target);
+    const contractValue = await getContractValue(request, segmentData, target);
     if (!contractValue.ok) {
+      const hookResult = await (
+        inputOptions[target]?.onValidationError ?? sharedOnValidationError
+      )?.({
+        kind: "parse",
+        target: target as "json" | "formData",
+        request,
+        response,
+      });
+
       return {
         ok: false as const,
-        response: contractValue.response,
+        response: isValidationTerminalResult(hookResult)
+          ? hookResult
+          : response.error("BAD_REQUEST", { message: contractValue.message }),
       };
     }
 
@@ -678,6 +688,7 @@ const validateProcedureInputs = async (
 
     const hookResult = await (inputOptions[target]?.onValidationError ?? sharedOnValidationError)?.(
       {
+        kind: "validation",
         target,
         value: rawValue,
         issues: result.issues,
@@ -864,7 +875,10 @@ export const createNextRoute = <
             response as unknown as ResponseHelpers<unknown, RpcErrorCatalog>,
             {
               ...procedure.definition,
-              input: { ...input, contracts: { [step.target]: input?.contracts?.[step.target] } },
+              input: {
+                ...input,
+                contracts: { [step.target]: input?.contracts?.[step.target] },
+              },
             },
             options.onValidationError,
           );
@@ -874,7 +888,9 @@ export const createNextRoute = <
               inputResult.response,
             ) as NextRouteResponse<TProcedure, TValidateOutput, TOnError, TOnValidationError>;
           }
-          Object.assign(executionContext, { [step.target]: inputResult.values[step.target] });
+          Object.assign(executionContext, {
+            [step.target]: inputResult.values[step.target],
+          });
         } else {
           const value = await pipelineSteps[step.middleware]?.(executionContext);
           if (value instanceof Response || isProcedureResult(value)) {

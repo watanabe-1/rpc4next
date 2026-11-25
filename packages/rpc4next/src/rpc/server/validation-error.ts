@@ -5,11 +5,8 @@ import type {
   RpcErrorCode,
   RpcErrorEnvelope,
 } from "./error";
-import type {
-  ProcedureInputTarget,
-  ProcedureValidationErrorHandler,
-  ProcedureValidationErrorContext,
-} from "./procedure-types";
+import type { ProcedureInputTarget, ProcedureValidationErrorHandler } from "./procedure-types";
+import type { StandardSchemaV1Issue } from "./standard-schema";
 import type { TypedNextResponse } from "./types";
 
 /** Sanitized validation issue returned by the default rpc4next validation handler. */
@@ -35,9 +32,8 @@ export type RpcValidationErrorResponse<
 >;
 
 /** Converts a Standard Schema issue path into a serializable string path. */
-export const getRpcValidationIssuePath = (
-  path: ProcedureValidationErrorContext["issues"][number]["path"],
-) => path?.map((segment) => String(typeof segment === "object" ? segment.key : segment)) ?? [];
+export const getRpcValidationIssuePath = (path: StandardSchemaV1Issue["path"]) =>
+  path?.map((segment) => String(typeof segment === "object" ? segment.key : segment)) ?? [];
 
 /**
  * Creates a route validation handler that returns a typed `BAD_REQUEST` envelope.
@@ -56,7 +52,7 @@ export const createRpcValidationErrorHandler = <
   RpcValidationErrorResponse<TTarget>,
   TErrorCatalog
 > =>
-  (({ issues, response, target }) =>
+  (({ issues = [], response, target }) =>
     response.error("BAD_REQUEST" as RpcErrorCode<TErrorCatalog>, {
       message: issues[0]?.message ?? "Validation failed.",
       details: {
