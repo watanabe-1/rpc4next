@@ -171,7 +171,11 @@ type InferProcedureMiddlewareTerminalResult<TProcedure extends NextPageProcedure
     : never;
 
 type InferProcedureData<TProcedure extends NextPageProcedureCarrier> =
-  InferProcedureHandlerResult<TProcedure> extends ProcedureResult<infer TBody> ? TBody : unknown;
+  InferProcedureDefinition<TProcedure> extends { output: { response?: infer TOutput } }
+    ? TOutput
+    : InferProcedureHandlerResult<TProcedure> extends ProcedureResult<infer TBody>
+      ? TBody
+      : unknown;
 
 type ProcedureIsRouteBound<TProcedure extends NextPageProcedureCarrier> =
   InferProcedureDefinition<TProcedure> extends {
@@ -240,6 +244,13 @@ type ProcedureHasPageIncompatibleTerminalResult<TProcedure extends NextPageProce
   : true;
 
 type NextPageProcedureConstraint<TProcedure extends NextPageProcedureCarrier> =
+  InferProcedureDefinition<TProcedure> extends { output: unknown }
+    ? ProcedureHasHandler<TProcedure> extends true
+      ? NextPageInputHookConstraint<TProcedure>
+      : { __error__: "Page procedures with output schemas must call .handle() before .page()." }
+    : NextPageInputHookConstraint<TProcedure>;
+
+type NextPageInputHookConstraint<TProcedure extends NextPageProcedureCarrier> =
   InferProcedureDefinition<TProcedure> extends {
     input: { routeValidationErrorTargets: infer TTargets };
   }
@@ -302,7 +313,6 @@ export type NextPageOptions<
 > = {
   onError?: TOnError;
   onValidationError?: TOnValidationError;
-  validateOutput?: boolean;
 };
 
 export type NextPageProcedureOptions<
@@ -592,10 +602,12 @@ export const createNextPage = <
   const onValidationError = options?.onValidationError;
   const outputSchema = procedure.definition.output?.schema;
 
-  if (options?.validateOutput && outputSchema !== undefined && !isStandardSchemaV1(outputSchema)) {
-    throw new Error(
-      "Procedure output contracts must implement Standard Schema V1 when validateOutput is enabled.",
-    );
+  if (procedure.definition.output !== undefined && typeof handler !== "function") {
+    throw new Error("Page procedures with output schemas must call .handle() before .page().");
+  }
+
+  if (procedure.definition.output !== undefined && !isStandardSchemaV1(outputSchema)) {
+    throw new Error("Procedure output contracts must implement Standard Schema V1 when declared.");
   }
 
   if (
@@ -707,7 +719,7 @@ export const createNextPage = <
 
       const { data } = assertPageTerminalResult(result);
       const renderedData =
-        options?.validateOutput && outputSchema !== undefined
+        outputSchema !== undefined
           ? await parseOutputWithSchema(outputSchema as StandardSchemaV1, data)
           : data;
 

@@ -1,4 +1,4 @@
-import { describe, expectTypeOf, it, vi } from "vitest";
+import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import { z } from "zod";
 
 import { procedure } from "./procedure";
@@ -6,6 +6,50 @@ import type { ProcedureRouteContract, ProcedureValidationErrorContext } from "./
 import type { TypedNextResponse } from "./types";
 
 describe("procedure builder zod integration", () => {
+  it("requires a Standard Schema and checks output values against its input type", () => {
+    const invalidSchema = () => {
+      // @ts-expect-error Output contracts must be executable Standard Schemas.
+      procedure.output({});
+    };
+    procedure.output(z.string().transform(Number)).handle(({ response }) => {
+      // @ts-expect-error The schema accepts a string, not its transformed number.
+      response.json(42);
+
+      return response.json("42");
+    });
+    expect(invalidSchema).not.toThrow();
+  });
+
+  it("checks returned procedure bodies against the output schema input", () => {
+    const schema = z.string().transform(Number);
+    procedure.output(schema).handle(() => ({ body: "42" }));
+    procedure.output(schema).handle(async () => ({ body: "42" }));
+    procedure.output(schema).handle(() => ({ status: 404 }));
+    procedure.output(z.undefined()).handle(() => ({}));
+
+    // @ts-expect-error The handler must return the schema input, not its output.
+    procedure.output(schema).handle(() => ({ body: 42 }));
+    // @ts-expect-error A successful empty result is invalid when undefined is not accepted.
+    procedure.output(schema).handle(() => ({}));
+    // @ts-expect-error Async handlers must also return the schema input.
+    procedure.output(schema).handle(async () => ({ body: 42 }));
+    expect(true).toBe(true);
+  });
+
+  it("checks object arguments passed to response.json against the output schema", () => {
+    procedure.output(z.object({ name: z.string(), count: z.number() })).handle(({ response }) => {
+      // @ts-expect-error The count must be a number.
+      response.json({ name: "item", count: "wrong" });
+      // @ts-expect-error The required count is missing.
+      response.json({ name: "item" });
+      // @ts-expect-error Unknown properties are not part of the schema input type.
+      response.json({ name: "item", count: 1, extra: true });
+
+      return response.json({ name: "item", count: 1 });
+    });
+    expect(true).toBe(true);
+  });
+
   const guardedUserRouteContract = {
     pathname: "/api/procedure-guarded/[userId]",
     params: {} as { userId: string },
@@ -26,13 +70,7 @@ describe("procedure builder zod integration", () => {
       .json(z.object({ title: z.string() }))
       .headers(z.object({ "x-procedure-test": z.string() }))
       .cookies(z.object({ session: z.string() }))
-      .output({
-        _output: {
-          ok: true as const,
-          userId: "" as string,
-          source: "procedure" as const,
-        },
-      })
+      .output(z.object({ ok: z.literal(true), userId: z.string(), source: z.literal("procedure") }))
       .use(async ({ headers }) => ({
         ctx: {
           requestId: headers["x-procedure-test"],
@@ -107,13 +145,9 @@ describe("procedure builder zod integration", () => {
       )
       .headers(z.object({ "x-procedure-test": z.string() }))
       .cookies(z.object({ session: z.string() }))
-      .output({
-        _output: {
-          ok: true as const,
-          displayName: "" as string,
-          source: "procedure" as const,
-        },
-      })
+      .output(
+        z.object({ ok: z.literal(true), displayName: z.string(), source: z.literal("procedure") }),
+      )
       .use(async ({ headers }) => ({
         ctx: {
           requestId: headers["x-procedure-test"],

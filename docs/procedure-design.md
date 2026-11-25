@@ -1,3 +1,5 @@
+> Historical design record: the current API validates declared output schemas automatically. The earlier opt-in and type-only proposals below are superseded; see the README for current behavior.
+
 # Procedure Design for rpc4next
 
 ## Status

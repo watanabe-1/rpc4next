@@ -89,9 +89,10 @@ export interface ProcedureInputContract<
 }
 
 /** Internal contract stored on a procedure after `.output(...)` is declared. */
-export interface ProcedureOutputContract<TRouteResponse = unknown> {
+export interface ProcedureOutputContract<TRouteResponse = unknown, TInput = TRouteResponse> {
   schema?: unknown;
   response?: TRouteResponse;
+  input?: TInput;
   runtime?: boolean;
 }
 

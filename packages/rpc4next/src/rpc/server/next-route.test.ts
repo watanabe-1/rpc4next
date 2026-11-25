@@ -643,6 +643,7 @@ describe("createNextRoute", () => {
         procedure
           .forRoute(staticRouteContract)
           .output({
+            // @ts-expect-error Invalid schemas are rejected by the type system.
             _output: {
               ok: true as const,
             },
@@ -652,11 +653,9 @@ describe("createNextRoute", () => {
               ok: true,
             },
           })),
-        { method: "GET", validateOutput: true },
+        { method: "GET" },
       ),
-    ).toThrow(
-      "Procedure output contracts must implement Standard Schema V1 when validateOutput is enabled.",
-    );
+    ).toThrow("Procedure output contracts must implement Standard Schema V1 when declared.");
   });
 
   it.each([
@@ -670,13 +669,12 @@ describe("createNextRoute", () => {
       createNextRoute(
         procedure
           .forRoute(staticRouteContract)
+          // @ts-expect-error Invalid schemas are rejected by the type system.
           .output(schema)
           .handle(async () => ({ body: "value" })),
-        { method: "GET", validateOutput: true },
+        { method: "GET" },
       ),
-    ).toThrow(
-      "Procedure output contracts must implement Standard Schema V1 when validateOutput is enabled.",
-    );
+    ).toThrow("Procedure output contracts must implement Standard Schema V1 when declared.");
   });
 
   it("supports redirects from normalized procedure results", async () => {
@@ -914,7 +912,7 @@ describe("createNextRoute", () => {
   it("applies validateOutput through procedure method terminals", async () => {
     const { GET: route } = procedure
       .forRoute(staticRouteContract)
-      .output<typeof outputSchema, unknown>(outputSchema)
+      .output(outputSchema)
       .handle(async () => ({
         body: {
           ok: false,
@@ -922,7 +920,6 @@ describe("createNextRoute", () => {
         },
       }))
       .get({
-        validateOutput: true,
         onError: defaultProcedureOnError,
       });
 
@@ -1018,7 +1015,7 @@ describe("createNextRoute", () => {
             ok: true,
           },
         })),
-      { method: "GET", validateOutput: true },
+      { method: "GET" },
     );
 
     type ActualResponse = Awaited<ReturnType<typeof route>>;

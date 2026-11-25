@@ -22,21 +22,14 @@ export const { POST } = appRouteProcedure
       tags: z.array(z.string().min(1).max(40)).max(10).optional(),
     }),
   )
-  .output<{
-    ok: true;
-    displayName: string;
-    filename: string;
-    tags: string[];
-    source: "procedure-form-data";
-  }>()
   .handle(async ({ formData }) => ({
     status: 200,
     body: {
-      ok: true,
+      ok: true as const,
       displayName: formData.displayName,
       filename: formData.avatar.name,
       tags: formData.tags ?? [],
-      source: "procedure-form-data",
+      source: "procedure-form-data" as const,
     },
   }))
   .post();

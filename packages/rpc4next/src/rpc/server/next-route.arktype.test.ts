@@ -153,7 +153,7 @@ describe("createNextRoute arktype integration", () => {
             ok: true,
           }),
         ),
-      { method: "GET", validateOutput: true },
+      { method: "GET" },
     );
 
     const response = await route(new NextRequest("http://127.0.0.1:3000/api/test"), {
@@ -180,7 +180,7 @@ describe("createNextRoute arktype integration", () => {
             count: 0,
           },
         })),
-      { method: "GET", validateOutput: true },
+      { method: "GET" },
     );
 
     const response = await route(new NextRequest("http://127.0.0.1:3000/api/test"), {

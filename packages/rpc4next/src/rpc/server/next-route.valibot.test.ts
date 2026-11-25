@@ -156,7 +156,7 @@ describe("createNextRoute valibot integration", () => {
             count: -1,
           },
         })),
-      { method: "GET", validateOutput: true },
+      { method: "GET" },
     );
 
     const response = await route(new NextRequest("http://127.0.0.1:3000/api/test"), {

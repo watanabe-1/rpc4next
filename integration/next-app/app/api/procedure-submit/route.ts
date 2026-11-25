@@ -20,21 +20,14 @@ export const { POST } = appRouteProcedure
       title: z.string().min(1),
     }),
   )
-  .output<{
-    ok: true;
-    title: string;
-    header: string;
-    session: string;
-    source: "procedure-submit";
-  }>()
   .handle(async ({ json, headers, cookies }) => ({
     status: 201,
     body: {
-      ok: true,
+      ok: true as const,
       title: json.title,
       header: headers["x-procedure-test"],
       session: cookies.session,
-      source: "procedure-submit",
+      source: "procedure-submit" as const,
     },
   }))
   .post();

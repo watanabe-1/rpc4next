@@ -19,11 +19,9 @@ export const { GET } = appRouteProcedure
   .handle(async () => ({
     status: 200,
     body: {
-      ok: true,
-      source: "procedure-invalid-output",
+      ok: true as const,
+      source: "procedure-invalid-output" as const,
       result: 123,
     } as unknown as z.output<typeof outputSchema>,
   }))
-  .get({
-    validateOutput: true,
-  });
+  .get();
