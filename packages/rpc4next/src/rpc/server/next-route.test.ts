@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
 import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 
+import type { RouteValidationErrorContext } from "./index";
 import { createNextRoute as basecreateNextRoute } from "./next-route";
 import { defaultProcedureOnError } from "./on-error";
 import { createRouteProcedure, procedure } from "./procedure";
@@ -546,15 +547,17 @@ describe("createNextRoute", () => {
   it.each(["json", "formData"] as const)(
     "runs the input hook for malformed %s before the shared hook",
     async (target) => {
-      const local = vi.fn(({ kind, target, response }) => response.json({ kind, target }, 422));
-      const shared = vi.fn(() => {
+      const local = vi.fn<(context: RouteValidationErrorContext) => Response>(
+        ({ kind, target, response }) => response.json({ kind, target }, 422),
+      );
+      const shared = vi.fn<() => never>(() => {
         throw new Error("shared hook called");
       });
       const schema = {
         "~standard": {
           version: 1 as const,
           vendor: "test",
-          validate: vi.fn((value: unknown) => ({ value })),
+          validate: vi.fn<(value: unknown) => { value: unknown }>((value) => ({ value })),
         },
       };
       const base = createRouteProcedure({
@@ -590,8 +593,8 @@ describe("createNextRoute", () => {
   it.each([true, false])(
     "uses the shared parse hook and falls back when it returns no response: %s",
     async (returnsResponse) => {
-      const hook = vi.fn(({ response }) =>
-        returnsResponse ? response.text("custom", 422) : undefined,
+      const hook = vi.fn<(context: RouteValidationErrorContext) => Response | undefined>(
+        ({ response }) => (returnsResponse ? response.text("custom", 422) : undefined),
       );
       const schema = {
         "~standard": {
