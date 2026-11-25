@@ -17,17 +17,29 @@ export type ProcedureInputTarget = "params" | "query" | "json" | "formData" | "h
 export type ProcedureInputContracts = Partial<Record<ProcedureInputTarget, StandardSchemaV1>>;
 
 /** Context passed to route procedure validation error handlers. */
-export interface ProcedureValidationErrorContext<
+export type ProcedureValidationErrorContext<
   TTarget extends ProcedureInputTarget = ProcedureInputTarget,
   TValue = unknown,
   TErrorCatalog extends RpcErrorCatalog = DefaultRpcErrorCatalog,
-> {
-  target: TTarget;
-  value: TValue;
-  issues: readonly StandardSchemaV1Issue[];
+> = {
   request: NextRequest;
   response: ProcedureOnErrorResponse<TErrorCatalog>;
-}
+} & (
+  | {
+      kind: "validation";
+      target: TTarget;
+      value: TValue;
+      issues: readonly StandardSchemaV1Issue[];
+    }
+  | ([Extract<TTarget, "json" | "formData">] extends [never]
+      ? never
+      : {
+          kind: "parse";
+          target: Extract<TTarget, "json" | "formData">;
+          value?: never;
+          issues?: never;
+        })
+);
 
 /** Values a route validation error handler may return to stop the request pipeline. */
 export type ProcedureValidationErrorHandlerResult =
