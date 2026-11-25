@@ -92,12 +92,25 @@ export interface TypedNextResponse<
   readonly status: HttpStatus<TStatus>["status"];
 }
 
+type JsonInferencePrimitive = string | number | boolean | null;
+type JsonInferenceValue =
+  | JsonInferencePrimitive
+  | undefined
+  | { [key: string]: JsonInferencePrimitive | undefined | symbol | object }
+  | NonNullable<unknown>;
+
 /** Typed `response.json(...)` helper exposed to procedure handlers. */
 export type JsonResponseHelper<TJson = unknown> = [unknown] extends [TJson]
-  ? <TData, TStatus extends HttpStatusCode = 200>(
-      data: TData,
-      init?: TStatus | TypedResponseInit<TStatus, "application/json">,
-    ) => TypedNextResponse<JsonParsed<TData>, TStatus, "application/json">
+  ? {
+      <TData extends JsonInferenceValue, TStatus extends HttpStatusCode = 200>(
+        data: TData,
+        init?: TStatus | TypedResponseInit<TStatus, "application/json">,
+      ): TypedNextResponse<JsonParsed<TData>, TStatus, "application/json">;
+      <TData, TStatus extends HttpStatusCode = 200>(
+        data: TData,
+        init?: TStatus | TypedResponseInit<TStatus, "application/json">,
+      ): TypedNextResponse<JsonParsed<TData>, TStatus, "application/json">;
+    }
   : <TStatus extends HttpStatusCode = 200>(
       data: TJson,
       init?: TStatus | TypedResponseInit<TStatus, "application/json">,

@@ -8,13 +8,12 @@ import type {
 
 import type { ContentType } from "../lib/content-type-types";
 import type { HttpRequestHeaders } from "../lib/http-request-headers-types";
-import type { HttpStatusCode, SuccessfulHttpStatusCode } from "../lib/http-status-code-types";
+import type { HttpStatusCode } from "../lib/http-status-code-types";
 import type { JsonParsed } from "../lib/json-types";
 import type { RpcErrorCode, RpcErrorStatus } from "../server/error";
 import type { procedureDefinitionSymbol } from "../server/procedure-definition";
 import type {
   ProcedureInputContract,
-  ProcedureOutputContract,
   ProcedureValidationErrorResponseMap,
   WithProcedureDefinition,
 } from "../server/procedure-types";
@@ -223,15 +222,6 @@ type InferValidationSchema<T> =
 
 type InferNextResponseType<TResponse> = TResponse extends NextResponse<infer U> ? U : unknown;
 
-type InferProcedureOutput<T> =
-  IsNever<ExtractAttachedProcedureDefinition<T>> extends true
-    ? never
-    : ExtractAttachedProcedureDefinition<T> extends {
-          output: ProcedureOutputContract<infer TOutput>;
-        }
-      ? TOutput
-      : never;
-
 type ProcedureErrorResponse<TCode extends RpcErrorCode = RpcErrorCode> = TCode extends RpcErrorCode
   ? TypedNextResponse<
       {
@@ -303,35 +293,14 @@ type InferProcedureOutputValidationErrorResponse<T> =
       ? ProcedureErrorResponse<"INTERNAL_SERVER_ERROR">
       : never;
 
-type ReplaceSuccessResponseBody<TResponse, TOutput> =
-  TResponse extends TypedNextResponse<unknown, infer TStatus, infer TContentType>
-    ? TStatus extends SuccessfulHttpStatusCode
-      ? TypedNextResponse<
-          TContentType extends "application/json" ? JsonParsed<TOutput> : TOutput,
-          TStatus,
-          TContentType
-        >
-      : TResponse
-    : never;
-
-type InferTypedNextResponseTypeFromOutput<TResponse, TOutput> = [
-  ReplaceSuccessResponseBody<TResponse, TOutput>,
-] extends [never]
-  ? TypedNextResponse<JsonParsed<TOutput>, HttpStatusCode, ContentType>
-  : ReplaceSuccessResponseBody<TResponse, TOutput>;
-
 type InferTypedNextResponseTypeFromResponse<TResponse> = TResponse extends TypedNextResponse
   ? TResponse
   : TypedNextResponse<JsonParsed<InferNextResponseType<TResponse>>, HttpStatusCode, ContentType>;
 
 type InferTypedNextResponseType<T> = T extends (...args: never[]) => unknown
-  ? IsNever<InferProcedureOutput<T>> extends true
-    ? | InferTypedNextResponseTypeFromResponse<Awaited<ReturnType<T>>>
-      | InferProcedureValidationErrorResponse<T>
-      | InferProcedureOutputValidationErrorResponse<T>
-    : | InferTypedNextResponseTypeFromOutput<Awaited<ReturnType<T>>, InferProcedureOutput<T>>
-      | InferProcedureValidationErrorResponse<T>
-      | InferProcedureOutputValidationErrorResponse<T>
+  ? | InferTypedNextResponseTypeFromResponse<Awaited<ReturnType<T>>>
+    | InferProcedureValidationErrorResponse<T>
+    | InferProcedureOutputValidationErrorResponse<T>
   : TypedNextResponse<never, HttpStatusCode, ContentType>;
 
 type PathProxyAsProperty<T> = {

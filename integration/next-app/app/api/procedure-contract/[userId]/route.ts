@@ -19,13 +19,6 @@ export const { GET } = appRouteProcedure
   })
   .params(paramsSchema)
   .query(querySchema)
-  .output<{
-    ok: true;
-    userId: string;
-    includePosts: boolean;
-    source: "procedure-contract";
-    requestId: string;
-  }>()
   .use(async () => ({
     ctx: {
       requestId: "procedure-ctx",
@@ -34,10 +27,10 @@ export const { GET } = appRouteProcedure
   .handle(async ({ params, query, ctx }) => ({
     status: 200,
     body: {
-      ok: true,
+      ok: true as const,
       userId: params.userId,
       includePosts: query.includePosts === "true",
-      source: "procedure-contract",
+      source: "procedure-contract" as const,
       requestId: ctx.requestId,
     },
   }))

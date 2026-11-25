@@ -10,14 +10,10 @@ const bodySchema = z.object({
 export const { POST } = appRouteProcedure
   .forRoute(routeContract)
   .json(bodySchema)
-  .output<{
-    ok: true;
-    title: string;
-  }>()
   .handle(async ({ json }) => ({
     status: 201,
     body: {
-      ok: true,
+      ok: true as const,
       title: json.title,
     },
   }))

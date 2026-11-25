@@ -2,6 +2,7 @@ import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import { NextRequest, NextResponse } from "next/server";
 import { afterAll, afterEach, beforeAll, describe, expect, expectTypeOf, it } from "vitest";
+import { z } from "zod";
 
 import {
   type ContentType,
@@ -891,30 +892,20 @@ describe("createRpcClient", () => {
             ),
         },
       )
-      .output({
-        _output: {
-          ok: true as const,
-          page: "" as string,
-        },
-      })
+      .output(z.object({ ok: z.literal(true), page: z.string() }))
       .handle(async ({ query, response }) =>
         response.json({
           ok: true as const,
           page: query.page,
         }),
       ),
-    { method: "GET", onError: defaultProcedureOnError },
+    { method: "GET", onError: (_error, { response }) => response.error("INTERNAL_SERVER_ERROR") },
   );
 
   const { GET: _get_4 } = createNextRoute(
     procedure
       .forRoute(staticRouteContract)
-      .output({
-        _output: {
-          ok: true as const,
-          value: "" as string,
-        },
-      })
+      .output(z.object({ ok: z.literal(true), value: z.string() }))
       .handle(async ({ response }) =>
         response.json({
           ok: true as const,

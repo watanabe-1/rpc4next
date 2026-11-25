@@ -53,7 +53,7 @@ Use these files as entry points, depending on what you want to understand:
 - Procedure headers/cookies route: `app/api/request-meta/route.ts`
 - Plain Next.js handler with `NextResponse.json(...)`: `app/api/next-native/[itemId]/route.ts`
 - Plain Next.js handler with `Response.json(...)`: `app/api/next-native-response/route.ts`
-- Plain handler with explicit `withOutput(...)` response typing: `app/api/explicit-output/route.ts`
+- Procedure with a validated output schema: `app/api/explicit-output/route.ts`
 - Plain Next.js page with exported query typing: `app/patterns/native-query/page.tsx`
 - Procedure redirect helper route: `app/api/redirect-me/route.ts`
 - Route-local procedure error handler override: `app/api/error-demo/route.ts`
@@ -165,11 +165,11 @@ gets the same trace logging, validated auth headers, typed
 `UNAUTHORIZED`/`FORBIDDEN` responses, and `ctx.viewer`/`ctx.organization`/
 `ctx.traceId` before its handler can reach protected data.
 
-The procedure fixtures also cover the later design phases that made the procedure path complete enough to recommend by default. `app/api/procedure-invalid-output/route.ts` demonstrates opt-in runtime output enforcement with a Standard Schema output contract. `app/api/procedure-defaults-error/route.ts` shows project-level `createRouteProcedure({ onError })` usage through `appRouteProcedure`, while `app/_rpc/route-procedure.ts` and `app/_rpc/page-procedure.ts` keep route and page presets separate. `app/api/procedure-validation-branch/route.ts` shows validator-stage customization through `procedure.query(schema, { onValidationError(...) { ... } })`. `app/api/error-demo/route.ts` shows a route-local `onError` override on top of the shared route preset, and `app/_rpc/errors.ts` shows generic `Error` mapping in a shared route `onError` implementation.
+The procedure fixtures also cover the later design phases that made the procedure path complete enough to recommend by default. `app/api/procedure-invalid-output/route.ts` demonstrates runtime output enforcement with a Standard Schema output contract. `app/api/procedure-defaults-error/route.ts` shows project-level `createRouteProcedure({ onError })` usage through `appRouteProcedure`, while `app/_rpc/route-procedure.ts` and `app/_rpc/page-procedure.ts` keep route and page presets separate. `app/api/procedure-validation-branch/route.ts` shows validator-stage customization through `procedure.query(schema, { onValidationError(...) { ... } })`. `app/api/error-demo/route.ts` shows a route-local `onError` override on top of the shared route preset, and `app/_rpc/errors.ts` shows generic `Error` mapping in a shared route `onError` implementation.
 
 Procedure-backed pages use `appPageProcedure` and terminate with `.page(...)`
 instead of a route method terminal. `app/photo/[id]/page.tsx` demonstrates validated
-`params` and opt-in runtime output validation before render.
+`params` and runtime output validation before render.
 `app/patterns/search/page.tsx` demonstrates page query input inference flowing
 into generated `$url({ query })` types while the page itself validates
 `searchParams` through `procedure.query(schema)` and renders from the validated

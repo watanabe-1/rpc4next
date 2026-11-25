@@ -5,8 +5,6 @@ import { z } from "zod";
 import type { ContentType } from "../lib/content-type-types";
 import type { HttpStatusCode } from "../lib/http-status-code-types";
 import { createNextRoute } from "../server/next-route";
-import { defaultProcedureOnError } from "../server/on-error";
-import { output, withOutput } from "../server/output";
 import { procedure } from "../server/procedure";
 import type { ProcedureRouteContract } from "../server/procedure-types";
 import { createResponseHelpers } from "../server/route-context";
@@ -285,6 +283,25 @@ describe("route handler response inference", () => {
     });
     expect(await result.json()).toEqual({ date: "2024-01-01T00:00:00.000Z" });
   });
+  it("infers top-level boolean literals in JSON responses", () => {
+    const result = response.json({
+      ok: true,
+      source: "posts",
+      count: 0,
+      nested: { ok: true },
+      items: ["x", "y"],
+    });
+    expectTypeOf<Awaited<ReturnType<typeof result.json>>>().toEqualTypeOf<{
+      ok: true;
+      source: string;
+      count: number | null;
+      nested: { ok: boolean };
+      items: (string | null)[];
+    }>();
+    const respondToUnknown = (value: unknown) => response.json(value);
+    expectTypeOf<ReturnType<typeof respondToUnknown>>().toExtend<Response>();
+  });
+
   it("infers synchronous NextResponse JSON through the client", async () => {
     function GET() {
       return NextResponse.json({ ok: true });
@@ -309,13 +326,7 @@ describe("route handler response inference", () => {
 
   it("serializes native responses and output contract payload types", () => {
     const native = () => NextResponse.json({ date: new Date() });
-    const contracted = withOutput(output({ _output: { date: new Date() } }), () =>
-      response.json({ date: new Date() }),
-    );
     expectTypeOf<Awaited<ReturnType<ClientResponse<typeof native>["json"]>>>().toEqualTypeOf<{
-      date: string | null;
-    }>();
-    expectTypeOf<SuccessfulJsonPayload<ClientResponse<typeof contracted>>>().toEqualTypeOf<{
       date: string | null;
     }>();
   });
@@ -329,35 +340,8 @@ describe("route handler response inference", () => {
     }
 
     type Expected =
-      | TypedNextResponse<{ ok: boolean }, 201, "application/json">
-      | TypedNextResponse<"missing", 404, "text/plain">;
-    expectTypeOf<ClientResponse<typeof GET>>().toEqualTypeOf<Expected>();
-    expectTypeOf<ClientResponse<typeof GET>>().toEqualTypeOf<ClientResponse<typeof asyncGET>>();
-  });
-
-  it("applies withOutput to synchronous native and raw responses", () => {
-    const contract = output({ _output: { ok: true as const } });
-    const GET = withOutput(contract, () => NextResponse.json({ ok: true }));
-    const rawGET = withOutput(contract, () => new Response());
-    const asyncGET = withOutput(contract, async () => NextResponse.json({ ok: true }));
-
-    type Expected = TypedNextResponse<{ ok: true }, HttpStatusCode, ContentType>;
-    expectTypeOf<ClientResponse<typeof GET>>().toEqualTypeOf<Expected>();
-    expectTypeOf<ClientResponse<typeof rawGET>>().toEqualTypeOf<Expected>();
-    expectTypeOf<ClientResponse<typeof GET>>().toEqualTypeOf<ClientResponse<typeof asyncGET>>();
-  });
-
-  it("replaces only success bodies with synchronous output contracts", () => {
-    function handler(success: boolean) {
-      return success ? response.json({ internal: true }, 201) : response.text("forbidden", 403);
-    }
-    const contract = output({ _output: { ok: true as const } });
-    const GET = withOutput(contract, handler);
-    const asyncGET = withOutput(contract, async (success: boolean) => handler(success));
-
-    type Expected =
       | TypedNextResponse<{ ok: true }, 201, "application/json">
-      | TypedNextResponse<"forbidden", 403, "text/plain">;
+      | TypedNextResponse<"missing", 404, "text/plain">;
     expectTypeOf<ClientResponse<typeof GET>>().toEqualTypeOf<Expected>();
     expectTypeOf<ClientResponse<typeof GET>>().toEqualTypeOf<ClientResponse<typeof asyncGET>>();
   });
@@ -386,7 +370,7 @@ describe("route handler response inference", () => {
         .query(z.object({ id: z.string() }))
         .output(z.object({ id: z.string() }))
         .handle(({ query, response }) => response.json({ id: query.id }, 201)),
-      { method: "GET", validateOutput: true, onError: defaultProcedureOnError },
+      { method: "GET", onError: (_error, { response }) => response.error("INTERNAL_SERVER_ERROR") },
     );
 
     type Result = ClientResponse<typeof GET>;
@@ -400,5 +384,20 @@ describe("route handler response inference", () => {
       Extract<Result, { status: 500 }> extends never ? false : true
     >().toEqualTypeOf<true>();
     expectTypeOf<Result["status"]>().toEqualTypeOf<201 | 400 | 500>();
+  });
+
+  it("keeps unknown response bodies when onError returns a raw Response", () => {
+    const { GET } = createNextRoute(
+      procedure
+        .forRoute({ pathname: "/api/example", params: {} } as ProcedureRouteContract<
+          "/api/example",
+          Record<never, never>
+        >)
+        .output(z.object({ count: z.number() }))
+        .handle(({ response }) => response.json({ count: 1 })),
+      { method: "GET", onError: () => Response.json({ message: "failed" }) },
+    );
+
+    expectTypeOf<Awaited<ReturnType<ClientResponse<typeof GET>["json"]>>>().toBeUnknown();
   });
 });

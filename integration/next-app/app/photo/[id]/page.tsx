@@ -20,6 +20,4 @@ export default appPageProcedure
       id: params.id,
     },
   }))
-  .page(({ data }) => <div>photo:{data.id}</div>, {
-    validateOutput: true,
-  });
+  .page(({ data }) => <div>photo:{data.id}</div>, {});

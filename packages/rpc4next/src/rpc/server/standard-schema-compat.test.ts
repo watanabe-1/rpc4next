@@ -143,7 +143,7 @@ describe("Standard Schema compatibility", () => {
   };
 
   const procedureOutputSchema: StandardSchemaV1<
-    unknown,
+    { ok: true; page: number; source: "standard-schema" },
     {
       ok: true;
       page: number;
@@ -154,7 +154,7 @@ describe("Standard Schema compatibility", () => {
       version: 1,
       vendor: "rpc4next-test",
       types: {
-        input: {} as unknown,
+        input: {} as { ok: true; page: number; source: "standard-schema" },
         output: {} as {
           ok: true;
           page: number;
@@ -340,7 +340,7 @@ describe("Standard Schema compatibility", () => {
             source: "standard-schema",
           },
         })),
-      { method: "GET", validateOutput: true },
+      { method: "GET" },
     );
 
     const response = await route(new NextRequest("http://127.0.0.1:3000/api/test"), {

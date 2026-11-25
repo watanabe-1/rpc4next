@@ -1,7 +1,7 @@
 import type { NextRequest, NextResponse } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
 
-import type { HttpStatusCode } from "../lib/http-status-code-types";
+import type { HttpStatusCode, SuccessfulHttpStatusCode } from "../lib/http-status-code-types";
 import { defaultRpcErrorCatalog, defineRpcErrors } from "./error";
 import type { DefaultRpcErrorCatalog, DefineRpcErrors, RpcErrorCatalog } from "./error";
 import type { RpcMeta } from "./meta";
@@ -79,12 +79,15 @@ type ExtractValidationSchema<TDefinition extends ProcedureDefinition> =
     ? TValidationSchema
     : ValidationSchema;
 
-type ExtractProcedureOutput<TDefinition extends ProcedureDefinition> =
-  TDefinition extends ProcedureDefinition<
-    infer _THttpMethod,
-    infer _TValidationSchema,
-    infer TOutput
-  >
+type ExtractProcedureOutput<TDefinition extends ProcedureDefinition> = TDefinition extends {
+  output: { input?: infer TInput };
+}
+  ? TInput
+  : TDefinition extends ProcedureDefinition<
+        infer _THttpMethod,
+        infer _TValidationSchema,
+        infer TOutput
+      >
     ? TOutput
     : unknown;
 
@@ -479,15 +482,28 @@ export type ProcedureMiddlewareResult<
   : undefined | ProcedureRouteTerminalResult | { ctx: TContextExtension };
 
 /** Values a final procedure handler may return. */
+type ValidatedProcedureResult<TOutput, TMode extends ProcedureAdapterMode> = TMode extends "page"
+  ? undefined extends TOutput
+    ? ProcedurePageResult<TOutput>
+    : ProcedurePageResult<TOutput> & { body: TOutput }
+  : undefined extends TOutput
+    ? ProcedureResult<TOutput>
+    : ProcedureResult<TOutput> &
+        (
+          | { body: TOutput }
+          | { redirect: string }
+          | { status: Exclude<HttpStatusCode, SuccessfulHttpStatusCode> }
+        );
+
 export type ProcedureHandlerResult<
   TOutput = unknown,
   TMode extends ProcedureAdapterMode = "neutral",
 > = TMode extends "page"
-  ? ProcedurePageResult<TOutput> | Promise<ProcedurePageResult<TOutput>>
+  ? ValidatedProcedureResult<TOutput, TMode> | Promise<ValidatedProcedureResult<TOutput, TMode>>
   : | Response
     | NextResponse
-    | ProcedureResult<TOutput>
-    | Promise<Response | NextResponse | ProcedureResult<TOutput>>;
+    | ValidatedProcedureResult<TOutput, TMode>
+    | Promise<Response | NextResponse | ValidatedProcedureResult<TOutput, TMode>>;
 
 type ProcedureAnyHandlerResult<TOutput = unknown> =
   | Response
@@ -565,7 +581,7 @@ type ProcedureNextRouteMethod<
   TMiddlewareTerminalResult,
   TMethod extends HttpMethod,
 > = <
-  TValidateOutput extends boolean = false,
+  TValidateOutput extends boolean = true,
   TOnError extends AnyProcedureOnError = ExtractProcedureSharedRouteOnError<TDefaults>,
   TOnValidationError extends AnyProcedureValidationErrorHandler | undefined =
     ExtractProcedureSharedRouteOnValidationError<TDefaults>,
@@ -705,7 +721,9 @@ type ProcedureNextPageMethod<
       TErrorCatalog,
       TMiddlewareTerminalResult
     >,
-    ExtractProcedureHandlerData<THandler, TOutput>,
+    TDefinition extends { output: { response?: infer TParsedOutput } }
+      ? TParsedOutput
+      : ExtractProcedureHandlerData<THandler, TOutput>,
     TContext,
     TResult,
     TDefaults,
@@ -911,17 +929,24 @@ type IsProcedurePageTerminalAvailable<
 > =
   ExtractProcedureAdapterMode<TDefaults> extends "route"
     ? false
-    : HasProcedureRoute<TDefinition> extends true
-      ? HasBoundRouteParams<TDefinition> extends true
-        ? HasValidatedParams<TDefinition> extends true
-          ? IsProcedurePageInputAndResultCompatible<
-              TDefinition,
-              THandler,
-              TMiddlewareTerminalResult
-            >
-          : false
-        : IsProcedurePageInputAndResultCompatible<TDefinition, THandler, TMiddlewareTerminalResult>
-      : false;
+    : HasProcedureOutput<TDefinition> extends true
+      ? [THandler] extends [never]
+        ? false
+        : IsProcedurePageRouteAvailable<TDefinition, THandler, TMiddlewareTerminalResult>
+      : IsProcedurePageRouteAvailable<TDefinition, THandler, TMiddlewareTerminalResult>;
+
+type IsProcedurePageRouteAvailable<
+  TDefinition extends ProcedureDefinition,
+  THandler,
+  TMiddlewareTerminalResult,
+> =
+  HasProcedureRoute<TDefinition> extends true
+    ? HasBoundRouteParams<TDefinition> extends true
+      ? HasValidatedParams<TDefinition> extends true
+        ? IsProcedurePageInputAndResultCompatible<TDefinition, THandler, TMiddlewareTerminalResult>
+        : false
+      : IsProcedurePageInputAndResultCompatible<TDefinition, THandler, TMiddlewareTerminalResult>
+    : false;
 
 type IsProcedurePageInputAndResultCompatible<
   TDefinition extends ProcedureDefinition,
@@ -1297,30 +1322,14 @@ interface ProcedureBuilderMethods<
     TAllowPresetMethods
   >;
 
-  /** Declares the success body type returned by the procedure. */
-  output<TOutput>(): ProcedureBuilder<
-    MergeProcedureDefinition<
-      TDefinition,
-      {
-        output: ProcedureOutputContract<TOutput>;
-      }
-    >,
-    TContext,
-    TDefaults,
-    TErrorCatalog,
-    TMiddlewareTerminalResult,
-    THasMiddleware,
-    TAllowPresetMethods
-  >;
-
-  /** Declares and optionally runtime-validates the success body schema for the procedure. */
-  output<TSchema, TOutput = InferSchemaOutput<TSchema>>(
+  /** Declares and runtime-validates the success body schema for the procedure. */
+  output<TSchema extends StandardSchemaV1>(
     schema: TSchema,
   ): ProcedureBuilder<
     MergeProcedureDefinition<
       TDefinition,
       {
-        output: ProcedureOutputContract<TOutput>;
+        output: ProcedureOutputContract<InferSchemaOutput<TSchema>, InferSchemaInput<TSchema>>;
       }
     >,
     TContext,
@@ -1757,10 +1766,13 @@ const createProcedureBuilder = <
     return withInputContract("cookies", schema as TSchema, options);
   };
 
-  const withOutput = <TSchema, TOutput = InferSchemaOutput<TSchema>>(
-    schema?: TSchema,
+  const withOutput = <TSchema extends StandardSchemaV1>(
+    schema: TSchema,
   ): ProcedureBuilder<
-    MergeProcedureDefinition<TDefinition, { output: ProcedureOutputContract<TOutput> }>,
+    MergeProcedureDefinition<
+      TDefinition,
+      { output: ProcedureOutputContract<InferSchemaOutput<TSchema>, InferSchemaInput<TSchema>> }
+    >,
     TContext,
     TDefaults,
     TErrorCatalog,
@@ -1769,7 +1781,12 @@ const createProcedureBuilder = <
     TAllowPresetMethods
   > => {
     return createProcedureBuilder(
-      withProcedureOutput<TDefinition, TOutput, TSchema>(definition, schema),
+      withProcedureOutput<
+        TDefinition,
+        InferSchemaOutput<TSchema>,
+        TSchema,
+        InferSchemaInput<TSchema>
+      >(definition, schema),
       middlewares,
       defaults,
       resolvedErrorCatalog,

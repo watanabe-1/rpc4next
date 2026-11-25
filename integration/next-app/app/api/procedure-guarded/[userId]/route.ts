@@ -42,19 +42,17 @@ const getGuardedProcedureUser = guardedRouteProcedure
     return {
       status: 200,
       body: {
-        ok: true,
+        ok: true as const,
         userId: params.userId,
         includeDrafts,
         role,
         organizationId: ctx.organization.id,
         plan: ctx.organization.plan,
-        source: "procedure-guarded",
+        source: "procedure-guarded" as const,
         requestId: ctx.requestId,
         traceId: ctx.traceId,
       },
     };
   });
 
-export const { GET } = getGuardedProcedureUser.get({
-  validateOutput: true,
-});
+export const { GET } = getGuardedProcedureUser.get({});
