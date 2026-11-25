@@ -3,7 +3,7 @@ import type { NextRequest, NextResponse } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
 
 import type { ContentType } from "../lib/content-type-types";
-import type { HttpStatusCode } from "../lib/http-status-code-types";
+import type { HttpStatusCode, SuccessfulHttpStatusCode } from "../lib/http-status-code-types";
 import type { JsonParsed } from "../lib/json-types";
 import { searchParamsToObject } from "../lib/search-params";
 import type { DefaultRpcErrorCatalog, RpcErrorCatalog, RpcErrorStatus } from "./error";
@@ -291,7 +291,7 @@ type InferProcedureCustomValidationErrorResponse<TValidationErrorResponses> =
 type InferProcedureOutputValidationErrorResponse<
   TProcedure extends ProcedureTypeCarrier,
   TValidateOutput extends boolean,
-> = TValidateOutput extends true
+> = TValidateOutput extends boolean
   ? InferProcedureDefinition<TProcedure> extends {
       output: ProcedureDefinition["output"];
     }
@@ -328,7 +328,7 @@ type InferProcedureHandlerContext<TProcedure extends ProcedureTypeCarrier> =
 
 type InferProcedureDeclaredOutput<TProcedure extends ProcedureTypeCarrier> =
   InferProcedureDefinition<TProcedure>["output"] extends {
-    response?: infer TResponse;
+    input?: infer TResponse;
   }
     ? TResponse
     : unknown;
@@ -339,9 +339,13 @@ type ResolveStatus<TStatus, TDefault extends HttpStatusCode> = TStatus extends H
   ? TStatus
   : TDefault;
 
-type NormalizeProcedureBodyResponse<TBody, TStatus extends HttpStatusCode> = TBody extends string
-  ? TypedNextResponse<TBody, TStatus, "text/plain">
-  : TypedNextResponse<JsonParsed<TBody>, TStatus, "application/json">;
+type NormalizeProcedureBodyResponse<TBody, TStatus extends HttpStatusCode> = [TBody] extends [
+  undefined,
+]
+  ? TypedNextResponse<undefined, TStatus, ContentType>
+  : TBody extends string
+    ? TypedNextResponse<TBody, TStatus, "text/plain">
+    : TypedNextResponse<JsonParsed<TBody>, TStatus, "application/json">;
 
 type NormalizeProcedureHandlerResult<TResult> = TResult extends Response | NextResponse
   ? TResult
@@ -361,12 +365,45 @@ type NormalizeProcedureHandlerResult<TResult> = TResult extends Response | NextR
         ? TypedNextResponse<undefined, ResolveStatus<TStatus, 200>, ContentType>
         : TypedNextResponse<unknown, HttpStatusCode, ContentType>;
 
+type NormalizeProcedureObjectOutputResult<
+  TResult extends object,
+  TProcedure extends ProcedureTypeCarrier,
+  TStatus extends HttpStatusCode,
+> = TStatus extends SuccessfulHttpStatusCode
+  ? InferProcedureDefinition<TProcedure> extends { output: { response?: infer TOutput } }
+    ? NormalizeProcedureBodyResponse<TOutput, TStatus>
+    : NormalizeProcedureHandlerResult<TResult>
+  : NormalizeProcedureHandlerResult<Omit<TResult, "status"> & { status: TStatus }>;
+
+type NormalizeProcedureOutputResult<TResult, TProcedure extends ProcedureTypeCarrier> =
+  TResult extends TypedNextResponse<unknown, infer TStatus, infer TContentType>
+    ? TStatus extends SuccessfulHttpStatusCode
+      ? InferProcedureDefinition<TProcedure> extends { output: { response?: infer TOutput } }
+        ? TypedNextResponse<
+            TContentType extends "application/json" ? JsonParsed<TOutput> : TOutput,
+            TStatus,
+            TContentType
+          >
+        : TResult
+      : TResult
+    : TResult extends Response | NextResponse
+      ? TResult
+      : TResult extends { redirect: string }
+        ? NormalizeProcedureHandlerResult<TResult>
+        : TResult extends object
+          ? NormalizeProcedureObjectOutputResult<
+              TResult,
+              TProcedure,
+              TResult extends { status?: infer TStatus } ? ResolveStatus<TStatus, 200> : 200
+            >
+          : NormalizeProcedureHandlerResult<TResult>;
+
 type InferProcedureOnErrorResponse<TOnError extends AnyProcedureOnError> =
   NormalizeProcedureHandlerResult<Awaited<ReturnType<TOnError>>>;
 
 type NextRouteResponse<
   TProcedure extends ProcedureTypeCarrier,
-  TValidateOutput extends boolean = false,
+  TValidateOutput extends boolean = true,
   TOnError extends AnyProcedureOnError = ProcedureOnError<
     ProcedureOnErrorResult,
     InferProcedureErrorCatalog<TProcedure>
@@ -375,13 +412,19 @@ type NextRouteResponse<
 > =
   IsNever<InferProcedureHandlerResult<TProcedure>> extends true
     ? | TypedNextResponse<unknown, HttpStatusCode, ContentType>
-      | NormalizeProcedureHandlerResult<InferProcedureMiddlewareTerminalResult<TProcedure>>
+      | NormalizeProcedureOutputResult<
+          InferProcedureMiddlewareTerminalResult<TProcedure>,
+          TProcedure
+        >
       | InferProcedureOnErrorResponse<TOnError>
       | InferProcedureValidationErrorResponse<TProcedure>
       | InferProcedureSharedValidationErrorResponse<TOnValidationError>
       | InferProcedureOutputValidationErrorResponse<TProcedure, TValidateOutput>
-    : | NormalizeProcedureHandlerResult<InferProcedureHandlerResult<TProcedure>>
-      | NormalizeProcedureHandlerResult<InferProcedureMiddlewareTerminalResult<TProcedure>>
+    : | NormalizeProcedureOutputResult<InferProcedureHandlerResult<TProcedure>, TProcedure>
+      | NormalizeProcedureOutputResult<
+          InferProcedureMiddlewareTerminalResult<TProcedure>,
+          TProcedure
+        >
       | InferProcedureOnErrorResponse<TOnError>
       | InferProcedureValidationErrorResponse<TProcedure>
       | InferProcedureSharedValidationErrorResponse<TOnValidationError>
@@ -390,7 +433,7 @@ type NextRouteResponse<
 export type NextRouteHandler<
   TProcedure extends ProcedureTypeCarrier = ProcedureTypeCarrier,
   TMethod extends HttpMethod | undefined = undefined,
-  TValidateOutput extends boolean = false,
+  TValidateOutput extends boolean = true,
   TOnError extends AnyProcedureOnError = ProcedureOnError<
     ProcedureOnErrorResult,
     InferProcedureErrorCatalog<TProcedure>
@@ -417,7 +460,6 @@ export interface NextRouteOptions<
     undefined,
 > {
   method: TMethod;
-  validateOutput?: boolean;
   onError: TOnError;
   onValidationError?: TOnValidationError;
 }
@@ -425,7 +467,7 @@ export interface NextRouteOptions<
 export type NextRouteProcedureOptions<
   TProcedure extends ProcedureTypeCarrier,
   TMethod extends HttpMethod | undefined = undefined,
-  TValidateOutput extends boolean = false,
+  _TValidateOutput extends boolean = true,
   TOnError extends AnyProcedureOnError = ProcedureOnError<
     ProcedureOnErrorResult,
     InferProcedureErrorCatalog<TProcedure>
@@ -437,14 +479,12 @@ export type NextRouteProcedureOptions<
   TOnError,
   TOnValidationError
 > &
-  NextRouteMethodConstraint<TProcedure, TMethod> & {
-    validateOutput?: TValidateOutput;
-  };
+  NextRouteMethodConstraint<TProcedure, TMethod>;
 
 export type NextRouteExports<
   TProcedure extends ProcedureTypeCarrier = ProcedureTypeCarrier,
   TMethod extends HttpMethod = HttpMethod,
-  TValidateOutput extends boolean = false,
+  TValidateOutput extends boolean = true,
   TOnError extends AnyProcedureOnError = ProcedureOnError<
     ProcedureOnErrorResult,
     InferProcedureErrorCatalog<TProcedure>
@@ -483,11 +523,11 @@ const getHttpStatusCode = (status: number): HttpStatusCode | undefined => {
 const shouldValidateProcedureOutput = (
   result: Response | NextResponse | ProcedureResult | undefined,
 ): result is ProcedureResult => {
-  if (!result || result instanceof Response || !isProcedureResult(result)) {
+  if (!result || result instanceof Response) {
     return false;
   }
 
-  if (result.redirect || result.body === undefined) {
+  if (result.redirect) {
     return false;
   }
 
@@ -498,7 +538,7 @@ const getProcedureOutputValidationValue = (
   result: Response | NextResponse | ProcedureResult | undefined,
 ) => {
   if (shouldValidateProcedureOutput(result)) {
-    return result.body;
+    return { value: result.body };
   }
 
   if (!(result instanceof Response)) {
@@ -507,11 +547,15 @@ const getProcedureOutputValidationValue = (
 
   const helperMetadata = getResponseHelperMetadata(result);
 
-  if (!helperMetadata || helperMetadata.kind === "redirect") {
+  if (!isSuccessfulStatus(getHttpStatusCode(result.status))) {
     return undefined;
   }
 
-  return isSuccessfulStatus(getHttpStatusCode(result.status)) ? helperMetadata.payload : undefined;
+  if (!helperMetadata) {
+    throw new Error("Cannot validate a raw successful Response. Use a response helper instead.");
+  }
+
+  return helperMetadata.kind === "redirect" ? undefined : { value: helperMetadata.payload };
 };
 
 const isBodyInitLike = (value: unknown): value is BodyInit | null => {
@@ -539,8 +583,12 @@ const applyParsedProcedureOutput = (
   parsedValue: unknown,
 ) => {
   if (shouldValidateProcedureOutput(result)) {
+    const headers = result.headers === undefined ? undefined : new Headers(result.headers);
+    headers?.delete("content-length");
+
     return {
       ...result,
+      headers,
       body: parsedValue,
     } satisfies ProcedureResult;
   }
@@ -556,8 +604,10 @@ const applyParsedProcedureOutput = (
     return result;
   }
 
+  const headers = new Headers(result.headers);
+  headers.delete("content-length");
   const init = {
-    headersInit: result.headers,
+    headersInit: headers,
     status,
     statusText: result.statusText,
   };
@@ -727,7 +777,7 @@ const validateProcedureInputs = async (
 export const createNextRoute = <
   TProcedure extends ProcedureTypeCarrier,
   TMethod extends HttpMethod = HttpMethod,
-  TValidateOutput extends boolean = false,
+  TValidateOutput extends boolean = true,
   TOnError extends AnyProcedureOnError<InferProcedureErrorCatalog<TProcedure>> = ProcedureOnError<
     ProcedureOnErrorResult,
     InferProcedureErrorCatalog<TProcedure>
@@ -762,10 +812,8 @@ export const createNextRoute = <
     ) => ProcedureMiddlewareResult | Promise<ProcedureMiddlewareResult>)[]),
   ] as const;
 
-  if (options.validateOutput && outputSchema !== undefined && !isStandardSchemaV1(outputSchema)) {
-    throw new Error(
-      "Procedure output contracts must implement Standard Schema V1 when validateOutput is enabled.",
-    );
+  if (procedure.definition.output !== undefined && !isStandardSchemaV1(outputSchema)) {
+    throw new Error("Procedure output contracts must implement Standard Schema V1 when declared.");
   }
 
   const inputContracts = procedure.definition.input?.contracts ?? {};
@@ -845,7 +893,7 @@ export const createNextRoute = <
         terminal ?? (await handler(executionContext as InferProcedureHandlerContext<TProcedure>));
 
       const outputValidationValue =
-        options.validateOutput && outputSchema !== undefined
+        outputSchema !== undefined
           ? getProcedureOutputValidationValue(result as Response | NextResponse | ProcedureResult)
           : undefined;
 
@@ -854,7 +902,7 @@ export const createNextRoute = <
       if (outputValidationValue !== undefined) {
         const parsedOutput = await parseOutputWithSchema(
           outputSchema as StandardSchemaV1,
-          outputValidationValue,
+          outputValidationValue.value,
         );
 
         normalizedResult =
@@ -893,9 +941,7 @@ export const createNextRoute = <
   const definitionWithMethod = withProcedureMethod(procedure.definition, options.method);
 
   const shouldEnableRuntimeOutputValidation =
-    options.validateOutput &&
-    definitionWithMethod.output !== undefined &&
-    outputSchema !== undefined;
+    definitionWithMethod.output !== undefined && outputSchema !== undefined;
 
   const routeDefinition = shouldEnableRuntimeOutputValidation
     ? {

@@ -437,9 +437,7 @@ describe("createNextPage", () => {
         .forRoute(pageRouteContract)
         .params(paramsSchema)
         .query(querySchema)
-        .output<typeof outputSchema, { id: string; tab: "info" | "comments"; requestId: string }>(
-          outputSchema,
-        )
+        .output(outputSchema)
         .use(({ params }) => ({
           ctx: {
             requestId: `page:${params.id}`,
@@ -485,6 +483,18 @@ describe("createNextPage", () => {
       }),
     ).resolves.toBe("photo-1:comments");
   });
+
+  it.each([z.string(), z.undefined().transform(() => "ready")])(
+    "requires a handler before adapting a page with an output schema",
+    (schema) => {
+      const builder = procedure.forRoute(pageRouteContract).params(paramsSchema).output(schema);
+
+      expect(() => {
+        // @ts-expect-error Output contracts require a page handler.
+        builder.page(() => "rendered");
+      }).toThrow("Page procedures with output schemas must call .handle() before .page().");
+    },
+  );
 
   it("reads validated headers and cookies from the page test request context", async () => {
     const page = procedure
@@ -1135,9 +1145,7 @@ describe("createNextPage", () => {
     const page = procedure
       .forRoute(pageRouteContract)
       .params(paramsSchema)
-      .output<typeof outputSchema, { id: string; tab: "info" | "comments"; requestId: string }>(
-        outputSchema,
-      )
+      .output(outputSchema)
       .handle(({ params }) => ({
         body: {
           id: params.id,
@@ -1145,9 +1153,7 @@ describe("createNextPage", () => {
           requestId: "before-parse",
         },
       }))
-      .page(({ data }) => data, {
-        validateOutput: true,
-      });
+      .page(({ data }) => data, {});
 
     await expect(
       page({
@@ -1160,14 +1166,42 @@ describe("createNextPage", () => {
     });
   });
 
+  it("passes transformed output to the page renderer", async () => {
+    const page = procedure
+      .forRoute(pageRouteContract)
+      .params(paramsSchema)
+      .output(z.object({ count: z.string().transform(Number) }))
+      .handle(() => ({ body: { count: "42" } }))
+      .page(({ data }) => {
+        expectTypeOf(data).toEqualTypeOf<{ count: number }>();
+
+        return data.count;
+      });
+
+    await expect(page({ params: Promise.resolve({ id: "photo-1" }) })).resolves.toBe(42);
+  });
+
+  it("passes a value transformed from an undefined handler body to the renderer", async () => {
+    const page = procedure
+      .forRoute(pageRouteContract)
+      .params(paramsSchema)
+      .output(z.undefined().transform(() => "ready" as const))
+      .handle(() => ({}))
+      .page(({ data }) => {
+        expectTypeOf(data).toEqualTypeOf<"ready">();
+
+        return data;
+      });
+
+    await expect(page({ params: Promise.resolve({ id: "photo-1" }) })).resolves.toBe("ready");
+  });
+
   it("passes page output validation failures to page onError", async () => {
     const onError = vi.fn<(error: unknown) => string>(() => "invalid-output");
     const page = procedure
       .forRoute(pageRouteContract)
       .params(paramsSchema)
-      .output<typeof outputSchema, { id: string; tab: "info" | "comments"; requestId: string }>(
-        outputSchema,
-      )
+      .output(outputSchema)
       .handle(({ params }) => ({
         body: {
           id: params.id,
@@ -1177,7 +1211,6 @@ describe("createNextPage", () => {
       }))
       .page(({ data }) => data, {
         onError,
-        validateOutput: true,
       });
 
     await expect(
@@ -1198,6 +1231,7 @@ describe("createNextPage", () => {
         .forRoute(pageRouteContract)
         .params(paramsSchema)
         .output({
+          // @ts-expect-error Invalid schemas are rejected by the type system.
           _output: {
             id: "" as string,
           },
@@ -1207,29 +1241,9 @@ describe("createNextPage", () => {
             id: params.id,
           },
         }))
-        .page(({ data }) => data, {
-          validateOutput: true,
-        }),
-    ).toThrow(
-      "Procedure output contracts must implement Standard Schema V1 when validateOutput is enabled.",
-    );
+        .page(({ data }) => data, {}),
+    ).toThrow("Procedure output contracts must implement Standard Schema V1 when declared.");
   });
-
-  it.each([undefined, false])(
-    "allows a type-only output contract when runtime validation is %s",
-    async (validateOutput) => {
-      const page = procedure
-        .forRoute(pageRouteContract)
-        .params(paramsSchema)
-        .output({ _output: { id: "" } })
-        .handle(({ params }) => ({ body: { id: params.id } }))
-        .page(({ data }) => data, { validateOutput });
-
-      await expect(page({ params: Promise.resolve({ id: "photo-1" }) })).resolves.toEqual({
-        id: "photo-1",
-      });
-    },
-  );
 
   it("lets createPageProcedure provide page terminal onError", async () => {
     const appProcedure = createPageProcedure({

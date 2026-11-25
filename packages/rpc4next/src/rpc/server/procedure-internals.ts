@@ -137,13 +137,18 @@ export const withProcedureRouteBinding = <
   >;
 };
 
-export const withProcedureOutput = <TDefinition extends ProcedureDefinition, TOutput, TSchema>(
+export const withProcedureOutput = <
+  TDefinition extends ProcedureDefinition,
+  TOutput,
+  TSchema,
+  TInput,
+>(
   definition: TDefinition,
   schema?: TSchema,
 ): MergeProcedureDefinition<
   TDefinition,
   {
-    output: ProcedureOutputContract<TOutput>;
+    output: ProcedureOutputContract<TOutput, TInput>;
   }
 > => {
   if (definition.output) {
@@ -158,7 +163,7 @@ export const withProcedureOutput = <TDefinition extends ProcedureDefinition, TOu
   } as MergeProcedureDefinition<
     TDefinition,
     {
-      output: ProcedureOutputContract<TOutput>;
+      output: ProcedureOutputContract<TOutput, TInput>;
     }
   >;
 };

@@ -37,7 +37,6 @@ export type {
   ProcedurePageInputTarget as PageInputTarget,
 } from "./next-page";
 export type { NextPageProps } from "./next-page";
-export { output, withOutput } from "./output";
 export { createPageProcedure, createRouteProcedure, procedure } from "./procedure";
 export type { StandardSchemaV1, StandardSchemaV1Issue } from "./standard-schema";
 export type { TypedNextResponse } from "./types";

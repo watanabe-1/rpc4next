@@ -1,4 +1,5 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
+import { z } from "zod";
 
 import type { ContentType } from "../lib/content-type-types";
 import type { HttpStatusCode } from "../lib/http-status-code-types";
@@ -238,12 +239,7 @@ describe("procedure builder type definitions", () => {
 
   it("types response helpers against explicit output contracts", () => {
     procedure
-      .output({
-        _output: {
-          ok: true as const,
-          count: 0 as number,
-        },
-      })
+      .output(z.object({ ok: z.literal(true), count: z.number() }))
       .handle(({ response }) => {
         response.json({
           ok: true,
@@ -261,28 +257,6 @@ describe("procedure builder type definitions", () => {
           count: 1,
         });
       });
-
-    expect(true).toBe(true);
-  });
-
-  it("types response helpers against type-only output contracts", () => {
-    procedure.output<{ ok: true; count: number }>().handle(({ response }) => {
-      response.json({
-        ok: true,
-        count: 1,
-      });
-
-      response.json({
-        // @ts-expect-error response.json payload should follow the type-only output contract
-        ok: false,
-        count: 1,
-      });
-
-      return response.json({
-        ok: true,
-        count: 1,
-      });
-    });
 
     expect(true).toBe(true);
   });
@@ -360,17 +334,9 @@ describe("procedure builder type definitions", () => {
 
     expect(() => {
       procedure
-        .output({
-          _output: {
-            ok: true as const,
-          },
-        })
+        .output(z.object({ ok: z.literal(true) }))
         // @ts-expect-error output is not available after output(schema)
-        .output({
-          _output: {
-            ok: true as const,
-          },
-        });
+        .output(z.object({ ok: z.literal(true) }));
     }).toThrow("Procedure output contract has already been declared.");
 
     // @ts-expect-error route/page presets should start from createRouteProcedure/createPageProcedure
@@ -723,9 +689,7 @@ describe("procedure builder type definitions", () => {
           ok: true as const,
         },
       }))
-      .get({
-        validateOutput: true,
-      });
+      .get({});
 
     type RouteResponse = Awaited<ReturnType<typeof route>>;
     type _implicitBadRequestUsesCatalogStatus = ExpectTrue<
@@ -981,20 +945,21 @@ describe("procedure builder type definitions", () => {
       .forRoute(guardedUserRouteContract)
       .params(userIdSchema)
       .query(includeDraftsSchema)
-      .output({
-        _output: {
-          ok: true as const,
-          userId: "" as string,
-          includeDrafts: false as boolean,
-        },
-      })
-      .handle(async ({ params, query, response }) =>
+      .output(z.object({ ok: z.literal(true), userId: z.string(), includeDrafts: z.boolean() }))
+      .handle(async ({ params, query, response }) => {
         response.json({
+          ok: true,
+          // @ts-expect-error The output schema requires userId, not userId2.
+          userId2: params.userId,
+          includeDrafts: query.includeDrafts === "true",
+        });
+
+        return response.json({
           ok: true,
           userId: params.userId,
           includeDrafts: query.includeDrafts === "true",
-        }),
-      )
+        });
+      })
       .get({
         onError: defaultProcedureOnError,
       });
@@ -1109,20 +1074,21 @@ describe("procedure builder type definitions", () => {
       .forRoute(guardedUserRouteContract)
       .params(userIdSchema)
       .query(includeDraftsSchema)
-      .output({
-        _output: {
-          ok: true as const,
-          userId: "" as string,
-          includeDrafts: false as boolean,
-        },
-      })
-      .handle(async ({ params, query, response }) =>
+      .output(z.object({ ok: z.literal(true), userId: z.string(), includeDrafts: z.boolean() }))
+      .handle(async ({ params, query, response }) => {
         response.json({
+          ok: true,
+          // @ts-expect-error The output schema requires userId, not userId2.
+          userId2: params.userId,
+          includeDrafts: query.includeDrafts === "true",
+        });
+
+        return response.json({
           ok: true,
           userId: params.userId,
           includeDrafts: query.includeDrafts === "true",
-        }),
-      )
+        });
+      })
       .get();
 
     type RouteResponse = Awaited<ReturnType<typeof route>>;

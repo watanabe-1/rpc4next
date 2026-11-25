@@ -63,9 +63,12 @@ describe("integration next-app server route handlers", () => {
     });
   });
 
-  it("serves a plain Next.js route handler with an explicit output contract", async () => {
+  it("serves a procedure route with a validated output contract", async () => {
     const { GET: explicitOutputGet } = await import("../app/api/explicit-output/route");
-    const response = await explicitOutputGet();
+    const response = await explicitOutputGet(
+      new NextRequest("http://127.0.0.1:3000/api/explicit-output"),
+      { params: Promise.resolve({}) },
+    );
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("application/json");

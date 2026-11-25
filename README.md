@@ -202,11 +202,6 @@ export const { GET } = appRouteProcedure
   .meta({ summary: "Get a user", tags: ["users"] })
   .params(paramsSchema)
   .query(querySchema)
-  .output<{
-    ok: true;
-    userId: string;
-    includePosts: boolean;
-  }>()
   .handle(async ({ params, query }) => ({
     status: 200,
     body: {
@@ -551,13 +546,31 @@ a `Date` to a schema expecting `Date` sends a string and will fail validation.
 Properties with `undefined` are omitted; array elements become `null`.
 
 JSON response types describe the parsed value: for example, `Date` becomes a
-string or `null` (for an invalid date). When `validateOutput: true` is enabled,
+string or `null` (for an invalid date). When an `.output(schema)` contract is declared,
 output validation checks the
 server-side value. A handler's `response.json(...)` call serializes immediately,
 before validation checks that original value, so serialization can fail first.
 JSON serialization can fail for values such as `bigint` or circular
 references. Non-finite numbers become `null`, so a general `number` is inferred
 as `number | null` in JSON responses.
+
+For procedure routes, `.output(schema)` validates successful procedure
+result bodies and values passed to rpc4next response helpers against the
+`.output(schema)` contract. An absent body is validated as `undefined`; the
+schema must accept it for an empty success response. Raw successful `Response`
+or `NextResponse` objects cannot be validated and cause an output error; use
+the rpc4next response helpers instead. Redirects and non-success responses are
+not validated against the success output contract. Omit `.output(...)` to infer
+response types without runtime output validation.
+TypeScript checks returned procedure bodies against the schema's input type;
+successful empty results require a schema input that accepts `undefined`.
+
+When the output schema transforms values, the handler returns the schema's
+input type and the client receives the parsed output type. Page renderers
+likewise receive the parsed output. For example, a `z.string().transform(Number)`
+schema accepts a string from the handler and produces a number for the client.
+When a route output is validated, an explicit `Content-Length` is removed
+because parsing may change the serialized response body.
 Array element types also include `null` because sparse array slots serialize as
 `null`. Mutable tuples are inferred as arrays of their possible element types,
 since methods like `shift` and `pop` can change their length and order. Readonly
@@ -924,11 +937,6 @@ export const { GET } = appRouteProcedure
       includeDrafts: z.enum(["true", "false"]).optional(),
     }),
   )
-  .output<{
-    ok: true;
-    userId: string;
-    includeDrafts: boolean;
-  }>()
   .handle(async ({ params, query }) => ({
     status: 200,
     body: {
@@ -955,6 +963,11 @@ export const { POST } = appRouteProcedure
   .handle(({ response }) => response.redirect("/feed", 307))
   .post();
 ```
+
+`response.json({ ok: true })` preserves the top-level boolean literal as
+`true` in the inferred response type. String and number properties generally
+infer as `string` and `number`; use `as const` when a literal value must be
+preserved for response discrimination.
 
 `response.json(...)`, `response.text(...)`, `response.body(...)`,
 `response.redirect(...)`, and `response.error(...)` preserve more precise status,
@@ -998,9 +1011,7 @@ export default pageProcedure
       id: params.id,
     },
   }))
-  .page(({ data }) => <div>photo:{data.id}</div>, {
-    validateOutput: true,
-  });
+  .page(({ data }) => <div>photo:{data.id}</div>);
 ```
 
 For pages:
@@ -1009,8 +1020,9 @@ For pages:
 - `json` and `formData` are rejected because pages do not receive request bodies
 - `.page(...)` receives validated `params` and `query` directly from the procedure pipeline; declare `.params(...)` or `.query(...)` for each value the render callback needs. Without the corresponding contract, its runtime value is `undefined`.
 - if the page only needs validated URL input, `.handle()` is optional
+- pages with `.output(schema)` must declare `.handle()` before `.page()`; the schema validates the handler's data before rendering
 - handlers are still useful for DB reads or render-time data preparation; their `ProcedureResult` body is passed to `.page(...)` as `data`
-- `validateOutput: true` parses the body with `.output(schema)` before render
+- `.output(schema)` parses the body before render
 - raw `Response`, `response.error(...)`, and `{ redirect: ... }` results are rejected for page procedures; use Next.js `redirect()` / `notFound()` by throwing them from page code instead
 - `page.redirect(...)` and `page.notFound()` do not return at runtime, but prefer `return page.redirect(...)` / `return page.notFound()` so the terminal branch is clear to TypeScript and readers
 
@@ -1224,7 +1236,7 @@ reuse, prefer `createRouteProcedure({ onError })` and export a shared
 `appRouteProcedure` preset from `app/_rpc/route-procedure`.
 
 Input validation adds a typed `BAD_REQUEST` response when validation fails.
-Runtime output validation, when enabled, adds an `INTERNAL_SERVER_ERROR`
+An output schema adds an `INTERNAL_SERVER_ERROR`
 response. Other known error codes are only inferred when your handler or
 middleware returns them.
 
@@ -1332,22 +1344,7 @@ const response = await rpc.api["next-native-response"].$get();
 ```
 
 For native handlers, route discovery and request typing still work, but response typing is naturally broader than when you return rpc4next's typed helpers.
-When a native handler needs a precise generated success body without moving to
-`procedure`, attach an output contract with `withOutput(output(schema), handler)`:
-
-```ts
-import { output, withOutput } from "rpc4next/server";
-import { z } from "zod";
-
-const responseSchema = z.object({
-  ok: z.literal(true),
-  source: z.literal("native"),
-});
-
-export const GET = withOutput(output(responseSchema), async () =>
-  Response.json({ ok: true, source: "native" as const }),
-);
-```
+For precise inferred response types, use a procedure and its `response` helpers.
 
 See [integration/next-app/README.md](./integration/next-app/README.md) for the repository's full integration fixture coverage and route-pattern notes.
 

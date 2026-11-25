@@ -15,10 +15,6 @@ export const { GET } = appRouteProcedure
   .forRoute(routeContract)
   .headers(headersSchema)
   .cookies(cookiesSchema)
-  .output<{
-    header: string;
-    session: string;
-  }>()
   .handle(async ({ headers, cookies }) => ({
     body: {
       header: headers["x-integration-test"],

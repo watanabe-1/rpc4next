@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { HttpMethod } from "rpc4next-shared";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 import { z } from "zod";
 
+import type {
+  DynamicPathProxyAsFunction,
+  RpcEndpoint,
+  RpcGeneratedPathStructure,
+} from "../client/types";
 import { createNextRoute as basecreateNextRoute } from "./next-route";
 import { defaultProcedureOnError } from "./on-error";
 import { createRouteProcedure, procedure } from "./procedure";
@@ -211,17 +216,17 @@ describe("createNextRoute zod integration", () => {
         .json(z.object({ title: z.string().min(1) }))
         .headers(z.object({ "x-procedure-test": z.string().min(1) }))
         .cookies(z.object({ session: z.string().min(1) }))
-        .output({
-          _output: {
-            ok: true as const,
-            userId: "" as string,
-            includePosts: false as boolean,
-            title: "" as string,
-            header: "" as string,
-            session: "" as string,
-            requestId: "" as string,
-          },
-        })
+        .output(
+          z.object({
+            ok: z.literal(true),
+            userId: z.string(),
+            includePosts: z.boolean(),
+            title: z.string(),
+            header: z.string(),
+            session: z.string(),
+            requestId: z.string(),
+          }),
+        )
         .use(async ({ headers }) => ({
           ctx: {
             requestId: headers["x-procedure-test"],
@@ -906,7 +911,7 @@ describe("createNextRoute zod integration", () => {
             count: 1,
           },
         })),
-      { method: "GET", validateOutput: true },
+      { method: "GET" },
     );
 
     const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
@@ -937,10 +942,10 @@ describe("createNextRoute zod integration", () => {
           status: 200,
           body: {
             ok: true,
-            count: "1" as unknown as number,
+            count: "1",
           },
         })),
-      { method: "GET", validateOutput: true },
+      { method: "GET" },
     );
 
     const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
@@ -952,6 +957,187 @@ describe("createNextRoute zod integration", () => {
       ok: true,
       count: 2,
     });
+  });
+
+  it("accepts output schema input and exposes the transformed result to clients", async () => {
+    const schema = z.object({ count: z.string().transform(Number) });
+    const { GET } = procedure
+      .forRoute(staticRouteContract)
+      .output(schema)
+      .handle(({ response }) => response.json({ count: "42" }))
+      .get({ onError: defaultProcedureOnError });
+
+    type ClientResponse = Awaited<
+      ReturnType<
+        DynamicPathProxyAsFunction<
+          RpcGeneratedPathStructure<RpcEndpoint & { $get: typeof GET }>
+        >["$get"]
+      >
+    >;
+    type Success = Extract<ClientResponse, { status: 200 }>;
+    type DirectSuccess = Extract<Awaited<ReturnType<typeof GET>>, { status: 200 }>;
+    expectTypeOf<Awaited<ReturnType<DirectSuccess["json"]>>>().toEqualTypeOf<{
+      count: number | null;
+    }>();
+    expectTypeOf<Awaited<ReturnType<Success["json"]>>>().toEqualTypeOf<{
+      count: number | null;
+    }>();
+    const response = await GET(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ count: 42 });
+  });
+
+  it("preserves successful input validation responses in client types and at runtime", async () => {
+    const { GET } = procedure
+      .forRoute(staticRouteContract)
+      .query(z.object({ id: z.string() }), {
+        onValidationError: ({ response }) => response.json({ message: "invalid" as const }, 200),
+      })
+      .output(z.object({ count: z.number() }))
+      .handle(({ response }) => response.json({ count: 1 }, 200))
+      .get({ onError: defaultProcedureOnError });
+
+    type ClientResponse = Awaited<
+      ReturnType<
+        DynamicPathProxyAsFunction<
+          RpcGeneratedPathStructure<RpcEndpoint & { $get: typeof GET }>
+        >["$get"]
+      >
+    >;
+    type Success = Extract<ClientResponse, { status: 200 }>;
+    expectTypeOf<Awaited<ReturnType<Success["json"]>>>().toEqualTypeOf<
+      { count: number | null } | { message: "invalid" }
+    >();
+    const response = await GET(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ message: "invalid" });
+  });
+
+  it("preserves successful onError responses in client types and at runtime", async () => {
+    const { GET } = procedure
+      .forRoute(staticRouteContract)
+      .output(z.object({ count: z.number() }))
+      .handle(({ request, response }) => {
+        if (request.nextUrl.searchParams.has("throw")) throw new Error("failed");
+
+        return response.json({ count: 1 }, 200);
+      })
+      .get({
+        onError: (_error, { response }) => response.json({ message: "failed" as const }, 200),
+      });
+
+    type ClientResponse = Awaited<
+      ReturnType<
+        DynamicPathProxyAsFunction<
+          RpcGeneratedPathStructure<RpcEndpoint & { $get: typeof GET }>
+        >["$get"]
+      >
+    >;
+    type Success = Extract<ClientResponse, { status: 200 }>;
+    expectTypeOf<Awaited<ReturnType<Success["json"]>>>().toEqualTypeOf<
+      { count: number | null } | { message: "failed" }
+    >();
+    const response = await GET(new NextRequest("http://127.0.0.1:3000/api?throw=1"), {
+      params: Promise.resolve({}),
+    });
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ message: "failed" });
+  });
+
+  it("exposes transformed JSON helper values from the route handler", async () => {
+    const { GET } = procedure
+      .forRoute(staticRouteContract)
+      .output(z.string().transform(Number))
+      .handle(({ response }) => response.json("42"))
+      .get({ onError: defaultProcedureOnError });
+
+    type Success = Extract<Awaited<ReturnType<typeof GET>>, { status: 200 }>;
+    expectTypeOf<Awaited<ReturnType<Success["json"]>>>().toEqualTypeOf<number | null>();
+    const response = await GET(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toBe(42);
+  });
+
+  it.each([{}, { status: 200 as const }])(
+    "exposes a body produced from an empty success result: %j",
+    async (result) => {
+      const { GET } = procedure
+        .forRoute(staticRouteContract)
+        .output(z.undefined().transform(() => "ready" as const))
+        .handle(() => result)
+        .get({ onError: defaultProcedureOnError });
+
+      type Success = Extract<Awaited<ReturnType<typeof GET>>, { status: 200 }>;
+      expectTypeOf<Awaited<ReturnType<Success["text"]>>>().toEqualTypeOf<"ready">();
+      const response = await GET(new NextRequest("http://127.0.0.1:3000/api"), {
+        params: Promise.resolve({}),
+      });
+      expect(response.status).toBe(200);
+      await expect(response.text()).resolves.toBe("ready");
+    },
+  );
+
+  it("reflects a transformed primitive body and its content type", async () => {
+    const { GET } = procedure
+      .forRoute(staticRouteContract)
+      .output(z.string().transform(Number))
+      .handle(() => ({ body: "42" }))
+      .get({ onError: defaultProcedureOnError });
+
+    type ClientResponse = Awaited<
+      ReturnType<
+        DynamicPathProxyAsFunction<
+          RpcGeneratedPathStructure<RpcEndpoint & { $get: typeof GET }>
+        >["$get"]
+      >
+    >;
+    type Success = Extract<ClientResponse, { status: 200 }>;
+    expectTypeOf<Awaited<ReturnType<Success["json"]>>>().toEqualTypeOf<number | null>();
+    const response = await GET(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+    expect(response.headers.get("content-type")).toContain("application/json");
+    await expect(response.json()).resolves.toBe(42);
+  });
+
+  it("distributes a union status between transformed success and unchanged failure bodies", async () => {
+    const { GET } = procedure
+      .forRoute(staticRouteContract)
+      .output(z.string().transform(Number))
+      .handle(({ request }) => ({
+        status: request.nextUrl.searchParams.has("fail") ? (400 as const) : (200 as const),
+        body: "42",
+      }))
+      .get({ onError: defaultProcedureOnError });
+
+    type Result = Awaited<
+      ReturnType<
+        DynamicPathProxyAsFunction<
+          RpcGeneratedPathStructure<RpcEndpoint & { $get: typeof GET }>
+        >["$get"]
+      >
+    >;
+    type Success = Extract<Result, { status: 200 }>;
+    type Failure = Extract<Result, { status: 400 }>;
+    expectTypeOf<Awaited<ReturnType<Success["json"]>>>().toEqualTypeOf<number | null>();
+    expectTypeOf<Awaited<ReturnType<Failure["text"]>>>().toEqualTypeOf<string>();
+
+    const success = await GET(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+    const failure = await GET(new NextRequest("http://127.0.0.1:3000/api?fail=1"), {
+      params: Promise.resolve({}),
+    });
+    expect(success.status).toBe(200);
+    await expect(success.json()).resolves.toBe(42);
+    expect(failure.status).toBe(400);
+    await expect(failure.text()).resolves.toBe("42");
   });
 
   it("normalizes invalid runtime output as INTERNAL_SERVER_ERROR", async () => {
@@ -972,7 +1158,7 @@ describe("createNextRoute zod integration", () => {
             count: -1,
           },
         })),
-      { method: "GET", validateOutput: true, onError },
+      { method: "GET", onError },
     );
 
     const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
@@ -1008,7 +1194,7 @@ describe("createNextRoute zod integration", () => {
             count: -1,
           }),
         ),
-      { method: "GET", validateOutput: true },
+      { method: "GET" },
     );
 
     const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
@@ -1048,7 +1234,7 @@ describe("createNextRoute zod integration", () => {
 
               return response.body("draft-post", { headersInit });
             }),
-          { method: "GET", validateOutput: true },
+          { method: "GET" },
         );
         const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
           params: Promise.resolve({}),
@@ -1079,7 +1265,7 @@ describe("createNextRoute zod integration", () => {
             slug: "draft-post",
           }),
         ),
-      { method: "GET", validateOutput: true },
+      { method: "GET" },
     );
 
     const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
@@ -1092,6 +1278,31 @@ describe("createNextRoute zod integration", () => {
       slug: "DRAFT-POST",
     });
   });
+
+  it.each(["json", "text", "body", "result"] as const)(
+    "removes stale Content-Length after transforming a %s response",
+    async (kind) => {
+      const { GET } = procedure
+        .forRoute(staticRouteContract)
+        .output(z.string().transform((value) => `${value}-longer`))
+        .handle(({ response }) => {
+          const headers = { "content-length": "1", "x-preserved": "yes" };
+          if (kind === "json") return response.json("a", { headersInit: headers });
+          if (kind === "text") return response.text("a", { headersInit: headers });
+          if (kind === "body") return response.body("a", { headersInit: headers });
+
+          return { body: "a", headers };
+        })
+        .get({ onError: defaultProcedureOnError });
+
+      const response = await GET(new NextRequest("http://127.0.0.1:3000/api"), {
+        params: Promise.resolve({}),
+      });
+      expect(response.headers.get("content-length")).toBeNull();
+      expect(response.headers.get("x-preserved")).toBe("yes");
+      await expect(kind === "json" ? response.json() : response.text()).resolves.toBe("a-longer");
+    },
+  );
 
   it("preserves statusText when helper responses are rebuilt after output parsing", async () => {
     const jsonRoute = createNextRoute(
@@ -1112,7 +1323,7 @@ describe("createNextRoute zod integration", () => {
             { status: 201, statusText: "Created via helper" },
           ),
         ),
-      { method: "GET", validateOutput: true },
+      { method: "GET" },
     );
 
     const jsonResponse = await jsonRoute(new NextRequest("http://127.0.0.1:3000/api/json"), {
@@ -1136,7 +1347,7 @@ describe("createNextRoute zod integration", () => {
             statusText: "Accepted via helper",
           }),
         ),
-      { method: "GET", validateOutput: true },
+      { method: "GET" },
     );
 
     const textResponse = await textRoute(new NextRequest("http://127.0.0.1:3000/api/text"), {
@@ -1157,7 +1368,7 @@ describe("createNextRoute zod integration", () => {
             statusText: "Non-Authoritative via helper",
           }),
         ),
-      { method: "GET", validateOutput: true },
+      { method: "GET" },
     );
 
     const bodyResponse = await bodyRoute(new NextRequest("http://127.0.0.1:3000/api/body"), {
@@ -1175,7 +1386,7 @@ describe("createNextRoute zod integration", () => {
         .forRoute(staticRouteContract)
         .output(z.string().transform((value) => value.toUpperCase()))
         .handle(async ({ response }) => response.body("draft-post")),
-      { method: "GET", validateOutput: true },
+      { method: "GET" },
     );
 
     const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
@@ -1192,7 +1403,7 @@ describe("createNextRoute zod integration", () => {
         .forRoute(staticRouteContract)
         .output(z.string().transform(() => null))
         .handle(async ({ response }) => response.body("draft-post")),
-      { method: "GET", validateOutput: true },
+      { method: "GET" },
     );
 
     const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
@@ -1214,7 +1425,7 @@ describe("createNextRoute zod integration", () => {
           })),
         )
         .handle(async ({ response }) => response.body("draft-post")),
-      { method: "GET", validateOutput: true },
+      { method: "GET" },
     );
 
     const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
@@ -1237,7 +1448,7 @@ describe("createNextRoute zod integration", () => {
         .forRoute(staticRouteContract)
         .output(z.string().transform((value) => new Blob([value])))
         .handle(async ({ response }) => response.text("draft-post")),
-      { method: "GET", validateOutput: true, onError },
+      { method: "GET", onError },
     );
 
     const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
@@ -1257,7 +1468,7 @@ describe("createNextRoute zod integration", () => {
     });
   });
 
-  it("skips runtime output validation for raw Response escape hatches", async () => {
+  it("rejects raw successful responses when runtime output validation is enabled", async () => {
     const route = createNextRoute(
       procedure
         .forRoute(staticRouteContract)
@@ -1275,18 +1486,51 @@ describe("createNextRoute zod integration", () => {
             },
           });
         }),
-      { method: "GET", validateOutput: true },
+      { method: "GET" },
     );
 
     const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
       params: Promise.resolve({}),
     });
 
-    expect(response.status).toBe(202);
+    expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
-      ok: true,
-      slug: "raw-response",
+      error: { code: "INTERNAL_SERVER_ERROR", message: "Internal server error" },
     });
+  });
+
+  it("validates an undefined success body against the output schema", async () => {
+    const route = createNextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .output(z.string())
+        // @ts-expect-error Exercise runtime validation when the handler violates its output contract.
+        .handle(async () => ({})),
+      { method: "GET" },
+    );
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(500);
+  });
+
+  it("allows an empty success body when the output schema accepts undefined", async () => {
+    const route = createNextRoute(
+      procedure
+        .forRoute(staticRouteContract)
+        .output(z.undefined())
+        .handle(async () => ({})),
+      { method: "GET" },
+    );
+
+    const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe("");
   });
 
   it("does not apply successful output transforms to status 300 responses", async () => {
@@ -1295,7 +1539,7 @@ describe("createNextRoute zod integration", () => {
         .forRoute(staticRouteContract)
         .output(z.string().transform((value) => value.toUpperCase()))
         .handle(async () => ({ status: 300 as const, body: "multiple choices" })),
-      { method: "GET", validateOutput: true },
+      { method: "GET" },
     );
 
     const response = await route(new NextRequest("http://127.0.0.1:3000/api"), {

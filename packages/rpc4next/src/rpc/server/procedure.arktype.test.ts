@@ -34,7 +34,7 @@ describe("procedure builder arktype integration", () => {
 
   it("types response helpers from arktype output contracts", () => {
     const outputSchema: StandardSchemaV1<
-      unknown,
+      { ok: boolean; vendor: string },
       {
         ok: boolean;
         vendor: string;

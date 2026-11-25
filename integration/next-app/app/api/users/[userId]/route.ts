@@ -15,14 +15,9 @@ export const { GET } = appRouteProcedure
   .forRoute(routeContract)
   .params(paramsSchema)
   .query(querySchema)
-  .output<{
-    ok: true;
-    userId: string;
-    includePosts: boolean;
-  }>()
   .handle(async ({ params, query }) => ({
     body: {
-      ok: true,
+      ok: true as const,
       userId: params.userId,
       includePosts: query.includePosts === "true",
     },
