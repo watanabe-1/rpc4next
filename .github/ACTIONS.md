@@ -10,7 +10,7 @@ authenticate with GitHub, then install the extension:
 ```sh
 aqua install
 gh auth login
-gh extension install github/gh-actions-lock --pin v0.4.1
+gh extension install github/gh-actions-lock --pin v0.5.0
 ```
 
 After adding a workflow or changing an action reference, regenerate and verify
