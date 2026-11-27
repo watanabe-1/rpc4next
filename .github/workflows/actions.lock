@@ -6,24 +6,24 @@ workflows:
     '.github/workflows/autofix.yml': []
     '.github/workflows/bun-test.yml':
         - 'actions/checkout@v7.0.1'
-        - 'watanabe-1/github-actions-common@v1.2.5'
+        - 'watanabe-1/github-actions-common@v1.2.6'
     '.github/workflows/dependabot-auto-merge.yml': []
     '.github/workflows/e2e-test.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/upload-artifact@v7.0.2'
-        - 'watanabe-1/github-actions-common@v1.2.5'
+        - 'watanabe-1/github-actions-common@v1.2.6'
     '.github/workflows/gha-static-check.yml':
         - 'actions/checkout@v7.0.1'
     '.github/workflows/node-test.yml':
         - 'actions/checkout@v7.0.1'
         - 'davelosert/vitest-coverage-report-action@v2.13.2'
-        - 'watanabe-1/github-actions-common@v1.2.5'
+        - 'watanabe-1/github-actions-common@v1.2.6'
     '.github/workflows/pr-auto-approve.yml': []
     '.github/workflows/pr-labeler.yml': []
     '.github/workflows/publish.yml':
         - 'actions/checkout@v7.0.1'
         - 'googleapis/release-please-action@v5.0.0'
-        - 'watanabe-1/github-actions-common@v1.2.5'
+        - 'watanabe-1/github-actions-common@v1.2.6'
     '.github/workflows/renovate-auto-approve.yml': []
     '.github/workflows/renovate.yml':
         - 'actions/checkout@v7.0.1'
@@ -80,9 +80,9 @@ dependencies:
         commit: 'sha1-acdd6bda8b035c99ce59d5675816af2aa65a1774'
         owner_id: 38656520
         repo_id: 252754603
-    'watanabe-1/github-actions-common@v1.2.5':
-        ref: 'v1.2.5'
-        commit: 'sha1-0e9b6763a2f343233b82faed14089cf328d8f4b3'
+    'watanabe-1/github-actions-common@v1.2.6':
+        ref: 'v1.2.6'
+        commit: 'sha1-15224360f072051b948762dee6dc85bad60a17f2'
         owner_id: 96782802
         repo_id: 1381583967
         uses:
