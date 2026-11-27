@@ -1,0 +1,227 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/project-audit/finding.schema.json",
+  "title": "Project audit finding",
+  "type": "object",
+  "required": [
+    "id",
+    "modes",
+    "summary",
+    "description",
+    "impact",
+    "locations",
+    "expected",
+    "actual",
+    "evidence",
+    "severity",
+    "confidence",
+    "discovery",
+    "verification",
+    "arbitration",
+    "final_verdict",
+    "duplicate",
+    "issue_url",
+    "fingerprint",
+    "root_cause_key"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "modes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": ["general", "security", "spec", "performance", "testing", "architecture"]
+      }
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "impact": {
+      "type": "string",
+      "minLength": 1
+    },
+    "locations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["path", "line"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "expected": {
+      "type": "string",
+      "minLength": 1
+    },
+    "actual": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "severity": {
+      "enum": ["critical", "high", "medium", "low", "informational"]
+    },
+    "confidence": {
+      "enum": ["high", "medium", "low"]
+    },
+    "discovery": {
+      "$ref": "#/$defs/discovery"
+    },
+    "verification": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/verification"
+        }
+      ]
+    },
+    "arbitration": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/arbitration"
+        }
+      ]
+    },
+    "final_verdict": {
+      "enum": ["confirmed", "rejected", "unresolved"]
+    },
+    "duplicate": {
+      "type": "object",
+      "required": ["status", "reason", "queries", "inspected_urls"],
+      "properties": {
+        "status": {
+          "enum": ["not_checked", "unknown", "duplicate", "unique"]
+        },
+        "reason": {
+          "type": "string"
+        },
+        "queries": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "inspected_urls": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "issue_url": {
+      "type": ["string", "null"],
+      "format": "uri"
+    },
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "root_cause_key": {
+      "type": "string",
+      "minLength": 1
+    },
+    "publication_state": {
+      "enum": ["not_applicable", "draft", "creating", "unknown", "created", "duplicate", "blocked"]
+    }
+  },
+  "$defs": {
+    "discovery": {
+      "type": "object",
+      "required": ["agent_id", "reason"],
+      "properties": {
+        "agent_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "verification": {
+      "type": "object",
+      "required": ["agent_id", "verdict", "reason", "evidence"],
+      "properties": {
+        "agent_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verdict": {
+          "enum": ["confirmed", "rejected", "uncertain"]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "arbitration": {
+      "type": "object",
+      "required": ["agent_id", "verdict", "reason", "evidence"],
+      "properties": {
+        "agent_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verdict": {
+          "enum": ["confirmed", "rejected", "unresolved"]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
