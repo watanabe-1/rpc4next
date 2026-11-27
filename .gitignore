@@ -65,6 +65,7 @@ generated-prompt.txt
 dist
 packages/*/dist
 integration/next-app/.next/
+integration/next-app/.next-base-path/
 integration/next-app/tsconfig.tsbuildinfo
 integration/next-app/.tmp-start*.log
 integration/next-app/playwright-report/

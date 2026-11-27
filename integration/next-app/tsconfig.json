@@ -41,7 +41,9 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    ".next-base-path/types/**/*.ts",
+    ".next-base-path/dev/types/**/*.ts"
   ],
   "exclude": ["node_modules"]
 }

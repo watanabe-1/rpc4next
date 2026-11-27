@@ -453,6 +453,42 @@ Do not use request headers as the destination without establishing a trust bound
 a trusted proxy must overwrite forwarding headers, and the resulting protocol and
 host must be checked against an explicit allowlist before making the request.
 
+#### Public URL prefixes and rewrites
+
+The scanner derives routes from the `app` directory; it does not read Next.js
+configuration or deployment proxy rules. Configure the client with the public
+prefix needed to reach those routes:
+
+| Deployment                         | Client configuration and scope                                                                                                                                                       |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Same origin, no prefix             | Use `""` in the browser, or an absolute origin on the server.                                                                                                                        |
+| Next.js `basePath: "/docs"`        | Use `"/docs"` in the browser, or `"https://example.com/docs"` on the server. Next.js `basePath` is a build-time setting.                                                             |
+| Reverse proxy or hosting prefix    | Include the public prefix in `baseUrl`, such as `"https://example.com/service"`. The proxy must forward the resulting paths to the matching Next.js routes.                          |
+| Rewrites or route-specific aliases | The scanner does not generate rewrite source paths or infer per-route mappings. Generated paths work only if the public endpoint accepts those paths; configure routing accordingly. |
+
+`baseUrl` is concatenated with the generated route, after removing one trailing
+slash. Use a base origin and optional path prefix without a query or fragment.
+For `baseUrl = "https://example.com/docs"` and `app/users/[id]/page.tsx`:
+
+```ts
+const url = rpc.users._id("42").$url({ query: { tab: "profile" } });
+// url.path:         "https://example.com/docs/users/42?tab=profile"
+// url.relativePath: "/users/42?tab=profile"
+// url.pathname:     "/users/[id]"
+// url.params:       { id: "42" }
+```
+
+`path` includes `baseUrl`; `relativePath` excludes it and includes any query
+and hash. `pathname` is the route pattern, not the resolved public URL. For a
+plain anchor or browser navigation, use a URL containing the public prefix,
+such as `path`. For Next.js `Link` or `router.push` within the same app, use
+`relativePath` when Next.js itself applies `basePath`; passing an already
+prefixed URL can add the prefix twice. An external proxy prefix unknown to
+Next.js needs separate deployment-specific navigation handling. See the Next.js
+[`basePath`](https://nextjs.org/docs/app/api-reference/config/next-config-js/basePath)
+and [`rewrites`](https://nextjs.org/docs/app/api-reference/config/next-config-js/rewrites)
+documentation.
+
 For route-handler tests, use `createRpcTestClient` to call your exported
 `GET`/`POST` functions directly. This keeps the generated typed client in the
 test path without starting Next.js, MSW, or another mock HTTP server:
