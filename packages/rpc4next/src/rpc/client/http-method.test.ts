@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { httpMethod } from "./http-method";
 
@@ -21,6 +21,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
 
   afterEach(() => {
     global.fetch = originalFetch;
+    vi.unstubAllGlobals();
 
     if (originalDocumentDescriptor) {
       Object.defineProperty(globalThis, "document", originalDocumentDescriptor);
@@ -563,6 +564,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     }) as typeof fetch;
 
     const defaultOptions = {
+      cookieMode: "explicit" as const,
       init: { headers: { Cookie: "a=1" } },
     };
 
@@ -591,6 +593,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     };
     const request = httpMethod("$get", ["http://example.com", "api"], {}, [], {
       fetch,
+      cookieMode: "explicit",
       init: { headers: { Cookie: "a=1" } },
     });
 
@@ -599,7 +602,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     expect(calledInit?.headers).toEqual({ cookie: "a=1" });
   });
 
-  it("ignores cookie arguments in managed mode while retaining transport headers", async () => {
+  it("defaults to managed mode while retaining transport headers", async () => {
     let calledInit: CapturedInit | undefined;
     const fetch: typeof globalThis.fetch = (_input, init) => {
       calledInit = init as CapturedInit | undefined;
@@ -608,13 +611,28 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     };
     const request = httpMethod("$get", ["http://example.com", "api"], {}, [], {
       fetch,
-      cookieMode: "managed",
       init: { headers: { Cookie: "transport=1" } },
     });
 
-    await request({ requestHeaders: { cookies: { invalid: "bad;value" }, headers: undefined } });
+    await request();
     expect(calledInit?.headers).toEqual({ cookie: "transport=1" });
   });
+
+  it.each([undefined, "managed"] as const)(
+    "rejects cookie arguments before fetch when cookieMode is %s",
+    async (cookieMode) => {
+      const fetch = vi.fn<typeof globalThis.fetch>();
+      const request = httpMethod("$get", ["http://example.com", "api"], {}, [], {
+        cookieMode,
+        fetch,
+      });
+
+      await expect(
+        request({ requestHeaders: { cookies: {}, headers: undefined } }),
+      ).rejects.toThrow('Cookie arguments are not supported in "managed" mode');
+      expect(fetch).not.toHaveBeenCalled();
+    },
+  );
 
   it("retains managed Cookie headers for browser custom transports only", async () => {
     simulateBrowserRuntime();
@@ -629,7 +647,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       fetch: customFetch,
       init: { headers: { Cookie: "transport=1" } },
     });
-    await request({ requestHeaders: { cookies: { ignored: "2" }, headers: undefined } });
+    await request();
     expect(calledInit?.headers).toEqual({ cookie: "transport=1" });
 
     const overrideRequest = httpMethod("$get", ["http://example.com", "api"], {}, [], {
@@ -735,7 +753,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       return Promise.resolve(new Response(null, { status: 200 }));
     }) as typeof fetch;
 
-    const defaultOptions = { init: {} };
+    const defaultOptions = { init: {}, cookieMode: "explicit" as const };
     const requestFn = httpMethod(key, paths, params, dynamicKeys, defaultOptions);
 
     const methodParam = {
@@ -768,7 +786,7 @@ describe("httpMethod (integration test without excessive mocks)", () => {
       return Promise.resolve(new Response(null, { status: 200 }));
     }) as typeof fetch;
 
-    const requestFn = httpMethod(key, paths, params, dynamicKeys, { init: {} });
+    const requestFn = httpMethod(key, paths, params, dynamicKeys, { cookieMode: "explicit" });
 
     await expect(
       requestFn({
@@ -793,39 +811,70 @@ describe("httpMethod (integration test without excessive mocks)", () => {
     expect(fetchCalled).toBe(false);
   });
 
-  it("omits Cookie headers in browser runtime", async () => {
+  it("rejects explicit mode in browser runtimes before calling fetch", async () => {
     simulateBrowserRuntime();
-
-    const key = "$get";
-    const paths = ["http://example.com", "api", "withCookies"];
-    const params = {};
-    const dynamicKeys: string[] = [];
-
-    let calledInit: CapturedInit | undefined = {};
-    global.fetch = ((_input, _init) => {
-      calledInit = _init as CapturedInit | undefined;
-
-      return Promise.resolve(new Response(null, { status: 200 }));
-    }) as typeof fetch;
-
-    const requestFn = httpMethod(key, paths, params, dynamicKeys, {
-      init: { headers: { Cookie: "default=1", Accept: "application/json" } },
+    const fetch = vi.fn<typeof globalThis.fetch>();
+    const request = httpMethod("$get", ["http://example.com", "api"], {}, [], {
+      cookieMode: "explicit",
+      fetch,
     });
 
-    await requestFn({
-      requestHeaders: {
-        headers: { "x-test": "ok" },
-        cookies: {
-          sessionId: "abc123",
-        },
-      },
-    });
-
-    expect(calledInit?.headers).toEqual({
-      accept: "application/json",
-      "x-test": "ok",
-    });
+    await expect(
+      request({ requestHeaders: { cookies: { session: "abc" }, headers: undefined } }),
+    ).rejects.toThrow('cookieMode "explicit" is not supported in browser runtimes');
+    expect(fetch).not.toHaveBeenCalled();
   });
+
+  it("rejects explicit mode in Web Workers before calling fetch", async () => {
+    class WorkerGlobalScope {
+      navigator = { product: "Gecko" };
+    }
+    vi.stubGlobal("WorkerGlobalScope", WorkerGlobalScope);
+    vi.stubGlobal("self", new WorkerGlobalScope());
+    const fetch = vi.fn<typeof globalThis.fetch>();
+    const request = httpMethod("$get", ["http://example.com", "api"], {}, [], {
+      cookieMode: "explicit",
+      fetch,
+    });
+
+    await expect(request()).rejects.toThrow('cookieMode "explicit" is not supported');
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("omits Cookie headers for native fetch in Web Workers", async () => {
+    class WorkerGlobalScope {
+      navigator = { product: "Gecko" };
+    }
+    vi.stubGlobal("WorkerGlobalScope", WorkerGlobalScope);
+    vi.stubGlobal("self", new WorkerGlobalScope());
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(new Response());
+    global.fetch = fetch;
+    const request = httpMethod("$get", ["http://example.com", "api"], {}, [], {
+      init: { headers: { Cookie: "secret=1" } },
+    });
+
+    await request();
+    expect(fetch.mock.calls[0]?.[1]?.headers).toBeUndefined();
+  });
+
+  it.each(["Cloudflare-Workers", undefined])(
+    "allows explicit cookie arguments in server workers with user agent %s",
+    async (userAgent) => {
+      class WorkerGlobalScope {
+        navigator = userAgent ? { userAgent } : undefined;
+      }
+      vi.stubGlobal("WorkerGlobalScope", WorkerGlobalScope);
+      vi.stubGlobal("self", new WorkerGlobalScope());
+      const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(new Response());
+      const request = httpMethod("$get", ["http://example.com", "api"], {}, [], {
+        cookieMode: "explicit",
+        fetch,
+      });
+
+      await request({ requestHeaders: { cookies: { session: "abc" }, headers: undefined } });
+      expect(fetch.mock.calls[0]?.[1]?.headers).toEqual({ cookie: "session=abc" });
+    },
+  );
 
   it("sets inferred content-type for text body when user has NOT provided one", async () => {
     const key = "$post";

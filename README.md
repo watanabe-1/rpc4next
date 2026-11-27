@@ -431,7 +431,7 @@ import type { PathStructure } from "../generated/rpc";
 export const rpc = createRpcClient<PathStructure>("");
 ```
 
-Use `""` for same-origin calls in the browser, or pass an absolute base URL for server-side or cross-origin usage.
+The default `managed` cookie mode uses the browser cookie store and does not accept cookie values as call arguments. Use `""` for same-origin calls in the browser, or pass an absolute base URL for server-side or cross-origin usage.
 For server-side calls, configure an absolute origin in your deployment environment
 (for example, `RPC_ORIGIN=https://example.com`) and use it to create the client:
 
@@ -695,9 +695,11 @@ When a project wants an authorization preset for route handlers, add
 private folder, so it can be imported by both `route.ts` and `page.tsx` without
 creating public URL paths.
 
-For request headers and cookies:
+For request headers and explicitly supplied server-side cookies, create a client with
+`{ cookieMode: "explicit" }`:
 
 ```ts
+const rpc = createRpcClient<PathStructure>(origin, { cookieMode: "explicit" });
 const response = await rpc.api["request-meta"].$get({
   requestHeaders: {
     headers: { "x-integration-test": "example" },
@@ -706,9 +708,11 @@ const response = await rpc.api["request-meta"].$get({
 });
 ```
 
-By default, `requestHeaders.cookies` is part of the typed input contract and is
-serialized into the `Cookie` header outside the browser. To use cookies managed
-by the browser or a custom transport, select managed mode when creating the client:
+In `explicit` mode, `requestHeaders.cookies` is part of the typed input contract
+and is serialized into the `Cookie` header. Browser and browser Worker requests in this mode throw.
+Server-side Workers can use explicit mode. Worker detection uses browser navigator properties,
+so environments that imitate a browser Worker may also be treated as browsers.
+The default `managed` mode uses cookies managed by the browser or a custom transport:
 
 ```ts
 const rpc = createRpcClient<PathStructure>("", { cookieMode: "managed" });
@@ -717,20 +721,27 @@ const response = await rpc.api["request-meta"].$get({
 });
 ```
 
-Managed mode removes cookie values from RPC call arguments; it does not set or
-verify cookies. A custom `fetch` receives any Cookie header configured through
+Managed mode removes cookie values from typed RPC call arguments and rejects them at runtime;
+it does not set or verify cookies. A custom `fetch` receives any Cookie header configured through
 request init, including in browsers; the native browser `fetch` uses the cookie
 store instead. Server-issued
 `HttpOnly` cookies are available to requests without exposing their values to
 JavaScript. For cross-origin browser calls, set appropriate credentials, for
 example `{ cookieMode: "managed", init: { credentials: "include" } }`; cookie
 attributes, browser policy, and CORS also affect whether cookies are sent.
-Explicit cookie arguments are omitted in browser runtimes even in the default
-mode, so use managed mode for browser calls. The server still validates received
+For server-side requests, managed mode does not automatically forward incoming cookies;
+use explicit mode when passing them as call arguments. The server still validates received
 cookies and may reject a request when they are missing or invalid.
 When `cookieMode` is only known at runtime, the returned client has a union of
 both modes; narrow the option before creating the client when mode-specific call
 types are needed. The in-process `createRpcTestClient` supports the same modes.
+
+**Migration:** The default cookie mode changed from `explicit` to `managed`.
+For server-side clients that pass `requestHeaders.cookies`, set
+`{ cookieMode: "explicit" }` when creating the client (including test clients).
+In browser clients, remove cookie arguments and let the browser manage cookies.
+Existing JavaScript and compiled clients that still pass cookie arguments in managed
+mode now throw before sending a request, rather than silently dropping them.
 
 ### 6. Handle Typed Responses
 

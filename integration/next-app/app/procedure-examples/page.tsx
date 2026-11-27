@@ -42,7 +42,7 @@ type SharedProcedureValidationErrorResponse = TypedNextResponse<
 >;
 
 const createServerRpcClient = async () => {
-  return createRpcClient<PathStructure>(serverRpcOrigin());
+  return createRpcClient<PathStructure>(serverRpcOrigin(), { cookieMode: "explicit" });
 };
 
 type ProcedureContractGet = ReturnType<

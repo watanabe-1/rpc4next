@@ -54,6 +54,12 @@ export type RpcClientOptions<
 
 /** Client-wide transport options, including the source of request cookies. */
 export type RpcClientCreationOptions = RpcClientOptions & {
+  /**
+   * Cookie handling for this client. Defaults to `"managed"`, which leaves cookies to fetch or its
+   * transport and removes cookie values from typed method arguments. `"explicit"` accepts cookie
+   * arguments and serializes them on the server; requests in browsers and browser workers throw.
+   * Managed mode rejects cookie arguments at runtime and does not set or forward cookies.
+   */
   cookieMode?: "explicit" | "managed";
 };
 
@@ -169,7 +175,7 @@ type HttpMethodsArgs<
   TMethod extends HttpMethodFuncKey,
   T,
   TValidationSchema extends ValidationSchema,
-  TCookieMode extends "explicit" | "managed" = "explicit",
+  TCookieMode extends "explicit" | "managed" = "managed",
   TQuery = ValidationInputFor<"query", TValidationSchema>,
   TJson = TMethod extends "$get" | "$head" ? never : ValidationInputFor<"json", TValidationSchema>,
   TFormData = TMethod extends "$get" | "$head"
@@ -374,7 +380,7 @@ type NonEmptyArray<T> = [T, ...T[]];
 /** Generated client proxy shape where dynamic segments are called as functions. */
 export type DynamicPathProxyAsFunction<
   T,
-  TCookieMode extends "explicit" | "managed" = "explicit",
+  TCookieMode extends "explicit" | "managed" = "managed",
 > = Omit<
   (T extends RpcEndpoint ? PathProxyAsFunction<T, TCookieMode> : unknown) & {
     [K in keyof T]: K extends OptionalCatchAllKey
