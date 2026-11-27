@@ -519,6 +519,21 @@ The RPC client still builds the URL, request method, query string, headers,
 cookies, and body; the test client dispatches that request to the matching
 handler in-process.
 
+Use these tests to check the behavior of the invoked handler, and test the
+public request path separately. A passing test client call does not guarantee
+that the same request reaches that handler in a deployed application.
+
+| Concern                          | In-process typed tests                                                                                                      | Real server, browser, or deployment tests                                                                                        |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Authentication and authorization | Check missing, invalid, and valid credentials and the responses from the handler and its procedure `.use()` middleware.     | Check Next.js middleware or Proxy authentication, redirects, and protection of the intended routes through the real server.      |
+| URL resolution                   | Check client-built paths and queries and the behavior of the matched handler. Route params are inferred by the test client. | Check Next.js route matching and params, `basePath`, rewrites, and access through the public URL.                                |
+| Cookies                          | Check how the handler validates and responds to explicitly supplied cookies.                                                | In a browser, check cookie storage and sending, including `HttpOnly`, `Secure`, `SameSite`, credentials, and CORS as applicable. |
+| Deployment                       | Check handler behavior under the test configuration.                                                                        | Smoke-test the deployed public URL, environment variables, prefixes, reverse proxy, and hosting configuration.                   |
+
+Cover handler success and error cases with typed tests, then exercise critical
+routes through a running Next.js server. Use a real browser for browser cookie
+behavior, and verify deployment-specific routing against the deployed environment.
+
 For page procedure tests, use `createRpcTestPageClient` with the generated
 `PathStructure` and `testPages` manifest:
 
