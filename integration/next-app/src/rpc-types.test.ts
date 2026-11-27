@@ -23,6 +23,7 @@ import type { PathStructure } from "./generated/rpc";
 const baseUrl = "http://127.0.0.1:3000";
 
 const client = createRpcClient<PathStructure>(baseUrl, {
+  cookieMode: "explicit",
   fetch: async () =>
     new Response("{}", {
       status: 200,
@@ -1297,25 +1298,26 @@ describe("integration next-app generated RPC type coverage", () => {
     });
 
     const managedClient = createRpcClient<PathStructure>(baseUrl, {
-      cookieMode: "managed",
       fetch: async () => new Response("{}"),
     });
     void managedClient.api["request-meta"].$get({
       requestHeaders: { headers: { "x-integration-test": "header-ok" } },
     });
 
-    const managedTestClient = createRpcTestClient<PathStructure>([], { cookieMode: "managed" });
+    const managedTestClient = createRpcTestClient<PathStructure>([]);
     void managedTestClient.api["request-meta"].$get({
       requestHeaders: { headers: { "x-integration-test": "header-ok" } },
     });
-    void managedTestClient.api["request-meta"].$get({
-      requestHeaders: {
-        headers: { "x-integration-test": "header-ok" },
-        // @ts-expect-error managed test clients do not accept cookie arguments
-        cookies: { session: "ignored" },
-      },
-    });
-    const explicitTestClient = createRpcTestClient<PathStructure>([]);
+    void managedTestClient.api["request-meta"]
+      .$get({
+        requestHeaders: {
+          headers: { "x-integration-test": "header-ok" },
+          // @ts-expect-error managed test clients do not accept cookie arguments
+          cookies: { session: "ignored" },
+        },
+      })
+      .catch(() => {});
+    const explicitTestClient = createRpcTestClient<PathStructure>([], { cookieMode: "explicit" });
     void explicitTestClient.api["request-meta"].$get({
       // @ts-expect-error explicit test clients require cookie arguments
       requestHeaders: { headers: { "x-integration-test": "header-ok" } },
@@ -1330,20 +1332,24 @@ describe("integration next-app generated RPC type coverage", () => {
         // @ts-expect-error cookie input is required when the mode may be explicit
         requestHeaders: { headers: { "x-integration-test": "header-ok" } },
       });
-      void unknownClient.api["request-meta"].$get({
+      void unknownClient.api["request-meta"]
+        .$get({
+          requestHeaders: {
+            headers: { "x-integration-test": "header-ok" },
+            cookies: { session: "explicit-value" },
+          },
+        })
+        .catch(() => {});
+    }
+    void managedClient.api["request-meta"]
+      .$get({
         requestHeaders: {
           headers: { "x-integration-test": "header-ok" },
-          cookies: { session: "explicit-value" },
+          // @ts-expect-error managed cookies are supplied by the transport
+          cookies: { session: "ignored" },
         },
-      });
-    }
-    void managedClient.api["request-meta"].$get({
-      requestHeaders: {
-        headers: { "x-integration-test": "header-ok" },
-        // @ts-expect-error managed cookies are supplied by the transport
-        cookies: { session: "ignored" },
-      },
-    });
+      })
+      .catch(() => {});
 
     void client.api["procedure-submit"].$post({
       body: { json: { title: "ok" } },

@@ -317,7 +317,7 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
     const client = createRpcTestClient<PathStructure>(testRoutes, { baseUrl });
     const pageClient = createRpcTestPageClient<PathStructure>(testPages, { baseUrl });
 
-    it("uses managed cookies from the test transport and ignores cookie call arguments", async () => {
+    it("uses managed cookies from the test transport and rejects cookie call arguments", async () => {
       const managed = createRpcTestClient<PathStructure>(testRoutes, {
         baseUrl,
         cookieMode: "managed",
@@ -326,12 +326,18 @@ describe("integration next-app generated PathStructure runtime behavior", () => 
       const args = {
         requestHeaders: {
           headers: { "x-integration-test": "test" },
-          cookies: { session: "ignored" },
         },
       };
       const response = await managed.api["request-meta"].$get(args);
       expect(response.status).toBe(200);
       await expect(response.json()).resolves.toEqual({ header: "test", session: "transport" });
+
+      await expect(
+        managed.api["request-meta"].$get({
+          // @ts-expect-error exercise legacy JavaScript cookie arguments at runtime
+          requestHeaders: { ...args.requestHeaders, cookies: { session: "ignored" } },
+        }),
+      ).rejects.toThrow('Cookie arguments are not supported in "managed" mode');
 
       const noCookie = createRpcTestClient<PathStructure>(testRoutes, {
         baseUrl,

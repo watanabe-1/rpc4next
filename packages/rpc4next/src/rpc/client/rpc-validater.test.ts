@@ -154,7 +154,9 @@ describe("createRpcClient", () => {
         }),
       );
 
-      const client = createRpcClient<PathStructure>("http://localhost:3000");
+      const client = createRpcClient<PathStructure>("http://localhost:3000", {
+        cookieMode: "explicit",
+      });
       const response = await client.api.none
         ._json("json")
         .$post({ body: { json: { hoge: "hogehoge", name: "foo" } } });
@@ -186,7 +188,9 @@ describe("createRpcClient", () => {
       }),
     );
 
-    const client = createRpcClient<PathStructure>("http://localhost:3000");
+    const client = createRpcClient<PathStructure>("http://localhost:3000", {
+      cookieMode: "explicit",
+    });
     const response = await client.api.none.headers.$post({
       requestHeaders: { headers: { hoge: "hogehoge", name: "foo" } },
     });
@@ -217,7 +221,9 @@ describe("createRpcClient", () => {
       }),
     );
 
-    const client = createRpcClient<PathStructure>("http://localhost:3000");
+    const client = createRpcClient<PathStructure>("http://localhost:3000", {
+      cookieMode: "explicit",
+    });
     const response = await client.api.none.cookies.$post({
       requestHeaders: { cookies: { hoge: "hogehoge", name: "foo" } },
     });
@@ -242,7 +248,9 @@ describe("createRpcClient", () => {
       }),
     );
 
-    const client = createRpcClient<PathStructure>("http://localhost:3000");
+    const client = createRpcClient<PathStructure>("http://localhost:3000", {
+      cookieMode: "explicit",
+    });
     const response = await client.api.none.query.$post({
       url: { query: { hoge: "hogehoge", name: "foo" } },
     });
@@ -269,7 +277,9 @@ describe("createRpcClient", () => {
       }),
     );
 
-    const client = createRpcClient<PathStructure>("http://localhost:3000");
+    const client = createRpcClient<PathStructure>("http://localhost:3000", {
+      cookieMode: "explicit",
+    });
     const response = await client.api.none.optionalQuery.$post();
 
     const json = await response.json();
@@ -331,7 +341,9 @@ describe("createRpcClient", () => {
       }),
     );
 
-    const client = createRpcClient<PathStructure>("http://localhost:3000");
+    const client = createRpcClient<PathStructure>("http://localhost:3000", {
+      cookieMode: "explicit",
+    });
     const response = await client.api.none.all.$post({
       url: { query: { hoge: "hogehoge", name: "foo" } },
       body: { json: { hoge: "hogehoge", name: "foo" } },
@@ -357,8 +369,14 @@ describe("createHandler type definitions", () => {
       return new Response();
     };
     const client = createRpcClient<PathStructure>("", {
+      cookieMode: "explicit",
       fetch: customFetch,
     });
+
+    const managedClient = createRpcClient<PathStructure>("");
+    expectTypeOf<Parameters<typeof managedClient.api.none.cookies.$post>>().toEqualTypeOf<
+      Parameters<typeof managedClient.api.none.$get>
+    >();
 
     type ExpectedNonJsonParameters = [
       methodParam?: {

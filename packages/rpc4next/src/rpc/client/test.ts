@@ -314,7 +314,8 @@ const resolveRouteParams = async (
  *
  * The client keeps the same generated path and input types as `createRpcClient`, but dispatches
  * requests directly to loaded route modules instead of starting Next.js or mocking HTTP with a
- * separate server.
+ * separate server. Cookie handling defaults to managed mode, as with `createRpcClient`; use
+ * `cookieMode: "explicit"` to supply cookie arguments in server-side tests.
  */
 export const createRpcTestClient = (<T extends RpcGeneratedPathStructure>(
   routes: readonly RpcTestRoute[],
@@ -361,7 +362,7 @@ export const createRpcTestClient = (<T extends RpcGeneratedPathStructure>(
   };
   const { baseUrl = DEFAULT_TEST_BASE_URL, ...clientOptions } = options ?? {};
 
-  if (clientOptions.cookieMode === "managed") {
+  if (clientOptions.cookieMode !== "explicit") {
     return createRpcClient<T>(baseUrl, {
       ...clientOptions,
       cookieMode: "managed",
@@ -377,16 +378,16 @@ export const createRpcTestClient = (<T extends RpcGeneratedPathStructure>(
 }) as {
   <T extends RpcGeneratedPathStructure>(
     routes: readonly RpcTestRoute[],
-    options: RpcTestClientOptions & { cookieMode: "managed" },
+    options?: RpcTestClientOptions & { cookieMode?: "managed" },
   ): DynamicPathProxyAsFunction<T, "managed">;
   <T extends RpcGeneratedPathStructure>(
     routes: readonly RpcTestRoute[],
-    options?: RpcTestClientOptions & { cookieMode?: "explicit" },
-  ): DynamicPathProxyAsFunction<T>;
+    options: RpcTestClientOptions & { cookieMode: "explicit" },
+  ): DynamicPathProxyAsFunction<T, "explicit">;
   <T extends RpcGeneratedPathStructure>(
     routes: readonly RpcTestRoute[],
     options: RpcTestClientOptions,
-  ): DynamicPathProxyAsFunction<T> | DynamicPathProxyAsFunction<T, "managed">;
+  ): DynamicPathProxyAsFunction<T, "explicit"> | DynamicPathProxyAsFunction<T, "managed">;
 };
 
 const createRpcTestPageRenderDispatcher = (

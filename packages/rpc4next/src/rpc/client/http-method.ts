@@ -38,7 +38,21 @@ const hasUserContentType = (h: Record<string, string>): boolean => {
   return Object.keys(h).some((k) => k.toLowerCase() === "content-type");
 };
 
-const isBrowserRuntime = () => typeof window !== "undefined" && typeof document !== "undefined";
+const isBrowserRuntime = () => {
+  if (typeof window !== "undefined" && typeof document !== "undefined") return true;
+  const worker = globalThis as typeof globalThis & {
+    WorkerGlobalScope?: new (...args: never[]) => object;
+    self?: { navigator?: { product?: string } };
+  };
+
+  // Browser WorkerNavigator.product is "Gecko"; server worker scopes may also expose
+  // WorkerGlobalScope without implementing the browser's WorkerNavigator.
+  return (
+    typeof worker.WorkerGlobalScope === "function" &&
+    worker.self instanceof worker.WorkerGlobalScope &&
+    worker.self.navigator?.product === "Gecko"
+  );
+};
 
 const omitCookieHeader = (headers: Record<string, string>) => {
   const { cookie: _cookie, ...headersWithoutCookie } = headers;
@@ -118,12 +132,22 @@ export const httpMethod = (
       };
 
       const headersWithCookies = (() => {
-        if (isBrowserRuntime() && !(defaultOptions.cookieMode === "managed" && providedFetch)) {
-          return omitCookieHeader(mergedHeaders);
+        if (defaultOptions.cookieMode === "explicit" && isBrowserRuntime()) {
+          throw new Error(
+            'cookieMode "explicit" is not supported in browser runtimes; use "managed".',
+          );
         }
 
-        if (defaultOptions.cookieMode === "managed") {
-          return mergedHeaders;
+        if (defaultOptions.cookieMode !== "explicit") {
+          if (methodParam?.requestHeaders?.cookies !== undefined) {
+            throw new TypeError(
+              'Cookie arguments are not supported in "managed" mode; remove them or use cookieMode: "explicit" on the server.',
+            );
+          }
+
+          return isBrowserRuntime() && !providedFetch
+            ? omitCookieHeader(mergedHeaders)
+            : mergedHeaders;
         }
 
         // ---- Cookies: merge (existing cookie header + methodParam cookies map)

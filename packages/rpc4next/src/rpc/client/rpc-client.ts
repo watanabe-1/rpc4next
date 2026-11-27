@@ -32,6 +32,9 @@ import { createUrl } from "./url";
  *   console.log(await response.json());
  *   ~~~
  *
+ *   Cookies are managed by the transport by default. Use `cookieMode: "explicit"` only for
+ *   server-side requests that supply cookie values as arguments; browser requests then throw.
+ *
  * @template T - The type defining the RPC path structure.
  * @param baseUrl - Base URL for generated paths. Use `""` for same-origin browser calls.
  * @param options - Optional custom `fetch` and default request init values.
@@ -49,14 +52,14 @@ export const createRpcClient = makeCreateRpc((key, context) => {
 }) as {
   <T extends RpcGeneratedPathStructure>(
     baseUrl: string,
-    options: RpcClientOptions & { cookieMode: "managed" },
+    options?: RpcClientOptions & { cookieMode?: "managed" },
   ): DynamicPathProxyAsFunction<T, "managed">;
   <T extends RpcGeneratedPathStructure>(
     baseUrl: string,
-    options?: RpcClientOptions & { cookieMode?: "explicit" },
-  ): DynamicPathProxyAsFunction<T>;
+    options: RpcClientOptions & { cookieMode: "explicit" },
+  ): DynamicPathProxyAsFunction<T, "explicit">;
   <T extends RpcGeneratedPathStructure>(
     baseUrl: string,
     options: RpcClientCreationOptions,
-  ): DynamicPathProxyAsFunction<T> | DynamicPathProxyAsFunction<T, "managed">;
+  ): DynamicPathProxyAsFunction<T, "explicit"> | DynamicPathProxyAsFunction<T, "managed">;
 };
