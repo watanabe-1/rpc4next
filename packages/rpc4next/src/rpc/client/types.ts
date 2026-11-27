@@ -119,6 +119,7 @@ export type UrlResult<T = unknown> = {
   pathname: string;
   path: string;
   relativePath: string;
+  /** Unencoded route parameters. Numeric single-segment inputs are returned as strings. */
   params: ExtractParams<T>;
 };
 
