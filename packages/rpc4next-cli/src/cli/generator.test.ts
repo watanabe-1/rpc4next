@@ -17,6 +17,7 @@ import { padMessage } from "./logger.js";
 
 describe("generate", () => {
   const logger = {
+    warn: vi.fn<(...args: unknown[]) => void>(),
     info: vi.fn<(...args: unknown[]) => void>(),
     success: vi.fn<(...args: unknown[]) => void>(),
     error: vi.fn<(...args: unknown[]) => void>(),
@@ -33,6 +34,31 @@ describe("generate", () => {
     scanAppDirCache.clear();
     visitedDirsCache.clear();
     generatedParamsFilesCache.clear();
+  });
+
+  it("warns in generation and check, including cached watch scans", () => {
+    const tmpDir = makeTempDir();
+    const appDir = path.join(tmpDir, "app");
+    const output = path.join(tmpDir, "src", "rpc.ts");
+    const route = path.join(appDir, "api", "route.ts");
+    try {
+      writeTree(tmpDir, { app: { api: { "route.ts": "export * from './handlers';" } }, src: {} });
+      const options = { baseDir: appDir, outputPath: output, paramsFileName: null, logger };
+      generate({ ...options, preserveCache: true });
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining("./handlers"));
+      logger.warn.mockClear();
+      generate({ ...options, preserveCache: true });
+      expect(logger.warn).toHaveBeenCalledTimes(1);
+      logger.warn.mockClear();
+      expect(checkGenerated(options)).toBe(true);
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining("route.ts"));
+      fs.writeFileSync(route, "export { GET } from './handlers';");
+      logger.warn.mockClear();
+      generate(options);
+      expect(logger.warn).not.toHaveBeenCalled();
+    } finally {
+      cleanupTempDir(tmpDir);
+    }
   });
 
   it("generates imports only for exported route names", () => {

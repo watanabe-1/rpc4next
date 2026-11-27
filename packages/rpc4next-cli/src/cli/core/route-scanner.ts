@@ -61,6 +61,7 @@ export type PathStructureNode = {
 };
 
 type ScanResult = {
+  wildcardExports?: { file: string; source: string }[];
   pathNode: PathStructureNode;
   pathStructure: string;
   imports: ImportObj[];
@@ -78,6 +79,7 @@ type ScanContext = {
 };
 
 type ScanAccumulator = {
+  wildcardExports: { file: string; source: string }[];
   children: Map<string, PathStructureNode>;
   imports: ImportObj[];
   typeFragments: string[];
@@ -166,6 +168,7 @@ const getDirectoryMeta = (entryName: string) => {
 };
 
 const createEmptyScanAccumulator = (): ScanAccumulator => ({
+  wildcardExports: [],
   children: new Map(),
   imports: [],
   typeFragments: [],
@@ -329,7 +332,15 @@ const appendEndpointFile = (
   context: Pick<ScanContext, "output" | "params" | "rootDir">,
   fullPath: string,
 ) => {
-  const { page: pageDef, query: queryDef, routes } = scanEndpointFile(context.output, fullPath);
+  const {
+    page: pageDef,
+    query: queryDef,
+    routes,
+    wildcardExports,
+  } = scanEndpointFile(context.output, fullPath);
+  accumulator.wildcardExports.push(
+    ...wildcardExports.map((source) => ({ file: fullPath, source })),
+  );
 
   if (queryDef) {
     const { importStatement, importPath, type } = queryDef;
@@ -453,6 +464,7 @@ const appendChildDirectory = (
     return;
   }
 
+  accumulator.wildcardExports.push(...(childResult.wildcardExports ?? []));
   accumulator.routeManifests.push(...(childResult.routeManifests ?? []));
   accumulator.pageManifests.push(...(childResult.pageManifests ?? []));
   accumulator.imports.push(...childResult.imports);
@@ -515,6 +527,7 @@ export const scanAppDir = (
   }
 
   const result = {
+    wildcardExports: accumulator.wildcardExports,
     pathNode: {
       typeFragments: accumulator.typeFragments,
       children: accumulator.children,

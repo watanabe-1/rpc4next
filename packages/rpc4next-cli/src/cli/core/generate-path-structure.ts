@@ -23,6 +23,7 @@ type GeneratedParamsType = {
 };
 
 type GeneratedPathStructure = {
+  wildcardExports?: { file: string; source: string }[];
   paramsTypes: GeneratedParamsType[];
   pathStructure: string;
   pageManifests?: readonly PageManifest[];
@@ -108,6 +109,7 @@ export const generatePathStructure = (
   baseDir: string,
 ): GeneratedPathStructure => {
   const {
+    wildcardExports,
     pathStructure,
     imports,
     pageManifests = [],
@@ -150,6 +152,7 @@ export const generatePathStructure = (
   });
 
   return {
+    wildcardExports,
     pathStructure: [
       ROUTE_CONTRACT_GENERATED_MARKER,
       "",
