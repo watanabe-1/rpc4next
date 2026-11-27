@@ -9,6 +9,7 @@
     "start": "bun --bun next start",
     "test": "bun run generate:rpc && bun --bun tsc --noEmit && vitest run --config ../../vitest.config.ts src/*.test.ts",
     "e2e": "bun run generate:rpc && bun --bun playwright test",
+    "e2e:base-path": "bun --bun playwright test --config playwright.base-path.config.ts",
     "typecheck": "bun run generate:rpc && bun --bun tsc --noEmit",
     "generate:rpc": "bun --bun ../../packages/rpc4next-cli/src/cli/index.ts",
     "generate:rpc:watch": "bun --bun ../../packages/rpc4next-cli/src/cli/index.ts --watch",
