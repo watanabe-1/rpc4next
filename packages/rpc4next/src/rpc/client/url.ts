@@ -1,6 +1,8 @@
 import { getParamName, isCatchAllOrOptional, isDynamic, isOptionalCatchAll } from "./client-utils";
 import type { PathParamsInput, UrlOptions, UrlResult } from "./types";
 
+type PathParamsOutput = Record<string, string | string[] | undefined>;
+
 /**
  * Builds a URL suffix string from optional query and hash values.
  *
@@ -190,7 +192,8 @@ const getPathnameSegment = (segment: string) => {
  * their bracket form.
  *
  * In addition, params keys have their internal marker removed and name escapes decoded in the
- * returned `params`, preserving underscores in the original parameter name.
+ * returned `params`, preserving underscores in the original parameter name. Numeric values are
+ * converted to strings; strings and catch-all elements remain unencoded in `params`.
  *
  * @example
  *   ```ts
@@ -205,8 +208,8 @@ const getPathnameSegment = (segment: string) => {
  *
  * @param paths - Path segments. The first element is treated as an optional base URL, and the
  *   remaining segments form the route path.
- * @param params - Parameters used to replace dynamic segments. Values may be `string`, `string[]`,
- *   or `undefined` depending on the segment type.
+ * @param params - Parameters used to replace dynamic segments. Values may be `string`, `number`,
+ *   `string[]`, or `undefined` depending on the segment type.
  * @param dynamicKeys - Keys representing dynamic segments present in the path, used to substitute
  *   values from `params`.
  * @returns A builder function that accepts URL options and returns a `UrlResult`.
@@ -256,10 +259,11 @@ export const createUrl = (
 
   const dynamicPath = buildPathFromSegments(routeSegments);
   const pathname = buildPathFromSegments(pathnameSegments);
-  const cleanedParams: PathParamsInput = Object.create(null);
+  const cleanedParams: PathParamsOutput = Object.create(null);
   for (const key in params) {
     const cleanedKey = getParamName(key);
-    cleanedParams[cleanedKey] = params[key];
+    const value = params[key];
+    cleanedParams[cleanedKey] = typeof value === "number" ? String(value) : value;
   }
   const basePath = baseUrl ? baseUrl.replace(/\/$/, "") : undefined;
 

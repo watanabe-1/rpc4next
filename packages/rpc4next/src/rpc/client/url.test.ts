@@ -3,6 +3,25 @@ import { describe, expect, it } from "vitest";
 import { createUrl } from "./url";
 
 describe("createUrl", () => {
+  it("normalizes numeric result params without mutating input params or repeated builds", () => {
+    const params = { _id: 42 };
+    const build = createUrl(["", "users", "_id"], params, ["_id"]);
+
+    expect(build()).toEqual({
+      path: "/users/42",
+      relativePath: "/users/42",
+      pathname: "/users/[id]",
+      params: { id: "42" },
+    });
+    expect(build({ query: { tab: "profile" }, hash: "top" })).toEqual({
+      path: "/users/42?tab=profile#top",
+      relativePath: "/users/42?tab=profile#top",
+      pathname: "/users/[id]",
+      params: { id: "42" },
+    });
+    expect(params).toEqual({ _id: 42 });
+  });
+
   it("rejects an empty dynamic segment", () => {
     expect(() => createUrl(["", "users", "_id"], { _id: "" }, ["_id"])).toThrow(
       'Invalid dynamic parameter "id": path segments cannot be empty.',

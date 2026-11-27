@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Bug Fixes
+
+- **client:** Convert numeric dynamic route inputs to strings in `$url().params` to match the generated result types and `$match()` results ([#799](https://github.com/watanabe-1/rpc4next/issues/799)). Numeric inputs remain supported; code relying on numeric result params now receives strings.
+
 ## [0.17.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.16.1...rpc4next-v0.17.0) (2026-11-25)
 
 ### Features

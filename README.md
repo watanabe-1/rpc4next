@@ -482,6 +482,12 @@ const url = rpc.users._id("42").$url({ query: { tab: "profile" } });
 // url.params:       { id: "42" }
 ```
 
+Single dynamic segments accept strings or numbers: `_id(42)` returns the same
+`params.id: "42"` as `_id("42")`. `$url().params` contains unencoded route values,
+with numeric inputs converted to strings to match the generated result types.
+Strings such as `"0042"` and `"a/b"` retain their values; catch-all arrays and
+omitted optional catch-all parameters retain their array or `undefined` values.
+
 `path` includes `baseUrl`; `relativePath` excludes it and includes any query
 and hash. `pathname` is the route pattern, not the resolved public URL. For a
 plain anchor or browser navigation, use a URL containing the public prefix,
