@@ -184,6 +184,7 @@ export const scanEndpointFile = (
   page?: PageScanDefinition;
   query?: QueryScanDefinition;
   routes: ScanDefinition<HttpMethod>[];
+  wildcardExports: string[];
 } => {
   const fileContents = fs.readFileSync(inputFile, "utf8");
 
@@ -227,5 +228,14 @@ export const scanEndpointFile = (
     ...(page ? { page } : {}),
     ...(query ? { query } : {}),
     routes,
+    wildcardExports: isPageFile(inputFile)
+      ? []
+      : result.program.body.flatMap((statement) =>
+          statement.type === "ExportAllDeclaration" &&
+          statement.exportKind !== "type" &&
+          !statement.exported
+            ? [statement.source.value]
+            : [],
+        ),
   };
 };

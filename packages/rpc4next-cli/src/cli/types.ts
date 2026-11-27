@@ -15,6 +15,7 @@ type LogOptions = {
 };
 
 export interface Logger {
+  warn?: (msg: string) => void;
   info: (msg: string, options?: LogOptions) => void;
   success: (msg: string, options?: Pick<LogOptions, "indentLevel">) => void;
   error: (msg: string, options?: Pick<LogOptions, "indentLevel">) => void;

@@ -20,6 +20,14 @@ import { relativeFromRoot } from "./core/path-utils.js";
 import { padMessage } from "./logger.js";
 import type { Logger } from "./types.js";
 
+const warnWildcardExports = (logger: Logger, exports: { file: string; source: string }[]) => {
+  for (const { file, source } of exports) {
+    const message = `Warning: ${relativeFromRoot(file)} uses export * from ${JSON.stringify(source)}. rpc4next does not expand wildcard exports; handlers may be missing. Use explicit named exports, such as export { GET } from ${JSON.stringify(source)}.`;
+    if (logger.warn) logger.warn(message);
+    else logger.error(message);
+  }
+};
+
 const createTestManifestOutputPath = (outputPath: string) => {
   const parsed = path.posix.parse(outputPath);
   const extension = parsed.ext || ".ts";
@@ -170,11 +178,13 @@ export const checkGenerated = ({
     }
 
     const {
+      wildcardExports = [],
       pageManifests = [],
       pathStructure,
       paramsTypes,
       routeManifests = [],
     } = generatePathStructure(outputPath, baseDir);
+    warnWildcardExports(logger, wildcardExports);
     const testManifestOutputPath = resolveTestManifestOutputPath(
       outputPath,
       configuredTestManifestOutputPath,
@@ -261,11 +271,13 @@ export const generate = ({
     }
 
     const {
+      wildcardExports = [],
       pageManifests = [],
       pathStructure,
       paramsTypes,
       routeManifests = [],
     } = generatePathStructure(outputPath, baseDir);
+    warnWildcardExports(logger, wildcardExports);
     const testManifestOutputPath = resolveTestManifestOutputPath(
       outputPath,
       configuredTestManifestOutputPath,

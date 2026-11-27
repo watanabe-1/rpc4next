@@ -10,6 +10,7 @@ const createIndent = (level: number = 0) => INDENT.repeat(level);
 
 export const createLogger = (): Logger => {
   return {
+    warn: (msg) => console.warn(msg),
     info: (msg, options = {}) => {
       const { indentLevel = 0, event } = options;
       const prefix = event ? `${cyan(`[${event}]`)} ` : "";

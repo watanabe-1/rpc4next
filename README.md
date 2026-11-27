@@ -417,6 +417,10 @@ without an explicit `type` modifier. A named default function alone, such as
 Detection does not expand `export *` or follow imported and re-exported modules
 to determine whether their bindings are types or values. Use explicit named
 exports for handlers and `export type` or `export { type ... }` for external types.
+The CLI warns when a `route.ts` in a generated public route uses a value `export *`, because handlers
+may be missing from the generated client. Replace it with explicit exports such as
+`export { GET, POST } from "./handler"`. Warnings do not change the exit status;
+successful generation and `--check` do not guarantee that every route was detected.
 Input files must have valid TypeScript or TSX syntax; syntax errors stop generation
 and report the input filename.
 

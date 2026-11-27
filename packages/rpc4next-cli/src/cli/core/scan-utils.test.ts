@@ -41,6 +41,21 @@ describe("scanEndpointFile", () => {
     };
   };
 
+  it("reports only unqualified value wildcard exports in route files", () => {
+    const { outputFile, rootDir } = createPaths();
+    writeTree(rootDir, {
+      "route.ts": `export * from './handlers'; export type * from './types';
+        export * as helpers from './helpers'; export { GET } from './explicit';`,
+      "page.tsx": `export * from './other'; export default function Page() {}`,
+    });
+    const route = scanEndpointFile(outputFile, path.join(rootDir, "route.ts"));
+    expect(route.wildcardExports).toEqual(["./handlers"]);
+    expect(route.routes.map((entry) => entry.exportName)).toEqual(["GET"]);
+    expect(scanEndpointFile(outputFile, path.join(rootDir, "page.tsx")).wildcardExports).toEqual(
+      [],
+    );
+  });
+
   it("should return a query definition for an exported interface", () => {
     const { inputFile, outputFile, rootDir } = createPaths();
     writeTree(rootDir, {
