@@ -52,6 +52,8 @@ next-env.d.ts
 .cache
 .mutator/
 /.audit-results/
+/.fix-review-results/
+/.fix-review-locations/
 
 # IntelliJ based IDEs
 .idea
