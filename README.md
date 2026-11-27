@@ -685,6 +685,44 @@ route and page procedures. An empty array sends no values, so it cannot be
 distinguished from a missing field. Use a schema default if both should become
 an empty array.
 
+To reuse the same contract across repeatable query and form fields, define a
+schema once and use it in each object schema. For example, with Zod:
+
+```ts
+const repeatableStrings = z
+  .union([z.string(), z.array(z.string())])
+  .transform((value) => (Array.isArray(value) ? value : [value]));
+
+const querySchema = z.object({ tag: repeatableStrings.optional() });
+const anotherQuerySchema = z.object({ category: repeatableStrings.optional() });
+```
+
+The input type accepts a string or an array; the parsed value is always an array
+when present. For Valibot and ArkType, the equivalent reusable schemas are:
+
+```ts
+import * as v from "valibot";
+
+const repeatableStrings = v.pipe(
+  v.union([v.string(), v.array(v.string())]),
+  v.transform((value) => (Array.isArray(value) ? value : [value])),
+);
+const querySchema = v.object({ tag: v.optional(repeatableStrings) });
+```
+
+```ts
+import { type } from "arktype";
+
+const repeatableStrings = type("string | string[]").pipe((value) =>
+  Array.isArray(value) ? value : [value],
+);
+const querySchema = type({ "tag?": repeatableStrings });
+```
+
+These examples accept empty strings and do not limit the number of values.
+Add element and count validation for your application. For file fields, use a
+schema that validates `File` values instead of the string schemas above.
+
 Schema validation runs after the runtime reads and parses the request body. For
 overall JSON or multipart body limits, configure your Next.js runtime, hosting
 platform, reverse proxy, CDN, or middleware to reject oversized requests before
