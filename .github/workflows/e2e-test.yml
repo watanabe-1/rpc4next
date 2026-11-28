@@ -150,7 +150,9 @@ jobs:
         uses: actions/upload-artifact@v7.0.2
         with:
           name: playwright-report-${{ matrix.os }}-bun-aqua-next-${{ matrix.next-version }}
-          path: integration/next-app/playwright-report
+          path: |
+            integration/next-app/playwright-report
+            integration/next-app/playwright-report-base-path
           if-no-files-found: ignore
           retention-days: 7
 
