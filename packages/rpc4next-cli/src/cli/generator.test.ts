@@ -5,8 +5,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanupTempDir, makeTempDir, writeTree } from "../test-helpers/tmp-dir.js";
 import { SUCCESS_INDENT_LEVEL, SUCCESS_PAD_LENGTH, SUCCESS_SEPARATOR } from "./constants.js";
 import {
-  createGeneratedParamsFilesCacheKey,
-  generatedParamsFilesCache,
+  clearScanCaches,
+  clearScanAppDirCacheAbove,
+  clearVisitedDirsCacheAbove,
   scanAppDirCache,
   visitedDirsCache,
 } from "./core/cache.js";
@@ -33,7 +34,6 @@ describe("generate", () => {
     vi.clearAllMocks();
     scanAppDirCache.clear();
     visitedDirsCache.clear();
-    generatedParamsFilesCache.clear();
   });
 
   it("warns in generation and check, including cached watch scans", () => {
@@ -143,28 +143,6 @@ describe("generate", () => {
     expect(scanAppDirCache.size).toBe(1);
   });
 
-  it("preserves generated params file cache during watch generation", () => {
-    vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
-      pathStructure: `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
-      paramsTypes: [
-        { paramsType: `${ROUTE_CONTRACT_GENERATED_MARKER}\nparams-type`, dirPath: "dir1" },
-      ],
-    });
-    vi.spyOn(fs, "existsSync").mockReturnValue(false);
-    vi.spyOn(fs, "writeFileSync").mockImplementation(() => {});
-    vi.spyOn(fs, "readdirSync").mockReturnValue([]);
-
-    generate({
-      baseDir,
-      outputPath,
-      paramsFileName,
-      logger,
-      preserveCache: true,
-    });
-
-    expect(generatedParamsFilesCache.size).toBe(1);
-  });
-
   it("clears scan caches when non-watch generation throws", () => {
     vi.spyOn(generatePathStructure, "generatePathStructure").mockImplementation(() => {
       throw new Error("scan failed");
@@ -189,27 +167,6 @@ describe("generate", () => {
 
     expect(visitedDirsCache.size).toBe(0);
     expect(scanAppDirCache.size).toBe(0);
-  });
-
-  it("clears generated params file cache after non-watch generation", () => {
-    vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
-      pathStructure: `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
-      paramsTypes: [
-        { paramsType: `${ROUTE_CONTRACT_GENERATED_MARKER}\nparams-type`, dirPath: "dir1" },
-      ],
-    });
-    vi.spyOn(fs, "existsSync").mockReturnValue(false);
-    vi.spyOn(fs, "writeFileSync").mockImplementation(() => {});
-    vi.spyOn(fs, "readdirSync").mockReturnValue([]);
-
-    generate({
-      baseDir,
-      outputPath,
-      paramsFileName,
-      logger,
-    });
-
-    expect(generatedParamsFilesCache.size).toBe(0);
   });
 
   it("writes the output file when it does not exist", () => {
@@ -536,7 +493,7 @@ describe("generate", () => {
     }
   });
 
-  it.each([false, true])("cleans cached watch files, including missing ones: %s", (removed) => {
+  it.each([false, true])("cleans stale watch files, including missing ones: %s", (removed) => {
     const tmpDir = makeTempDir();
     const appDir = path.join(tmpDir, "app");
     const currentDir = path.join(appDir, "current");
@@ -592,10 +549,6 @@ describe("generate", () => {
         fs.rmSync(staleFilePath);
       }
 
-      const readdirSpy = vi.spyOn(fs, "readdirSync").mockImplementation(() => {
-        throw new Error("unexpected full cleanup scan");
-      });
-
       generate({
         baseDir: appDir,
         outputPath: output,
@@ -604,9 +557,71 @@ describe("generate", () => {
         preserveCache: true,
       });
 
-      expect(readdirSpy).not.toHaveBeenCalled();
       expect(fs.existsSync(staleFilePath)).toBe(false);
     } finally {
+      cleanupTempDir(tmpDir);
+    }
+  });
+
+  it.each([
+    ["_users", false],
+    ["_private/users", false],
+    ["archive/users", true],
+  ])("cleans moved watch contracts at %s (removed endpoint: %s)", (destination, removeRoute) => {
+    const tmpDir = makeTempDir();
+    const appDir = path.join(tmpDir, "app");
+    const oldDir = path.join(appDir, "users");
+    const movedDir = path.join(appDir, destination);
+    const contractName = "route-contract.ts";
+    const manualContent = "// handwritten contract";
+    const otherContent = `${ROUTE_CONTRACT_GENERATED_MARKER}\nother contract`;
+
+    try {
+      writeTree(tmpDir, {
+        app: {
+          users: { "route.ts": "export function GET() {}" },
+          keep: { "route.ts": "export function GET() {}" },
+          _manual: { [contractName]: manualContent },
+          _other: { "other-contract.ts": otherContent },
+        },
+        outside: { [contractName]: otherContent },
+        generated: {},
+      });
+      const options = {
+        baseDir: appDir,
+        outputPath: path.join(tmpDir, "generated", "rpc.ts"),
+        paramsFileName: contractName,
+        logger,
+      };
+      generate({ ...options, preserveCache: true });
+      expect(fs.existsSync(path.join(oldDir, contractName))).toBe(true);
+      fs.mkdirSync(path.dirname(movedDir), { recursive: true });
+      fs.renameSync(oldDir, movedDir);
+      if (removeRoute) fs.rmSync(path.join(movedDir, "route.ts"));
+
+      for (const dirPath of [oldDir, movedDir]) {
+        const endpointPath = path.join(dirPath, "route.ts");
+        clearVisitedDirsCacheAbove(endpointPath);
+        clearScanAppDirCacheAbove(endpointPath);
+      }
+      generate({ ...options, preserveCache: true });
+
+      expect(fs.existsSync(path.join(movedDir, contractName))).toBe(false);
+      expect(fs.existsSync(path.join(appDir, "keep", contractName))).toBe(true);
+      expect(fs.readFileSync(options.outputPath, "utf8")).not.toContain('"users"');
+      expect(fs.readFileSync(path.join(appDir, "_manual", contractName), "utf8")).toBe(
+        manualContent,
+      );
+      expect(fs.readFileSync(path.join(appDir, "_other", "other-contract.ts"), "utf8")).toBe(
+        otherContent,
+      );
+      expect(fs.readFileSync(path.join(tmpDir, "outside", contractName), "utf8")).toBe(
+        otherContent,
+      );
+      // checkGenerated clears scan caches, so run it only after testing the warm generation.
+      expect(checkGenerated(options)).toBe(true);
+    } finally {
+      clearScanCaches();
       cleanupTempDir(tmpDir);
     }
   });
@@ -638,55 +653,6 @@ describe("generate", () => {
 
       expect(fs.existsSync(path.join(routeDir, firstName))).toBe(true);
       expect(fs.existsSync(path.join(routeDir, secondName))).toBe(true);
-    } finally {
-      cleanupTempDir(tmpDir);
-    }
-  });
-
-  it("uses full cleanup scan during non-watch generation even when params cache exists", () => {
-    const tmpDir = makeTempDir();
-    const appDir = path.join(tmpDir, "app");
-    const currentDir = path.join(appDir, "current");
-    const staleDir = path.join(appDir, "stale");
-    const staleFilePath = path.join(staleDir, paramsFileName);
-
-    try {
-      writeTree(tmpDir, {
-        app: {
-          current: {},
-          stale: {
-            [paramsFileName]: `${ROUTE_CONTRACT_GENERATED_MARKER}\nstale`,
-          },
-        },
-        src: {
-          generated: {},
-        },
-      });
-
-      generatedParamsFilesCache.set(
-        createGeneratedParamsFilesCacheKey({ baseDir: appDir, paramsFileName }),
-        new Set(),
-      );
-
-      vi.spyOn(generatePathStructure, "generatePathStructure").mockReturnValue({
-        pathStructure: `${ROUTE_CONTRACT_GENERATED_MARKER}\ngenerated-type-content`,
-        paramsTypes: [
-          {
-            paramsType: `${ROUTE_CONTRACT_GENERATED_MARKER}\ncurrent`,
-            dirPath: currentDir,
-          },
-        ],
-      });
-
-      generate({
-        baseDir: appDir,
-        outputPath: path.join(tmpDir, "src", "generated", "rpc.ts"),
-        paramsFileName,
-        logger,
-      });
-
-      expect(fs.existsSync(staleFilePath)).toBe(false);
-      expect(generatedParamsFilesCache.size).toBe(0);
     } finally {
       cleanupTempDir(tmpDir);
     }
@@ -789,7 +755,6 @@ describe("checkGenerated", () => {
     vi.clearAllMocks();
     scanAppDirCache.clear();
     visitedDirsCache.clear();
-    generatedParamsFilesCache.clear();
   });
 
   it("returns true when generated files are current without writing", () => {

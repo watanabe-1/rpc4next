@@ -5,7 +5,6 @@ import {
   clearScanCaches,
   clearScanAppDirCacheAbove,
   clearVisitedDirsCacheAbove,
-  generatedParamsFilesCache,
   createScanAppDirCacheKey,
   scanAppDirCache,
   visitedDirsCache,
@@ -105,13 +104,11 @@ describe("clearScanCaches", () => {
         paramsTypes: [],
       },
     );
-    generatedParamsFilesCache.set("generated", new Set(["/project/app/route-contract.ts"]));
 
     clearScanCaches();
 
     expect(visitedDirsCache.size).toBe(0);
     expect(scanAppDirCache.size).toBe(0);
-    expect(generatedParamsFilesCache.size).toBe(0);
   });
 });
 

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -58,6 +58,27 @@ void test("built CLI watches route changes under Node", { timeout: 40000 }, asyn
     );
     fs.appendFileSync(routePath, "export function POST() {}\n");
     await waitFor("changed route generation", () => contains(outputPath, '"$post"'));
+    const usersDir = path.dirname(routeDir);
+    const privateUsersDir = path.join(path.dirname(usersDir), "_users");
+    const movedContractPath = path.join(privateUsersDir, "[id]", "route-contract.ts");
+    fs.renameSync(usersDir, privateUsersDir);
+    await waitFor(
+      "moved private route cleanup",
+      () => !fs.existsSync(movedContractPath) && !contains(outputPath, '"$post"'),
+    );
+    const check = spawnSync(
+      process.execPath,
+      [cli, "app", "generated/rpc.ts", "--params-file", "route-contract.ts", "--check"],
+      { cwd: dir, encoding: "utf8", timeout: 10000 },
+    );
+    assert.ifError(check.error);
+    assert.equal(check.status, 0, `${check.stdout}\n${check.stderr}`);
+
+    fs.renameSync(privateUsersDir, usersDir);
+    await waitFor(
+      "restored public route generation",
+      () => contains(outputPath, '"$post"') && fs.existsSync(contractPath),
+    );
     fs.rmSync(routePath);
     await waitFor(
       "deleted route cleanup",
