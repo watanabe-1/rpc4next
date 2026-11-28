@@ -373,9 +373,14 @@ invalid. TypeScript accepts these strings, so the check happens at runtime.
 A static `then` segment uses the generated key `["%74hen"]`, at any depth:
 
 ```ts
+import { z } from "zod";
+
 rpc["%74hen"].$url(); // /then
 rpc.nested["%74hen"].$url(); // /nested/then
-rpcHelper["%74hen"].$match("/then");
+await rpcHelper["%74hen"].$match("/then", {
+  params: z.object({}),
+  query: z.object({}),
+});
 ```
 
 The escape keeps RPC proxies from being mistaken for Promises by `await` or
@@ -1036,20 +1041,41 @@ photoUrl.params;
 For route matching outside the generated client, use
 `createRpcHelper<PathStructure>()` from `rpc4next/client/helper`. It is useful in
 tests, analytics, navigation state, or middleware-like code that already has a
-concrete pathname and needs the generated params shape:
+concrete URL and needs validated params and query values:
 
 ```ts
 import { createRpcHelper } from "rpc4next/client/helper";
 
 import type { PathStructure } from "./generated/rpc";
+import { photoParamsSchema, photoQuerySchema } from "./schemas/photo";
 
+// Import shared, client-safe schemas also used by the procedure.
 const rpcHelper = createRpcHelper<PathStructure>();
-const match = rpcHelper.photo._id.$match("/photo/42");
+const match = await rpcHelper.photo._id.$match("/photo/42", {
+  params: photoParamsSchema,
+  query: photoQuerySchema,
+});
 
 if (match) {
   match.params.id;
 }
 ```
+
+`$match(url, { params, query })` requires both Standard Schema contracts, even
+when a route has no params or query fields (for example, `z.object({})`). It
+awaits validation and resolves to `null` when the pathname does not match or
+either schema reports validation issues. Exceptions thrown by a schema reject
+the promise. Successful results contain the schemas' output values and types,
+including defaults and transformations; the decoded `hash` is returned unchanged.
+
+Reuse the same schema objects with the procedure's `.params(...)` and
+`.query(...)` declarations. Keep shared schemas in a client-safe module rather
+than importing a server route or page module. For a path shared by multiple HTTP
+methods, pass the schemas for the intended method. A native page's `Query` type
+alone cannot perform validation, so it also needs explicit runtime schemas.
+
+Migration: existing `$match(url)` calls must supply both schemas and await the
+result. Client-side matching does not replace server-side validation or authorization.
 
 ## Server Helpers
 

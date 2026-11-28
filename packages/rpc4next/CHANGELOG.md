@@ -4,6 +4,7 @@
 
 ### Bug Fixes
 
+- **client:** Require runtime Standard Schema contracts for params and query in `$match(url, { params, query })` and return validated schema outputs ([#800](https://github.com/watanabe-1/rpc4next/issues/800)). **Breaking:** `$match` is now asynchronous and both schemas are mandatory, including for empty objects. Await the result; path mismatches and validation issues resolve to `null`, while schema exceptions reject the promise.
 - **client:** Convert numeric dynamic route inputs to strings in `$url().params` to match the generated result types and `$match()` results ([#799](https://github.com/watanabe-1/rpc4next/issues/799)). Numeric inputs remain supported; code relying on numeric result params now receives strings.
 
 ## [0.17.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.16.1...rpc4next-v0.17.0) (2026-11-25)

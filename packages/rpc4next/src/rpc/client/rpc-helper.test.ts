@@ -1,5 +1,6 @@
 import type { HttpMethod } from "rpc4next-shared";
-import { describe, expect, expectTypeOf, it } from "vitest";
+import * as v from "valibot";
+import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import { z } from "zod";
 
 import { procedure } from "../server";
@@ -7,7 +8,7 @@ import type { ProcedureRouteContract } from "../server/generated";
 import { createNextRoute as basecreateNextRoute } from "../server/next-route";
 import { defaultProcedureOnError } from "../server/on-error";
 import type { ParamsKey, QueryKey, RpcEndpoint, RpcGeneratedPathStructure } from "./generated";
-import { createRpcHelper } from "./rpc-helper";
+import { createRpcHelper, type StandardSchemaV1 } from "./rpc-helper";
 
 const queryRouteContract = {
   pathname: "/api/query",
@@ -100,159 +101,263 @@ type PathStructure = RpcGeneratedPathStructure<
 
 const rpcHelper = createRpcHelper<PathStructure>();
 
-describe("createRpcHelper basic behavior", () => {
-  const prototypeParamHelper = createRpcHelper<
-    RpcGeneratedPathStructure<
-      RpcEndpoint & {
-        "_%5F%5Fproto__": RpcEndpoint & Record<ParamsKey, { __proto__: string }>;
-        "___%5F%5Fproto__": RpcEndpoint & Record<ParamsKey, { __proto__: string[] }>;
-        "_____%5F%5Fproto__": RpcEndpoint & Record<ParamsKey, { __proto__?: string[] }>;
-        _constructor: RpcEndpoint & Record<ParamsKey, { constructor: string }>;
-        _toString: RpcEndpoint & Record<ParamsKey, { toString: string }>;
-      }
-    >
-  >();
+const emptySchema = z.object({});
+const fooSchemas = { params: z.object({ foo: z.string() }), query: emptySchema };
+const piyoSchemas = {
+  params: z.object({ foo: z.string(), piyo: z.string() }),
+  query: z.object({ baz: z.string() }),
+};
+const querySchemas = { params: emptySchema, query: schema };
 
-  it.each([
-    { key: "_%5F%5Fproto__", path: "/a%2Fb", value: "a/b" },
-    { key: "___%5F%5Fproto__", path: "/a%2Fb/c", value: ["a/b", "c"] },
-    { key: "_____%5F%5Fproto__", path: "/a%2Fb/c", value: ["a/b", "c"] },
-    { key: "_____%5F%5Fproto__", path: "/", value: undefined },
-  ] as const)("preserves __proto__ for $key ($path)", ({ key, path, value }) => {
-    const match = prototypeParamHelper[key].$match(`${path}?tag=a%2Fb&tag=c#hello%20world`);
-
-    expect(match).not.toBeNull();
-    if (!match) throw new Error("Expected path to match");
-
-    expect(Object.hasOwn(match.params, "__proto__")).toBe(true);
-    expect(match.params.__proto__).toEqual(value);
-    expect(Object.getPrototypeOf(match.params)).toBeNull();
-    expect(match).toMatchObject({ query: { tag: ["a/b", "c"] }, hash: "hello world" });
+describe("createRpcHelper validated matching", () => {
+  it("matches and validates dynamic params", async () => {
+    const match = await rpcHelper.fuga._foo.$match("/fuga/test", fooSchemas);
+    expect(match).toEqual({ params: { foo: "test" }, query: {}, hash: undefined });
+    expectTypeOf(match).toEqualTypeOf<{
+      params: { foo: string };
+      query: Record<string, never>;
+      hash: string | undefined;
+    } | null>();
   });
 
-  it.each([
-    { key: "_constructor", name: "constructor" },
-    { key: "_toString", name: "toString" },
-  ] as const)("preserves $name as an own parameter", ({ key, name }) => {
-    const match = prototypeParamHelper[key].$match("/a%2Fb");
-
-    expect(match).not.toBeNull();
-    if (!match) throw new Error("Expected path to match");
-
-    expect(Object.hasOwn(match.params, name)).toBe(true);
-    expect(match.params).toEqual({ [name]: "a/b" });
-    expect(Object.getPrototypeOf(match.params)).toBeNull();
-  });
-
-  it("Simple dynamic segment", () => {
-    const match = rpcHelper.fuga._foo.$match("/fuga/test");
-    expect(match).toEqual({
-      params: { foo: "test" },
-      query: {},
-      hash: undefined,
-    });
-  });
-
-  it("Dynamic segment with query and hash", () => {
-    const match = rpcHelper.fuga._foo._piyo.$match("/fuga/foo/bar?baz=value#section");
+  it("validates generated page query markers and decodes hashes", async () => {
+    const match = await rpcHelper.fuga._foo._piyo.$match(
+      "/fuga/foo/bar?baz=value#hello%20world",
+      piyoSchemas,
+    );
     expect(match).toEqual({
       params: { foo: "foo", piyo: "bar" },
       query: { baz: "value" },
-      hash: "section",
+      hash: "hello world",
     });
+    expectTypeOf(match?.query).toEqualTypeOf<{ baz: string } | undefined>();
+    expect(await rpcHelper.fuga._foo._piyo.$match("/fuga/foo/bar", piyoSchemas)).toBeNull();
   });
 
-  it("Query validation segment with query and hash", () => {
-    const match = rpcHelper.api.query.$match("/api/query?name=test&hoge=aa#hash123");
+  it("uses the same query schema as the procedure", async () => {
+    const match = await rpcHelper.api.query.$match(
+      "/api/query?name=test&hoge=aa#hash123",
+      querySchemas,
+    );
     expect(match).toEqual({
       params: {},
       query: { name: "test", hoge: "aa" },
       hash: "hash123",
     });
+    if (!match) throw new Error("Expected match");
+    expectTypeOf(match.query).toEqualTypeOf<{ name: string; hoge: string }>();
+    expect(match.query.name.toUpperCase()).toBe("TEST");
   });
 
-  it("Returns null for unmatched paths", () => {
-    const match = rpcHelper.fuga._foo.$match("/hoge/test");
-    expect(match).toBeNull();
-  });
-});
+  it.each(["/api/query", "/api/query?hoge=aa", "/api/query?name=one&name=two&hoge=aa"])(
+    "rejects missing or repeated required string fields: %s",
+    async (url) => {
+      expect(await rpcHelper.api.query.$match(url, querySchemas)).toBeNull();
+    },
+  );
 
-describe("createRpcHelper type definitions", () => {
-  it("should infer params types correctly", async () => {
-    // @ts-expect-error createRpcHelper requires a current rpc4next-cli generated PathStructure
-    createRpcHelper<RpcEndpoint>();
-
-    const _dynamic = rpcHelper.fuga._foo.$match("/fuga/dynamic");
-
-    type ExpectedDynamicMatch =
-      | ({
-          params: {
-            foo: string;
-          };
-        } & {
-          hash?: string;
-        })
-      | null;
-
-    expectTypeOf<typeof _dynamic>().toEqualTypeOf<ExpectedDynamicMatch>();
-  });
-
-  it("should infer query types correctly", async () => {
-    const _dynamic = rpcHelper.fuga._foo._piyo.$match("/fuga/dynamic/query?baz=test");
-
-    type ExpectedDynamicMatch =
-      | ({
-          params: {
-            foo: string;
-            piyo: string;
-          };
-        } & {
-          query?: {
-            baz: string;
-          };
-          hash?: string;
-        })
-      | null;
-
-    expectTypeOf<typeof _dynamic>().toEqualTypeOf<ExpectedDynamicMatch>();
+  it("selects an explicit schema for routes with different method contracts", async () => {
+    const getSchemas = { params: emptySchema, query: getQuerySchema };
+    const postSchemas = { params: emptySchema, query: postQuerySchema };
+    const getMatch = await rpcHelper.api.mixedQuery.$match("/api/mixedQuery?page=1", getSchemas);
+    const postMatch = await rpcHelper.api.mixedQuery.$match(
+      "/api/mixedQuery?mode=draft",
+      postSchemas,
+    );
+    expect(getMatch?.query).toEqual({ page: "1" });
+    expect(postMatch?.query).toEqual({ mode: "draft" });
+    expectTypeOf(getMatch?.query).toEqualTypeOf<{ page: string } | undefined>();
+    expectTypeOf(postMatch?.query).toEqualTypeOf<{ mode: "draft" | "published" } | undefined>();
+    expect(
+      await rpcHelper.api.mixedQuery.$match("/api/mixedQuery?mode=other", postSchemas),
+    ).toBeNull();
+    expect(await rpcHelper.api.mixedQuery.$match("/api/mixedQuery?page=1", postSchemas)).toBeNull();
   });
 
-  it("should infer query validater types correctly", async () => {
-    const _dynamic = rpcHelper.api.query.$match("/api/query?name=test&hoge=aa");
-
-    type ExpectedDynamicMatch =
-      | ({
-          params: Record<string, string>;
-        } & {
-          query?: {
-            name: string;
-            hoge: string;
-          };
-          hash?: string;
-        })
-      | null;
-
-    expectTypeOf<typeof _dynamic>().toEqualTypeOf<ExpectedDynamicMatch>();
+  it("returns schema outputs including transformed params and query defaults", async () => {
+    const schemas = {
+      params: z.object({ foo: z.string().regex(/^\d+$/).transform(Number) }),
+      query: z.object({ page: z.string().default("1").transform(Number) }),
+    };
+    const match = await rpcHelper.fuga._foo.$match("/fuga/42", schemas);
+    expect(match).toEqual({ params: { foo: 42 }, query: { page: 1 }, hash: undefined });
+    expectTypeOf(match?.params).toEqualTypeOf<{ foo: number } | undefined>();
+    expectTypeOf(match?.query).toEqualTypeOf<{ page: number } | undefined>();
+    expect(await rpcHelper.fuga._foo.$match("/fuga/invalid", schemas)).toBeNull();
   });
 
-  it("should infer mixed method query validator types correctly", async () => {
-    const _dynamic = rpcHelper.api.mixedQuery.$match("/api/mixedQuery?page=1");
+  it("preserves repeated values for schemas that accept arrays", async () => {
+    const schemas = { params: emptySchema, query: z.object({ tag: z.array(z.string()) }) };
+    const match = await rpcHelper.api.query.$match("/api/query?tag=a%2Fb&tag=c", schemas);
+    expect(match?.query).toEqual({ tag: ["a/b", "c"] });
+    expect(await rpcHelper.api.query.$match("/api/query?tag=a", schemas)).toBeNull();
+  });
 
-    type ExpectedDynamicMatch =
-      | ({
-          params: Record<string, string>;
-        } & {
-          query?:
-            | {
-                page: string;
-              }
-            | {
-                mode: "draft" | "published";
-              };
-          hash?: string;
-        })
-      | null;
+  it("applies the schema policy to unknown query keys", async () => {
+    const url = "/api/query?name=test&hoge=aa&extra=value";
+    expect((await rpcHelper.api.query.$match(url, querySchemas))?.query).toEqual({
+      name: "test",
+      hoge: "aa",
+    });
+    expect(
+      await rpcHelper.api.query.$match(url, {
+        params: emptySchema,
+        query: schema.strict(),
+      }),
+    ).toBeNull();
+  });
 
-    expectTypeOf<typeof _dynamic>().toEqualTypeOf<ExpectedDynamicMatch>();
+  it("awaits async schemas and infers their outputs", async () => {
+    const params: StandardSchemaV1<unknown, { foo: number }> = {
+      "~standard": {
+        version: 1,
+        vendor: "test",
+        validate: async (input) => {
+          const result = z.object({ foo: z.string().regex(/^\d+$/) }).safeParse(input);
+
+          return result.success
+            ? { value: { foo: Number(result.data.foo) } }
+            : { issues: [{ message: "Invalid foo" }] };
+        },
+      },
+    };
+    const schemas = {
+      params,
+      query: z.object({ page: z.string().default("1") }).transform(async ({ page }) => ({
+        page: Number(page),
+      })),
+    };
+    const match = await rpcHelper.fuga._foo.$match("/fuga/42", schemas);
+    expect(match?.params).toEqual({ foo: 42 });
+    expect(match?.query).toEqual({ page: 1 });
+    expectTypeOf(match?.params).toEqualTypeOf<{ foo: number } | undefined>();
+    expectTypeOf(match?.query).toEqualTypeOf<{ page: number } | undefined>();
+    expect(await rpcHelper.fuga._foo.$match("/fuga/no", schemas)).toBeNull();
+    expect(
+      await rpcHelper.fuga._foo.$match("/fuga/42", {
+        ...schemas,
+        query: z.object({ page: z.string() }).refine(async () => false),
+      }),
+    ).toBeNull();
+  });
+
+  it("does not validate unmatched paths and stops after invalid params", async () => {
+    const validate = vi.fn<(input: unknown) => { issues: { message: string }[] }>(() => ({
+      issues: [{ message: "Invalid params" }],
+    }));
+    const queryValidate = vi.fn<(input: unknown) => { value: Record<string, never> }>(() => ({
+      value: {},
+    }));
+    const schemas = {
+      params: { "~standard": { version: 1 as const, vendor: "test", validate } },
+      query: { "~standard": { version: 1 as const, vendor: "test", validate: queryValidate } },
+    };
+    expect(await rpcHelper.fuga._foo.$match("/other/test", schemas)).toBeNull();
+    expect(validate).not.toHaveBeenCalled();
+    expect(queryValidate).not.toHaveBeenCalled();
+    expect(await rpcHelper.fuga._foo.$match("/fuga/test", schemas)).toBeNull();
+    expect(validate).toHaveBeenCalledExactlyOnceWith({ foo: "test" });
+    expect(queryValidate).not.toHaveBeenCalled();
+  });
+
+  it.each([false, true])("propagates schema exceptions (async: %s)", async (async) => {
+    const failure = new Error("Schema failure");
+    const query: StandardSchemaV1 = {
+      "~standard": {
+        version: 1,
+        vendor: "test",
+        validate: () => {
+          if (async) return Promise.reject(failure);
+          throw failure;
+        },
+      },
+    };
+    const schemas = {
+      params: emptySchema,
+      query,
+    };
+    await expect(rpcHelper.api.query.$match("/api/query", schemas)).rejects.toBe(failure);
+  });
+
+  it("accepts other Standard Schema implementations", async () => {
+    const match = await rpcHelper.fuga._foo.$match("/fuga/value?mode=draft", {
+      params: v.object({ foo: v.string() }),
+      query: v.object({ mode: v.picklist(["draft", "published"]) }),
+    });
+    expect(match?.query).toEqual({ mode: "draft" });
+    expectTypeOf(match?.query).toEqualTypeOf<{ mode: "draft" | "published" } | undefined>();
+  });
+
+  it.each([
+    { key: "_%5F%5Fproto__", name: "__proto__", path: "/a%2Fb", value: "a/b" },
+    { key: "___%5F%5Fproto__", name: "__proto__", path: "/a%2Fb/c", value: ["a/b", "c"] },
+    { key: "_____%5F%5Fproto__", name: "__proto__", path: "/a%2Fb/c", value: ["a/b", "c"] },
+    { key: "_____%5F%5Fproto__", name: "__proto__", path: "/", value: undefined },
+    { key: "_constructor", name: "constructor", path: "/a%2Fb", value: "a/b" },
+    { key: "_toString", name: "toString", path: "/a%2Fb", value: "a/b" },
+  ])(
+    "passes prototype-like params to validation as own properties ($key $path)",
+    async ({ key, name, path, value }) => {
+      const helper = createRpcHelper<RpcGeneratedPathStructure<Record<string, RpcEndpoint>>>();
+      const params: StandardSchemaV1<unknown, Record<string, string | string[] | undefined>> = {
+        "~standard": {
+          version: 1,
+          vendor: "test",
+          validate: (input) => {
+            if (typeof input !== "object" || input === null || !Object.hasOwn(input, name)) {
+              return { issues: [{ message: "Missing own param" }] };
+            }
+            const result = z
+              .union([z.string(), z.array(z.string()), z.undefined()])
+              .safeParse(Object.getOwnPropertyDescriptor(input, name)?.value);
+
+            return result.success
+              ? { value: Object.assign(Object.create(null), { [name]: result.data }) }
+              : { issues: [{ message: "Invalid param" }] };
+          },
+        },
+      };
+      const match = await helper[key].$match(`${path}?tag=a%2Fb&tag=c#hello%20world`, {
+        params,
+        query: z.object({ tag: z.array(z.string()) }),
+      });
+      expect(match).not.toBeNull();
+      if (!match) throw new Error("Expected match");
+      expect(Object.hasOwn(match.params, name)).toBe(true);
+      expect(match.params[name]).toEqual(value);
+      expect(Object.getPrototypeOf(match.params)).toBeNull();
+      expect(match).toMatchObject({ query: { tag: ["a/b", "c"] }, hash: "hello world" });
+    },
+  );
+
+  it.each([
+    undefined,
+    {},
+    { params: emptySchema },
+    { query: emptySchema },
+    {
+      params: emptySchema,
+      query: { "~standard": { validate: "invalid" } },
+    },
+  ])("requires both runtime contracts even for untyped callers (%j)", async (schemas) => {
+    await expect(
+      Reflect.apply(rpcHelper.api.query.$match, undefined, ["/api/query", schemas]),
+    ).rejects.toThrow("$match requires Standard Schema contracts for both params and query.");
+  });
+
+  it("requires contracts in the public types", () => {
+    const checkTypes = () => {
+      // @ts-expect-error generated path structures are required
+      createRpcHelper<RpcEndpoint>();
+      // @ts-expect-error both runtime schemas are required
+      void rpcHelper.api.query.$match("/api/query");
+      // @ts-expect-error query schema is required
+      void rpcHelper.api.query.$match("/api/query", { params: emptySchema });
+      // @ts-expect-error params schema is required
+      void rpcHelper.api.query.$match("/api/query", { query: schema });
+      // @ts-expect-error type-only query objects are not schemas
+      void rpcHelper.api.query.$match("/api/query", { params: emptySchema, query: {} });
+    };
+    expectTypeOf(checkTypes).returns.toBeVoid();
   });
 });
