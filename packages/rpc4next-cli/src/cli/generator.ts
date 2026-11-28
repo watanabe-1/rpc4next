@@ -2,11 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { SUCCESS_INDENT_LEVEL, SUCCESS_PAD_LENGTH, SUCCESS_SEPARATOR } from "./constants.js";
-import {
-  clearScanCaches,
-  createGeneratedParamsFilesCacheKey,
-  generatedParamsFilesCache,
-} from "./core/cache.js";
+import { clearScanCaches } from "./core/cache.js";
 import {
   generateTestManifest,
   generatePathStructure,
@@ -103,14 +99,13 @@ const cleanupStaleGeneratedParamsFiles = ({
   baseDir,
   paramsFileName,
   expectedFilePaths,
-  candidateFilePaths,
 }: {
   baseDir: string;
   paramsFileName: string;
   expectedFilePaths: Set<string>;
-  candidateFilePaths?: Iterable<string>;
 }) => {
-  const candidates = candidateFilePaths ?? listGeneratedCandidateFiles(baseDir, paramsFileName);
+  // Moved contracts can appear at paths that were never generated in this process.
+  const candidates = listGeneratedCandidateFiles(baseDir, paramsFileName);
 
   for (const filePath of candidates) {
     const resolvedFilePath = path.resolve(filePath);
@@ -322,8 +317,6 @@ export const generate = ({
       const expectedFilePaths = new Set(
         paramsTypes.map(({ dirPath }) => path.resolve(path.join(dirPath, paramsFileName))),
       );
-      const cacheKey = createGeneratedParamsFilesCacheKey({ baseDir, paramsFileName });
-      const previousFilePaths = preserveCache ? generatedParamsFilesCache.get(cacheKey) : undefined;
 
       paramsTypes.forEach(({ paramsType, dirPath }) => {
         const filePath = path.join(dirPath, paramsFileName);
@@ -336,10 +329,7 @@ export const generate = ({
         baseDir,
         paramsFileName,
         expectedFilePaths,
-        candidateFilePaths: previousFilePaths,
       });
-
-      generatedParamsFilesCache.set(cacheKey, expectedFilePaths);
 
       if (wroteParamsFile) {
         logger.success(
