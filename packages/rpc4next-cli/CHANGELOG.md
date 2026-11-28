@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.13.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.12.2...rpc4next-cli-v0.13.0) (2026-11-28)
+
+
+### Features
+
+* **client:** Support file-specific page tests ([#781](https://github.com/watanabe-1/rpc4next/issues/781)) ([c8c1c3c](https://github.com/watanabe-1/rpc4next/commit/c8c1c3cedd40c6266c6dd7691cc93dd8373a80fb))
+
+
+### Bug Fixes
+
+* **cli:** Clean up moved contracts in watch mode ([#808](https://github.com/watanabe-1/rpc4next/issues/808)) ([6656679](https://github.com/watanabe-1/rpc4next/commit/66566796959871a4e32eac814fc6786711f66bff))
+* **cli:** Make generated output independent of locale ([#811](https://github.com/watanabe-1/rpc4next/issues/811)) ([652f9f6](https://github.com/watanabe-1/rpc4next/commit/652f9f610e80ca3c83c82b0824ef99d1486e37e1))
+* **cli:** Protect current outputs from stale contract cleanup ([#815](https://github.com/watanabe-1/rpc4next/issues/815)) ([c46cc16](https://github.com/watanabe-1/rpc4next/commit/c46cc16589e8c633110f37c199cd659c8beb4843))
+* **cli:** Warn about wildcard route exports ([#794](https://github.com/watanabe-1/rpc4next/issues/794)) ([5000ded](https://github.com/watanabe-1/rpc4next/commit/5000ded83ac990b4e469d80b615ae51393dcc183))
+
 ## [0.12.2](https://github.com/watanabe-1/rpc4next/compare/rpc4next-cli-v0.12.1...rpc4next-cli-v0.12.2) (2026-11-25)
 
 ### Bug Fixes

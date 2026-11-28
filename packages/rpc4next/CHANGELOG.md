@@ -7,6 +7,23 @@
 - **client:** Require runtime Standard Schema contracts for params and query in `$match(url, { params, query })` and return validated schema outputs ([#800](https://github.com/watanabe-1/rpc4next/issues/800)). **Breaking:** `$match` is now asynchronous and both schemas are mandatory, including for empty objects. Await the result; path mismatches and validation issues resolve to `null`, while schema exceptions reject the promise.
 - **client:** Convert numeric dynamic route inputs to strings in `$url().params` to match the generated result types and `$match()` results ([#799](https://github.com/watanabe-1/rpc4next/issues/799)). Numeric inputs remain supported; code relying on numeric result params now receives strings.
 
+## [0.18.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.17.0...rpc4next-v0.18.0) (2026-11-28)
+
+
+### Features
+
+* **client:** Support file-specific page tests ([#781](https://github.com/watanabe-1/rpc4next/issues/781)) ([c8c1c3c](https://github.com/watanabe-1/rpc4next/commit/c8c1c3cedd40c6266c6dd7691cc93dd8373a80fb))
+
+
+### Bug Fixes
+
+* **client:** Default to managed cookies ([#791](https://github.com/watanabe-1/rpc4next/issues/791)) ([f9c1af1](https://github.com/watanabe-1/rpc4next/commit/f9c1af13ebfab1c23c34eecb7d86e351dd729c82))
+* **client:** Normalize numeric URL result params ([#805](https://github.com/watanabe-1/rpc4next/issues/805)) ([8f1db86](https://github.com/watanabe-1/rpc4next/commit/8f1db86dbed767d5c52d75a0479bd0ef6ff896aa))
+* **client:** Preserve catalog statuses in response types ([#818](https://github.com/watanabe-1/rpc4next/issues/818)) ([7a825da](https://github.com/watanabe-1/rpc4next/commit/7a825daf9c7203dbcd3c5e459a6617ae461ef86e))
+* **client:** Validate URL matches with required schemas ([#807](https://github.com/watanabe-1/rpc4next/issues/807)) ([a63aed3](https://github.com/watanabe-1/rpc4next/commit/a63aed32ef622fe142ee279c86c937fb239cc3e8))
+* **server:** Enforce response status type constraints ([#816](https://github.com/watanabe-1/rpc4next/issues/816)) ([de727fe](https://github.com/watanabe-1/rpc4next/commit/de727fe481c0bf3003db16ac031257be035dc309))
+* **server:** Handle body parse failures in validation hooks ([#779](https://github.com/watanabe-1/rpc4next/issues/779)) ([3dc6e4c](https://github.com/watanabe-1/rpc4next/commit/3dc6e4ce783103ebbefda8833eb9db7333dd00d4))
+
 ## [0.17.0](https://github.com/watanabe-1/rpc4next/compare/rpc4next-v0.16.1...rpc4next-v0.17.0) (2026-11-25)
 
 ### Features
