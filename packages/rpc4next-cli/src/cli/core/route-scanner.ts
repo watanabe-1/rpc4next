@@ -12,6 +12,7 @@ import type { HttpMethod } from "rpc4next-shared";
 import { END_POINT_FILE_NAMES } from "../constants.js";
 import type { EndPointFileNames } from "../types.js";
 import { createScanAppDirCacheKey, scanAppDirCache, visitedDirsCache } from "./cache.js";
+import { compareStrings } from "./compare-strings.js";
 import { INDENT, NEWLINE, TYPE_KEY_PARAMS, TYPE_RPC_ENDPOINT } from "./constants.js";
 import { toPosixPath } from "./path-utils.js";
 import { scanEndpointFile } from "./scan-utils.js";
@@ -191,7 +192,7 @@ const getScannableEntries = (dirPath: string) => {
 
       return endPointFileNames.has(entry.name as EndPointFileNames);
     })
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) => compareStrings(a.name, b.name));
 };
 
 export const hasTargetFiles = (dirPath: string): boolean => {

@@ -723,9 +723,9 @@ describe("route-scanner", () => {
           pathname: "/base",
         },
         {
-          dirPath: tmpPosixPath("testApp", "intercepts", "(...)intercept", "[[...optionalParts]]"),
-          paramsType: '{ "optionalParts": string[] | undefined }',
-          pathname: "/intercept/[[...optionalParts]]",
+          dirPath: tmpPosixPath("testApp", "intercepts", "(.)intercept", "[id]"),
+          paramsType: '{ "id": string }',
+          pathname: "/intercepts/intercept/[id]",
         },
         {
           dirPath: tmpPosixPath("testApp", "intercepts", "(..)(..)intercept", "[...parts]"),
@@ -738,9 +738,9 @@ describe("route-scanner", () => {
           pathname: "/intercept/nested/[slug]",
         },
         {
-          dirPath: tmpPosixPath("testApp", "intercepts", "(.)intercept", "[id]"),
-          paramsType: '{ "id": string }',
-          pathname: "/intercepts/intercept/[id]",
+          dirPath: tmpPosixPath("testApp", "intercepts", "(...)intercept", "[[...optionalParts]]"),
+          paramsType: '{ "optionalParts": string[] | undefined }',
+          pathname: "/intercept/[[...optionalParts]]",
         },
       ]);
     });
@@ -768,13 +768,13 @@ describe("route-scanner", () => {
       expect(
         result.paramsTypes.map(({ pathname, paramsType }) => ({ pathname, paramsType })),
       ).toEqual([
-        { pathname: "/photo/[id]", paramsType: '{ "tenant": string; "id": string; }' },
-        { pathname: "/photo/[id]", paramsType: '{ "tenant": string; "id": string; }' },
-        { pathname: "/[tenant]/photo/[id]", paramsType: '{ "tenant": string; "id": string; }' },
         {
           pathname: "/[tenant]/feed/a%2Fb/[id]",
           paramsType: '{ "tenant": string; "id": string; }',
         },
+        { pathname: "/photo/[id]", paramsType: '{ "tenant": string; "id": string; }' },
+        { pathname: "/[tenant]/photo/[id]", paramsType: '{ "tenant": string; "id": string; }' },
+        { pathname: "/photo/[id]", paramsType: '{ "tenant": string; "id": string; }' },
       ]);
     });
 
@@ -1041,14 +1041,14 @@ describe("route-scanner", () => {
       const { paramsTypes } = scanAppDir(tmpPath("output"), tmpPath("testApp"));
       expect(paramsTypes).toStrictEqual([
         {
-          paramsType: '{ "user": string; "names": string[]; }',
-          dirPath: tmpPosixPath("testApp", "catchAll", "[user]", "[...names]"),
-          pathname: "/catchAll/[user]/[...names]",
-        },
-        {
           paramsType: '{ "names": string[] | undefined }',
           dirPath: tmpPosixPath("testApp", "OptionalCatchAll", "user", "[[...names]]"),
           pathname: "/OptionalCatchAll/user/[[...names]]",
+        },
+        {
+          paramsType: '{ "user": string; "names": string[]; }',
+          dirPath: tmpPosixPath("testApp", "catchAll", "[user]", "[...names]"),
+          pathname: "/catchAll/[user]/[...names]",
         },
       ]);
     });

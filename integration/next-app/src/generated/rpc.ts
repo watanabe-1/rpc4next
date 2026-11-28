@@ -42,9 +42,9 @@ import type { GET as GET_aa19e4950161a356 } from "../../app/param-names/optional
 import type { GET as GET_964ed4355776626b } from "../../app/param-names/optional/one/[[..._id]]/route";
 import type { GET as GET_138c83ffc826e117 } from "../../app/param-names/optional/plain/[[...id]]/route";
 import type { GET as GET_39c5e780947ad293 } from "../../app/param-names/optional/two/[[...__id]]/route";
-import type Page_ce69f0ecf7424845 from "../../app/patterns/(grouped)/reports/page";
 import type Page_96ecf6fa8566fbe4 from "../../app/patterns/%5Fescaped/page";
 import type Page_68eb0f7249e31d28 from "../../app/patterns/%E3%81%ZZ/page";
+import type Page_ce69f0ecf7424845 from "../../app/patterns/(grouped)/reports/page";
 import type Page_0b1738dbbaa74a00 from "../../app/patterns/catch-all/[...parts]/page";
 import type Page_3284828b6f1a8f87 from "../../app/patterns/client-page/page";
 import type Page_0125c4bb93973531 from "../../app/patterns/dynamic/[category]/[item]/page";
@@ -73,11 +73,11 @@ import type Page_875818cff01b68ea from "../../app/reserved-routes/$url/page";
 import type Page_725119f2beb3bb1f from "../../app/response-handling/page";
 import type Page_79655d0ab49e4d46 from "../../app/static-encoding/%E6%97%A5%E6%9C%AC%E8%AA%9E/page";
 import type Page_0abc5ba00a7184a9 from "../../app/static-encoding/100%25/page";
-import type Page_973b333cc1d2f7e2 from "../../app/static-encoding/a%2Fb/page";
-import type Page_234e166249ac19be from "../../app/static-encoding/a%3Fb/page";
 import type Page_324946a79516dad9 from "../../app/static-encoding/a%20b/page";
 import type Page_c185f68f0a37fc78 from "../../app/static-encoding/a%23b/page";
 import type Page_a70df18ea09ed2b4 from "../../app/static-encoding/a%2523b/page";
+import type Page_973b333cc1d2f7e2 from "../../app/static-encoding/a%2Fb/page";
+import type Page_234e166249ac19be from "../../app/static-encoding/a%3Fb/page";
 
 export type PathStructure = RpcGeneratedPathStructure<PageRouteMarker<typeof Page_5f11bc234a1e0c67> & RpcEndpoint & {
   "users": Record<QueryKey, Query_1c5da6b14413cdb4> & RpcEndpoint & {
@@ -168,9 +168,9 @@ export type PathStructure = RpcGeneratedPathStructure<PageRouteMarker<typeof Pag
     }
   },
   "patterns": PageRouteMarker<typeof Page_8636af1013bbed4a> & RpcEndpoint & {
-    "reports": PageRouteMarker<typeof Page_ce69f0ecf7424845> & RpcEndpoint,
     "%5Fescaped": PageRouteMarker<typeof Page_96ecf6fa8566fbe4> & RpcEndpoint,
     "%E3%81%ZZ": PageRouteMarker<typeof Page_68eb0f7249e31d28> & RpcEndpoint,
+    "reports": PageRouteMarker<typeof Page_ce69f0ecf7424845> & RpcEndpoint,
     "catch-all": {
       "___parts": PageRouteMarker<typeof Page_0b1738dbbaa74a00> & RpcEndpoint & Record<ParamsKey, { "parts": string[] }>
     },

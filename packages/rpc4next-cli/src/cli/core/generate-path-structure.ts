@@ -1,3 +1,4 @@
+import { compareStrings } from "./compare-strings.js";
 import {
   NEWLINE,
   RPC4NEXT_CLIENT_TEST_GENERATED_IMPORT_PATH,
@@ -120,7 +121,7 @@ export const generatePathStructure = (
 
   const importsStr = imports.length
     ? `${imports
-        .sort((a, b) => a.path.localeCompare(b.path, undefined, { numeric: true }))
+        .sort((a, b) => compareStrings(a.path, b.path))
         .map((v) => v.statement)
         .join(NEWLINE)}`
     : "";
