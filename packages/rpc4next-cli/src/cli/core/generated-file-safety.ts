@@ -15,14 +15,19 @@ export const assertNotNextReservedFile = (filePath: string): void => {
   }
 };
 
-export const validateGeneratedTargets = (filePaths: string[]): void => {
+export const generatedTargetKey = (filePath: string): string => {
+  const resolvedPath = path.resolve(filePath);
+
+  return process.platform === "win32" ? resolvedPath.toLowerCase() : resolvedPath;
+};
+
+export const validateGeneratedTargets = (filePaths: string[]): Set<string> => {
   const targets = new Set<string>();
 
   for (const filePath of filePaths) {
     assertNotNextReservedFile(filePath);
 
-    const resolvedPath = path.resolve(filePath);
-    const key = process.platform === "win32" ? resolvedPath.toLowerCase() : resolvedPath;
+    const key = generatedTargetKey(filePath);
 
     if (targets.has(key)) {
       throw new Error(`Generation target collision at ${filePath}: duplicate output path.`);
@@ -38,4 +43,6 @@ export const validateGeneratedTargets = (filePaths: string[]): void => {
       );
     }
   }
+
+  return targets;
 };
