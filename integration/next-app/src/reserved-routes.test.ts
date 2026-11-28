@@ -1,6 +1,7 @@
 import { createRpcClient } from "rpc4next/client";
 import { createRpcHelper } from "rpc4next/client/helper";
 import { describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 
 import type { PathStructure } from "./generated/rpc";
 
@@ -9,6 +10,7 @@ describe("reserved static route names", () => {
     const fetch = vi.fn<typeof globalThis.fetch>(async () => Response.json({ ok: true }));
     const client = createRpcClient<PathStructure>("https://example.com", { fetch });
     const helper = createRpcHelper<PathStructure>();
+    const schemas = { params: z.object({}), query: z.object({}) };
     const pages = client["reserved-routes"]["%24url"];
     const routes = client["reserved-routes"]["%24get"];
 
@@ -17,7 +19,10 @@ describe("reserved static route names", () => {
     expect(routes.$url().relativePath).toBe("/reserved-routes/%24get");
     expect(routes.child.$url().relativePath).toBe("/reserved-routes/%24get/child");
     expect(
-      helper["reserved-routes"]["%24url"].child.$match("/reserved-routes/%24url/child"),
+      await helper["reserved-routes"]["%24url"].child.$match(
+        "/reserved-routes/%24url/child",
+        schemas,
+      ),
     ).not.toBeNull();
 
     await routes.$get();

@@ -242,7 +242,9 @@ const runBundlerSmoke = async (cwd: string) => {
       'import { createRpcHelper } from "rpc4next/client/helper";',
       'import { HTTP_METHODS } from "rpc4next-shared";',
       'assert.equal(createRpcClient("").api.hello.$url().relativePath, "/api/hello");',
-      'assert.equal(createRpcHelper().photo._id.$match("/photo/42").params.id, "42");',
+      'const paramsSchema = { "~standard": { version: 1, vendor: "smoke", validate: (value) => typeof value.id === "string" ? { value } : { issues: [{ message: "Invalid id" }] } } };',
+      'const querySchema = { "~standard": { version: 1, vendor: "smoke", validate: (value) => Object.keys(value).length === 0 ? { value } : { issues: [{ message: "Unexpected query" }] } } };',
+      'assert.equal((await createRpcHelper().photo._id.$match("/photo/42", { params: paramsSchema, query: querySchema })).params.id, "42");',
       'assert.ok(HTTP_METHODS.includes("GET"));',
     ].join("\n"),
   );

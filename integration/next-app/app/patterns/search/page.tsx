@@ -1,15 +1,6 @@
-import { z } from "zod";
-
 import { appPageProcedure } from "../../_rpc/page-procedure";
 import { routeContract } from "./route-contract";
-
-const searchQuerySchema = z
-  .object({
-    q: z.union([z.string(), z.array(z.string())]).optional(),
-  })
-  .transform(({ q }) => ({
-    q: Array.isArray(q) ? q[0] : q,
-  }));
+import { searchQuerySchema } from "./schemas";
 
 export default appPageProcedure
   .forRoute(routeContract)

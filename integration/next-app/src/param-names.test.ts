@@ -2,6 +2,7 @@ import { createRpcClient } from "rpc4next/client";
 import { createRpcHelper } from "rpc4next/client/helper";
 import { createRpcTestClient, createRpcTestPageClient } from "rpc4next/client/test";
 import { describe, expect, expectTypeOf, it } from "vitest";
+import { z } from "zod";
 
 import type { PathStructure } from "./generated/rpc";
 import { testRoutes } from "./generated/rpc-test-manifest";
@@ -59,6 +60,7 @@ describe("generated parameter names across clients", () => {
   ])(
     "preserves dynamic $name parameters",
     async ({ label, name, segment, match, testSegment, pageSegment }) => {
+      const schemas = { params: z.object({ [name]: z.string() }), query: z.object({}) };
       expectTypeOf(segment).parameters.toEqualTypeOf<[value: string | number]>();
       expectTypeOf(pageSegment).parameters.toEqualTypeOf<[value: string | number]>();
       for (const value of ["a/b 日本語"]) {
@@ -68,14 +70,14 @@ describe("generated parameter names across clients", () => {
           `/param-names/dynamic/${label}${"/a%2Fb%20%E6%97%A5%E6%9C%AC%E8%AA%9E"}`,
         );
         expect(url.params).toEqual({ [name]: value });
-        expect(match(url.path)?.params).toEqual(url.params);
-        expect(match(url.relativePath)?.params).toEqual(url.params);
+        expect((await match(url.path, schemas))?.params).toEqual(url.params);
+        expect((await match(url.relativePath, schemas))?.params).toEqual(url.params);
         const response = await testSegment(value).$get();
         expect(response.status).toBe(200);
         await expect(response.json()).resolves.toEqual(value ? url.params : {});
         await expect(pageSegment(value).$render()).resolves.toEqual(url.params);
       }
-      expect(match(`/param-names/dynamic/${label}/a/b`)).toBeNull();
+      expect(await match(`/param-names/dynamic/${label}/a/b`, schemas)).toBeNull();
     },
   );
 
@@ -115,6 +117,7 @@ describe("generated parameter names across clients", () => {
   ])(
     "preserves catch $name parameters",
     async ({ label, name, segment, match, testSegment, pageSegment }) => {
+      const schemas = { params: z.object({ [name]: z.array(z.string()) }), query: z.object({}) };
       expectTypeOf(segment).parameters.toEqualTypeOf<[value: [string, ...string[]]]>();
       expectTypeOf(pageSegment).parameters.toEqualTypeOf<[value: [string, ...string[]]]>();
       for (const value of [["a/b", "c"] as [string, ...string[]]]) {
@@ -122,14 +125,14 @@ describe("generated parameter names across clients", () => {
         expect(url.pathname).toBe(`/param-names/catch/${label}/[...${name}]`);
         expect(url.relativePath).toBe(`/param-names/catch/${label}${value ? "/a%2Fb/c" : ""}`);
         expect(url.params).toEqual({ [name]: value });
-        expect(match(url.path)?.params).toEqual(url.params);
-        expect(match(url.relativePath)?.params).toEqual(url.params);
+        expect((await match(url.path, schemas))?.params).toEqual(url.params);
+        expect((await match(url.relativePath, schemas))?.params).toEqual(url.params);
         const response = await testSegment(value).$get();
         expect(response.status).toBe(200);
         await expect(response.json()).resolves.toEqual(value ? url.params : {});
         await expect(pageSegment(value).$render()).resolves.toEqual(url.params);
       }
-      expect(match(`/param-names/catch/${label}`)).toBeNull();
+      expect(await match(`/param-names/catch/${label}`, schemas)).toBeNull();
     },
   );
 
@@ -169,6 +172,10 @@ describe("generated parameter names across clients", () => {
   ])(
     "preserves optional $name parameters",
     async ({ label, name, segment, match, testSegment, pageSegment }) => {
+      const schemas = {
+        params: z.object({ [name]: z.array(z.string()).optional() }),
+        query: z.object({}),
+      };
       expectTypeOf(segment).parameters.toEqualTypeOf<[value?: string[]]>();
       expectTypeOf(pageSegment).parameters.toEqualTypeOf<[value?: string[]]>();
       for (const value of [["a/b", "c"], undefined]) {
@@ -176,8 +183,8 @@ describe("generated parameter names across clients", () => {
         expect(url.pathname).toBe(`/param-names/optional/${label}/[[...${name}]]`);
         expect(url.relativePath).toBe(`/param-names/optional/${label}${value ? "/a%2Fb/c" : ""}`);
         expect(url.params).toEqual({ [name]: value });
-        expect(match(url.path)?.params).toEqual(url.params);
-        expect(match(url.relativePath)?.params).toEqual(url.params);
+        expect((await match(url.path, schemas))?.params).toEqual(url.params);
+        expect((await match(url.relativePath, schemas))?.params).toEqual(url.params);
         const response = await testSegment(value).$get();
         expect(response.status).toBe(200);
         await expect(response.json()).resolves.toEqual(value ? url.params : {});
@@ -188,9 +195,12 @@ describe("generated parameter names across clients", () => {
     },
   );
 
-  it("retains original parameter names in generated URL and match types", () => {
+  it("retains original parameter names in generated URL and match types", async () => {
     const url = client.dynamic.two["_%5F%5Fid"]("value").$url();
-    const match = helper.dynamic.two["_%5F%5Fid"].$match(url.path);
+    const match = await helper.dynamic.two["_%5F%5Fid"].$match(url.path, {
+      params: z.object({ __id: z.string() }),
+      query: z.object({}),
+    });
     expectTypeOf(url.params).toEqualTypeOf<{ __id: string }>();
     expectTypeOf<NonNullable<typeof match>["params"]>().toEqualTypeOf<{ __id: string }>();
     expectTypeOf(client.catch.four["___%5F%5F%5F%5Fid"](["a"]).$url().params).toEqualTypeOf<{

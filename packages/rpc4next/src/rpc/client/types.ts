@@ -18,6 +18,8 @@ import type {
   WithProcedureDefinition,
 } from "../server/procedure-types";
 import type { RouteHandlerResponse, RouteResponse, ValidationSchema } from "../server/route-types";
+import type { InferSchemaOutput } from "../server/schema-inference";
+import type { StandardSchemaV1 } from "../server/standard-schema";
 import type { TypedNextResponse, ValidationInputFor } from "../server/types";
 
 type DistributeOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
@@ -310,12 +312,24 @@ type InferTypedNextResponseType<T> = T extends (...args: never[]) => unknown
     | InferProcedureOutputValidationErrorResponse<T>
   : TypedNextResponse<never, HttpStatusCode, ContentType>;
 
-type PathProxyAsProperty<T> = {
-  $match: (path: string) =>
-    | ({
-        params: ExtractParams<T>;
-      } & Partial<UrlOptions<T, InferQuery<T>>>)
-    | null;
+/** Runtime contracts required to validate values extracted by `$match()`. */
+export type RpcMatchSchemas = {
+  params: StandardSchemaV1;
+  query: StandardSchemaV1;
+};
+
+/** Validated schema outputs returned by `$match()`. */
+export type RpcMatchResult<TSchemas extends RpcMatchSchemas> = {
+  params: InferSchemaOutput<TSchemas["params"]>;
+  query: InferSchemaOutput<TSchemas["query"]>;
+  hash: string | undefined;
+};
+
+type PathProxyAsProperty = {
+  $match: <TSchemas extends RpcMatchSchemas>(
+    path: string,
+    schemas: TSchemas,
+  ) => Promise<RpcMatchResult<TSchemas> | null>;
 };
 
 type InferQuery<T> =
@@ -397,7 +411,7 @@ export type DynamicPathProxyAsFunction<
 
 /** Generated helper proxy shape where route segments stay as properties for `$match()`. */
 export type DynamicPathProxyAsProperty<T> = Omit<
-  (T extends RpcEndpoint ? PathProxyAsProperty<T> : unknown) & {
+  (T extends RpcEndpoint ? PathProxyAsProperty : unknown) & {
     [K in keyof T]: K extends unknown
       ? DynamicPathProxyAsProperty<T[K]>
       : DynamicPathProxyAsProperty<T[K]>;

@@ -1,9 +1,12 @@
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
+import { z } from "zod";
 
 import type { RpcEndpoint, RpcGeneratedPathStructure } from "./generated";
 import { createRpcClient } from "./rpc-client";
 import { createRpcHelper } from "./rpc-helper";
 import { createRpcTestClient, createRpcTestPageClient } from "./test";
+
+const schemas = { params: z.object({}), query: z.object({}) };
 
 const get = async () => Response.json({ ok: true });
 type Endpoint = RpcEndpoint & { $get: typeof get };
@@ -15,15 +18,15 @@ type Paths = RpcGeneratedPathStructure<{
 }>;
 
 describe("static then routes", () => {
-  it("builds and matches root and nested URLs without confusing encoded keys", () => {
+  it("builds and matches root and nested URLs without confusing encoded keys", async () => {
     const rpc = createRpcClient<Paths>("https://example.com");
     const helper = createRpcHelper<Paths>();
     expect(rpc["%74hen"].$url().relativePath).toBe("/then");
     expect(rpc.nested["%74hen"].$url().relativePath).toBe("/nested/then");
     expect(rpc["%2574hen"].$url().relativePath).toBe("/%2574hen");
-    expect(helper["%74hen"].$match("/then")?.params).toEqual({});
-    expect(helper.nested["%74hen"].$match("/nested/then")?.params).toEqual({});
-    expect(helper["%74hen"].$match("/%2574hen")).toBeNull();
+    expect((await helper["%74hen"].$match("/then", schemas))?.params).toEqual({});
+    expect((await helper.nested["%74hen"].$match("/nested/then", schemas))?.params).toEqual({});
+    expect(await helper["%74hen"].$match("/%2574hen", schemas)).toBeNull();
     expectTypeOf(rpc["%74hen"]).toEqualTypeOf(rpc.nested["%74hen"]);
     expectTypeOf<"then">().not.toExtend<keyof typeof rpc>();
   });
