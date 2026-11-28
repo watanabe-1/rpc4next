@@ -82,21 +82,4 @@ jobs:
       - name: Publish released packages
         env:
           PATHS_RELEASED: ${{ needs.release-please.outputs.paths_released }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          npm config set registry https://registry.npmjs.org/
-
-          node - <<'NODE'
-          const { execSync } = require("node:child_process");
-
-          const paths = JSON.parse(process.env.PATHS_RELEASED || "[]");
-          for (const p of paths) {
-            console.log(`\n==> Publishing ${p}`);
-            execSync("npm publish", {
-              cwd: p,
-              stdio: "inherit",
-              env: process.env,
-            });
-          }
-          NODE
+        run: bun scripts/publish-released-packages.ts
