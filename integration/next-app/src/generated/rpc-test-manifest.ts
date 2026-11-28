@@ -219,11 +219,6 @@ export const testPages = [
     load: () => import("../../app/page") as unknown as Promise<RpcTestPageModule & { default: typeof import("../../app/page").default }>,
   },
   {
-    file: "../../app/patterns/(grouped)/reports/page",
-    pathname: "/patterns/reports",
-    load: () => import("../../app/patterns/(grouped)/reports/page") as unknown as Promise<RpcTestPageModule & { default: typeof import("../../app/patterns/(grouped)/reports/page").default }>,
-  },
-  {
     file: "../../app/patterns/%5Fescaped/page",
     pathname: "/patterns/_escaped",
     load: () => import("../../app/patterns/%5Fescaped/page") as unknown as Promise<RpcTestPageModule & { default: typeof import("../../app/patterns/%5Fescaped/page").default }>,
@@ -232,6 +227,11 @@ export const testPages = [
     file: "../../app/patterns/%E3%81%ZZ/page",
     pathname: "/patterns/%25E3%2581%25ZZ",
     load: () => import("../../app/patterns/%E3%81%ZZ/page") as unknown as Promise<RpcTestPageModule & { default: typeof import("../../app/patterns/%E3%81%ZZ/page").default }>,
+  },
+  {
+    file: "../../app/patterns/(grouped)/reports/page",
+    pathname: "/patterns/reports",
+    load: () => import("../../app/patterns/(grouped)/reports/page") as unknown as Promise<RpcTestPageModule & { default: typeof import("../../app/patterns/(grouped)/reports/page").default }>,
   },
   {
     file: "../../app/patterns/catch-all/[...parts]/page",

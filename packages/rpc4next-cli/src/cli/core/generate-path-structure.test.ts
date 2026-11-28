@@ -128,6 +128,28 @@ describe("generatePathStructure", () => {
     expect(paramsTypes).toStrictEqual([]);
   });
 
+  it("orders imports by UTF-16 code units, including digits and Unicode", () => {
+    const paths = ["./ä/route", "./item2/route", "./z/route", "./item10/route", "./[id]/route"];
+    scanAppDir.mockReturnValue({
+      pathStructure: "{}",
+      imports: paths.map((importPath) => ({
+        path: importPath,
+        statement: `import type { Route } from "${importPath}";`,
+      })),
+      paramsTypes: [],
+    });
+
+    const { pathStructure } = generatePathStructure("output.ts", "app");
+
+    expect(pathStructure.split(NEWLINE).filter((line) => line.includes("{ Route }"))).toEqual([
+      'import type { Route } from "./[id]/route";',
+      'import type { Route } from "./item10/route";',
+      'import type { Route } from "./item2/route";',
+      'import type { Route } from "./z/route";',
+      'import type { Route } from "./ä/route";',
+    ]);
+  });
+
   it("should generate an empty path structure for apps without endpoints", () => {
     tmpDir = makeTempDir();
 
