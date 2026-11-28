@@ -43,17 +43,21 @@ type HttpStatus<T extends HttpStatusCode> = T extends SuccessfulHttpStatusCode
  * @template TStatus - The HTTP status code.
  * @template TContentType - The content type of the response.
  */
-export type TypedResponseInit<TStatus extends HttpStatusCode, TContentType extends ContentType> =
-  | ({
-      headers?: HttpResponseHeaders<TContentType> & Record<string, string>;
-      headersInit?: never;
-    } & Omit<ResponseInit, "headers">)
-  | (({
-      headers?: never;
-      headersInit?: HeadersInit;
-    } & Omit<ResponseInit, "headers">) & {
-      status?: TStatus;
-    });
+export type TypedResponseInit<
+  TStatus extends HttpStatusCode,
+  TContentType extends ContentType,
+> = Omit<ResponseInit, "headers" | "status"> & {
+  status?: TStatus;
+} & (
+    | {
+        headers?: HttpResponseHeaders<TContentType> & Record<string, string>;
+        headersInit?: never;
+      }
+    | {
+        headers?: never;
+        headersInit?: HeadersInit;
+      }
+  );
 
 /**
  * A strongly typed wrapper around the standard Next.js `NextResponse` object, with additional type

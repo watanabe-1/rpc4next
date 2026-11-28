@@ -5,7 +5,7 @@ import type { ContentType } from "../lib/content-type-types";
 import { defineRpcErrors } from "./error";
 import { createResponseHelpers, createRouteContext } from "./route-context";
 import type { ValidationSchema } from "./route-types";
-import type { TypedNextResponse } from "./types";
+import type { TypedNextResponse, TypedResponseInit } from "./types";
 
 const createRealNextRequest = (url: string): NextRequest => {
   return new NextRequest(url);
@@ -14,6 +14,97 @@ const createRealNextRequest = (url: string): NextRequest => {
 describe("createRouteContext", () => {
   const mockParams = { id: "123" };
   const mockSearchParamsObject = { q: "test" };
+
+  it("rejects statuses outside response helper constraints", () => {
+    const checkTypes = () => {
+      const helpers = createResponseHelpers();
+      const boundHelpers = createResponseHelpers<{ ok: boolean }>();
+
+      // @ts-expect-error headers must respect the explicitly declared status
+      helpers.json<{ ok: boolean }, 200>({ ok: true }, { headers: {}, status: 418 });
+      // @ts-expect-error headersInit must respect the explicitly declared status
+      helpers.json<{ ok: boolean }, 200>({ ok: true }, { headersInit: [], status: 418 });
+      // @ts-expect-error omitting headers must respect the explicitly declared status
+      helpers.json<{ ok: boolean }, 200>({ ok: true }, { status: 418 });
+
+      // @ts-expect-error headers must not accept undefined HTTP status codes
+      helpers.json({ ok: true }, { headers: {}, status: 700 });
+      // @ts-expect-error headersInit must not accept undefined HTTP status codes
+      helpers.json({ ok: true }, { headersInit: [], status: 700 });
+      // @ts-expect-error omitting headers must not accept undefined HTTP status codes
+      helpers.json({ ok: true }, { status: 700 });
+
+      // @ts-expect-error redirects must reject non-redirect statuses with headers
+      helpers.redirect("http://localhost/next", { headers: {}, status: 200 });
+      // @ts-expect-error redirects must reject non-redirect statuses with headersInit
+      helpers.redirect("http://localhost/next", { headersInit: [], status: 200 });
+      // @ts-expect-error redirects must reject non-redirect statuses without headers
+      helpers.redirect("http://localhost/next", { status: 200 });
+
+      // @ts-expect-error text helpers must respect the explicitly declared status
+      helpers.text<string, 200>("text", { headers: {}, status: 418 });
+      // @ts-expect-error body helpers must respect the explicitly declared status
+      helpers.body<string, "text/plain", 200>("body", { headers: {}, status: 418 });
+      // @ts-expect-error output-bound JSON helpers must respect the explicitly declared status
+      boundHelpers.json<200>({ ok: true }, { headers: {}, status: 418 });
+
+      // @ts-expect-error the init type itself must constrain the headers branch
+      const invalidInit: TypedResponseInit<200, "application/json"> = { headers: {}, status: 418 };
+
+      return invalidInit;
+    };
+
+    expectTypeOf(checkTypes).toBeFunction();
+  });
+
+  it.each([{ headers: {} }, { headersInit: new Headers() }, {}])(
+    "preserves inferred statuses with init %o",
+    (init) => {
+      const helpers = createResponseHelpers();
+      const json = helpers.json({ ok: false }, { ...init, status: 418 });
+      const text = helpers.text("created", { ...init, status: 201 });
+      const body = helpers.body("body", { ...init, status: 202 });
+      const redirect = helpers.redirect("http://localhost/next", { ...init, status: 302 });
+      const boundJson = createResponseHelpers<{ ok: boolean }>().json(
+        { ok: false },
+        { ...init, status: 418 },
+      );
+
+      expectTypeOf(json.status).toEqualTypeOf<418>();
+      expectTypeOf(json.ok).toEqualTypeOf<false>();
+      expectTypeOf(text.status).toEqualTypeOf<201>();
+      expectTypeOf(body.status).toEqualTypeOf<202>();
+      expectTypeOf(redirect.status).toEqualTypeOf<302>();
+      expectTypeOf(boundJson.status).toEqualTypeOf<418>();
+      expectTypeOf(boundJson.ok).toEqualTypeOf<false>();
+      expect([json.status, text.status, body.status, redirect.status, boundJson.status]).toEqual([
+        418, 201, 202, 302, 418,
+      ]);
+      expect(json.ok).toBe(false);
+      expect(boundJson.ok).toBe(false);
+    },
+  );
+
+  it("preserves default statuses when status is omitted", () => {
+    const helpers = createResponseHelpers();
+    const json = helpers.json({ ok: true });
+    const jsonWithHeaders = helpers.json({ ok: true }, { headers: {} });
+    const jsonWithHeadersInit = helpers.json({ ok: true }, { headersInit: new Headers() });
+    const redirect = helpers.redirect("http://localhost/next");
+    const redirectWithHeaders = helpers.redirect("http://localhost/next", { headers: {} });
+    const redirectWithHeadersInit = helpers.redirect("http://localhost/next", {
+      headersInit: new Headers(),
+    });
+
+    expectTypeOf(json.status).toEqualTypeOf<200>();
+    expectTypeOf(redirect.status).toEqualTypeOf<307>();
+    expect([json.status, jsonWithHeaders.status, jsonWithHeadersInit.status]).toEqual([
+      200, 200, 200,
+    ]);
+    expect([redirect.status, redirectWithHeaders.status, redirectWithHeadersInit.status]).toEqual([
+      307, 307, 307,
+    ]);
+  });
 
   it.each(["Headers", "tuples"])("preserves cookies in all response helpers with %s", (format) => {
     const cookies = [
