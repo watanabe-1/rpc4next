@@ -10,6 +10,7 @@ import {
 } from "./core/generate-path-structure.js";
 import {
   assertNotNextReservedFile,
+  generatedTargetKey,
   validateGeneratedTargets,
 } from "./core/generated-file-safety.js";
 import { relativeFromRoot } from "./core/path-utils.js";
@@ -98,11 +99,11 @@ const listGeneratedCandidateFiles = (baseDir: string, paramsFileName: string): s
 const cleanupStaleGeneratedParamsFiles = ({
   baseDir,
   paramsFileName,
-  expectedFilePaths,
+  protectedFilePaths,
 }: {
   baseDir: string;
   paramsFileName: string;
-  expectedFilePaths: Set<string>;
+  protectedFilePaths: Set<string>;
 }) => {
   // Moved contracts can appear at paths that were never generated in this process.
   const candidates = listGeneratedCandidateFiles(baseDir, paramsFileName);
@@ -110,7 +111,7 @@ const cleanupStaleGeneratedParamsFiles = ({
   for (const filePath of candidates) {
     const resolvedFilePath = path.resolve(filePath);
 
-    if (expectedFilePaths.has(resolvedFilePath)) {
+    if (protectedFilePaths.has(generatedTargetKey(resolvedFilePath))) {
       continue;
     }
 
@@ -135,16 +136,19 @@ const cleanupStaleGeneratedParamsFiles = ({
 const findStaleGeneratedParamsFiles = ({
   baseDir,
   paramsFileName,
-  expectedFilePaths,
+  protectedFilePaths,
 }: {
   baseDir: string;
   paramsFileName: string;
-  expectedFilePaths: Set<string>;
+  protectedFilePaths: Set<string>;
 }): string[] => {
   return listGeneratedCandidateFiles(baseDir, paramsFileName).filter((filePath) => {
     const resolvedFilePath = path.resolve(filePath);
 
-    if (expectedFilePaths.has(resolvedFilePath) || !isWithinBaseDir(resolvedFilePath, baseDir)) {
+    if (
+      protectedFilePaths.has(generatedTargetKey(resolvedFilePath)) ||
+      !isWithinBaseDir(resolvedFilePath, baseDir)
+    ) {
       return false;
     }
 
@@ -184,7 +188,7 @@ export const checkGenerated = ({
       outputPath,
       configuredTestManifestOutputPath,
     );
-    validateGeneratedTargets([
+    const protectedFilePaths = validateGeneratedTargets([
       outputPath,
       testManifestOutputPath,
       ...paramsTypes.flatMap(({ dirPath }) =>
@@ -199,10 +203,6 @@ export const checkGenerated = ({
     }
 
     if (paramsFileName) {
-      const expectedFilePaths = new Set(
-        paramsTypes.map(({ dirPath }) => path.resolve(path.join(dirPath, paramsFileName))),
-      );
-
       for (const { paramsType, dirPath } of paramsTypes) {
         const filePath = path.join(dirPath, paramsFileName);
 
@@ -215,7 +215,7 @@ export const checkGenerated = ({
       for (const filePath of findStaleGeneratedParamsFiles({
         baseDir,
         paramsFileName,
-        expectedFilePaths,
+        protectedFilePaths,
       })) {
         logger.error(`Generated params file should be removed: ${relativeFromRoot(filePath)}`);
         isCurrent = false;
@@ -282,7 +282,7 @@ export const generate = ({
       routeManifests,
       pageManifests,
     );
-    validateGeneratedTargets([
+    const protectedFilePaths = validateGeneratedTargets([
       outputPath,
       testManifestOutputPath,
       ...paramsTypes.flatMap(({ dirPath }) =>
@@ -314,9 +314,6 @@ export const generate = ({
 
     if (paramsFileName) {
       let wroteParamsFile = false;
-      const expectedFilePaths = new Set(
-        paramsTypes.map(({ dirPath }) => path.resolve(path.join(dirPath, paramsFileName))),
-      );
 
       paramsTypes.forEach(({ paramsType, dirPath }) => {
         const filePath = path.join(dirPath, paramsFileName);
@@ -328,7 +325,7 @@ export const generate = ({
       cleanupStaleGeneratedParamsFiles({
         baseDir,
         paramsFileName,
-        expectedFilePaths,
+        protectedFilePaths,
       });
 
       if (wroteParamsFile) {

@@ -174,6 +174,56 @@ describe("generation target safety", () => {
     expect(fs.readFileSync(otherFile, "utf8")).toBe(generated);
   });
 
+  it.each([
+    ["app/_generated/route-contract.ts", "route-contract.ts", undefined],
+    ["rpc.ts", "route-contract.ts", "app/_generated/route-contract.ts"],
+    ["app/_generated/rpc.ts", "rpc-test-manifest.ts", undefined],
+    ...(process.platform === "win32"
+      ? [["app/_GENERATED/route-contract.ts", "route-contract.ts", undefined] as const]
+      : []),
+  ] as const)(
+    "protects all current targets (output=%s, params=%s, manifest=%s)",
+    (output, paramsFile, testManifestOutputPath) => {
+      writeTree(tmpDir, {
+        app: {
+          _generated: {},
+          obsolete: { [paramsFile]: generated },
+          handwritten: { [paramsFile]: "handwritten contract" },
+        },
+      });
+      const options = {
+        paramsFile,
+        ...(testManifestOutputPath ? { testManifestOutputPath } : {}),
+      };
+      const staleFile = path.join(tmpDir, "app", "obsolete", paramsFile);
+      const handwrittenFile = path.join(tmpDir, "app", "handwritten", paramsFile);
+
+      expect(handleCli("app", output, options, logger)).toBe(0);
+      expect(fs.readFileSync(path.join(tmpDir, output), "utf8")).toContain(
+        "export type PathStructure",
+      );
+      expect(fs.existsSync(staleFile)).toBe(false);
+      expect(fs.readFileSync(handwrittenFile, "utf8")).toBe("handwritten contract");
+      const before = snapshot();
+      const writeSpy = vi.spyOn(fs, "writeFileSync");
+      const removeSpy = vi.spyOn(fs, "rmSync");
+
+      expect(handleCli("app", output, options, logger)).toBe(0);
+      expect(handleCli("app", output, { ...options, check: true }, logger)).toBe(0);
+      expect(writeSpy).not.toHaveBeenCalled();
+      expect(removeSpy).not.toHaveBeenCalled();
+      expect(snapshot()).toEqual(before);
+
+      writeTree(tmpDir, { app: { obsolete: { [paramsFile]: generated } } });
+      const beforeCheck = snapshot();
+      expect(handleCli("app", output, { ...options, check: true }, logger)).toBe(1);
+      expect(logger.error).toHaveBeenLastCalledWith(
+        `Generated params file should be removed: ${path.relative(tmpDir, staleFile)}`,
+      );
+      expect(snapshot()).toEqual(beforeCheck);
+    },
+  );
+
   it("detects a route added between consecutive checks", () => {
     const options = {
       baseDir: path.join(tmpDir, "app"),
