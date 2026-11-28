@@ -72,5 +72,7 @@ integration/next-app/.next-base-path/
 integration/next-app/tsconfig.tsbuildinfo
 integration/next-app/.tmp-start*.log
 integration/next-app/playwright-report/
+integration/next-app/playwright-report-base-path/
 integration/next-app/test-results/
+integration/next-app/test-results-base-path/
 reset-dev.bat
