@@ -4,8 +4,9 @@ import { z } from "zod";
 
 import type { ContentType } from "../lib/content-type-types";
 import type { HttpStatusCode } from "../lib/http-status-code-types";
+import { defineRpcErrors } from "../server/error";
 import { createNextRoute } from "../server/next-route";
-import { procedure } from "../server/procedure";
+import { createRouteProcedure, procedure } from "../server/procedure";
 import type { ProcedureRouteContract } from "../server/procedure-types";
 import { createResponseHelpers } from "../server/route-context";
 import type { TypedNextResponse } from "../server/types";
@@ -384,6 +385,69 @@ describe("route handler response inference", () => {
       Extract<Result, { status: 500 }> extends never ? false : true
     >().toEqualTypeOf<true>();
     expectTypeOf<Result["status"]>().toEqualTypeOf<201 | 400 | 500>();
+  });
+
+  it("preserves catalog overrides without adding default validation errors", () => {
+    const errors = defineRpcErrors({
+      BAD_REQUEST: { status: 422 },
+      INTERNAL_SERVER_ERROR: { status: 503 },
+    });
+    const { GET } = createRouteProcedure({
+      errors,
+      onError: (_error, { response }) => response.error("INTERNAL_SERVER_ERROR"),
+      onValidationError: undefined,
+    })
+      .forRoute({ pathname: "/api/example", params: {} } as ProcedureRouteContract<
+        "/api/example",
+        Record<never, never>
+      >)
+      .query(z.object({ id: z.string() }))
+      .output(z.object({ ok: z.literal(true) }))
+      .handle(({ response }) => response.json({ ok: true }))
+      .get({});
+
+    type Result = ClientResponse<typeof GET>;
+    expectTypeOf<Result["status"]>().toEqualTypeOf<200 | 422 | 503>();
+    expectTypeOf<Extract<Result, { status: 400 | 500 }>>().toBeNever();
+    expectTypeOf<Extract<Result, { status: 200 }>>().toEqualTypeOf<
+      TypedNextResponse<{ ok: true }, 200, "application/json">
+    >();
+    expectTypeOf<Extract<Result, { status: 422 }>>().toEqualTypeOf<
+      TypedNextResponse<
+        { error: { code: "BAD_REQUEST"; message: string } },
+        422,
+        "application/json"
+      >
+    >();
+    expectTypeOf<
+      Awaited<ReturnType<Extract<Result, { status: 503 }>["json"]>>["error"]["code"]
+    >().toEqualTypeOf<"INTERNAL_SERVER_ERROR">();
+    expectTypeOf<Result>().toEqualTypeOf<Awaited<ReturnType<typeof GET>>>();
+  });
+
+  it("preserves input and shared validation hook response variants", () => {
+    const { GET } = createRouteProcedure({
+      onError: (_error, { response }) => response.error("INTERNAL_SERVER_ERROR"),
+      onValidationError: ({ response }) => response.text("shared validation", 409),
+    })
+      .forRoute({ pathname: "/api/example", params: {} } as ProcedureRouteContract<
+        "/api/example",
+        Record<never, never>
+      >)
+      .query(z.object({ id: z.string() }), {
+        onValidationError: ({ response }) => response.json({ invalid: true }, 422),
+      })
+      .handle(({ response }) => response.json({ ok: true }))
+      .get({});
+
+    type Result = ClientResponse<typeof GET>;
+    expectTypeOf<Extract<Result, { status: 409 }>>().toEqualTypeOf<
+      TypedNextResponse<"shared validation", 409, "text/plain">
+    >();
+    expectTypeOf<Extract<Result, { status: 422 }>>().toEqualTypeOf<
+      TypedNextResponse<{ invalid: true }, 422, "application/json">
+    >();
+    expectTypeOf<Result>().toEqualTypeOf<Awaited<ReturnType<typeof GET>>>();
   });
 
   it("keeps unknown response bodies when onError returns a raw Response", () => {
